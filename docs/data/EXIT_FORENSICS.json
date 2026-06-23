@@ -1,16 +1,25 @@
 {
-  "generated_at": "2026-06-23T08:53:21.763162+00:00",
-  "overall": {},
+  "generated_at": "2026-06-23T09:09:14.051254+00:00",
+  "overall": {
+    "closed_trades": 2,
+    "avg_post_exit_leak_pct": 1.21,
+    "avg_saved_loss_pct": 0.0,
+    "avg_exit_quality": -1.21,
+    "losers": 2,
+    "execution_failures": 2,
+    "thesis_failures": 0,
+    "verdict": "2/2 losing trades bounced after exit (sold too early); 0 kept falling (thesis wrong)"
+  },
   "exit_class_counts": {
     "GOOD_EXIT": 0,
-    "EARLY_EXIT": 0,
+    "EARLY_EXIT": 2,
     "LATE_EXIT": 0,
     "CATASTROPHIC_EXIT": 0
   },
   "exit_class_by_book": {
     "crypto": {
       "GOOD_EXIT": 0,
-      "EARLY_EXIT": 0,
+      "EARLY_EXIT": 2,
       "LATE_EXIT": 0,
       "CATASTROPHIC_EXIT": 0
     },
@@ -22,11 +31,58 @@
     }
   },
   "by_book": {
-    "crypto": {},
+    "crypto": {
+      "closed_trades": 2,
+      "avg_post_exit_leak_pct": 1.21,
+      "avg_saved_loss_pct": 0.0,
+      "avg_exit_quality": -1.21,
+      "losers": 2,
+      "execution_failures": 2,
+      "thesis_failures": 0,
+      "verdict": "2/2 losing trades bounced after exit (sold too early); 0 kept falling (thesis wrong)"
+    },
     "stock": {}
   },
-  "by_strategy": {},
-  "worst_offenders": [],
+  "by_strategy": {
+    "MR_patient_d3": {
+      "closed_trades": 1,
+      "avg_post_exit_leak_pct": 1.21,
+      "avg_saved_loss_pct": 0.0,
+      "avg_exit_quality": -1.21,
+      "losers": 1,
+      "execution_failures": 1,
+      "thesis_failures": 0,
+      "verdict": "1/1 losing trades bounced after exit (sold too early); 0 kept falling (thesis wrong)"
+    },
+    "crypto": {
+      "closed_trades": 1,
+      "avg_post_exit_leak_pct": 1.21,
+      "avg_saved_loss_pct": 0.0,
+      "avg_exit_quality": -1.21,
+      "losers": 1,
+      "execution_failures": 1,
+      "thesis_failures": 0,
+      "verdict": "1/1 losing trades bounced after exit (sold too early); 0 kept falling (thesis wrong)"
+    }
+  },
+  "worst_offenders": [
+    {
+      "ticker": "TIA-USD",
+      "strategy": "crypto",
+      "book": "crypto",
+      "realized_pct": -5.63,
+      "leak_pct": 1.21,
+      "exit_class": "EARLY_EXIT"
+    },
+    {
+      "ticker": "TIA-USD",
+      "strategy": "MR_patient_d3",
+      "book": "crypto",
+      "realized_pct": -5.63,
+      "leak_pct": 1.21,
+      "exit_class": "EARLY_EXIT"
+    }
+  ],
   "windows_note": "+1h/+4h added; +10/+20d stay null until history is that long (~5 days now).",
   "note": "Leak = ran up after we sold (too early). GOOD<1% leak, EARLY 1-4%, CATASTROPHIC>=4%, LATE = held into a non-bouncing loss."
 }
