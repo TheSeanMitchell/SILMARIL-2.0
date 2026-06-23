@@ -87,6 +87,9 @@
 
 <!-- ARENA -->
 <div class="page" id="p-arena">
+  <section><div class="hd">🏆 QUADRANT LEADERBOARDS & CHAMPIONS — independent election for each market</div><div class="bd">
+    <div class="note"><b>What:</b> each asset class (crypto/stock/metal/energy) has its own strategy leaderboard and its own champion. <b>Why:</b> markets are different; what wins in crypto may lose in stocks. <b>Action:</b> watch how champions shift as new edge emerges in each quadrant.</div>
+    <div id="quadrantArena"></div></div></section>
   <section><div class="hd">🏟 STRATEGY SURVIVAL LEADERBOARD</div><div class="bd">
     <table><thead><tr><th>Strategy</th><th>n</th><th>Surv</th><th>Total%</th><th>Exp%</th><th>Win%</th><th>Sharpe</th><th>DD%</th><th>Tier</th></tr></thead><tbody id="arenaBody"></tbody></table>
     <div class="note" id="arenaNote"></div>
@@ -240,6 +243,18 @@ function renderArena(cv,gov){if(!cv)return;
   $('arenaNote').textContent=cv.verdict||'';
   const lad=(gov&&gov.promotion_ladder)||{};$('ladder').innerHTML=Object.keys(lad).length?Object.entries(lad).map(([t,a])=>`<div><b>${t}:</b> ${a.join(', ')}</div>`).join(''):'<span class="dim">accumulating</span>';
 }
+async function renderQuadrantArena(){const quads=['crypto','stock','metal','energy'];let html='';
+  for(const q of quads){const lb=await jget('data/strategy_leaderboard_'+q+'.json'),champ=await jget('data/champion_'+q+'.json');
+    if(!lb)continue;const bt=lb.best_trusted||{},rows=(lb.leaderboard||[]).slice(0,8);
+    const champRow=rows.find(r=>r.strategy===champ.champion)||{};
+    html+=`<div class="dim" style="margin:8px 0;padding:8px;border-left:3px solid ${['#f7931a','#2f74ff','#b9bcc4','#22b07d'][quads.indexOf(q)]}">
+      <b>${q.toUpperCase()}</b> · <span style="color:${['#f7931a','#2f74ff','#b9bcc4','#22b07d'][quads.indexOf(q)]}">${champ.champion||'—'}</span> (champion) · edge ${bt.mean_net_pct||0}%/trade over ${bt.trades||0}<br>
+      <span style="font-size:10px">${champ.reason||''}</span><br>
+      <table style="font-size:11px;margin-top:4px"><thead><tr><th>strategy</th><th>trades</th><th>edge</th><th>win%</th></tr></thead><tbody>
+      ${rows.map(r=>`<tr style="${r.strategy===champ.champion?'font-weight:bold;background:rgba(255,255,255,.05)':''}">`+
+        `<td>${r.strategy}</td><td>${r.trades}</td><td class="${r.mean_net_pct>=0?'pos':'neg'}">${r.mean_net_pct||0}%</td><td>${r.win_pct||0}%</td></tr>`).join('')}
+      </tbody></table></div>`;}
+    $('quadrantArena').innerHTML=html;}
 async function renderForensics(){
   try{const rg=await jget('data/REGIME_ANALYSIS.json');if(rg&&rg.books){let html='';for(const bk of ['crypto','stock']){const b=rg.books[bk]||{},cr=b.current_regime||{};
     const rows=Object.entries(b.by_regime||{}).filter(([m,v])=>v.overall).sort((a,c)=>a[1].overall.avg_ret_pct-c[1].overall.avg_ret_pct).map(([m,v])=>`<tr><td>${m}</td><td>${v.overall.trades}</td><td class="${v.overall.avg_ret_pct>=0?'pos':'neg'}">${v.overall.avg_ret_pct>=0?'+':''}${v.overall.avg_ret_pct}%</td><td>${v.overall.win_pct}%</td></tr>`).join('');
