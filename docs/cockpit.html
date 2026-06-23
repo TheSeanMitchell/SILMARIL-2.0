@@ -189,15 +189,21 @@ async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s
   const cards=Object.entries(s.categories).map(([k,v])=>`<div class="stat"><div class="k">${k.replace(/_/g,' ')}</div><div class="val ${v.grade>=7?'pos':v.grade>=4?'':'neg'}">${v.grade}</div><div class="note">${v.why}</div></div>`).join('');
   $('scorecard').innerHTML=`<div class="met" style="height:30px"><div class="fill" style="width:${g*10}%"></div><div class="lab">OVERALL ${g}/10 ${arrow} ${s.trend}</div></div>
     <div class="note" style="margin:4px 0">${s.headline||''}</div><div class="grid">${cards}</div>`;}
+function getMarketHours(bk){const now=new Date(),et=new Date(now.toLocaleString('en-US',{timeZone:'America/New_York'}));const day=et.getDay(),mins=et.getHours()*60+et.getMinutes();
+  if(bk==='crypto')return{open:0,close:1440,name:'24/5',msg:'BTC/ETH always on (closed Sun-Mon midnight UTC)'};
+  if(bk==='stock')return{open:570,close:960,name:'9:30-16:00 ET',msg:day===0||day===6?'NYSE closed · weekend':(mins<570?'opens in '+(570-mins)+'min':(mins>=960?'closed · after hours':'OPEN NOW'))};
+  if(bk==='metal')return{open:0,close:1440,name:'24/5 spot',msg:'Gold/Silver always quoted; updates every 10-15min'};
+  if(bk==='energy')return{open:570,close:960,name:'daily 4:15 PM ET',msg:'WTI/Brent update once per day (Alpha Vantage free); next: 16:15 ET'};
+  return{open:0,close:1440,name:'—',msg:''};}
 function renderQuadrants(cv){const L=LIVE||{};
   const meta={crypto:{n:'CRYPTO',col:'#f7931a'},stock:{n:'STOCKS',col:'#2f74ff'},metal:{n:'METALS',col:'#b9bcc4'},energy:{n:'ENERGY',col:'#22b07d'}};
   $('quadrants').innerHTML=['crypto','stock','metal','energy'].map(bk=>{const b=L[bk]||{},champ=L['champion_'+bk];
     const eq=b.equity!=null?b.equity:10000,r=b.return_pct||0,o=b.open_positions||0;
-    const st=champ?'TRADING':(b.equity!=null?'READY · awaiting data feed':'—'),m=meta[bk];
-    return `<div class="quad" style="border-top:5px solid ${m.col}"><div class="quad-h" style="color:${m.col}">${m.n}</div>`+
+    const st=champ?'TRADING':(b.equity!=null?'READY · awaiting data feed':'—'),m=meta[bk],mh=getMarketHours(bk);
+    return `<div class="quad" style="border-top:5px solid ${m.col}"><div class="quad-h" style="color:${m.col}">${m.n} · ${mh.name}</div>`+
       `<div class="quad-eq ${r>0?'pos':r<0?'neg':''}">$${f(eq)}</div>`+
       `<div class="quad-sub">${sg(r)}% · ${o} open</div>`+
-      `<div class="quad-champ">champ: ${champ||'—'}</div><div class="quad-st">${st}</div></div>`;}).join('');}
+      `<div class="quad-champ">champ: ${champ||'—'}</div><div class="quad-st" title="${mh.msg}">${st}</div></div>`;}).join('');}
 function renderAcct(L){if(!L)return;const c=L.crypto||{},s=L.stock||{};
   $('acct').innerHTML=[
     ['COMBINED EQUITY','$'+f(L.combined_equity),''],['REALIZED P&L','$'+f(L.combined_realized_pnl),(L.combined_realized_pnl>=0?'pos':'neg')],
