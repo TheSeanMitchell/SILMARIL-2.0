@@ -1,6 +1,6 @@
 {
   "version": "alpha21-attribution-1.0",
-  "generated_at": "2026-06-23T13:40:49.750651+00:00",
+  "generated_at": "2026-06-23T13:56:07.151826+00:00",
   "answers": {
     "q1_agents_that_create_profit": [
       "BARON",
@@ -23,26 +23,25 @@
     "q3_opportunities_missed": 30,
     "q4_why_missed_by_failure_type": {
       "EXECUTION_FAILURE": 25,
-      "RANKING_FAILURE": 4,
-      "DISCOVERY_FAILURE": 1
+      "RANKING_FAILURE": 5
     },
     "q5_profit_leak_after_discovery": {
-      "held_edge_capture_pct": 16.7,
-      "reachable_edge_capture_pct": 0.3,
-      "alpaca_reachable_pct": 46.9,
-      "median_hold_minutes": 328.1,
-      "share_of_trades_churned_under_30min": 4.6,
-      "attribution_source": "paper_sim (live accounts have no trades this window)",
-      "diagnosis": "leak spread across entry quality and capture"
+      "held_edge_capture_pct": 1.6,
+      "reachable_edge_capture_pct": 0.1,
+      "alpaca_reachable_pct": 47.3,
+      "median_hold_minutes": 15.2,
+      "share_of_trades_churned_under_30min": 1.0,
+      "attribution_source": "live_accounts",
+      "diagnosis": "leak is dominated by CHURN \u2014 trades round-trip in minutes; winners are not given time to run"
     },
     "q6_why_capital_idle": [
       {
         "account": "LEGACY",
-        "equity": 9997.24,
-        "held_capital": 1190.41,
-        "idle_capital": 8806.83,
-        "deployed_pct": 11.9,
-        "idle_reason": "few names cleared the gates (fresh-gate / confirmation / cooldown) this cycle"
+        "equity": 9967.45,
+        "held_capital": 6688.47,
+        "idle_capital": 3278.98,
+        "deployed_pct": 67.1,
+        "idle_reason": "deployed"
       },
       {
         "account": "HARVEST_3",
@@ -62,13 +61,13 @@
       }
     ],
     "q7_why_winners_exited": {
-      "median_winner_hold_minutes": null,
-      "mean_winner_realized_pct": null,
-      "finding": "insufficient data"
+      "median_winner_hold_minutes": 15.2,
+      "mean_winner_realized_pct": -0.91,
+      "finding": "winners exited at ~-0.91% after only 15.2 min median \u2014 taken off too early"
     },
     "q8_why_losers_retained": {
-      "median_loser_hold_minutes": null,
-      "asymmetry": null
+      "median_loser_hold_minutes": 15.2,
+      "asymmetry": "winners and losers held similar time"
     }
   },
   "agent_attribution": [
@@ -166,7 +165,7 @@
       "agent": "AEGIS",
       "grade": "I",
       "verdict": "INSUFFICIENT",
-      "mean_return_pct": -0.046,
+      "mean_return_pct": -0.0474,
       "win_rate": 0.289,
       "samples": 1208,
       "trusted": true
@@ -202,9 +201,9 @@
       "agent": "KESTREL+",
       "grade": "I",
       "verdict": "INSUFFICIENT",
-      "mean_return_pct": -0.2163,
-      "win_rate": 0.326,
-      "samples": 423,
+      "mean_return_pct": -0.2146,
+      "win_rate": 0.328,
+      "samples": 424,
       "trusted": true
     },
     {
@@ -238,9 +237,9 @@
       "agent": "FABLEBOY_5",
       "grade": "I",
       "verdict": "INSUFFICIENT",
-      "mean_return_pct": -0.7405,
-      "win_rate": 0.548,
-      "samples": 115,
+      "mean_return_pct": -0.7513,
+      "win_rate": 0.544,
+      "samples": 114,
       "trusted": true
     },
     {
@@ -265,11 +264,9 @@
     "RANKING_FAILURE": [
       "GLW",
       "SWKS",
+      "MRVL",
       "AVAX-USD",
       "WDC"
-    ],
-    "DISCOVERY_FAILURE": [
-      "MRVL"
     ]
   },
   "learning_loop": {
@@ -295,14 +292,14 @@
         "current_weight": 1.057,
         "recommended_weight": 1.0
       },
-      "ZENITH": {
-        "grade": "C",
-        "current_weight": 1.054,
-        "recommended_weight": 1.0
-      },
       "OBSIDIAN": {
         "grade": "C",
         "current_weight": 1.127,
+        "recommended_weight": 1.0
+      },
+      "ZENITH": {
+        "grade": "C",
+        "current_weight": 1.054,
         "recommended_weight": 1.0
       },
       "SYNTH": {
