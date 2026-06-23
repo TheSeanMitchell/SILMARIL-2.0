@@ -146,6 +146,30 @@ def reset_shared_ledgers(accounts, baseline):
     print("  ✓ harvest ledgers: reset-account entries cleared")
 
 
+def reset_paper_books(baseline: float):
+    """2.5.1 — reset the FOUR internal paper-trading books (crypto/stock/metal/energy)
+    AND the per-strategy arena books to a clean baseline, and rewrite the live cockpit
+    summary so all four quadrants show a fresh $baseline immediately. This is what
+    'pristine' must mean for the internal lab, not just the Alpaca-style ledgers."""
+    clean = lambda: {"cash": baseline, "realized_pnl": 0.0, "positions": {},
+                     "trades": [], "updated_at": _now()}
+    n = 0
+    for p in DATA.glob("paper_book_*.json"):
+        _save(p, clean()); n += 1
+    print(f"  ✓ paper books: {n} reset to ${baseline:.0f} (crypto/stock/metal/energy + arena)")
+    # rewrite the live summary so the UI shows four clean $baseline books at once
+    book = lambda: {"equity": baseline, "cash": baseline, "realized_pnl": 0.0,
+                    "return_pct": 0.0, "open_positions": 0, "positions": [], "recent_trades": []}
+    live = {"generated_at": _now(), "start_cash_each": baseline,
+            "champion_crypto": None, "champion_stock": None,
+            "champion_metal": None, "champion_energy": None,
+            "crypto": book(), "stock": book(), "metal": book(), "energy": book(),
+            "combined_equity": round(baseline * 4, 2), "combined_realized_pnl": 0.0,
+            "note": "Pristine reset — four independent books at a clean baseline."}
+    _save(DATA / "paper_sim_live.json", live)
+    print(f"  ✓ paper_sim_live.json: four books reset to ${baseline:.0f} each")
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--accounts", default="all",
@@ -158,5 +182,6 @@ if __name__ == "__main__":
     for acct in accts:
         reset_account_state(acct, a.baseline)
     reset_shared_ledgers(accts, a.baseline)
+    reset_paper_books(a.baseline)
     print("DONE. Pair this with the matching Alpaca dashboard reset/funding.")
     print("Next engine run starts these account(s) clean.")
