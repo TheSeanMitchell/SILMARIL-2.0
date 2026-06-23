@@ -180,7 +180,7 @@ async function load(){
   // each render is isolated: a bad/missing field in one panel can never blank the rest
   const safe=(fn,name)=>{try{fn();}catch(e){console.error(name,e);}};
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
-  safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready');
+  safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS');
   safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
 }
