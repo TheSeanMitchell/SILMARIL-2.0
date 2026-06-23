@@ -94,15 +94,24 @@ def update_champion(out_dir) -> Dict[str, Any]:
     elif surv_leader and surv_leader != champ:
         inc = surv.get(champ, {"score": 0, "n": 0})
         chal = surv[surv_leader]
-        # switch only on a decisive survivability margin AND at least as much data
-        if chal["score"] >= inc["score"] + SURV_MARGIN and chal["n"] >= max(inc["n"], CHAMPION_MIN_TRADES):
+        # Switch on a decisive survivability margin once the challenger has a credible
+        # sample. We do NOT require the challenger to match the incumbent's trade count:
+        # the incumbent keeps trading, so that test could never be satisfied (a deadlock
+        # that pinned a survivability-22 champion under a survivability-81 challenger).
+        # Survivability already penalises thin samples via its confidence interval, so a
+        # challenger that clears the margin with >= CHAMPION_MIN_TRADES has earned it.
+        if chal["score"] >= inc["score"] + SURV_MARGIN and chal["n"] >= CHAMPION_MIN_TRADES:
             champ = surv_leader
             reason = (f"promoted on survivability: {surv_leader} {chal['score']:.0f} "
                       f"> {st.get('champion')} {inc['score']:.0f} (n={chal['n']}, evidence-driven)")
             promoted = True
         else:
-            reason = (f"holds: survivability leader {surv_leader} ({chal['score']:.0f}) "
-                      f"not yet decisive vs {champ} ({inc['score']:.0f})")
+            gap = chal["score"] - inc["score"]
+            reason = (f"holds: leader {surv_leader} ({chal['score']:.0f}) beats {champ} "
+                      f"({inc['score']:.0f}) by {gap:.0f} but n={chal['n']} < {CHAMPION_MIN_TRADES} min"
+                      if chal["n"] < CHAMPION_MIN_TRADES else
+                      f"holds: {surv_leader} ({chal['score']:.0f}) vs {champ} ({inc['score']:.0f}) "
+                      f"under {SURV_MARGIN}-pt switch margin")
 
     cfg = dict(STRATEGIES.get(champ, {}))
     # express params the way the sim consumes them
