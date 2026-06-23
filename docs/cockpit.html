@@ -49,7 +49,7 @@
   .quad-sub{font-size:11px;opacity:.85}.quad-champ{font-size:10px;opacity:.7;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .quad-st{font-size:10px;opacity:.6;margin-top:2px}
   </style></head><body><div class="wrap">
-<div class="banner"><h1>SILMARIL&nbsp;2.5</h1><span class="dim" style="font-size:12px;font-weight:bold" id="clock">—</span><span class="dim" style="font-size:10px" id="ts">—</span><button class="themebtn" id="themeBtn" onclick="toggleTheme()">🌙 Dark</button></div>
+<div class="banner"><h1>SILMARIL&nbsp;2.5 · 4-QUADRANT LAB</h1><span class="dim" style="font-size:12px;font-weight:bold" id="clock">—</span><span class="dim" style="font-size:10px" id="ts">—</span><button class="themebtn" id="themeBtn" onclick="toggleTheme()">🌙 Dark</button></div>
 <div class="tabs">
   <button class="on" data-p="cmd">COMMAND</button><button data-p="arena">ARENA</button>
   <button data-p="forensics">FORENSICS</button><button data-p="authority">AUTHORITY LAB</button><button data-p="settings">SETTINGS</button>
@@ -207,13 +207,12 @@ function renderQuadrants(cv){const L=LIVE||{};
       `<div class="quad-eq ${r>0?'pos':r<0?'neg':''}">$${f(eq)}</div>`+
       `<div class="quad-sub">${sg(r)}% · ${o} open</div>`+
       `<div class="quad-champ">champ: ${champ||'—'}</div><div class="quad-st" title="${mh.msg}">${st}</div></div>`;}).join('');}
-function renderAcct(L){if(!L)return;const c=L.crypto||{},s=L.stock||{};
-  $('acct').innerHTML=[
-    ['COMBINED EQUITY','$'+f(L.combined_equity),''],['REALIZED P&L','$'+f(L.combined_realized_pnl),(L.combined_realized_pnl>=0?'pos':'neg')],
-    ['CRYPTO','$'+f(c.equity)+'  ('+sg(c.return_pct)+'%)',(c.return_pct>=0?'pos':'neg')],['STOCK','$'+f(s.equity)+'  ('+sg(s.return_pct||0)+'%)','dim'],
-    ['CRYPTO CASH','$'+f(c.cash),'dim'],['OPEN','crypto '+(c.open_positions||0)+' · stock '+(s.open_positions||0),'dim'],
-  ].map(([k,v,c2])=>`<div class="stat"><div class="k">${k}</div><div class="val ${c2}">${v}</div></div>`).join('');
-}
+function renderAcct(L){if(!L)return;
+  const quads=['crypto','stock','metal','energy'],meta={crypto:{n:'CRYPTO',abbr:'C'},stock:{n:'STOCK',abbr:'S'},metal:{n:'METAL',abbr:'M'},energy:{n:'ENERGY',abbr:'E'}};
+  let rows=[['COMBINED EQUITY','$'+f(L.combined_equity),''],['REALIZED P&L','$'+f(L.combined_realized_pnl),(L.combined_realized_pnl>=0?'pos':'neg')]];
+  for(const q of quads){const b=L[q]||{},m=meta[q];rows.push([m.n,'$'+f(b.equity)+'  ('+sg(b.return_pct||0)+'%)',(b.return_pct||0)>=0?'pos':'neg']);}
+  rows.push(['OPEN',quads.map(q=>(L[q]||{}).open_positions||0).join('+'),'dim'],['CHAMPIONS',quads.map(q=>L['champion_'+q]?q[0].toUpperCase():'-').join(''),'dim']);
+  $('acct').innerHTML=rows.map(([k,v,c2])=>`<div class="stat"><div class="k">${k}</div><div class="val ${c2}${k==='CHAMPIONS'?' dim':''}">${v}</div></div>`).join('');}
 function renderChamp(cv,st,gov){if(!cv)return;
   const name=cv.declared_champion, row=(cv.strategies||[]).find(r=>r.strategy===name)||{},sv=row.survivability||{};
   $('champCards').innerHTML=[
