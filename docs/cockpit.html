@@ -63,6 +63,7 @@
     <div id="scorecard"></div></div></section>
   <section><div class="hd">🌐 MARKET COMMAND CENTER — asset classes (independent by design)</div><div class="bd">
     <div class="quads" id="quadrants"></div>
+    <div id="scanStatus" class="dim" style="font-size:11px;margin-top:8px;padding:7px;border:1px dashed var(--line)">scanning…</div>
     <div class="note">Crypto &amp; Stocks are live. Metals &amp; Energy are blank placeholders — each will get its OWN arena, champion, survivability and account when built (2.5.1 goal: no shared champions or capital). Crypto and Stocks still share one champion today; separating them is the next milestone.</div>
   </div></section>
   <section><div class="hd">ACCOUNT &middot; both books side by side</div><div class="bd">
@@ -185,7 +186,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS');
-  safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
   const g=s.overall_grade,arrow=s.trend==='up'?'▲':s.trend==='down'?'▼':'■';
@@ -198,6 +199,13 @@ function getMarketHours(bk){const now=new Date(),et=new Date(now.toLocaleString(
   if(bk==='metal')return{open:0,close:1440,name:'24/5 spot',msg:'Gold/Silver always quoted; updates every 10-15min'};
   if(bk==='energy')return{open:570,close:960,name:'daily 4:15 PM ET',msg:'WTI/Brent update once per day (Alpha Vantage free); next: 16:15 ET'};
   return{open:0,close:1440,name:'—',msg:''};}
+async function renderScanStatus(){const oa=await jget('data/OPPORTUNITY_AUDIT.json');const el=document.getElementById('scanStatus');if(!el)return;
+  if(!oa||!oa.books){el.textContent='scan data loading…';return;}
+  let tot=0,qual=0;for(const bk of ['crypto','stock','metal','energy']){const b=oa.books[bk]||{},f=b.funnel||{};tot+=b.universe||0;qual+=f.discovered_qualified||0;}
+  const L=LIVE||{};const open=['crypto','stock','metal','energy'].reduce((a,bk)=>a+((L[bk]||{}).open_positions||0),0);
+  el.innerHTML=qual>0
+    ? `🟢 LIVE · scanning ${tot} names · <b>${qual} setup(s) qualify right now</b> · ${open} position(s) open · system is trading autonomously`
+    : `🟡 LIVE · scanning ${tot} names · 0 setups qualify this cycle (nothing dropped enough yet) · ${open} open · <b>system healthy, waiting for a dip</b> — this is normal`;}
 function renderQuadrants(cv){const L=LIVE||{};
   const meta={crypto:{n:'CRYPTO',col:'#f7931a'},stock:{n:'STOCKS',col:'#2f74ff'},metal:{n:'METALS',col:'#b9bcc4'},energy:{n:'ENERGY',col:'#22b07d'}};
   $('quadrants').innerHTML=['crypto','stock','metal','energy'].map(bk=>{const b=L[bk]||{},champ=L['champion_'+bk];
