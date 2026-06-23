@@ -190,7 +190,7 @@ async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s
   $('scorecard').innerHTML=`<div class="met" style="height:30px"><div class="fill" style="width:${g*10}%"></div><div class="lab">OVERALL ${g}/10 ${arrow} ${s.trend}</div></div>
     <div class="note" style="margin:4px 0">${s.headline||''}</div><div class="grid">${cards}</div>`;}
 function getMarketHours(bk){const now=new Date(),et=new Date(now.toLocaleString('en-US',{timeZone:'America/New_York'}));const day=et.getDay(),mins=et.getHours()*60+et.getMinutes();
-  if(bk==='crypto')return{open:0,close:1440,name:'24/5',msg:'BTC/ETH always on (closed Sun-Mon midnight UTC)'};
+  if(bk==='crypto')return{open:0,close:1440,name:'24/7',msg:'crypto always trading, updates every cycle'};
   if(bk==='stock')return{open:570,close:960,name:'9:30-16:00 ET',msg:day===0||day===6?'NYSE closed · weekend':(mins<570?'opens in '+(570-mins)+'min':(mins>=960?'closed · after hours':'OPEN NOW'))};
   if(bk==='metal')return{open:0,close:1440,name:'24/5 spot',msg:'Gold/Silver always quoted; updates every 10-15min'};
   if(bk==='energy')return{open:570,close:960,name:'daily 4:15 PM ET',msg:'WTI/Brent update once per day (Alpha Vantage free); next: 16:15 ET'};
