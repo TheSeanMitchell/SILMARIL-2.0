@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>SILMARIL · Internal Paper Sim Cockpit</title>
+<style>
+  :root{--bg:#0a0e14;--panel:#121821;--line:#1f2a37;--ink:#e6edf3;--dim:#8b98a8;
+        --green:#3fb950;--red:#f85149;--amber:#d29922;--blue:#58a6ff;--crypto:#a371f7;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;padding:14px;max-width:1200px;margin:auto}
+  h1{font-size:16px;margin:0 0 2px;letter-spacing:.5px}
+  .sub{color:var(--dim);font-size:12px;margin-bottom:14px}
+  .top{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;flex:1;min-width:140px}
+  .stat .k{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .stat .v{font-size:20px;font-weight:600;margin-top:2px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:760px){.cols{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+  .phead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  .phead .name{font-size:14px;font-weight:600}
+  .stock .name{color:var(--blue)} .crypto .name{color:var(--crypto)}
+  .eq{font-size:22px;font-weight:700}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+  th{text-align:right;color:var(--dim);font-weight:500;padding:4px 6px;border-bottom:1px solid var(--line);font-size:10px;text-transform:uppercase}
+  th:first-child,td:first-child{text-align:left}
+  td{padding:4px 6px;border-bottom:1px solid #161c26}
+  .pos{color:var(--green)} .neg{color:var(--red)}
+  .lbl{color:var(--dim);font-size:11px;margin:10px 0 2px;text-transform:uppercase;letter-spacing:.5px}
+  .pill{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10px;border:1px solid var(--line)}
+  .buy{color:var(--green);border-color:#1d3024} .sell{color:var(--amber);border-color:#3a3017}
+  .empty{color:var(--dim);font-style:italic;padding:10px 6px;font-size:12px}
+  .verdict{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px}
+  .verdict .deck{color:var(--dim);font-size:11px;margin-top:4px}
+  .note{margin-top:14px;color:var(--dim);font-size:11px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;line-height:1.6}
+  .uni{color:var(--dim);font-size:11px}
+  .ghost{color:var(--amber)}
+  a{color:var(--blue)}
+</style>
+</head>
+<body>
+  <h1>INTERNAL PAPER SIM · OPERATOR COCKPIT</h1>
+  <div class="sub" id="meta">loading…</div>
+
+  <div id="champ" class="verdict" style="display:none"></div>
+
+  <div id="router" class="panel" style="display:none;margin-bottom:14px">
+    <div class="phead"><span class="name" style="color:var(--gold)">💰 CHAMPION CAPITAL ROUTER</span>
+      <span id="routerEff" class="uni"></span></div>
+    <div id="routerAlloc"></div>
+    <div class="lbl">Edge attribution (never null)</div>
+    <div id="routerAttrib" class="uni"></div>
+    <div class="lbl">Deployment audit</div>
+    <div id="routerAudit" class="uni"></div>
+  </div>
+
+  <div class="top">
+    <div class="stat"><div class="k">Combined Equity</div><div class="v" id="combeq">—</div></div>
+    <div class="stat"><div class="k">Combined Realized P&amp;L</div><div class="v" id="compnl">—</div></div>
+    <div class="stat"><div class="k">Strategy</div><div class="v" id="strat" style="font-size:12px">—</div></div>
+  </div>
+
+  <div class="cols">
+    <div class="panel stock" id="stockPanel"></div>
+    <div class="panel crypto" id="cryptoPanel"></div>
+  </div>
+
+  <div class="note" id="note"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const money = n => (n==null?'—':'$'+Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}));
+const pct = n => (n==null?'—':(n>=0?'+':'')+Number(n).toFixed(2)+'%');
+const cls = n => n>0?'pos':(n<0?'neg':'');
+
+function side(el, d, label){
+  if(!d){el.innerHTML=`<div class="phead"><span class="name">${label}</span></div><div class="empty">no data</div>`;return;}
+  const posRows = (d.positions&&d.positions.length)
+    ? d.positions.map(p=>`<tr><td>${p.sym}</td><td>${p.entry}</td><td>${p.mark}</td><td class="${cls(p.upl_pct)}">${pct(p.upl_pct)}</td></tr>`).join('')
+    : `<tr><td colspan="4" class="empty">no open positions — waiting for an oversold name</td></tr>`;
+  const trRows = (d.recent_trades&&d.recent_trades.length)
+    ? d.recent_trades.map(t=>`<tr><td><span class="pill ${t.side==='BUY'?'buy':'sell'}">${t.side}</span> ${t.sym}</td><td>${t.price}</td><td class="${t.pnl!=null?cls(t.pnl):''}">${t.pnl!=null?money(t.pnl):'—'}</td></tr>`).join('')
+    : `<tr><td colspan="3" class="empty">no trades yet</td></tr>`;
+  el.innerHTML = `
+    <div class="phead">
+      <span class="name">${label}</span>
+      <span class="eq ${cls(d.return_pct)}">${money(d.equity)} <span style="font-size:12px">${pct(d.return_pct)}</span></span>
+    </div>
+    <div class="uni">cash ${money(d.cash)} · realized <span class="${cls(d.realized_pnl)}">${money(d.realized_pnl)}</span>
+      · tradeable universe <b>${d.tradeable_universe}</b> of ${d.universe_seen} seen
+      <span class="ghost">(${d.universe_seen-d.tradeable_universe} ghosts excluded)</span></div>
+    <div class="lbl">Open positions (${d.open_positions})</div>
+    <table><tr><th>Sym</th><th>Entry</th><th>Mark</th><th>uPL</th></tr>${posRows}</table>
+    <div class="lbl">Recent trades</div>
+    <table><tr><th>Trade</th><th>Px</th><th>P&amp;L</th></tr>${trRows}</table>`;
+}
+
+async function load(){
+  try{
+    const r = await fetch('data/paper_sim_live.json?_='+Date.now());
+    const d = await r.json();
+    $('meta').textContent = 'as of '+new Date(d.generated_at).toLocaleString()+' · $'+d.start_cash_each.toLocaleString()+' per side';
+    $('combeq').textContent = money(d.combined_equity);
+    $('compnl').textContent = money(d.combined_realized_pnl);
+    $('compnl').className = 'v '+cls(d.combined_realized_pnl);
+    $('strat').textContent = d.strategy;
+    const bt=d.backtest_3day_crypto;
+    if(bt&&bt.trades){
+      const e=document.createElement('div'); e.className='stat';
+      e.style.borderLeft='3px solid #3fb950';
+      e.innerHTML=`<div class="k">3-Day Backtest Proof (crypto)</div><div class="v" style="font-size:13px">`+
+        `${bt.trades} trades · ${bt.win_pct||bt.win_rate_pct||''}% win · ${(bt.mean_net_pct>=0?'+':'')+bt.mean_net_pct}%/trade · `+
+        `<span class="${bt.equity>=10000?'pos':'neg'}">$${Number(bt.equity).toLocaleString()}</span></div>`;
+      document.querySelector('.top').appendChild(e);
+    }
+    side($('stockPanel'), d.stock, 'STOCK SIDE');
+    side($('cryptoPanel'), d.crypto, 'CRYPTO SIDE');
+    $('note').innerHTML = '<b>How to read this:</b> '+d.note+
+      ' &nbsp;<b>Ghosts</b> = names whose price sits frozen then jumps (stale ≈ untradeable); excluding them is what keeps this honest.';
+  }catch(e){
+    $('meta').textContent = 'paper_sim_live.json not found yet — runs on the next cycle.';
+  }
+  try{
+    const cr = await fetch('data/champion.json?_='+Date.now());
+    const c = await cr.json();
+    const b = c.champion_backtest||{};
+    $('champ').style.display='block';
+    $('champ').innerHTML = `👑 <b>Champion: ${c.champion||'—'}</b> `+
+      `<span style="color:var(--dim)">(${c.live_params?c.live_params.dir.toUpperCase():''} · `+
+      `${b.trades||0} trades · ${b.win_pct||0}% win · ${(b.mean_net_pct>=0?'+':'')+(b.mean_net_pct||0)}%/trade backtest)</span>`+
+      `<div class="deck">${c.reason||''} · challengers on deck: ${(c.challengers_on_deck||[]).slice(0,4).join(', ')||'none'} · <a href="strategy_leaderboard.html">full board →</a></div>`;
+  }catch(e){}
+  try{
+    const rr = await fetch('data/capital_allocation.json?_='+Date.now());
+    const d = await rr.json();
+    $('router').style.display='block';
+    const au=d.deployment_audit||{}, at=d.attribution_no_nulls||{};
+    $('routerEff').textContent='deployed $'+(au.deployed_dollars||0).toLocaleString()+' · '+(au.deployment_efficiency_pct||0)+'% efficiency';
+    const bk=d.books||{};
+    $('routerAlloc').innerHTML=Object.keys(bk).map(n=>{
+      const b=bk[n], delta=b.weight_pct-b.prev_weight_pct;
+      const arrow=delta>0.1?'<span class="pos">▲</span>':delta<-0.1?'<span class="neg">▼</span>':'';
+      return `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #161c26">
+        <span>${n} ${arrow}</span>
+        <span><b>${b.weight_pct}%</b> = $${b.allocated.toLocaleString()} · ${b.open_positions} pos · realized <span class="${b.realized_pnl>=0?'pos':'neg'}">$${b.realized_pnl}</span></span></div>`;
+    }).join('')||'<div class="empty">no positive-edge strategy funded right now</div>';
+    $('routerAttrib').innerHTML=`edge captured <b>${at.held_edge_capture_pct}%</b> · median hold <b>${at.median_hold_minutes}min</b> · churned &lt;30min <b>${at.share_churned_under_30min}%</b> · ${at.total_trades} trades`;
+    $('routerAudit').innerHTML=`<span class="${au.deployed_dollars>0?'pos':'neg'}">${au.idle_reason}</span> · oversold names available now: ${au.oversold_names_available_now}`;
+  }catch(e){}
+}
+load(); setInterval(load, 60000);
+</script>
+</body>
+</html>

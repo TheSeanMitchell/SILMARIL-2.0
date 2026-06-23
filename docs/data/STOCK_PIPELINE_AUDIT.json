@@ -1,0 +1,60 @@
+{
+  "generated_at": "2026-06-22T11:17:44.806994+00:00",
+  "question": "Why are stock trades not firing?",
+  "answer": "The freshness filter, not the signal. Stocks have plenty of dips (>=3%) but the crypto-tuned 80%-of-24/7-intervals freshness bar rejected ALL of them \u2014 even during market hours \u2014 because stocks only quote ~6.5h of 24 and look 'frozen' the rest of the time.",
+  "market_appears_open_at_snapshot": true,
+  "pipeline_funnel": {
+    "stock_universe": 536,
+    "with_enough_samples": 536,
+    "passed_OLD_freshness_crypto_80pct (broken: ~0 even when open)": 0,
+    "passed_NEW_freshness_RIGHT_NOW (0 is correct if market closed)": 1,
+    "NEW_freshness_capable_during_market_hours (the unlock)": 536,
+    "had_signal_dip_ge_3pct": 96
+  },
+  "biggest_stock_dips_pct": [
+    {
+      "sym": "ACN",
+      "drop_pct": -17.7
+    },
+    {
+      "sym": "EPAM",
+      "drop_pct": -10.0
+    },
+    {
+      "sym": "CTSH",
+      "drop_pct": -9.7
+    },
+    {
+      "sym": "STLD",
+      "drop_pct": -7.5
+    },
+    {
+      "sym": "KR",
+      "drop_pct": -7.4
+    },
+    {
+      "sym": "IBM",
+      "drop_pct": -7.1
+    },
+    {
+      "sym": "MRNA",
+      "drop_pct": -6.8
+    },
+    {
+      "sym": "OMC",
+      "drop_pct": -6.5
+    },
+    {
+      "sym": "SPCX",
+      "drop_pct": -6.4
+    },
+    {
+      "sym": "LHX",
+      "drop_pct": -6.2
+    }
+  ],
+  "root_cause": "freshness_filter (crypto 80%/24-7 bar applied to a ~27%-uptime asset)",
+  "fix_applied": "stocks now use a market-hours-aware freshness check (price moved in the last few samples = actively quoting). Crypto path byte-for-byte unchanged. Snapshot taken at 3:50 AM, market closed, so the 'right now' count is 0 (correct); the 'capable during market hours' count is what will fire when the market opens.",
+  "expected_effect": "536 stocks are capable of passing freshness during their market hours; combined with the >=3% MR dip, candidates should appear after the open \u2014 still selective via the same entry/target/stop",
+  "note": "Diagnostic only. The MR strategy and crypto behavior are untouched."
+}

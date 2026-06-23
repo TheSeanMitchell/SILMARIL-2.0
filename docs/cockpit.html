@@ -1,0 +1,289 @@
+<!DOCTYPE html><html lang="en" data-theme="light"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<title>SILMARIL 2.5</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg"/>
+<style>
+  :root[data-theme="light"]{--bg:#fff;--fg:#000;--line:#000;--soft:#f4f4f4;--pos:#008000;--neg:#c00000;--hd:#000;--hdfg:#fff;--accent:#0000cc}
+  :root[data-theme="dark"]{--bg:#0b0b0c;--fg:#e9e9ea;--line:#555;--soft:#161617;--pos:#39d353;--neg:#ff6b66;--hd:#e9e9ea;--hdfg:#0b0b0c;--accent:#6ea8ff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:600 14px/1.5 "Courier New",Courier,monospace;-webkit-text-size-adjust:100%}
+  .wrap{max-width:1000px;margin:auto;padding:0 10px 70px}
+  a{color:var(--accent)}
+  .pos{color:var(--pos);font-weight:bold}.neg{color:var(--neg);font-weight:bold}.dim{opacity:.7;font-weight:600}
+  .banner{border:3px double var(--line);padding:8px 12px;margin:10px 0 6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .banner h1{margin:0;font-size:20px;letter-spacing:3px}
+  .themebtn{border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;cursor:pointer;padding:3px 9px}
+  /* tab bar — scrolls horizontally on mobile, never overflows page */
+  .tabs{display:flex;gap:0;overflow-x:auto;border:1px solid var(--line);margin-bottom:10px;-webkit-overflow-scrolling:touch}
+  .tabs button{flex:1 0 auto;white-space:nowrap;border:0;border-right:1px solid var(--line);background:var(--bg);color:var(--fg);font:bold 12px "Courier New",monospace;padding:8px 12px;cursor:pointer;letter-spacing:1px}
+  .tabs button:last-child{border-right:0}
+  .tabs button.on{background:var(--hd);color:var(--hdfg)}
+  .page{display:none}.page.on{display:block}
+  section{border:1px solid var(--line);margin:10px 0}
+  section>.hd{background:var(--hd);color:var(--hdfg);padding:4px 9px;font-weight:bold;font-size:12px;letter-spacing:1px}
+  section>.bd{padding:9px;overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:0}
+  th,td{border:1px solid var(--line);padding:4px 7px;text-align:right;white-space:nowrap}
+  th{background:var(--hd);color:var(--hdfg)}th:first-child,td:first-child{text-align:left}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}.banner h1{font-size:17px}}
+  .stat{border:1px solid var(--line);padding:6px 8px}.stat .k{font-size:10px;letter-spacing:1px;opacity:.7}.stat .val{font-size:20px;font-weight:bold}
+  .met{border:2px solid var(--line);height:24px;position:relative;background:var(--soft);margin:4px 0}
+  .met .fill{background:var(--hd);height:100%}.met .lab{position:absolute;left:6px;top:3px;font-size:11px;font-weight:bold;color:var(--fg);mix-blend-mode:difference}
+  .milestone{display:flex;border:1px solid var(--line);height:24px}.milestone div{flex:1;border-right:1px solid var(--line);text-align:center;font-size:11px;line-height:24px;font-weight:bold}.milestone div:last-child{border-right:0}.mmet{background:var(--hd);color:var(--hdfg)}
+  .tick{cursor:pointer;text-decoration:underline}
+  .ico{width:15px;height:15px;vertical-align:middle;margin-right:4px}
+  .bardual{display:flex;height:13px;border:1px solid var(--line);min-width:80px}
+  .note{font-size:11px;opacity:.75;margin-top:6px}
+  .alert{border:2px solid var(--neg);padding:6px 9px;margin:6px 0;font-weight:bold}
+  .ok{border:2px solid var(--pos);padding:6px 9px;margin:6px 0;font-weight:bold}
+  svg{width:100%;height:auto;display:block}
+  #modal{display:none;position:fixed;inset:0;background:var(--bg);z-index:50;padding:14px;overflow:auto}
+  #modalBox{max-width:880px;margin:auto;border:3px double var(--line);padding:12px}
+  #modalClose{float:right;border:2px solid var(--line);background:var(--hd);color:var(--hdfg);font-weight:bold;cursor:pointer;padding:2px 10px}
+  .ctrls button{font:bold 12px "Courier New",monospace;border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:2px 9px;cursor:pointer}.ctrls button.on{background:var(--hd);color:var(--hdfg)}
+</style></head><body><div class="wrap">
+<div class="banner"><h1>SILMARIL&nbsp;2.5</h1><span class="dim" style="font-size:11px" id="ts">—</span><button class="themebtn" id="themeBtn" onclick="toggleTheme()">🌙 Dark</button></div>
+<div class="tabs">
+  <button class="on" data-p="cmd">COMMAND</button><button data-p="arena">ARENA</button>
+  <button data-p="forensics">FORENSICS</button><button data-p="authority">AUTHORITY LAB</button><button data-p="settings">SETTINGS</button>
+</div>
+
+<!-- COMMAND CENTER -->
+<div class="page on" id="p-cmd">
+  <div id="alerts"></div>
+  <section><div class="hd">📊 PROJECT SCORECARD — honest self-grade, every cycle</div><div class="bd">
+    <div class="note"><b>What:</b> the platform grading itself from real data. <b>Why care:</b> one number for "is this getting better?" <b>Action:</b> low confidence/profitability = let it gather trades, don't tinker.</div>
+    <div id="scorecard"></div></div></section>
+  <section><div class="hd">🌐 MARKET COMMAND CENTER — asset classes (independent by design)</div><div class="bd">
+    <div class="grid" id="quadrants"></div>
+    <div class="note">Crypto &amp; Stocks are live. Metals &amp; Energy are blank placeholders — each will get its OWN arena, champion, survivability and account when built (2.5.1 goal: no shared champions or capital). Crypto and Stocks still share one champion today; separating them is the next milestone.</div>
+  </div></section>
+  <section><div class="hd">ACCOUNT &middot; both books side by side</div><div class="bd">
+    <div class="grid" id="acct"></div>
+  </div></section>
+  <section><div class="hd">CHAMPION</div><div class="bd">
+    <div class="grid" id="champCards"></div>
+    <div class="note" style="margin-top:8px">TRADE MILESTONES (graduates only when met)</div><div class="milestone" id="mile"></div>
+    <div class="note" id="champNote"></div>
+  </div></section>
+  <section><div class="hd">🚦 LIVE-TRADING READINESS (sample-gated — won't flatter)</div><div class="bd">
+    <div class="met" style="height:28px"><div class="fill" id="readyFill"></div><div class="lab" id="readyLab"></div></div>
+    <div id="readySubs"></div>
+  </div></section>
+  <section><div class="hd">💓 OPEN POSITIONS — tap a ticker for its chart</div><div class="bd">
+    <div class="dim" style="font-size:11px">◆ CRYPTO</div>
+    <table><thead><tr><th>Sym</th><th>Entry</th><th>Mark</th><th>uPL%</th><th>→T/→S</th></tr></thead><tbody id="posCrypto"></tbody></table>
+    <div class="dim" style="font-size:11px;margin-top:8px">◆ STOCK</div>
+    <table><thead><tr><th>Sym</th><th>Entry</th><th>Mark</th><th>uPL%</th><th>→T/→S</th></tr></thead><tbody id="posStock"></tbody></table>
+  </div></section>
+</div>
+
+<!-- ARENA -->
+<div class="page" id="p-arena">
+  <section><div class="hd">🏟 STRATEGY SURVIVAL LEADERBOARD</div><div class="bd">
+    <table><thead><tr><th>Strategy</th><th>n</th><th>Surv</th><th>Total%</th><th>Exp%</th><th>Win%</th><th>Sharpe</th><th>DD%</th><th>Tier</th></tr></thead><tbody id="arenaBody"></tbody></table>
+    <div class="note" id="arenaNote"></div>
+  </div></section>
+  <section><div class="hd">PROMOTION LADDER (capital earned, not granted)</div><div class="bd"><div id="ladder"></div>
+    <div class="note">Sandbox → Incubation (10 trades) → Candidate (25) → Production (50) → Verified (100).</div>
+  </div></section>
+</div>
+
+<!-- FORENSICS -->
+<div class="page" id="p-forensics">
+  <section><div class="hd">🌡 REGIME OBSERVER — which market conditions help or hurt each strategy</div><div class="bd">
+    <div class="note"><b>What:</b> every trade tagged with the market regime at entry (crypto & stock measured separately). <b>Why care:</b> it shows WHERE an edge actually exists. <b>Action:</b> if a strategy only wins in one regime, that's where it belongs — and where it doesn't, consider sitting out.</div>
+    <div id="regimeBox"></div></div></section>
+  <section><div class="hd">🔎 OPPORTUNITY AUDIT — why every trade did or didn't happen</div><div class="bd">
+    <div class="note">Every name in the universe, classified with the EXACT rule it hit. If activity looks low, this says precisely why. No black boxes.</div>
+    <div id="oppAudit"></div></div></section>
+  <section><div class="hd">🔚 EXIT FORENSICS — did we sell too early, or was the thesis wrong?</div><div class="bd">
+    <div class="note">For every closed trade, what the price did AFTER we exited. Leak = it ran up after we sold (too early). The crypto/stock split tells you which book has an EXIT problem vs a THESIS problem.</div>
+    <div id="exitForensics"></div></div></section>
+  <section><div class="hd">⏱ STOCK RECOVERY — do stocks even mean-revert? (vs crypto)</div><div class="bd">
+    <div class="note">How often, and how fast, a name climbs back after a 3/5/7/10% drop. Low stock recovery rate = stocks do NOT bounce on our exit clock → stock MR may be structurally mismatched.</div>
+    <div id="stockRecovery"></div></div></section>
+  <section><div class="hd">📈 SURVIVABILITY OVER TIME (from snapshots)</div><div class="bd"><div id="survChart" class="dim">accumulating…</div></div></section>
+  <section><div class="hd">💰 COMBINED EQUITY OVER TIME</div><div class="bd"><div id="eqChart" class="dim">accumulating…</div></div></section>
+  <section><div class="hd">🎯 EDGE CAPTURE</div><div class="bd"><div id="capHead" class="val" style="font-size:20px"></div>
+    <table><thead><tr><th>Biggest miss</th><th>Available</th><th>Captured</th></tr></thead><tbody id="capMiss"></tbody></table></div></section>
+  <section><div class="hd">📋 OPPORTUNITY JOURNAL</div><div class="bd" id="ojBody"></div></section>
+  <section><div class="hd">⚡ EXECUTION LEAK</div><div class="bd" id="leakBody"></div></section>
+</div>
+
+<!-- AUTHORITY -->
+<div class="page" id="p-authority">
+  <section><div class="hd">⚡ AUTHORITY LAB — research only, never trades</div><div class="bd">
+    <div id="authStatus" class="note"></div><div id="authEvents"></div>
+    <div class="note">Tracks what happens after Trump / Musk / Pelosi / Congress / Fed / Nvidia speak. Evidence before "what to buy." Deploys no capital.</div>
+  </div></section>
+</div>
+
+<!-- SETTINGS -->
+<div class="page" id="p-settings">
+  <section><div class="hd">SETTINGS &amp; LINKS</div><div class="bd">
+    <p>Theme: <button class="themebtn" onclick="toggleTheme()">toggle light / dark</button> (saved on this device)</p>
+    <p class="dim">Deep / debug views:</p>
+    <p><a href="legacy_dashboard.html">Legacy dashboard</a> · <a href="strategy_leaderboard.html">Raw leaderboard</a> · <a href="lifecycle.html">Lifecycle/validation</a> · <a href="paper_sim.html">Paper sim detail</a></p>
+    <p class="note">SILMARIL 2.5 · validation phase · champion must survive 100 out-of-sample trades. $100–300/day is an unproven hope, never income.</p>
+  </div></section>
+</div>
+</div>
+
+<div id="modal"><div id="modalBox"><button id="modalClose" onclick="document.getElementById('modal').style.display='none'">CLOSE ✕</button>
+  <div id="modalTitle" style="font-size:17px;font-weight:bold"></div><div id="modalThesis" class="note"></div>
+  <div class="ctrls" id="mIv" style="margin:6px 0"><button data-h="24">1D</button><button data-h="72">3D</button><button data-h="168">1W</button><button data-h="0" class="on">ALL</button></div>
+  <div id="chartHost" style="border:1px solid var(--line);padding:4px">loading…</div><div id="mStats" class="note"></div>
+</div></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const f=(n,d=2)=>n==null?'—':(+n).toFixed(d);
+const sg=(n,d=2)=>n==null?'—':((n>=0?'+':'')+(+n).toFixed(d));
+const cl=n=>n==null?'dim':n>0?'pos':n<0?'neg':'dim';
+const EXIT={t:.03,s:.04,h:242};
+const icon=s=>{const b=s.replace('-USD','').toLowerCase();return `<img class="ico" src="https://assets.coincap.io/assets/icons/${b}@2x.png" onerror="this.style.display='none'"/>`;};
+async function jget(p){try{return await (await fetch(p+'?_='+Date.now())).json();}catch(e){return null;}}
+// theme
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);$('themeBtn').textContent=t==='dark'?'☀ Light':'🌙 Dark';}
+function toggleTheme(){const t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';try{localStorage.setItem('silmaril-theme',t);}catch(e){}applyTheme(t);}
+applyTheme((()=>{try{return localStorage.getItem('silmaril-theme')||'light';}catch(e){return 'light';}})());
+// tabs
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));$('p-'+b.dataset.p).classList.add('on');
+});
+
+let LIVE=null,BOOKS={};
+async function load(){
+  LIVE=await jget('data/paper_sim_live.json');
+  const cv=await jget('data/champion_validation.json'), gov=await jget('data/CHAMPION_GOVERNANCE.json'), st=await jget('data/CHAMPION_STATUS.json');
+  BOOKS.crypto=await jget('data/paper_book_crypto.json'); BOOKS.stock=await jget('data/paper_book_stock.json');
+  if(LIVE&&LIVE.champion_live_params){EXIT.t=LIVE.champion_live_params.target;EXIT.s=LIVE.champion_live_params.stop;EXIT.h=LIVE.champion_live_params.max_hold_min;}
+  if(LIVE)$('ts').textContent=new Date(LIVE.generated_at).toLocaleString();
+  // each render is isolated: a bad/missing field in one panel can never blank the rest
+  const safe=(fn,name)=>{try{fn();}catch(e){console.error(name,e);}};
+  if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
+  safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready');
+  safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS');
+  safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+}
+async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
+  const g=s.overall_grade,arrow=s.trend==='up'?'▲':s.trend==='down'?'▼':'■';
+  const cards=Object.entries(s.categories).map(([k,v])=>`<div class="stat"><div class="k">${k.replace(/_/g,' ')}</div><div class="val ${v.grade>=7?'pos':v.grade>=4?'':'neg'}">${v.grade}</div><div class="note">${v.why}</div></div>`).join('');
+  $('scorecard').innerHTML=`<div class="met" style="height:30px"><div class="fill" style="width:${g*10}%"></div><div class="lab">OVERALL ${g}/10 ${arrow} ${s.trend}</div></div>
+    <div class="note" style="margin:4px 0">${s.headline||''}</div><div class="grid">${cards}</div>`;}
+function renderQuadrants(cv){const L=LIVE||{};
+  const mk=(n,bk,fb)=>{const b=L[bk]||{},champ=L['champion_'+bk];const hasData=b.equity!=null&&(b.open_positions>0||champ);
+    return {n:n,c:champ||'—',st:champ?(bk==='crypto'?'ACTIVE':'LEARNING'):(b.equity!=null?'AWAITING FEED':fb),eq:b.equity,r:b.return_pct,o:b.open_positions,live:champ?1:(b.equity!=null&&bk!=='metal'&&bk!=='energy'?1:0)};};
+  const cards=[mk('CRYPTO','crypto','—'),mk('STOCKS','stock','—'),mk('METALS','metal','needs API key'),mk('ENERGY','energy','needs API key')];
+  $('quadrants').innerHTML=cards.map(q=>`<div class="stat" style="${q.live?'':'opacity:.45'}"><div class="k">${q.n} · ${q.st}</div><div class="val ${q.r==null?'dim':q.r>=0?'pos':'neg'}">${q.eq==null?'— pending —':'$'+f(q.eq)}</div><div class="note">champion ${q.c}${q.r==null?'':' · '+sg(q.r)+'% · '+(q.o||0)+' open'}</div></div>`).join('');}
+function renderAcct(L){if(!L)return;const c=L.crypto||{},s=L.stock||{};
+  $('acct').innerHTML=[
+    ['COMBINED EQUITY','$'+f(L.combined_equity),''],['REALIZED P&L','$'+f(L.combined_realized_pnl),(L.combined_realized_pnl>=0?'pos':'neg')],
+    ['CRYPTO','$'+f(c.equity)+'  ('+sg(c.return_pct)+'%)',(c.return_pct>=0?'pos':'neg')],['STOCK','$'+f(s.equity)+'  ('+sg(s.return_pct||0)+'%)','dim'],
+    ['CRYPTO CASH','$'+f(c.cash),'dim'],['OPEN','crypto '+(c.open_positions||0)+' · stock '+(s.open_positions||0),'dim'],
+  ].map(([k,v,c2])=>`<div class="stat"><div class="k">${k}</div><div class="val ${c2}">${v}</div></div>`).join('');
+}
+function renderChamp(cv,st,gov){if(!cv)return;
+  const name=cv.declared_champion, row=(cv.strategies||[]).find(r=>r.strategy===name)||{},sv=row.survivability||{};
+  $('champCards').innerHTML=[
+    ['CHAMPION',name||'—',''],['SURVIVABILITY',(sv.score??'—')+'/100',(sv.score>=70?'pos':sv.score>=40?'':'neg')],
+    ['TIER',(st&&st.promotion_tier)||row.tier||'—',''],['TRADES',row.n??'—',''],
+    ['WIN RATE',f(row.win_pct,1)+'%',''],['EXPECTANCY',sg(row.avg_return_pct)+'%/trade',(row.avg_return_pct>=0?'pos':'neg')],
+  ].map(([k,v,c2])=>`<div class="stat"><div class="k">${k}</div><div class="val ${c2}">${v}</div></div>`).join('');
+  const n=row.n||0;$('mile').innerHTML=[10,25,50,100].map(m=>`<div class="${n>=m?'mmet':''}">${n>=m?'✓':''}${m}</div>`).join('')+`<div style="flex:0 0 56px">n=${n}</div>`;
+  const govTxt=gov?('Governance: <b>'+(gov.aligned?'ALIGNED ✓':'reconciling')+'</b> · '):'';
+  $('champNote').innerHTML=govTxt+(st?st.promotion_eligibility:'')+' · OOS consistent: <b>'+(sv.oos_consistent?'YES':'NO')+'</b>';
+}
+function renderReady(cv){if(!cv)return;const row=(cv.strategies||[]).find(r=>r.strategy===cv.declared_champion)||{},sv=row.survivability||{},n=row.n||0;
+  const tradeGate=Math.min(n/100,1);
+  const q=[['Positive expectancy',row.avg_return_pct>0?1:0,sg(row.avg_return_pct)+'%'],['Survives OOS split',sv.oos_consistent?1:(sv.second_half_avg_pct>0?.5:0),sv.oos_consistent?'YES':'partial/no'],
+    ['Healthy drawdown',row.max_drawdown_pct>-5?1:Math.max(0,1+row.max_drawdown_pct/15),f(row.max_drawdown_pct)+'%'],['Sharpe →1.0',Math.min(Math.max(row.sharpe_proxy||0,0),1),f(row.sharpe_proxy)]];
+  const qAvg=q.reduce((a,g)=>a+g[1],0)/q.length, score=Math.round(tradeGate*qAvg*100);
+  $('readyFill').style.width=score+'%';$('readyLab').textContent='READINESS '+score+'%  (gated by trade count)';
+  $('readySubs').innerHTML=[['Out-of-sample trades →100 (the gate)',tradeGate,n+'/100']].concat(q).map(g=>`<div style="display:flex;gap:8px;align-items:center;margin:3px 0"><span style="flex:0 0 50%;font-size:11px">${g[0]}</span><div class="met" style="flex:1;height:18px"><div class="fill" style="width:${Math.round(g[1]*100)}%"></div><div class="lab">${g[2]}</div></div></div>`).join('');
+}
+function renderPos(bk,host){const L=LIVE&&LIVE[bk]?LIVE[bk]:{},pos=L.positions||[];
+  if(!pos.length){host.innerHTML=`<tr><td colspan="5" class="dim">${bk==='stock'?'no stock positions — fire during market hours (needs freshness fix)':'waiting for an oversold name'}</td></tr>`;return;}
+  host.innerHTML=pos.map(p=>{const toT=((p.entry*(1+EXIT.t))/p.mark-1)*100,toS=((p.mark/(p.entry*(1-EXIT.s)))-1)*100,tot=Math.max(.1,toT)+Math.max(.1,toS),gw=Math.max(0,toT)/tot*100;
+    return `<tr><td class="tick" onclick="openChart('${p.sym}',${p.entry},${p.mark})">${icon(p.sym)}${p.sym}</td><td>$${f(p.entry,4)}</td><td>$${f(p.mark,4)}</td><td class="${cl(p.upl_pct)}">${sg(p.upl_pct)}%</td><td><div class="bardual" title="to target ${f(toT)}% / to stop ${f(toS)}%"><div style="width:${gw}%;background:var(--pos)"></div><div style="width:${100-gw}%;background:var(--neg)"></div></div></td></tr>`;}).join('');
+}
+function renderArena(cv,gov){if(!cv)return;
+  $('arenaBody').innerHTML=(cv.strategies||[]).map(r=>{const s=r.survivability||{};return `<tr><td>${r.strategy}</td><td>${r.n}</td><td><b>${s.score??0}</b></td><td class="${cl(r.total_return_pct)}">${sg(r.total_return_pct)}</td><td class="${cl(r.avg_return_pct)}">${sg(r.avg_return_pct)}</td><td>${f(r.win_pct,1)}</td><td>${f(r.sharpe_proxy)}</td><td class="neg">${f(r.max_drawdown_pct)}</td><td>${r.tier}</td></tr>`;}).join('');
+  $('arenaNote').textContent=cv.verdict||'';
+  const lad=(gov&&gov.promotion_ladder)||{};$('ladder').innerHTML=Object.keys(lad).length?Object.entries(lad).map(([t,a])=>`<div><b>${t}:</b> ${a.join(', ')}</div>`).join(''):'<span class="dim">accumulating</span>';
+}
+async function renderForensics(){
+  try{const rg=await jget('data/REGIME_ANALYSIS.json');if(rg&&rg.books){let html='';for(const bk of ['crypto','stock']){const b=rg.books[bk]||{},cr=b.current_regime||{};
+    const rows=Object.entries(b.by_regime||{}).filter(([m,v])=>v.overall).sort((a,c)=>a[1].overall.avg_ret_pct-c[1].overall.avg_ret_pct).map(([m,v])=>`<tr><td>${m}</td><td>${v.overall.trades}</td><td class="${v.overall.avg_ret_pct>=0?'pos':'neg'}">${v.overall.avg_ret_pct>=0?'+':''}${v.overall.avg_ret_pct}%</td><td>${v.overall.win_pct}%</td></tr>`).join('');
+    html+=`<div class="dim" style="font-size:11px;margin-top:6px">◆ ${bk.toUpperCase()} — now: <b>${cr.market}</b>/${cr.vol} (trend ${cr.trend_24h_pct}%, breadth ${cr.breadth_up_pct}%)</div>
+      <table><thead><tr><th>Regime at entry</th><th>Trades</th><th>Avg return</th><th>Win%</th></tr></thead><tbody>${rows||'<tr><td colspan=4 class=dim>accumulating</td></tr>'}</tbody></table>`;}
+    $('regimeBox').innerHTML=html;}}catch(e){}
+  try{const oa=await jget('data/OPPORTUNITY_AUDIT.json');if(oa&&oa.books){const fr=(bk)=>{const b=oa.books[bk]||{},f=b.funnel||{};return `<tr><td>${bk.toUpperCase()}</td><td>${b.universe}</td><td class="${f.discovered_qualified>0?'pos':'dim'}">${f.discovered_qualified}</td><td>${f.tradeable_now}</td><td>${f.rejected_capacity}</td><td>${f.rejected_not_fresh}</td><td>${f.ignored_insufficient_drop}</td></tr>`;};
+    const ex=oa.examples||{};const exRows=Object.keys(ex).filter(k=>ex[k].decision!=='not_in_universe').map(k=>`<div class="note">${k}: <b>${ex[k].decision}</b> — ${ex[k].reason}</div>`).join('');
+    $('oppAudit').innerHTML=`<table><thead><tr><th>Book</th><th>Universe</th><th>Qualified</th><th>Tradeable</th><th>Capacity-cut</th><th>Not fresh</th><th>No drop</th></tr></thead><tbody>${fr('crypto')}${fr('stock')}</tbody></table><div class="note" style="margin-top:6px"><b>Sample "why did we miss":</b></div>${exRows}`;}}catch(e){}
+  try{const ef=await jget('data/EXIT_FORENSICS.json');if(ef&&ef.overall){const o=ef.overall,bb=ef.by_book||{};
+    const bookRow=(n,a)=>a&&a.closed_trades?`<tr><td>${n}</td><td>${a.closed_trades}</td><td class="${a.avg_post_exit_leak_pct>1?'neg':'pos'}">${a.avg_post_exit_leak_pct}%</td><td>${a.execution_failures}</td><td>${a.thesis_failures}</td></tr>`:'';
+    const cc=ef.exit_class_by_book||{};const chips=(bk)=>{const c=cc[bk]||{};return `${bk.toUpperCase()}: <span class=pos>${c.GOOD_EXIT||0} good</span> · ${c.EARLY_EXIT||0} early · ${c.LATE_EXIT||0} late · <span class=neg>${c.CATASTROPHIC_EXIT||0} catastrophic</span>`;};
+    $('exitForensics').innerHTML=`<div class="val" style="font-size:15px">avg post-exit leak <span class="${o.avg_post_exit_leak_pct>1?'neg':'pos'}">${o.avg_post_exit_leak_pct}%</span> · exit quality ${o.avg_exit_quality}</div>
+      <table><thead><tr><th>Book</th><th>Closed</th><th>Leak</th><th>Sold early</th><th>Thesis wrong</th></tr></thead><tbody>${bookRow('CRYPTO',bb.crypto)}${bookRow('STOCK',bb.stock)}</tbody></table>
+      <div class="note">${(bb.crypto||{}).verdict?'CRYPTO: '+(bb.crypto).verdict:''}</div><div class="note">${(bb.stock||{}).verdict?'STOCK: '+(bb.stock).verdict:''}</div><div class="note">Exit grades — ${chips('crypto')}</div><div class="note">${chips('stock')}</div>`;}}catch(e){}
+  try{const sr=await jget('data/STOCK_RECOVERY_ANALYSIS.json');if(sr&&sr.books){const row=(bk)=>{const d=(sr.books[bk]||{}).by_drawdown_depth||{};return [3,5,7,10].map(x=>{const c=d[x+'pct']||{};return `<td>${c.recovery_rate_pct==null?'—':c.recovery_rate_pct+'%'}${c.median_hours_to_recover!=null?'<br><span class=dim>'+c.median_hours_to_recover+'h</span>':''}</td>`;}).join('');};
+    $('stockRecovery').innerHTML=`<div class="val" style="font-size:14px">${sr.headline||''}</div>
+      <table><thead><tr><th>Recovery rate / median time</th><th>3%</th><th>5%</th><th>7%</th><th>10%</th></tr></thead>
+      <tbody><tr><td>STOCK</td>${row('stock')}</tr><tr><td>CRYPTO</td>${row('crypto')}</tr></tbody></table>
+      <div class="note">${sr.censoring_note||''}</div>`;}}catch(e){}
+  const ec=await jget('data/edge_capture_engine.json');
+  if(ec){$('capHead').innerHTML=`<span class="${ec.PRIMARY_KPI_portfolio_capture_pct>0?'pos':'neg'}">${ec.PRIMARY_KPI_portfolio_capture_pct}%</span> <span class="dim" style="font-size:12px">of available edge captured</span>`;
+    $('capMiss').innerHTML=(ec.biggest_misses||[]).slice(0,8).map(r=>`<tr><td>${r.ticker}</td><td class="pos">+${r.available_move_pct}%</td><td class="${r.capture_pct>0?'pos':'neg'}">${r.capture_pct}%</td></tr>`).join('');}
+  const oj=await jget('data/opportunity_journal.json');
+  if(oj)$('ojBody').innerHTML=`<b class="neg">${oj.pct_of_movers_missed}%</b> of ${oj.movers_logged} movers missed. <span class="dim">Top missed:</span> `+((oj.journal||[]).filter(r=>!r.captured).slice(0,5).map(r=>`${r.ticker} +${r.peak_available_pct}%`).join(' · '));
+  const lk=await jget('data/execution_leak.json');
+  if(lk)$('leakBody').innerHTML=`<div>${lk.headline||'—'}</div><div class="note">${lk.reconciliation_note||''}</div>`;
+  // trend charts from snapshot history
+  try{
+    const txt=await (await fetch('data/snapshot_history.jsonl?_='+Date.now())).text();
+    const rows=txt.trim().split('\n').map(l=>{try{return JSON.parse(l);}catch(e){return null;}}).filter(Boolean);
+    if(rows.length>=2){
+      $('survChart').innerHTML=lineSvg(rows.map(r=>r.survivability||0),'survivability');
+      $('eqChart').innerHTML=lineSvg(rows.map(r=>r.combined_equity||r.crypto_equity||0),'equity');
+    }else{$('survChart').textContent='need ≥2 snapshots — the engine just started.';$('eqChart').textContent='need ≥2 snapshots.';}
+  }catch(e){$('survChart').textContent='no snapshot history yet.';}
+}
+function lineSvg(ys,label){const W=900,H=160,p=30;const mn=Math.min(...ys),mx=Math.max(...ys),r=(mx-mn)||1;
+  const X=i=>p+i/(ys.length-1)*(W-p-8),Y=v=>H-p-(v-mn)/r*(H-p-14);
+  const d=ys.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(' ');
+  return `<svg viewBox="0 0 ${W} ${H}"><line x1="${p}" y1="${H-p}" x2="${W-8}" y2="${H-p}" stroke="var(--line)"/><line x1="${p}" y1="14" x2="${p}" y2="${H-p}" stroke="var(--line)"/>
+    <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+    <text x="${p}" y="11" font-size="11" font-weight="bold" fill="var(--fg)">${mx.toFixed(label==='equity'?0:0)}</text>
+    <text x="${p}" y="${H-p+12}" font-size="11" font-weight="bold" fill="var(--fg)">${mn.toFixed(0)} · ${ys.length} pts</text></svg>`;
+}
+async function renderAuthority(){const a=await jget('data/authority_events.json');if(!a)return;
+  $('authStatus').textContent=(a.status||'')+' · '+(a.events_detected||0)+' events · '+(a.headlines_scanned||0)+' headlines scanned';
+  $('authEvents').innerHTML=(a.events||[]).slice(0,12).map(e=>`<div style="padding:5px 0;border-bottom:1px solid var(--soft)"><b>${e.authority}/${e.theme}</b> ${e.sentiment>0?'<span class="pos">bullish</span>':e.sentiment<0?'<span class="neg">bearish</span>':''} → ${(e.primary||[]).concat(e.secondary||[]).slice(0,5).join(', ')}<div class="dim" style="font-size:10px">${e.headline||''}</div></div>`).join('')||'<span class="dim">no authority headlines this cycle</span>';
+}
+// ticker chart modal (our own chart system)
+let PRICES=null,CSYM=null,CE=0,CM=0,CH=0;
+async function openChart(sym,entry,mark){CSYM=sym;CE=entry;CM=mark;CH=0;$('modal').style.display='block';
+  $('modalTitle').innerHTML=icon(sym)+sym+' · SILMARIL view';
+  $('modalThesis').textContent=`MR thesis: bought ~3% dip at $${(+entry).toFixed(4)}; target +${(EXIT.t*100).toFixed(0)}% ($${(entry*(1+EXIT.t)).toFixed(4)}); stop −${(EXIT.s*100).toFixed(0)}% ($${(entry*(1-EXIT.s)).toFixed(4)}); ~${Math.round(EXIT.h)}m timeout→market.`;
+  $('chartHost').textContent='loading price history (one-time)…';if(!PRICES)PRICES=await jget('data/price_samples.json');drawChart();}
+function drawChart(){const s=(PRICES&&PRICES.samples)?PRICES.samples[CSYM]:null;if(!s){$('chartHost').textContent='no price history for '+CSYM;return;}
+  const now=Date.now();let rows=s.map(r=>[new Date(r[0]).getTime(),r[1]]).filter(r=>r[1]>0);if(CH>0)rows=rows.filter(r=>r[0]>=now-CH*3600000);
+  if(rows.length<2){$('chartHost').textContent='not enough points in window';return;}
+  const W=820,H=300,pad=44,xs=rows.map(r=>r[0]),ys=rows.map(r=>r[1]),tgt=CE*(1+EXIT.t),stp=CE*(1-EXIT.s);
+  const ymin=Math.min(...ys,stp),ymax=Math.max(...ys,tgt),yr=(ymax-ymin)||1,xmin=Math.min(...xs),xr=(Math.max(...xs)-xmin)||1;
+  const X=t=>pad+(t-xmin)/xr*(W-pad-10),Y=v=>H-pad-(v-ymin)/yr*(H-pad-20);
+  const line=rows.map((r,i)=>(i?'L':'M')+X(r[0]).toFixed(1)+' '+Y(r[1]).toFixed(1)).join(' ');
+  const hl=(v,c,l,dash)=>`<line x1="${pad}" y1="${Y(v).toFixed(1)}" x2="${W-10}" y2="${Y(v).toFixed(1)}" stroke="${c}" stroke-width="1.5" ${dash?'stroke-dasharray="5 3"':''}/><text x="${W-12}" y="${(Y(v)-3).toFixed(1)}" text-anchor="end" font-size="11" font-weight="bold" fill="${c}">${l} $${v.toFixed(4)}</text>`;
+  $('chartHost').innerHTML=`<svg viewBox="0 0 ${W} ${H}"><rect x="0" y="0" width="${W}" height="${H}" fill="var(--bg)"/><line x1="${pad}" y1="${H-pad}" x2="${W-10}" y2="${H-pad}" stroke="var(--line)"/><line x1="${pad}" y1="20" x2="${pad}" y2="${H-pad}" stroke="var(--line)"/>
+    <rect x="${pad}" y="${Y(tgt).toFixed(1)}" width="${W-pad-10}" height="${(Y(CE)-Y(tgt)).toFixed(1)}" fill="var(--pos)" opacity="0.08"/>
+    <path d="${line}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>
+    ${hl(CE,'var(--fg)','ENTRY',true)}${hl(tgt,'var(--pos)','TARGET',false)}${hl(stp,'var(--neg)','STOP',false)}${hl(CM,'var(--accent)','MARK',true)}</svg>`;
+  const chg=(CM/CE-1)*100;$('mStats').innerHTML=`Live uPL <b class="${cl(chg)}">${sg(chg)}%</b> · to target <b>${f((tgt/CM-1)*100)}%</b> · to stop <b>${f((CM/stp-1)*100)}%</b> · ${rows.length} pts`;
+}
+document.querySelectorAll('#mIv button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#mIv button').forEach(x=>x.classList.remove('on'));b.classList.add('on');CH=+b.dataset.h;drawChart();});
+load();setInterval(load,60000);
+</script></body></html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>SILMARIL · Lifecycle &amp; Authority Intelligence</title>
+<style>
+  :root{--bg:#0a0e14;--panel:#121821;--line:#1f2a37;--ink:#e6edf3;--dim:#8b98a8;
+        --green:#3fb950;--red:#f85149;--amber:#d29922;--blue:#58a6ff;--gold:#e3b341;--purp:#a371f7;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 ui-monospace,Menlo,monospace;padding:14px;max-width:980px;margin:auto}
+  h1{font-size:16px;margin:0 0 2px;letter-spacing:.5px}
+  .sub{color:var(--dim);font-size:12px;margin-bottom:12px}
+  .verdict{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:14px}
+  .name{font-size:14px;font-weight:600;margin-bottom:8px;display:block}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{text-align:right;color:var(--dim);font-weight:500;padding:6px 8px;border-bottom:1px solid var(--line);font-size:10px;text-transform:uppercase}
+  th:first-child,td:first-child{text-align:left}
+  td{padding:5px 8px;border-bottom:1px solid #161c26}
+  .pos{color:var(--green)} .neg{color:var(--red)} .dim{color:var(--dim)}
+  .bar{display:inline-block;height:8px;background:var(--blue);border-radius:2px;vertical-align:middle}
+  .chip{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10px;border:1px solid var(--line);margin:1px}
+  .note{color:var(--dim);font-size:11px;line-height:1.6;margin-top:8px}
+  a{color:var(--blue)}
+</style>
+</head>
+<body>
+  <h1>LIFECYCLE &amp; AUTHORITY INTELLIGENCE</h1>
+  <div class="sub" id="meta">loading…</div>
+
+  <div class="panel" style="border-left:3px solid var(--gold)">
+    <span class="name" style="color:var(--gold)">🎯 EDGE CAPTURE — the primary KPI</span>
+    <div id="ecHead" style="font-size:18px;font-weight:700;margin:4px 0"></div>
+    <div id="ecStats" class="sub"></div>
+    <div class="lbl" style="color:var(--dim);font-size:10px;text-transform:uppercase;margin:8px 0 2px">Biggest misses (training fuel)</div>
+    <table><thead><tr><th>Ticker</th><th>Available</th><th>Captured</th><th></th></tr></thead><tbody id="ecMiss"></tbody></table>
+  </div>
+
+  <div class="panel">
+    <span class="name">📈 Attention Lifecycle — does state predict forward return?</span>
+    <div class="verdict" id="lcVerdict"></div>
+    <table id="lcTbl"><thead><tr><th>State</th><th>n</th><th>Fwd net</th><th>Hit%</th><th>t-stat</th><th>Signal</th></tr></thead><tbody id="lcBody"></tbody></table>
+    <div class="note" id="lcNote"></div>
+  </div>
+
+  <div class="panel">
+    <span class="name">📊 Current universe state distribution</span>
+    <div id="lcDist"></div>
+  </div>
+
+  <div class="panel">
+    <span class="name" style="color:var(--purp)">⚡ Authority Event Cascade</span>
+    <div id="auStatus" class="sub"></div>
+    <div id="auEvents"></div>
+    <div class="note" id="auNote"></div>
+  </div>
+
+  <div class="panel">
+    <span class="name" style="color:var(--blue)">🔬 VALIDATION LAYER (2.15)</span>
+    <div id="valGrid" class="sub" style="line-height:2"></div>
+    <div class="lbl" style="color:var(--dim);font-size:10px;text-transform:uppercase;margin:8px 0 2px">Opportunity journal — biggest missed movers</div>
+    <table><thead><tr><th>Ticker</th><th>Peak</th><th>State</th><th>Why missed</th></tr></thead><tbody id="ojBody"></tbody></table>
+    <div class="lbl" style="color:var(--dim);font-size:10px;text-transform:uppercase;margin:8px 0 2px">Authority forward-return leaderboard</div>
+    <div id="avBody" class="sub"></div>
+  </div>
+
+  <div class="sub"><a href="paper_sim.html">→ Paper Sim Cockpit</a> · <a href="strategy_leaderboard.html">→ Leaderboard</a> · <a href="index.html">← Dashboard</a></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const pct=n=>(n==null?'—':(n>=0?'+':'')+Number(n).toFixed(2)+'%');
+async function load(){
+  try{
+    const d=await (await fetch('data/lifecycle.json?_='+Date.now())).json();
+    $('meta').textContent='as of '+new Date(d.generated_at).toLocaleString();
+    $('lcVerdict').innerHTML='🔬 '+d.verdict;
+    const longs=new Set(d.tradeable_long_states||[]), shorts=new Set(d.avoid_or_short_states||[]);
+    const t=d.forward_return_by_state||{};
+    $('lcBody').innerHTML=Object.keys(t).filter(s=>t[s].n>=30).map(s=>{
+      const r=t[s], sig=longs.has(s)?'<span class="pos">▲ LONG</span>':shorts.has(s)?'<span class="neg">▼ AVOID</span>':'<span class="dim">—</span>';
+      return `<tr><td>${s}</td><td>${r.n}</td><td class="${r.fwd_net_pct>=0?'pos':'neg'}">${pct(r.fwd_net_pct)}</td><td>${r.hit_pct}%</td><td>${r.t_stat>=0?'+':''}${r.t_stat}</td><td>${sig}</td></tr>`;
+    }).join('');
+    $('lcNote').textContent=d.note;
+    const dist=d.current_state_distribution||{}, tot=Object.values(dist).reduce((a,b)=>a+b,0)||1;
+    $('lcDist').innerHTML=Object.keys(dist).filter(k=>dist[k]>0).sort((a,b)=>dist[b]-dist[a]).map(k=>
+      `<div style="display:flex;align-items:center;gap:8px;padding:2px 0"><span style="width:120px">${k}</span><span class="bar" style="width:${dist[k]/tot*300}px"></span><span class="dim">${dist[k]}</span></div>`).join('');
+  }catch(e){$('meta').textContent='lifecycle.json not found yet — runs next cycle.';}
+  try{
+    const a=await (await fetch('data/authority_events.json?_='+Date.now())).json();
+    $('auStatus').textContent=a.status+' · scanned '+a.headlines_scanned+' headlines · '+a.events_detected+' events';
+    $('auEvents').innerHTML=(a.events||[]).length? (a.events||[]).map(e=>
+      `<div style="padding:6px 0;border-bottom:1px solid #161c26"><b>${e.authority}/${e.theme}</b> ${e.sentiment>0?'<span class="pos">bullish</span>':e.sentiment<0?'<span class="neg">bearish</span>':''}<br>
+       ${(e.primary||[]).map(x=>`<span class="chip pos">${x}</span>`).join('')}${(e.secondary||[]).map(x=>`<span class="chip">${x}</span>`).join('')}${(e.etfs||[]).map(x=>`<span class="chip dim">${x}</span>`).join('')}
+       <div class="dim" style="font-size:11px">${e.headline||''}</div></div>`).join('')
+      : '<div class="dim" style="padding:8px 0">No authority headlines on disk. The cascade map is built; connect a live news-headline feed to fire detection. (Graph entities: '+(a.graph_entities||[]).join(', ')+')</div>';
+    $('auNote').textContent=a.note;
+  }catch(e){}
+  try{
+    const ec=await (await fetch('data/edge_capture_engine.json?_='+Date.now())).json();
+    $('ecHead').innerHTML=`<span class="${ec.PRIMARY_KPI_portfolio_capture_pct>0?'pos':'neg'}">${ec.PRIMARY_KPI_portfolio_capture_pct}%</span> <span class="dim" style="font-size:12px">of available edge captured</span>`;
+    $('ecStats').textContent=ec.headline;
+    $('ecMiss').innerHTML=(ec.biggest_misses||[]).slice(0,12).map(r=>
+      `<tr><td>${r.ticker}</td><td class="pos">+${r.available_move_pct}%</td><td class="${r.capture_pct>0?'pos':'neg'}">${r.capture_pct}%</td><td class="dim">${r.traded?'':'not traded'}</td></tr>`).join('');
+  }catch(e){$('ecHead').textContent='edge_capture_engine.json not found yet — runs next cycle.';}
+  try{
+    const [el,oj,av,dl] = await Promise.all([
+      fetch('data/execution_leak.json?_='+Date.now()).then(r=>r.json()).catch(()=>({})),
+      fetch('data/opportunity_journal.json?_='+Date.now()).then(r=>r.json()).catch(()=>({})),
+      fetch('data/authority_validation.json?_='+Date.now()).then(r=>r.json()).catch(()=>({})),
+      fetch('data/discovery_latency.json?_='+Date.now()).then(r=>r.json()).catch(()=>({})),
+    ]);
+    $('valGrid').innerHTML=
+      `⚡ <b>Execution leak:</b> ${el.headline||'—'}<br>`+
+      `⏱️ <b>Discovery latency:</b> ${dl.headline||'—'}<br>`+
+      `📋 <b>Opportunity journal:</b> ${oj.movers_logged||0} movers, <span class="neg">${oj.pct_of_movers_missed||0}% missed</span><br>`+
+      `⚖️ <b>Authority validation:</b> ${av.status||'—'} (${av.events_in_ledger||0} events)`;
+    $('ojBody').innerHTML=(oj.journal||[]).filter(r=>!r.captured).slice(0,10).map(r=>
+      `<tr><td>${r.ticker}</td><td class="pos">+${r.peak_available_pct}%</td><td class="dim">${r.state}</td><td class="dim" style="font-size:11px">${r.why}</td></tr>`).join('');
+    const lb=(av.authority_leaderboard||[]);
+    $('avBody').innerHTML=lb.length? lb.map(r=>`${r.authority}: 1d ${r['1d']==null?'—':(r['1d']>=0?'+':'')+r['1d']+'%'}`).join(' · ')
+      : 'accumulating — forward returns on detected authority events build as time passes';
+  }catch(e){}
+}
+load(); setInterval(load,60000);</script>
+</body>
+</html>

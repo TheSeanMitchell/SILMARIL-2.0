@@ -1,0 +1,58 @@
+{
+  "generated_at": "2026-06-23T02:07:23.125628+00:00",
+  "data_dir_total_kb": 103776.4,
+  "json_file_count": 174,
+  "largest_files_kb": [
+    {
+      "file": "news_history.json",
+      "kb": 21017.2
+    },
+    {
+      "file": "charts.json",
+      "kb": 20789.8
+    },
+    {
+      "file": "price_samples.json",
+      "kb": 16351.5
+    },
+    {
+      "file": "history.json",
+      "kb": 12156.7
+    },
+    {
+      "file": "handoff_blocks.json",
+      "kb": 6113.2
+    },
+    {
+      "file": "timing_history.json",
+      "kb": 4588.2
+    },
+    {
+      "file": "source_history.json",
+      "kb": 4522.2
+    },
+    {
+      "file": "premortem_archive.json",
+      "kb": 4115.8
+    },
+    {
+      "file": "signals.json",
+      "kb": 3077.6
+    },
+    {
+      "file": "sentiment_ledger.json",
+      "kb": 2365.0
+    },
+    {
+      "file": "scoring.json",
+      "kb": 1631.8
+    },
+    {
+      "file": "trade_case_files.json",
+      "kb": 1219.1
+    }
+  ],
+  "python_modules": 264,
+  "advice": "Largest JSONs are the cycle's IO cost each run. If any single file balloons, cap its history (snapshots/leaderboards already capped). No runtime hotspots flagged at this size \u2014 IO is the dominant cost, already atomic + concurrency-guarded.",
+  "note": "Measurement only. Optimize only a file that is actually large and written every cycle."
+}
