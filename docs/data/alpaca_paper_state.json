@@ -14,7 +14,7 @@
     "primary_symbol": null,
     "primary_qty": 0.0,
     "primary_market_value": 0.0,
-    "checked_at": "2026-06-24T03:54:24.668204+00:00"
+    "checked_at": "2026-06-24T04:09:22.279248+00:00"
   },
   "lifetime_realized_wins": 33.0,
   "lifetime_realized_losses": 44.0,
@@ -3303,18 +3303,53 @@
   "genesis_at": "2026-06-23T04:17:32.735106+00:00",
   "reason": "pristine reset to $10000 baseline",
   "cycle_intents": {
-    "at": "2026-06-24T03:54:25.530993+00:00",
+    "at": "2026-06-24T04:09:23.136737+00:00",
     "session": "closed",
     "session_open": false,
-    "composite_halt": true,
-    "halt_reason": "Halt: market_state: market_state=PRESERVATION: in danger window (overnight_thin)",
-    "plans_offered": 0,
-    "buy_intents": [],
+    "composite_halt": false,
+    "halt_reason": null,
+    "plans_offered": 3,
+    "buy_intents": [
+      {
+        "ticker": "BK",
+        "signal": "STRONG_BUY",
+        "conviction": 0.95,
+        "originated": false,
+        "outcome": "blocked_no_session_match",
+        "intended_notional": 795.07,
+        "reason": "no usable session for order"
+      }
+    ],
     "decisions_this_cycle": [
       {
-        "ticker": "*",
-        "category": "blocked_composite_halt",
-        "reason": "Halt: market_state: market_state=PRESERVATION: in danger window (overnight_thin)"
+        "ticker": "BK",
+        "category": "blocked_no_session_match",
+        "reason": "no usable session for order"
+      },
+      {
+        "ticker": "ARE",
+        "category": "blocked_signal_not_buy",
+        "reason": "signal STRONG_SELL is not BUY/STRONG_BUY"
+      },
+      {
+        "ticker": "PNC",
+        "category": "blocked_signal_not_buy",
+        "reason": "signal STRONG_SELL is not BUY/STRONG_BUY"
+      },
+      {
+        "ticker": "BK",
+        "category": "blocked_signal_not_sell",
+        "reason": "signal STRONG_BUY is not SELL/STRONG_SELL"
+      },
+      {
+        "ticker": "ARE",
+        "category": "blocked_already_held",
+        "reason": "ARE already held"
+      },
+      {
+        "ticker": "PNC",
+        "category": "blocked_already_held",
+        "reason": "PNC already held"
       }
     ]
   },
@@ -3374,11 +3409,11 @@
   "market_session_open": false,
   "policy_applied": {
     "version": "4.0",
-    "market_mode": "PRESERVATION",
-    "winner_engine": "market_state",
-    "halt_opens": true,
-    "effective_trail_pct": 0.0375,
-    "effective_min_conv": 0.75,
+    "market_mode": "ATTACK",
+    "winner_engine": "default",
+    "halt_opens": false,
+    "effective_trail_pct": 0.0213,
+    "effective_min_conv": 0.4,
     "elite_tickers": [],
     "force_close_targets": [],
     "blocked_count": 0,
@@ -3392,8 +3427,8 @@
     "cohort_safe_mode": false
   },
   "last_cycle_summary": {
-    "time": "2026-06-24T03:54:25.530951+00:00",
-    "timestamp": "2026-06-24T03:54:25.530969+00:00",
+    "time": "2026-06-24T04:09:23.136677+00:00",
+    "timestamp": "2026-06-24T04:09:23.136696+00:00",
     "closed": 0,
     "opened": 0,
     "open_after": 2,
@@ -3415,18 +3450,18 @@
     },
     "directives_consumed": 0,
     "rotations_executed": 0,
-    "composite_halt": true,
+    "composite_halt": false,
     "session": "closed",
     "is_extended": false
   },
   "bleed_exits_this_cycle": [],
-  "last_run": "2026-06-24T03:54:25.531024+00:00",
+  "last_run": "2026-06-24T04:09:23.136764+00:00",
   "sweep_protection": {
     "version": "4.0",
-    "checked_at": "2026-06-24T03:55:03.187256+00:00",
-    "market_mode": "PRESERVATION",
+    "checked_at": "2026-06-24T04:10:02.051980+00:00",
+    "market_mode": "ATTACK",
     "force_sweep_floor_resolved": 10500.0,
-    "stale_close_age_days": 3,
+    "stale_close_age_days": 5,
     "instant_sweeps": [],
     "stale_closes": [],
     "news_boosts": [],
@@ -3437,7 +3472,7 @@
     },
     "evening_shield": {
       "triggered": false,
-      "reason": "danger window overnight_thin \u2014 no positive unrealized on non-spared book; skip"
+      "reason": ""
     },
     "danger_carve_outs": {
       "elite": [],
