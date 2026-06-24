@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-06-24T00:26:20.035036+00:00",
+  "generated_at": "2026-06-24T00:45:48.612808+00:00",
   "overall": "YELLOW",
   "feeds": [
     {
       "name": "Prices (crypto+stock)",
       "status": "GREEN",
-      "detail": "100% coverage \u00b7 18m ago"
+      "detail": "100% coverage \u00b7 5m ago"
     },
     {
       "name": "News / Authority",
@@ -15,17 +15,17 @@
     {
       "name": "Metals feed",
       "status": "GREEN",
-      "detail": "13m ago"
+      "detail": "0m ago"
     },
     {
       "name": "Energy feed",
       "status": "GREEN",
-      "detail": "13m ago"
+      "detail": "0m ago"
     },
     {
       "name": "Paper sim cycle",
-      "status": "GREEN",
-      "detail": "13m ago"
+      "status": "YELLOW",
+      "detail": "32m ago"
     },
     {
       "name": "Broker LEGACY",
@@ -47,22 +47,30 @@
     {
       "need": "Crypto price",
       "providers_total": 3,
-      "providers_active": 0,
-      "status": "GRAY",
-      "active": [],
+      "providers_active": 1,
+      "status": "YELLOW",
+      "active": [
+        "COINGECKO_API_KEY"
+      ],
       "all": [
         "COINGECKO_API_KEY",
         "CRYPTOCOMPARE_API_KEY",
         "COINMARKETCAP_API_KEY"
       ],
-      "fallback_depth": 0
+      "fallback_depth": 1
     },
     {
       "need": "Stock price",
       "providers_total": 6,
-      "providers_active": 0,
-      "status": "GRAY",
-      "active": [],
+      "providers_active": 5,
+      "status": "GREEN",
+      "active": [
+        "FINNHUB_API_KEY",
+        "ALPHA_VANTAGE_API_KEY",
+        "FMP_API_KEY",
+        "POLYGON_API_KEY",
+        "TIINGO_API_KEY"
+      ],
       "all": [
         "FINNHUB_API_KEY",
         "ALPHA_VANTAGE_API_KEY",
@@ -71,71 +79,85 @@
         "POLYGON_API_KEY",
         "TIINGO_API_KEY"
       ],
-      "fallback_depth": 0
+      "fallback_depth": 5
     },
     {
       "need": "News",
       "providers_total": 3,
-      "providers_active": 0,
-      "status": "GRAY",
-      "active": [],
+      "providers_active": 3,
+      "status": "GREEN",
+      "active": [
+        "NEWSAPI_KEY",
+        "MARKETAUX_API_KEY",
+        "FINNHUB_API_KEY"
+      ],
       "all": [
         "NEWSAPI_KEY",
         "MARKETAUX_API_KEY",
         "FINNHUB_API_KEY"
       ],
-      "fallback_depth": 0
+      "fallback_depth": 3
     },
     {
       "need": "Metals",
       "providers_total": 4,
-      "providers_active": 0,
-      "status": "GRAY",
-      "active": [],
+      "providers_active": 1,
+      "status": "YELLOW",
+      "active": [
+        "OPENEXCHANGERATES_APP_ID"
+      ],
       "all": [
         "OPENEXCHANGERATES_APP_ID",
         "METALPRICE_API_KEY",
         "METALS_DEV_API_KEY",
         "GOLDAPI_KEY"
       ],
-      "fallback_depth": 0
+      "fallback_depth": 1
     },
     {
       "need": "Energy",
       "providers_total": 3,
-      "providers_active": 0,
-      "status": "GRAY",
-      "active": [],
+      "providers_active": 2,
+      "status": "GREEN",
+      "active": [
+        "ALPHA_VANTAGE_API_KEY",
+        "EIA_API_KEY"
+      ],
       "all": [
         "ALPHA_VANTAGE_API_KEY",
         "EIA_API_KEY",
         "TWELVE_DATA_API_KEY"
       ],
-      "fallback_depth": 0
+      "fallback_depth": 2
     },
     {
       "need": "Broker",
       "providers_total": 1,
-      "providers_active": 0,
-      "status": "GRAY",
-      "active": [],
+      "providers_active": 1,
+      "status": "YELLOW",
+      "active": [
+        "ALPACA_API_KEY"
+      ],
       "all": [
         "ALPACA_API_KEY"
       ],
-      "fallback_depth": 0
+      "fallback_depth": 1
     },
     {
       "need": "Macro/Fundamentals",
       "providers_total": 3,
-      "providers_active": 0,
-      "status": "GRAY",
-      "active": [],
+      "providers_active": 2,
+      "status": "GREEN",
+      "active": [
+        "FMP_API_KEY",
+        "FRED_API_KEY"
+      ],
       "all": [
         "FMP_API_KEY",
         "FRED_API_KEY",
         "SEC_EDGAR_UA"
       ],
-      "fallback_depth": 0
+      "fallback_depth": 2
     }
   ],
   "freshness": {
@@ -359,6 +381,6 @@
     "spcx_intensive_until": "2026-07-03",
     "note": "the cron may run 24/7: stock TRADING-adjacent fetches (earnings/ipo-cal) keep 08:30-16:30 ET Mon-Fri; equity NEWS runs every cycle in-window and hourly off-hours (information never sleeps); valuables always; social hourly; EDGAR every run through the SPCX window then 4h"
   },
-  "summary": "YELLOW \u00b7 7/8 feeds green \u00b7 12/12 files fresh",
+  "summary": "YELLOW \u00b7 6/8 feeds green \u00b7 12/12 files fresh",
   "note": "Lights read the real api_health.json. API-key groups show fallback depth: GREEN = 2+ providers configured (a fallback exists), YELLOW = 1 (no fallback), GRAY = none. Goal: every group GREEN so no single provider outage can dark a feed."
 }
