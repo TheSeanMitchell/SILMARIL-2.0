@@ -102,6 +102,12 @@
 
 <!-- FORENSICS -->
 <div class="page" id="p-forensics">
+  <section><div class="hd">🏛️ PARAMETER-CHAMPION REGISTRY — every rotating champion, one view</div><div class="bd">
+    <div class="note"><b>What:</b> every parameter SILMARIL elects a champion for on each daily run — strategy, drop, bounce, the drop×bounce combo, hold-timer. <b>Why:</b> verify at a glance (human or AI) that each champion is alive, sensible, and rotating. <b>Health:</b> 🟢 electing from a live leaderboard · 🟡 thin · 🔴 none yet.</div>
+    <div id="registryBox">loading…</div></div></section>
+  <section><div class="hd">📈 COMPOUNDING PROJECTION — what the champion edge compounds to</div><div class="bd">
+    <div class="note"><b>What:</b> if the champion's observed edge + pace held, $10k over 1d…1y vs holding BTC. <b>⚠️ Projection, not a promise</b> — real edges decay; anything past ~2 weeks is illustrative only.</div>
+    <div id="compoundBox">loading…</div></div></section>
   <section><div class="hd">⏱ TIME-OF-DAY ATTRIBUTION — which hours actually have edge</div><div class="bd">
     <div class="note"><b>What:</b> win rate & expectancy by hour window, crypto/stock separate. <b>Why:</b> some hours are noise, some are edge. <b>Action:</b> evidence for later session-gating — not enforced yet.</div>
     <div id="todBox"></div></div></section>
@@ -213,7 +219,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderRegistry(),'reg'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -289,6 +295,14 @@ async function renderThreshChamp(){const d=await jget('data/THRESHOLD_CHAMPION.j
     </div>
     <div class="dim" style="font-size:11px;margin-bottom:3px">champion DROP <b>${d.champion_drop_pct}%</b> · champion BOUNCE <b>${d.champion_bounce_pct}%</b> · live is ${d.current_live.drop_pct}%/${d.current_live.bounce_pct}%</div>
     <table style="font-size:11px"><thead><tr><th>drop</th><th>target</th><th>expectancy</th><th>hit%</th><th>n</th></tr></thead><tbody>${grid}</tbody></table>`;}
+async function renderRegistry(){const d=await jget('data/PARAMETER_REGISTRY.json');if(!d||!d.parameters){$('registryBox').innerHTML='<div class=dim>no data</div>';return;}
+  const dot=h=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴'}[h]||'⚪');
+  const rows=d.parameters.map(e=>`<tr><td>${dot(e.health)} <b>${e.parameter}</b></td><td style="color:var(--pos)">${e.champion||'—'}</td><td class=dim>${e.challenger||'—'}</td><td class=dim>${e.optimized_for}</td><td class=dim>${e.status}</td></tr>`).join('');
+  $('registryBox').innerHTML=`<div class="dim" style="margin-bottom:5px">${d.summary}</div><table style="font-size:11px"><thead><tr><th>parameter</th><th>champion</th><th>challenger</th><th>optimized for</th><th>status</th></tr></thead><tbody>${rows}</tbody></table><div class="note" style="font-size:10px">${d.how_to_extend}</div>`;}
+async function renderCompound(){const d=await jget('data/COMPOUNDING_PROJECTION.json');if(!d||d.status!=='active'){$('compoundBox').innerHTML='<div class=dim>need closed trades to project</div>';return;}
+  const order=['1d','3d','1w','2w','4w','3mo','1y'];
+  const rows=order.map(h=>{const r=d.projections[h];if(!r)return '';const cred=r.credible?'':' <span class=dim>(illustrative)</span>';return `<tr style="${r.credible?'':'opacity:.6'}"><td>${h}${cred}</td><td class="${r.champion_return_pct>=0?'pos':'neg'}">${r.champion_return_pct>=0?'+':''}${r.champion_return_pct.toLocaleString()}%</td><td class=dim>${r.passive_btc_return_pct!=null?(r.passive_btc_return_pct>=0?'+':'')+r.passive_btc_return_pct+'%':'—'}</td></tr>`;}).join('');
+  $('compoundBox').innerHTML=`<div class="dim" style="margin-bottom:4px">champion edge <b>${d.per_trade_expectancy_pct}%/trade</b> · ~${d.trades_per_day} trades/day · daily <b>${d.daily_compounded_pct}%</b> (from ${d.trades_observed} trades / ${d.observed_span_days}d)</div><table style="font-size:11px"><thead><tr><th>horizon</th><th>champion ($10k)</th><th>hold BTC</th></tr></thead><tbody>${rows}</tbody></table><div class="note" style="font-size:10px;color:var(--neg)">${d.honest_warning}</div>`;}
 async function renderHealthMatrix(){const d=await jget('data/HEALTH_MATRIX.json');if(!d){return;}
   const dot=s=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴',GRAY:'⚪'}[s]||'⚪');
   const feeds=(d.feeds||[]).map(f=>`<span style="white-space:nowrap">${dot(f.status)} ${f.name} <span class=dim>${f.detail}</span></span>`).join(' &nbsp;·&nbsp; ');

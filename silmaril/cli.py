@@ -2281,10 +2281,13 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 from .execution.timer_optimization import build_timer_optimization as _to
                 from .execution.chart_overlays import build_chart_overlays as _co
                 from .execution.threshold_champion import build_threshold_champion as _tc
-                _tor = _to(out); _cor = _co(out); _tcr = _tc(out)
+                from .execution.parameter_registry import build_parameter_registry as _preg
+                from .execution.compounding_projection import build_compounding_projection as _cmp
+                _tor = _to(out); _cor = _co(out); _tcr = _tc(out); _pregr = _preg(out); _cmp(out)
                 log.info("  timer-opt: %s · chart overlays: %s symbols",
                          _tor.get("recommendation_by_book"), _cor.get("count"))
                 log.info("  threshold champion: combo %s", _tcr.get("champion_combo"))
+                log.info("  parameter registry: %s", _pregr.get("summary"))
             except Exception as _toe:
                 log.warning("timer/overlays skipped: %s", _toe)
             try:
