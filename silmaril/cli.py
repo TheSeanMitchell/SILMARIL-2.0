@@ -2246,6 +2246,20 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
             except Exception as _sce:
                 log.warning("scorecard skipped: %s", _sce)
             try:
+                # 2.5.3 evidence engines — intrabar miss, time-of-day, health matrix,
+                # threshold shadow-sim, zero-PnL audit. All measurement, no behavior change.
+                from .execution.intrabar_audit import build_intrabar_audit as _ib
+                from .execution.time_of_day import build_time_of_day as _tod
+                from .execution.health_matrix import build_health_matrix as _hm
+                from .execution.threshold_shadow import build_threshold_shadow as _th
+                from .execution.zero_pnl_audit import build_zero_pnl_audit as _zp
+                _ibr = _ib(out); _tod(out); _hmr = _hm(out); _th(out); _zp(out)
+                log.info("  2.5.3 audits: intrabar miss %s%% · health %s",
+                         (_ibr.get("overall", {}) or {}).get("missed_target_rate_pct", 0),
+                         _hmr.get("overall"))
+            except Exception as _253e:
+                log.warning("2.5.3 audits skipped: %s", _253e)
+            try:
                 # VALIDATION LAYER (Alpha 2.15) — instrumentation only, no signals.
                 # Each is fail-safe; they populate as the sim exits and events log.
                 from .execution.execution_leak import build_execution_leak as _el2

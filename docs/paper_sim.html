@@ -21,7 +21,7 @@
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
   .phead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:8px}
   .phead .name{font-size:14px;font-weight:600}
-  .stock .name{color:var(--blue)} .crypto .name{color:var(--crypto)}
+  .stock .name{color:#2f74ff}.crypto .name{color:#f7931a}.metal .name{color:#b9bcc4}.energy .name{color:#22b07d}
   .eq{font-size:22px;font-weight:700}
   table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
   th{text-align:right;color:var(--dim);font-weight:500;padding:4px 6px;border-bottom:1px solid var(--line);font-size:10px;text-transform:uppercase}
@@ -41,7 +41,7 @@
 </style>
 </head>
 <body>
-  <h1>INTERNAL PAPER SIM · OPERATOR COCKPIT</h1>
+  <h1>INTERNAL PAPER SIMULATION (NOT REAL MONEY) · 4-QUADRANT COCKPIT</h1>
   <div class="sub" id="meta">loading…</div>
 
   <div id="champ" class="verdict" style="display:none"></div>
@@ -62,9 +62,11 @@
     <div class="stat"><div class="k">Strategy</div><div class="v" id="strat" style="font-size:12px">—</div></div>
   </div>
 
-  <div class="cols">
-    <div class="panel stock" id="stockPanel"></div>
+  <div class="cols" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
     <div class="panel crypto" id="cryptoPanel"></div>
+    <div class="panel stock" id="stockPanel"></div>
+    <div class="panel metal" id="metalPanel"></div>
+    <div class="panel energy" id="energyPanel"></div>
   </div>
 
   <div class="note" id="note"></div>
@@ -89,8 +91,7 @@ function side(el, d, label){
       <span class="eq ${cls(d.return_pct)}">${money(d.equity)} <span style="font-size:12px">${pct(d.return_pct)}</span></span>
     </div>
     <div class="uni">cash ${money(d.cash)} · realized <span class="${cls(d.realized_pnl)}">${money(d.realized_pnl)}</span>
-      · tradeable universe <b>${d.tradeable_universe}</b> of ${d.universe_seen} seen
-      <span class="ghost">(${d.universe_seen-d.tradeable_universe} ghosts excluded)</span></div>
+      ${d.tradeable_universe!=null?("· tradeable universe <b>"+d.tradeable_universe+"</b> of "+d.universe_seen+" seen <span class=ghost>("+(d.universe_seen-d.tradeable_universe)+" ghosts excluded)</span>"):"· awaiting data feed"}</div>
     <div class="lbl">Open positions (${d.open_positions})</div>
     <table><tr><th>Sym</th><th>Entry</th><th>Mark</th><th>uPL</th></tr>${posRows}</table>
     <div class="lbl">Recent trades</div>
@@ -115,8 +116,10 @@ async function load(){
         `<span class="${bt.equity>=10000?'pos':'neg'}">$${Number(bt.equity).toLocaleString()}</span></div>`;
       document.querySelector('.top').appendChild(e);
     }
-    side($('stockPanel'), d.stock, 'STOCK SIDE');
-    side($('cryptoPanel'), d.crypto, 'CRYPTO SIDE');
+    side($('cryptoPanel'), d.crypto, 'CRYPTO · ' + (d.champion_crypto||'no champion'));
+    side($('stockPanel'),  d.stock,  'STOCK · ' + (d.champion_stock||'no champion'));
+    side($('metalPanel'),  d.metal,  'METAL · ' + (d.champion_metal||'awaiting feed'));
+    side($('energyPanel'), d.energy, 'ENERGY · ' + (d.champion_energy||'awaiting feed'));
     $('note').innerHTML = '<b>How to read this:</b> '+d.note+
       ' &nbsp;<b>Ghosts</b> = names whose price sits frozen then jumps (stale ≈ untradeable); excluding them is what keeps this honest.';
   }catch(e){

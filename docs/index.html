@@ -102,6 +102,18 @@
 
 <!-- FORENSICS -->
 <div class="page" id="p-forensics">
+  <section><div class="hd">⏱ TIME-OF-DAY ATTRIBUTION — which hours actually have edge</div><div class="bd">
+    <div class="note"><b>What:</b> win rate & expectancy by hour window, crypto/stock separate. <b>Why:</b> some hours are noise, some are edge. <b>Action:</b> evidence for later session-gating — not enforced yet.</div>
+    <div id="todBox"></div></div></section>
+  <section><div class="hd">🎯 INTRABAR MISS AUDIT — did we miss sells between cycles?</div><div class="bd">
+    <div class="note"><b>What:</b> target hit between 10-12min cycles but we exited lower. <b>Why:</b> quantifies edge lost to coarse polling. <b>Action:</b> high rate = recoverable edge, not strategy failure.</div>
+    <div id="intrabarBox"></div></div></section>
+  <section><div class="hd">📏 DROP-THRESHOLD SHADOW SIM — 2.9% vs 3.0% vs 3.1%</div><div class="bd">
+    <div class="note"><b>What:</b> setups & forward recovery at each candidate trigger. <b>Why:</b> settles the threshold question with data. <b>Action:</b> tighter = fewer but stronger setups; shadow only, live stays 3.0%.</div>
+    <div id="threshBox"></div></div></section>
+  <section><div class="hd">⚪ ZERO-PNL AUDIT — why the breakeven trades</div><div class="bd">
+    <div class="note"><b>What:</b> trades that closed ~flat and why. <b>Why:</b> many flat stock trades = dips that never moved. <b>Action:</b> supports the stock-MR-is-weak thesis.</div>
+    <div id="zeroBox"></div></div></section>
   <section><div class="hd">🌡 REGIME OBSERVER — which market conditions help or hurt each strategy</div><div class="bd">
     <div class="note"><b>What:</b> every trade tagged with the market regime at entry (crypto & stock measured separately). <b>Why care:</b> it shows WHERE an edge actually exists. <b>Action:</b> if a strategy only wins in one regime, that's where it belongs — and where it doesn't, consider sitting out.</div>
     <div id="regimeBox"></div></div></section>
@@ -139,7 +151,7 @@
     <p class="note">SILMARIL 2.5 · validation phase · champion must survive 100 out-of-sample trades. $100–300/day is an unproven hope, never income.</p>
   </div></section>
 </div>
-<div id="healthFooter" style="border-top:2px solid var(--line);margin-top:14px;padding:8px 0;font-size:11px" class="dim">—</div></div>
+<div id="healthMatrix" style="margin-top:14px"></div><div id="healthFooter" style="border-top:2px solid var(--line);margin-top:14px;padding:8px 0;font-size:11px" class="dim">—</div></div>
 
 <div id="modal"><div id="modalBox"><button id="modalClose" onclick="document.getElementById('modal').style.display='none'">CLOSE ✕</button>
   <div id="modalTitle" style="font-size:17px;font-weight:bold"></div><div id="modalThesis" class="note"></div>
@@ -187,6 +199,7 @@ async function load(){
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS');
   safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
   const g=s.overall_grade,arrow=s.trend==='up'?'▲':s.trend==='down'?'▼':'■';
@@ -206,6 +219,11 @@ async function renderScanStatus(){const oa=await jget('data/OPPORTUNITY_AUDIT.js
   el.innerHTML=qual>0
     ? `🟢 LIVE · scanning ${tot} names · <b>${qual} setup(s) qualify right now</b> · ${open} position(s) open · system is trading autonomously`
     : `🟡 LIVE · scanning ${tot} names · 0 setups qualify this cycle (nothing dropped enough yet) · ${open} open · <b>system healthy, waiting for a dip</b> — this is normal`;}
+async function renderTOD(){const d=await jget('data/TIME_OF_DAY.json');if(!d||!d.by_book)return;let h='';for(const bk of ['crypto','stock']){const wd=d.by_book[bk];if(!wd)continue;const rows=Object.entries(wd).map(([w,s])=>`<tr><td>${w}</td><td>${s.trades}</td><td class="${s.expectancy_pct>=0?'pos':'neg'}">${s.expectancy_pct>=0?'+':''}${s.expectancy_pct}%</td><td>${s.win_pct}%</td></tr>`).join('');h+=`<div class="dim" style="margin-top:6px">◆ ${bk.toUpperCase()} · best: <b>${d.best_window_by_book[bk]||'—'}</b></div><table><thead><tr><th>window</th><th>trades</th><th>expectancy</th><th>win%</th></tr></thead><tbody>${rows}</tbody></table>`;}$('todBox').innerHTML=h;}
+async function renderIntrabar(){const d=await jget('data/INTRABAR_AUDIT.json');if(!d||!d.overall)return;const o=d.overall;$('intrabarBox').innerHTML=`<div class="val" style="font-size:15px">missed-target rate <span class="${o.missed_target_rate_pct>10?'neg':'pos'}">${o.missed_target_rate_pct}%</span></div><div class="note">${o.target_hit_intrabar} of ${o.trades} trades hit target intrabar; ${o.missed_target_exits} exited lower · edge left ${o.total_edge_left_pct}% · avg leak/miss ${o.avg_leak_when_missed_pct}%</div>`;}
+async function renderThresh(){const d=await jget('data/THRESHOLD_SHADOW.json');if(!d||!d.by_threshold)return;const rows=Object.entries(d.by_threshold).map(([k,v])=>`<tr style="${k==='3.0pct'?'font-weight:bold':''}"><td>${k.replace('pct','%')}${k==='3.0pct'?' (live)':''}</td><td>${v.setups}</td><td class="pos">${v.avg_forward_best_pct==null?'—':'+'+v.avg_forward_best_pct+'%'}</td><td>${v.pct_recovered_1pct==null?'—':v.pct_recovered_1pct+'%'}</td></tr>`).join('');$('threshBox').innerHTML=`<table><thead><tr><th>trigger</th><th>setups</th><th>avg recovery</th><th>≥1% recovered</th></tr></thead><tbody>${rows}</tbody></table><div class="note">Best avg recovery: ${d.best_by_recovery||'—'}. Tighter trigger = fewer but stronger setups.</div>`;}
+async function renderZero(){const d=await jget('data/ZERO_PNL_AUDIT.json');if(!d||!d.by_book)return;let h='';for(const bk of ['crypto','stock']){const b=d.by_book[bk];if(!b)continue;h+=`<div class="note">${bk.toUpperCase()}: ${b.zero_pnl_trades}/${b.total_trades} flat (${b.zero_pnl_rate_pct}%) · ${b.causes.flat_timeout} timed-out-flat · ${b.causes.tiny_move} tiny-move${b.avg_hold_min_of_zero?' · avg hold '+b.avg_hold_min_of_zero+'min':''}</div>`;}$('zeroBox').innerHTML=h;}
+async function renderHealthMatrix(){const d=await jget('data/HEALTH_MATRIX.json');if(!d)return;const dot=s=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴',GRAY:'⚪'}[s]||'⚪');const feeds=(d.feeds||[]).map(f=>`${dot(f.status)} ${f.name} <span class=dim>${f.detail}</span>`).join(' &nbsp;·&nbsp; ');const keys=(d.api_keys||[]).map(k=>`${dot(k.status)} ${k.name}`).join(' &nbsp; ');$('healthMatrix').innerHTML=`<div class="hd" style="font-size:12px">🩺 API / FEED HEALTH — ${d.summary} ${d.data_dir_mb?'· '+d.data_dir_mb+'MB data':''}</div><div style="font-size:11px;padding:6px 0">${feeds}</div><div style="font-size:11px;padding:2px 0" class="dim">keys: ${keys}</div>`;}
 function renderQuadrants(cv){const L=LIVE||{};
   const meta={crypto:{n:'CRYPTO',col:'#f7931a'},stock:{n:'STOCKS',col:'#2f74ff'},metal:{n:'METALS',col:'#b9bcc4'},energy:{n:'ENERGY',col:'#22b07d'}};
   $('quadrants').innerHTML=['crypto','stock','metal','energy'].map(bk=>{const b=L[bk]||{},champ=L['champion_'+bk];
