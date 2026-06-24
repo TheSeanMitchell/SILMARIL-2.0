@@ -76,20 +76,23 @@ def build_health_matrix(out_dir) -> Dict[str, Any]:
         feeds.append({"name": f"Broker {acct}", "status": st,
                       "detail": (f"eq ${b.get('equity',0):.0f}" + (f" · {errs} errs/48h" if errs else " · ok"))})
 
-    # API keys (env): GREEN if set, GRAY if not. Multiple providers per need.
+    # API keys (env): GREEN if set, GRAY if not. Names match the project's actual
+    # GitHub secrets so configured providers read correctly (no false GRAY).
     KEY_GROUPS = {
-        "Crypto price": ["COINGECKO_API_KEY", "CRYPTOCOMPARE_API_KEY", "COINMARKETCAP_API_KEY"],
-        "Stock price": ["FINNHUB_API_KEY", "ALPHA_VANTAGE_API_KEY", "TWELVE_DATA_API_KEY", "FMP_API_KEY", "POLYGON_API_KEY", "TIINGO_API_KEY"],
+        "Crypto price": ["COINGECKO_API_KEY", "FREECRYPTOAPI_API_KEY", "BIRDEYE_API_KEY"],
+        "Stock price": ["FINNHUB_API_KEY", "ALPHA_VANTAGE_API_KEY", "TWELVEDATA_API_KEY", "FMP_API_KEY", "POLYGON_API_KEY", "TIINGO_API_KEY"],
         "News": ["NEWSAPI_KEY", "MARKETAUX_API_KEY", "FINNHUB_API_KEY"],
-        "Metals": ["OPENEXCHANGERATES_APP_ID", "METALPRICE_API_KEY", "METALS_DEV_API_KEY", "GOLDAPI_KEY"],
-        "Energy": ["ALPHA_VANTAGE_API_KEY", "EIA_API_KEY", "TWELVE_DATA_API_KEY"],
-        "Broker": ["ALPACA_API_KEY"],
-        "Macro/Fundamentals": ["FMP_API_KEY", "FRED_API_KEY", "SEC_EDGAR_UA"],
+        "Metals": ["OPENEXCHANGERATES_APP_ID"],
+        "Energy": ["ALPHA_VANTAGE_API_KEY", "EIA_API_KEY", "TWELVEDATA_API_KEY"],
+        "Macro/Fundamentals": ["FMP_API_KEY", "FRED_API_KEY", "SEC_USER_AGENT_EMAIL"],
+        "Broker (Alpaca)": ["ALPACA_API_KEY", "ALPACA_API_KEY_H3", "ALPACA_API_KEY_H5"],
     }
     key_groups = []
     for need, keys in KEY_GROUPS.items():
         present = [k for k in keys if os.environ.get(k)]
-        st = "GREEN" if len(present) >= 2 else ("YELLOW" if len(present) == 1 else "GRAY")
+        # metals has a single provider by nature; treat 1 as OK there
+        ok_floor = 1 if need == "Metals" else 2
+        st = "GREEN" if len(present) >= ok_floor else ("YELLOW" if len(present) == 1 else "GRAY")
         key_groups.append({"need": need, "providers_total": len(keys),
                            "providers_active": len(present), "status": st,
                            "active": present, "all": keys,

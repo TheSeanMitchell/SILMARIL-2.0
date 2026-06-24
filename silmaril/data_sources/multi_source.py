@@ -60,7 +60,7 @@ def _alphavantage_stock(sym):
     return float(v) if v else None
 
 def _twelvedata_stock(sym):
-    k = os.environ.get("TWELVE_DATA_API_KEY")
+    k = os.environ.get("TWELVEDATA_API_KEY")
     if not k: return None
     j = _get(f"https://api.twelvedata.com/price?symbol={sym}&apikey={k}")
     return float(j["price"]) if j.get("price") else None
@@ -71,16 +71,42 @@ def _fmp_stock(sym):
     j = _get(f"https://financialmodelingprep.com/api/v3/quote-short/{sym}?apikey={k}")
     return (j[0].get("price") if isinstance(j, list) and j else None)
 
+def _freecryptoapi(sym):
+    k = os.environ.get("FREECRYPTOAPI_API_KEY")
+    if not k: return None
+    base = sym.replace("-USD", "")
+    try:
+        j = _get(f"https://api.freecryptoapi.com/v1/getData?symbol={base}", headers={"Authorization": f"Bearer {k}", "User-Agent": "silmaril/2.5.3"})
+        sym0 = (j.get("symbols") or [{}])[0]
+        return float(sym0.get("last") or sym0.get("price")) if sym0 else None
+    except Exception:
+        return None
+
+def _polygon_stock(sym):
+    k = os.environ.get("POLYGON_API_KEY")
+    if not k: return None
+    j = _get(f"https://api.polygon.io/v2/aggs/ticker/{sym}/prev?apiKey={k}")
+    res = (j.get("results") or [{}])[0]
+    return res.get("c") or None
+
+def _tiingo_stock(sym):
+    k = os.environ.get("TIINGO_API_KEY")
+    if not k: return None
+    j = _get(f"https://api.tiingo.com/iex/?tickers={sym}&token={k}")
+    return (j[0].get("last") if isinstance(j, list) and j else None)
+
 CHAINS: Dict[str, List] = {
     "crypto_price": [
         ("CoinGecko", "COINGECKO_API_KEY", _coingecko),
-        ("CryptoCompare", "CRYPTOCOMPARE_API_KEY", _cryptocompare),
-        ("Binance(public)", None, _binance_public),
+        ("FreeCryptoAPI", "FREECRYPTOAPI_API_KEY", _freecryptoapi),
+        ("Binance(public)", None, _binance_public),       # keyless — always available
     ],
     "stock_price": [
         ("Finnhub", "FINNHUB_API_KEY", _finnhub_stock),
+        ("Polygon", "POLYGON_API_KEY", _polygon_stock),
+        ("Tiingo", "TIINGO_API_KEY", _tiingo_stock),
+        ("TwelveData", "TWELVEDATA_API_KEY", _twelvedata_stock),
         ("AlphaVantage", "ALPHA_VANTAGE_API_KEY", _alphavantage_stock),
-        ("TwelveData", "TWELVE_DATA_API_KEY", _twelvedata_stock),
         ("FMP", "FMP_API_KEY", _fmp_stock),
     ],
 }

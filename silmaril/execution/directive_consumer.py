@@ -200,8 +200,22 @@ def build_order_payload(
             "type": "market",
             "time_in_force": "day",
         }
+        # Alpaca rejects fractional QTY on some equities (HTTP 422 code 42210000
+        # "fractional orders ..."). Fractional during regular hours IS reliably
+        # supported via NOTIONAL (dollar) market orders, so when qty is fractional
+        # we submit the dollar value instead of the fractional share count.
         if qty is not None:
-            payload["qty"] = str(abs(float(qty)))
+            q = abs(float(qty))
+            is_frac = abs(q - round(q)) > 1e-9
+            if is_frac and current_price and float(current_price) > 0:
+                payload["notional"] = str(round(q * float(current_price), 2))
+            elif is_frac:
+                q = float(int(q))          # no price to convert -> whole shares
+                if q < 1.0:
+                    return None
+                payload["qty"] = str(q)
+            else:
+                payload["qty"] = str(q)
         elif notional is not None:
             payload["notional"] = str(round(float(notional), 2))
         else:
