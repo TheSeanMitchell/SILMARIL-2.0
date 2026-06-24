@@ -88,6 +88,9 @@
 
 <!-- ARENA -->
 <div class="page" id="p-arena">
+  <section><div class="hd">👑 CHAMPION TRUTH PANEL — who's champion, why, and what blocks promotion</div><div class="bd">
+    <div class="note"><b>Answers:</b> why this champion · is it the survivability leader · which tier · what promotion needs · what's blocking. No guessing.</div>
+    <div id="champTruthBox">loading…</div></div></section>
   <section><div class="hd">🏆 QUADRANT LEADERBOARDS & CHAMPIONS — independent election for each market</div><div class="bd">
     <div class="note"><b>What:</b> each asset class (crypto/stock/metal/energy) has its own strategy leaderboard and its own champion. <b>Why:</b> markets are different; what wins in crypto may lose in stocks. <b>Action:</b> watch how champions shift as new edge emerges in each quadrant.</div>
     <div id="quadrantArena"></div></div></section>
@@ -208,7 +211,7 @@ async function load(){
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS');
   safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
-  safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector');
+  safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
   const g=s.overall_grade,arrow=s.trend==='up'?'▲':s.trend==='down'?'▼':'■';
@@ -235,6 +238,33 @@ async function renderZero(){const d=await jget('data/ZERO_PNL_AUDIT.json');if(!d
 async function renderTrace(){const d=await jget('data/DECISION_TRACE.json');if(!d||!d.traces)return;const rb=d.exit_reason_breakdown||{};const chips=Object.entries(rb).map(([k,v])=>`<span class="dim">${k}: <b>${v}</b></span>`).join(' · ');const rows=d.traces.slice(0,12).map(c=>`<tr><td>${c.sym}</td><td>${c.strategy}${c.is_book_champion?' ⭐':''}</td><td class="${c.outcome==='WIN'?'pos':c.outcome==='LOSS'?'neg':'dim'}">${c.outcome}</td><td>${c.exit.realized_pct>=0?'+':''}${c.exit.realized_pct}%</td><td class="dim">${c.exit.reason}</td><td class="dim">${c.exit.hold_min!=null?c.exit.hold_min+'m':''}</td></tr>`).join('');$('traceBox').innerHTML=`<div style="font-size:11px;padding:4px 0">exit reasons: ${chips}</div><table><thead><tr><th>sym</th><th>strategy</th><th>outcome</th><th>P&L</th><th>exit reason</th><th>hold</th></tr></thead><tbody>${rows}</tbody></table>`;}
 async function renderRouter(){const d=await jget('data/CAPITAL_ROUTER_EXPLAINED.json');if(!d||!d.allocations)return;const rows=d.allocations.map(a=>`<tr><td>${a.strategy}</td><td><b>${a.weight_pct}%</b></td><td>${a.allocated!=null?'$'+Math.round(a.allocated):'—'}</td><td class="${(a.realized_pnl||0)>=0?'pos':'neg'}">${a.realized_pnl!=null?(a.realized_pnl>=0?'+':'')+'$'+Math.round(a.realized_pnl):'—'}</td><td class="dim">${a.survivability!=null?'surv '+a.survivability:''}</td></tr>`).join('');$('routerBox').innerHTML=`<table><thead><tr><th>strategy</th><th>weight</th><th>allocated</th><th>realized</th><th></th></tr></thead><tbody>${rows}</tbody></table><div class="note"><b>${d.verdict}</b> — champion-weighted edge ${d.champion_weighted_edge_pct}% vs equal-weight ${d.equal_weighted_edge_pct}%.</div>`;}
 async function renderSector(){const d=await jget('data/SECTOR_RECOVERY.json');if(!d)return;if(d.status==='awaiting_sector_data'){$('sectorBox').innerHTML=`<div class="note">⏳ Ready & wired — awaiting sector cache. ${d.stock_trades_available} stock trades queued. ${d.action}</div>`;return;}const rows=Object.entries(d.by_sector||{}).map(([s,v])=>`<tr><td>${s}</td><td>${v.trades}</td><td class="${v.expectancy_pct>=0?'pos':'neg'}">${v.expectancy_pct>=0?'+':''}${v.expectancy_pct}%</td><td>${v.win_pct}%</td></tr>`).join('');$('sectorBox').innerHTML=`<table><thead><tr><th>sector</th><th>trades</th><th>expectancy</th><th>win%</th></tr></thead><tbody>${rows}</tbody></table><div class="note">best: <b>${d.best_sector||'—'}</b> · worst: <b>${d.worst_sector||'—'}</b></div>`;}
+async function renderChampTruth(){const g=await jget('data/CHAMPION_GOVERNANCE.json');if(!g){$('champTruthBox').innerHTML='<div class=dim>no governance data</div>';return;}
+  const dc=g.declared_champion||{},ms=g.most_survivable||{},pt=g.promotion_thresholds||{},pl=g.promotion_ladder||{};
+  const aligned=g.aligned;const ci=(dc.expectancy_ci95_pct||[]);
+  const tierOrder=['Sandbox','Incubation','Candidate','Production','Production-Verified'];
+  const need={Sandbox:10,Incubation:25,Candidate:50,Production:100};
+  const tier=dc.tier||'Sandbox';const nextNeed=need[tier]||100;const n=dc.trade_count||0;
+  const blocking=[];if(n<nextNeed)blocking.push(`needs ${nextNeed-n} more trades (have ${n}, next tier at ${nextNeed})`);
+  if(ci.length===2&&ci[0]<0)blocking.push(`expectancy CI still includes zero [${ci[0]}%, ${ci[1]}%] — edge not yet statistically separated from noise`);
+  // book champions
+  const books=await Promise.all(['crypto','stock','metal','energy'].map(b=>jget('data/champion_'+b+'.json').then(d=>[b,d]).catch(()=>[b,null])));
+  const bookRows=books.map(([b,d])=>`<tr><td>${b.toUpperCase()}</td><td>${d&&d.name?d.name:'<span class=dim>none</span>'}</td><td class=dim>${d&&d.survivability!=null?'surv '+d.survivability:(d&&d.trades!=null?d.trades+' trades':'')}</td></tr>`).join('');
+  $('champTruthBox').innerHTML=`
+    <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px">
+      <div style="flex:1;min-width:220px"><div class="dim">DECLARED CHAMPION</div><div style="font-size:18px;font-weight:bold">${dc.strategy||'—'}</div>
+        <div class="dim">surv ${dc.survivability_score} · ${dc.win_pct}% win · ${n} trades · DD ${dc.max_drawdown_pct}% · tier ${tier}</div></div>
+      <div style="flex:1;min-width:220px"><div class="dim">SURVIVABILITY LEADER</div><div style="font-size:18px;font-weight:bold">${ms.strategy||'—'}</div>
+        <div class="dim">surv ${ms.survivability_score} · ${ms.win_pct}% win · ${ms.trade_count} trades</div></div>
+    </div>
+    <div style="padding:8px;border:1px solid var(--line,#333);border-radius:6px;margin-bottom:10px" class="${aligned?'pos':'neg'}">
+      ${aligned?'🟢 ALIGNED — the champion IS the most survivable strategy. We are trading the best one.':'🟡 NOT ALIGNED — champion differs from survivability leader. '+(g.selection_reason||'')}
+    </div>
+    <div class="dim" style="margin-bottom:4px">PROMOTION STATUS · tier <b>${tier}</b> · ${blocking.length?'BLOCKED:':'ready to advance'}</div>
+    ${blocking.length?'<ul style="margin:4px 0 10px 18px;font-size:12px">'+blocking.map(b=>`<li>${b}</li>`).join('')+'</ul>':'<div class="pos" style="font-size:12px;margin-bottom:10px">no blockers — will promote on next evaluation</div>'}
+    <div class="dim" style="margin-bottom:4px">TIER LADDER (trades needed): Sandbox→Incubation ${pt['Sandbox->Incubation']||10} · →Candidate ${pt['Incubation->Candidate']||25} · →Production ${pt['Candidate->Production']||50} · →Verified ${pt['Production-Verified']||100}</div>
+    <div class="dim" style="margin:10px 0 4px">PER-BOOK CHAMPIONS (independent):</div>
+    <table><thead><tr><th>book</th><th>champion</th><th></th></tr></thead><tbody>${bookRows}</tbody></table>
+    <div class="note">Selection rule: ${g.selection_rule||'forward survivability, sticky (anti-flip-flop margin)'}. Status: ${g.governance_status||''}</div>`;}
 async function renderHealthMatrix(){const d=await jget('data/HEALTH_MATRIX.json');if(!d){return;}
   const dot=s=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴',GRAY:'⚪'}[s]||'⚪');
   const feeds=(d.feeds||[]).map(f=>`<span style="white-space:nowrap">${dot(f.status)} ${f.name} <span class=dim>${f.detail}</span></span>`).join(' &nbsp;·&nbsp; ');
