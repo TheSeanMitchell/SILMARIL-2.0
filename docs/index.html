@@ -223,7 +223,27 @@ async function renderTOD(){const d=await jget('data/TIME_OF_DAY.json');if(!d||!d
 async function renderIntrabar(){const d=await jget('data/INTRABAR_AUDIT.json');if(!d||!d.overall)return;const o=d.overall;$('intrabarBox').innerHTML=`<div class="val" style="font-size:15px">missed-target rate <span class="${o.missed_target_rate_pct>10?'neg':'pos'}">${o.missed_target_rate_pct}%</span></div><div class="note">${o.target_hit_intrabar} of ${o.trades} trades hit target intrabar; ${o.missed_target_exits} exited lower · edge left ${o.total_edge_left_pct}% · avg leak/miss ${o.avg_leak_when_missed_pct}%</div>`;}
 async function renderThresh(){const d=await jget('data/THRESHOLD_SHADOW.json');if(!d||!d.by_threshold)return;const rows=Object.entries(d.by_threshold).map(([k,v])=>`<tr style="${k==='3.0pct'?'font-weight:bold':''}"><td>${k.replace('pct','%')}${k==='3.0pct'?' (live)':''}</td><td>${v.setups}</td><td class="pos">${v.avg_forward_best_pct==null?'—':'+'+v.avg_forward_best_pct+'%'}</td><td>${v.pct_recovered_1pct==null?'—':v.pct_recovered_1pct+'%'}</td></tr>`).join('');$('threshBox').innerHTML=`<table><thead><tr><th>trigger</th><th>setups</th><th>avg recovery</th><th>≥1% recovered</th></tr></thead><tbody>${rows}</tbody></table><div class="note">Best avg recovery: ${d.best_by_recovery||'—'}. Tighter trigger = fewer but stronger setups.</div>`;}
 async function renderZero(){const d=await jget('data/ZERO_PNL_AUDIT.json');if(!d||!d.by_book)return;let h='';for(const bk of ['crypto','stock']){const b=d.by_book[bk];if(!b)continue;h+=`<div class="note">${bk.toUpperCase()}: ${b.zero_pnl_trades}/${b.total_trades} flat (${b.zero_pnl_rate_pct}%) · ${b.causes.flat_timeout} timed-out-flat · ${b.causes.tiny_move} tiny-move${b.avg_hold_min_of_zero?' · avg hold '+b.avg_hold_min_of_zero+'min':''}</div>`;}$('zeroBox').innerHTML=h;}
-async function renderHealthMatrix(){const d=await jget('data/HEALTH_MATRIX.json');if(!d)return;const dot=s=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴',GRAY:'⚪'}[s]||'⚪');const feeds=(d.feeds||[]).map(f=>`${dot(f.status)} ${f.name} <span class=dim>${f.detail}</span>`).join(' &nbsp;·&nbsp; ');const keys=(d.api_keys||[]).map(k=>`${dot(k.status)} ${k.name}`).join(' &nbsp; ');$('healthMatrix').innerHTML=`<div class="hd" style="font-size:12px">🩺 API / FEED HEALTH — ${d.summary} ${d.data_dir_mb?'· '+d.data_dir_mb+'MB data':''}</div><div style="font-size:11px;padding:6px 0">${feeds}</div><div style="font-size:11px;padding:2px 0" class="dim">keys: ${keys}</div>`;}
+async function renderHealthMatrix(){const d=await jget('data/HEALTH_MATRIX.json');if(!d){return;}
+  const dot=s=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴',GRAY:'⚪'}[s]||'⚪');
+  const feeds=(d.feeds||[]).map(f=>`<span style="white-space:nowrap">${dot(f.status)} ${f.name} <span class=dim>${f.detail}</span></span>`).join(' &nbsp;·&nbsp; ');
+  const kg=(d.key_groups||[]).map(k=>`<span style="white-space:nowrap" title="${(k.all||[]).join(', ')}">${dot(k.status)} ${k.need} <span class=dim>${k.providers_active}/${k.providers_total} sources</span></span>`).join(' &nbsp;·&nbsp; ');
+  const fr=d.freshness||{},pr=d.prices||{},nw=d.news||{};
+  const cp=d.cron_pressure||{},provs=cp.providers||{};
+  const cron=Object.entries(provs).map(([n,v])=>`${n} ${Math.round(v.pct_of_budget||0)}%`).join(' · ');
+  const stg=d.storage||{};
+  const clocks=Object.entries(d.domain_clocks||{}).map(([n,v])=>`${n} ${(v&&v.open)||v==='open'?'open':'closed'}`).join(' · ');
+  $('healthMatrix').innerHTML=`
+    <div class="hd" style="font-size:13px">🩺 PROJECT HEALTH — ${d.summary||''}</div>
+    <div style="font-size:11px;padding:6px 0;line-height:1.9"><b>FEEDS:</b> ${feeds}</div>
+    <div style="font-size:11px;padding:4px 0;line-height:1.9"><b>DATA-SOURCE FALLBACK DEPTH</b> (want 2+ each): ${kg}</div>
+    <div style="font-size:11px;padding:4px 0;color:var(--dim)">
+      files fresh <b>${fr.ok||'?'}/${fr.total||'?'}</b> · price coverage <b>${pr.coverage_pct!=null?pr.coverage_pct+'%':'—'}</b> (${pr.priced||0}/${pr.universe||0}) · news <b>${nw.distinct_sources||0}</b> sources (${nw.articles_in_cycle||0} arts)
+      ${stg.repo_mb||stg.total_mb?'· repo '+(stg.repo_mb||stg.total_mb)+'MB':''}
+    </div>
+    ${cron?`<div style="font-size:10px;padding:2px 0;color:var(--dim)"><b>cron pressure:</b> ${cron} — ride the limit, never cross it</div>`:''}
+    ${clocks?`<div style="font-size:10px;padding:2px 0;color:var(--dim)"><b>domain clocks:</b> ${clocks}</div>`:''}
+    <div style="font-size:10px;padding:4px 0;color:var(--dim)">${d.note||''}</div>`;}
+
 function renderQuadrants(cv){const L=LIVE||{};
   const meta={crypto:{n:'CRYPTO',col:'#f7931a'},stock:{n:'STOCKS',col:'#2f74ff'},metal:{n:'METALS',col:'#b9bcc4'},energy:{n:'ENERGY',col:'#22b07d'}};
   $('quadrants').innerHTML=['crypto','stock','metal','energy'].map(bk=>{const b=L[bk]||{},champ=L['champion_'+bk];
