@@ -43,7 +43,10 @@ def build_chart_overlays(out_dir) -> Dict[str, Any]:
     for bk in ("crypto", "stock", "metal", "energy"):
         champ = (live.get("champion_" + bk) or "")
         tp, sp = ts(champ)
-        for o in (live.get(bk, {}) or {}).get("open_positions", []) or []:
+        oppos = (live.get(bk, {}) or {}).get("open_positions", [])
+        if not isinstance(oppos, list):
+            oppos = []
+        for o in oppos:
             if not o or not o.get("sym"): continue
             s = ov.setdefault(o["sym"], {})
             s["open"] = {"entry": o.get("entry"), "mark": o.get("mark"), "upl_pct": o.get("upl_pct"),

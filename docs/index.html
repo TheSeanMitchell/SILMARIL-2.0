@@ -49,7 +49,7 @@
   .quad-sub{font-size:11px;opacity:.85}.quad-champ{font-size:10px;opacity:.7;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .quad-st{font-size:10px;opacity:.6;margin-top:2px}
   </style></head><body><div class="wrap">
-<div class="banner" style="position:relative"><h1 style="font-weight:900;letter-spacing:.5px">SILMARIL&nbsp;2.5.4</h1><span class="dim" style="font-size:12px;font-weight:bold" id="clock">—</span><span class="dim" style="font-size:10px" id="ts">—</span><button class="themebtn" id="themeBtn" onclick="toggleTheme()" style="position:absolute;top:6px;right:6px;padding:1px 6px;font-size:10px;line-height:1.3">🌙</button></div>
+<div class="banner" style="position:relative;padding-right:46px"><h1 style="font-weight:900;letter-spacing:.5px">SILMARIL&nbsp;2.5.4</h1><span class="dim" style="font-size:12px;font-weight:bold" id="clock">—</span><span class="dim" style="font-size:10px" id="ts">—</span><button class="themebtn" id="themeBtn" onclick="toggleTheme()" style="position:absolute;top:5px;right:5px;padding:1px 5px;font-size:10px;line-height:1.3">🌙</button></div>
 <div class="tabs">
   <button class="on" data-p="cmd">COMMAND</button><button data-p="arena">ARENA</button>
   <button data-p="forensics">FORENSICS</button><button data-p="authority">AUTHORITY LAB</button><button data-p="settings">SETTINGS</button>
@@ -129,6 +129,9 @@
   <section><div class="hd">⏱️ TIMER / EDGE-CAPTURE SIMULATION — what hold-timer captures the most edge</div><div class="bd">
     <div class="note"><b>What:</b> replays every closed trade under many hold-timers (and no timer) to find the optimum per quadrant. <b>Why:</b> trades keep ending on TIMEOUT not target — this proves the best timer. <b>Action:</b> champion the best timer per book; leak breakdown says if we sell too early/late or the thesis is slow.</div>
     <div id="timerBox">loading…</div></div></section>
+  <section><div class="hd">🎯 DROP × BOUNCE-BACK CHAMPION — every entry 1-5% × every target 1-5%</div><div class="bd">
+    <div class="note"><b>What:</b> tests every drop trigger against every bounce-back target on real history, elects a champion drop, champion bounce, and best combo — like the strategy champion. <b>Why:</b> proves entry+exit thresholds with evidence. <b>Action:</b> accuracy champion = safe (downtrends); expectancy champion = aggressive (uptrends).</div>
+    <div id="threshChampBox">loading…</div></div></section>
   <section><div class="hd">💵 CAPITAL ROUTER EXPLAINED — the allocation math (hypothetical)</div><div class="bd">
     <div class="note"><b>HYPOTHETICAL research only.</b> How a single $10k would split across top strategies. The 4 books each trade their OWN independent $10k — they are NOT pooled.</div>
     <div id="routerBox"></div></div></section>
@@ -220,7 +223,7 @@ async function load(){
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderTrades(),'trades');
   safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
-  safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
+  safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
   const g=s.overall_grade,arrow=s.trend==='up'?'▲':s.trend==='down'?'▼':'■';
@@ -292,6 +295,16 @@ async function renderTrades(){const L=await jget('data/paper_sim_live.json');if(
   if($('trCrypto'))$('trCrypto').innerHTML=rows('crypto');
   if($('trStock'))$('trStock').innerHTML=rows('stock');
   if(window.SilmarilChart)setTimeout(function(){SilmarilChart.autotag(document);},50);}
+async function renderThreshChamp(){const d=await jget('data/THRESHOLD_CHAMPION.json');if(!d){$('threshChampBox').innerHTML='<div class=dim>no data yet</div>';return;}
+  const cc=d.champion_combo||{},ac=d.accuracy_champion_combo||{};
+  const grid=(d.grid||[]).slice(0,8).map(g=>`<tr><td>${g.drop}%</td><td>${g.bounce}%</td><td class="${g.expectancy_pct>=0?'pos':'neg'}">${g.expectancy_pct>=0?'+':''}${g.expectancy_pct}%</td><td>${g.hit_rate_pct}%</td><td class=dim>${g.signals}</td></tr>`).join('');
+  $('threshChampBox').innerHTML=`
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px">
+      <div style="flex:1;min-width:200px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class="dim">🏆 EXPECTANCY CHAMPION (aggressive / uptrend)</div><div style="font-size:15px;font-weight:bold">drop ${cc.drop}% → target ${cc.bounce}%</div><div class="dim">+${cc.expectancy_pct}%/trade · hit ${cc.hit_rate_pct}% · n=${cc.signals}</div></div>
+      <div style="flex:1;min-width:200px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class="dim">🛡 ACCURACY CHAMPION (safe / downtrend)</div><div style="font-size:15px;font-weight:bold">drop ${ac.drop}% → target ${ac.bounce}%</div><div class="dim">hit ${ac.hit_rate_pct}% · exp ${ac.expectancy_pct}%</div></div>
+    </div>
+    <div class="dim" style="font-size:11px;margin-bottom:3px">champion DROP <b>${d.champion_drop_pct}%</b> · champion BOUNCE <b>${d.champion_bounce_pct}%</b> · live is ${d.current_live.drop_pct}%/${d.current_live.bounce_pct}%</div>
+    <table style="font-size:11px"><thead><tr><th>drop</th><th>target</th><th>expectancy</th><th>hit%</th><th>n</th></tr></thead><tbody>${grid}</tbody></table>`;}
 async function renderHealthMatrix(){const d=await jget('data/HEALTH_MATRIX.json');if(!d){return;}
   const dot=s=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴',GRAY:'⚪'}[s]||'⚪');
   const feeds=(d.feeds||[]).map(f=>`<span style="white-space:nowrap">${dot(f.status)} ${f.name} <span class=dim>${f.detail}</span></span>`).join(' &nbsp;·&nbsp; ');

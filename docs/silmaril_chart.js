@@ -124,15 +124,38 @@
     return { svg: s, rows: rows, X: X, Y: Y, w: w, h: h, up: up, st: stats(rows) };
   }
 
+  function trend(rows) {
+    if (!rows || rows.length < 6) return { dir: "flat", label: "—", slopePct: 0 };
+    var n = rows.length, third = Math.max(2, Math.floor(n / 3));
+    var early = rows.slice(0, third).map(function (r) { return r[1]; });
+    var late = rows.slice(n - third).map(function (r) { return r[1]; });
+    var ea = early.reduce(function (a, b) { return a + b; }, 0) / early.length;
+    var la = late.reduce(function (a, b) { return a + b; }, 0) / late.length;
+    var slope = (la / ea - 1) * 100;
+    var dir = slope > 1.2 ? "up" : slope < -1.2 ? "down" : "flat";
+    var label = dir === "up" ? "UPTREND ▲" : dir === "down" ? "DOWNTREND ▼" : "SIDEWAYS →";
+    return { dir: dir, label: label, slopePct: Math.round(slope * 10) / 10 };
+  }
+  function bounceExpect(tr) {
+    if (tr.dir === "down") return "downtrend → expect a WEAKER bounce; favor the safe/accuracy target";
+    if (tr.dir === "up") return "uptrend → bounces tend to run; the aggressive target can pay";
+    return "sideways → mean-reversion plays cleanest here";
+  }
+
   function head(sym, c) {
-    var st = c.st, col = c.up ? "#16c784" : "#ea3943";
-    return "<div style='display:flex;align-items:baseline;gap:10px;flex-wrap:wrap'><span style='font-size:18px;font-weight:800'>" + sym + "</span><span style='font-size:18px;font-weight:800'>" + fmtP(st.close) + "</span><span style='color:" + col + ";font-weight:700'>" + (st.chgP >= 0 ? "▲ +" : "▼ ") + st.chgP.toFixed(2) + "% (" + (st.chg >= 0 ? "+" : "") + fmtP(st.chg) + ")</span></div>";
+    var st = c.st, col = c.up ? "#16c784" : "#ea3943", tr = trend(c.rows);
+    var tcol = tr.dir === "up" ? "#16c784" : tr.dir === "down" ? "#ea3943" : "#9aa4b8";
+    return "<div style='display:flex;align-items:baseline;gap:10px;flex-wrap:wrap'><span style='font-size:18px;font-weight:800'>" + sym + "</span><span style='font-size:18px;font-weight:800'>" + fmtP(st.close) + "</span><span style='color:" + col + ";font-weight:700'>" + (st.chgP >= 0 ? "▲ +" : "▼ ") + st.chgP.toFixed(2) + "% (" + (st.chg >= 0 ? "+" : "") + fmtP(st.chg) + ")</span><span style='background:" + tcol + "22;color:" + tcol + ";border:1px solid " + tcol + "55;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700'>" + tr.label + " " + (tr.slopePct >= 0 ? "+" : "") + tr.slopePct + "%</span></div>";
   }
 
   function statsPanel(sym, c) {
     var st = c.st, p = POS[sym] || {}, ry = RHY[sym] || {};
     function row(k, v, cls) { return "<div style='display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-bottom:1px solid #ffffff0d'><span style='color:#8b93a7'>" + k + "</span><span style='font-weight:600" + (cls ? ";color:" + cls : "") + "'>" + v + "</span></div>"; }
     var H = "<div style='font-size:12px'>";
+    var tr = trend(c.rows), tcol = tr.dir === "up" ? "#16c784" : tr.dir === "down" ? "#ea3943" : "#9aa4b8";
+    H += "<div style='padding:6px 8px;margin-bottom:8px;border:1px solid " + tcol + "44;border-radius:6px;background:" + tcol + "11'>";
+    H += "<div style='font-weight:700;color:" + tcol + "'>" + tr.label + " (" + (tr.slopePct >= 0 ? "+" : "") + tr.slopePct + "% over view)</div>";
+    H += "<div style='font-size:11px;color:#9aa4b8;margin-top:2px'>" + bounceExpect(tr) + "</div></div>";
     H += "<div style='font-weight:700;color:#cfd6e4;margin:2px 0 6px'>PERFORMANCE (this view)</div>";
     H += row("Open", fmtP(st.open));
     H += row("Last", fmtP(st.close));
@@ -218,7 +241,14 @@
     modal.querySelector("#slm-hd").innerHTML = head(curSym, c);
     modal.querySelector("#slm-stats").innerHTML = c.st ? statsPanel(curSym, c) : "";
     var ry = RHY[curSym] || {};
-    modal.querySelector("#slm-foot").innerHTML = "Custom SILMARIL chart · " + (c.rows ? c.rows.length : 0) + " pts · " + curTF + " · time axis + real OHLC/range/volatility" + (ry.peaks_found ? " · " + ry.peaks_found + " peaks" : "") + " · entry/target(cash-out)/stop + bounce-timing overlaid";
+    var legend = "<div style='display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;margin-bottom:3px'>"
+      + "<span><span style='color:#9aa4b8'>▲</span> buy</span>"
+      + "<span><span style='color:#16c784'>▼</span>/<span style='color:#ea3943'>▼</span> sell (win/loss)</span>"
+      + "<span style='color:#f7c948'>━ gold = target / cash-out</span>"
+      + "<span style='color:#16c784'>┈ green = live target</span>"
+      + "<span style='color:#ea3943'>┈ red = stop</span>"
+      + "<span style='color:#b388ff'>┈ purple = Dr Strange proj. / next-peak</span></div>";
+    modal.querySelector("#slm-foot").innerHTML = legend + "Custom SILMARIL chart · " + (c.rows ? c.rows.length : 0) + " pts · " + curTF + " · time axis + real OHLC/range/volatility" + (ry.peaks_found ? " · " + ry.peaks_found + " peaks" : "") + " · champion strategy entry/target/stop overlaid";
     var svg = host.querySelector("svg.slmchart");
     if (svg && c.rows) cross(svg, c);
   }

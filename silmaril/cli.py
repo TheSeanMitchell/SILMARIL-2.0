@@ -2280,9 +2280,11 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 # 2.5.4 timer/edge-capture simulation + consolidated chart overlays.
                 from .execution.timer_optimization import build_timer_optimization as _to
                 from .execution.chart_overlays import build_chart_overlays as _co
-                _tor = _to(out); _cor = _co(out)
+                from .execution.threshold_champion import build_threshold_champion as _tc
+                _tor = _to(out); _cor = _co(out); _tcr = _tc(out)
                 log.info("  timer-opt: %s · chart overlays: %s symbols",
                          _tor.get("recommendation_by_book"), _cor.get("count"))
+                log.info("  threshold champion: combo %s", _tcr.get("champion_combo"))
             except Exception as _toe:
                 log.warning("timer/overlays skipped: %s", _toe)
             try:
