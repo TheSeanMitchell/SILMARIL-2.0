@@ -2270,6 +2270,13 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
             except Exception as _253fe:
                 log.warning("2.5.3 final engines skipped: %s", _253fe)
             try:
+                # 2.5.4 peak-rhythm — time between bounces, feeds the chart prediction overlay.
+                from .execution.peak_rhythm import build_peak_rhythm as _pr
+                _prr = _pr(out)
+                log.info("  peak rhythm: tracking %s symbols", _prr.get("tracked"))
+            except Exception as _pre:
+                log.warning("peak rhythm skipped: %s", _pre)
+            try:
                 # VALIDATION LAYER (Alpha 2.15) — instrumentation only, no signals.
                 # Each is fail-safe; they populate as the sim exits and events log.
                 from .execution.execution_leak import build_execution_leak as _el2
