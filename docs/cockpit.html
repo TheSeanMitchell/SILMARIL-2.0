@@ -114,6 +114,15 @@
   <section><div class="hd">⚪ ZERO-PNL AUDIT — why the breakeven trades</div><div class="bd">
     <div class="note"><b>What:</b> trades that closed ~flat and why. <b>Why:</b> many flat stock trades = dips that never moved. <b>Action:</b> supports the stock-MR-is-weak thesis.</div>
     <div id="zeroBox"></div></div></section>
+  <section><div class="hd">🔗 DECISION TRACE — why each trade happened & ended</div><div class="bd">
+    <div class="note"><b>What:</b> per-trade chain — why entered, why exited, outcome. <b>Why:</b> every trade auditable end-to-end. <b>Action:</b> if TIMEOUT_GAIN/LOSS dominate over TARGET_HIT, exits fire before target = leaving edge on the table.</div>
+    <div id="traceBox"></div></div></section>
+  <section><div class="hd">💵 CAPITAL ROUTER EXPLAINED — the allocation math (hypothetical)</div><div class="bd">
+    <div class="note"><b>HYPOTHETICAL research only.</b> How a single $10k would split across top strategies. The 4 books each trade their OWN independent $10k — they are NOT pooled.</div>
+    <div id="routerBox"></div></div></section>
+  <section><div class="hd">🏷 STOCK SECTOR RECOVERY — does MR work in some sectors?</div><div class="bd">
+    <div class="note"><b>What:</b> stock recovery grouped by sector. <b>Why:</b> reveals if the weak stock edge is sector-specific. <b>Action:</b> whitelist positive sectors if any.</div>
+    <div id="sectorBox"></div></div></section>
   <section><div class="hd">🌡 REGIME OBSERVER — which market conditions help or hurt each strategy</div><div class="bd">
     <div class="note"><b>What:</b> every trade tagged with the market regime at entry (crypto & stock measured separately). <b>Why care:</b> it shows WHERE an edge actually exists. <b>Action:</b> if a strategy only wins in one regime, that's where it belongs — and where it doesn't, consider sitting out.</div>
     <div id="regimeBox"></div></div></section>
@@ -127,7 +136,7 @@
     <div class="note">How often, and how fast, a name climbs back after a 3/5/7/10% drop. Low stock recovery rate = stocks do NOT bounce on our exit clock → stock MR may be structurally mismatched.</div>
     <div id="stockRecovery"></div></div></section>
   <section><div class="hd">📈 SURVIVABILITY OVER TIME (from snapshots)</div><div class="bd"><div id="survChart" class="dim">accumulating…</div></div></section>
-  <section><div class="hd">💰 COMBINED EQUITY OVER TIME</div><div class="bd"><div id="eqChart" class="dim">accumulating…</div></div></section>
+  <section><div class="hd">💰 ALL 4 BOOKS (independent) · TOTAL EQUITY OVER TIME</div><div class="bd"><div id="eqChart" class="dim">accumulating…</div></div></section>
   <section><div class="hd">🎯 EDGE CAPTURE</div><div class="bd"><div id="capHead" class="val" style="font-size:20px"></div>
     <table><thead><tr><th>Biggest miss</th><th>Available</th><th>Captured</th></tr></thead><tbody id="capMiss"></tbody></table></div></section>
   <section><div class="hd">📋 OPPORTUNITY JOURNAL</div><div class="bd" id="ojBody"></div></section>
@@ -199,6 +208,7 @@ async function load(){
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS');
   safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
   const g=s.overall_grade,arrow=s.trend==='up'?'▲':s.trend==='down'?'▼':'■';
@@ -222,6 +232,9 @@ async function renderTOD(){const d=await jget('data/TIME_OF_DAY.json');if(!d||!d
 async function renderIntrabar(){const d=await jget('data/INTRABAR_AUDIT.json');if(!d||!d.overall)return;const o=d.overall;$('intrabarBox').innerHTML=`<div class="val" style="font-size:15px">missed-target rate <span class="${o.missed_target_rate_pct>10?'neg':'pos'}">${o.missed_target_rate_pct}%</span></div><div class="note">${o.target_hit_intrabar} of ${o.trades} trades hit target intrabar; ${o.missed_target_exits} exited lower · edge left ${o.total_edge_left_pct}% · avg leak/miss ${o.avg_leak_when_missed_pct}%</div>`;}
 async function renderThresh(){const d=await jget('data/THRESHOLD_SHADOW.json');if(!d||!d.by_threshold)return;const rows=Object.entries(d.by_threshold).map(([k,v])=>`<tr style="${k==='3.0pct'?'font-weight:bold':''}"><td>${k.replace('pct','%')}${k==='3.0pct'?' (live)':''}</td><td>${v.setups}</td><td class="pos">${v.avg_forward_best_pct==null?'—':'+'+v.avg_forward_best_pct+'%'}</td><td>${v.pct_recovered_1pct==null?'—':v.pct_recovered_1pct+'%'}</td></tr>`).join('');$('threshBox').innerHTML=`<table><thead><tr><th>trigger</th><th>setups</th><th>avg recovery</th><th>≥1% recovered</th></tr></thead><tbody>${rows}</tbody></table><div class="note">Best avg recovery: ${d.best_by_recovery||'—'}. Tighter trigger = fewer but stronger setups.</div>`;}
 async function renderZero(){const d=await jget('data/ZERO_PNL_AUDIT.json');if(!d||!d.by_book)return;let h='';for(const bk of ['crypto','stock']){const b=d.by_book[bk];if(!b)continue;h+=`<div class="note">${bk.toUpperCase()}: ${b.zero_pnl_trades}/${b.total_trades} flat (${b.zero_pnl_rate_pct}%) · ${b.causes.flat_timeout} timed-out-flat · ${b.causes.tiny_move} tiny-move${b.avg_hold_min_of_zero?' · avg hold '+b.avg_hold_min_of_zero+'min':''}</div>`;}$('zeroBox').innerHTML=h;}
+async function renderTrace(){const d=await jget('data/DECISION_TRACE.json');if(!d||!d.traces)return;const rb=d.exit_reason_breakdown||{};const chips=Object.entries(rb).map(([k,v])=>`<span class="dim">${k}: <b>${v}</b></span>`).join(' · ');const rows=d.traces.slice(0,12).map(c=>`<tr><td>${c.sym}</td><td>${c.strategy}${c.is_book_champion?' ⭐':''}</td><td class="${c.outcome==='WIN'?'pos':c.outcome==='LOSS'?'neg':'dim'}">${c.outcome}</td><td>${c.exit.realized_pct>=0?'+':''}${c.exit.realized_pct}%</td><td class="dim">${c.exit.reason}</td><td class="dim">${c.exit.hold_min!=null?c.exit.hold_min+'m':''}</td></tr>`).join('');$('traceBox').innerHTML=`<div style="font-size:11px;padding:4px 0">exit reasons: ${chips}</div><table><thead><tr><th>sym</th><th>strategy</th><th>outcome</th><th>P&L</th><th>exit reason</th><th>hold</th></tr></thead><tbody>${rows}</tbody></table>`;}
+async function renderRouter(){const d=await jget('data/CAPITAL_ROUTER_EXPLAINED.json');if(!d||!d.allocations)return;const rows=d.allocations.map(a=>`<tr><td>${a.strategy}</td><td><b>${a.weight_pct}%</b></td><td>${a.allocated!=null?'$'+Math.round(a.allocated):'—'}</td><td class="${(a.realized_pnl||0)>=0?'pos':'neg'}">${a.realized_pnl!=null?(a.realized_pnl>=0?'+':'')+'$'+Math.round(a.realized_pnl):'—'}</td><td class="dim">${a.survivability!=null?'surv '+a.survivability:''}</td></tr>`).join('');$('routerBox').innerHTML=`<table><thead><tr><th>strategy</th><th>weight</th><th>allocated</th><th>realized</th><th></th></tr></thead><tbody>${rows}</tbody></table><div class="note"><b>${d.verdict}</b> — champion-weighted edge ${d.champion_weighted_edge_pct}% vs equal-weight ${d.equal_weighted_edge_pct}%.</div>`;}
+async function renderSector(){const d=await jget('data/SECTOR_RECOVERY.json');if(!d)return;if(d.status==='awaiting_sector_data'){$('sectorBox').innerHTML=`<div class="note">⏳ Ready & wired — awaiting sector cache. ${d.stock_trades_available} stock trades queued. ${d.action}</div>`;return;}const rows=Object.entries(d.by_sector||{}).map(([s,v])=>`<tr><td>${s}</td><td>${v.trades}</td><td class="${v.expectancy_pct>=0?'pos':'neg'}">${v.expectancy_pct>=0?'+':''}${v.expectancy_pct}%</td><td>${v.win_pct}%</td></tr>`).join('');$('sectorBox').innerHTML=`<table><thead><tr><th>sector</th><th>trades</th><th>expectancy</th><th>win%</th></tr></thead><tbody>${rows}</tbody></table><div class="note">best: <b>${d.best_sector||'—'}</b> · worst: <b>${d.worst_sector||'—'}</b></div>`;}
 async function renderHealthMatrix(){const d=await jget('data/HEALTH_MATRIX.json');if(!d){return;}
   const dot=s=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴',GRAY:'⚪'}[s]||'⚪');
   const feeds=(d.feeds||[]).map(f=>`<span style="white-space:nowrap">${dot(f.status)} ${f.name} <span class=dim>${f.detail}</span></span>`).join(' &nbsp;·&nbsp; ');
@@ -230,7 +243,7 @@ async function renderHealthMatrix(){const d=await jget('data/HEALTH_MATRIX.json'
   const cp=d.cron_pressure||{},provs=cp.providers||{};
   const cron=Object.entries(provs).map(([n,v])=>`${n} ${Math.round(v.pct_of_budget||0)}%`).join(' · ');
   const stg=d.storage||{};
-  const clocks=Object.entries(d.domain_clocks||{}).map(([n,v])=>`${n} ${(v&&v.open)||v==='open'?'open':'closed'}`).join(' · ');
+  const dcd=(d.domain_clocks||{}).domains||{};const clocks=Object.entries(dcd).map(([n,v])=>`${n} ${v&&v.open?'🟢open':'⚪closed'}`).join(' · ');
   $('healthMatrix').innerHTML=`
     <div class="hd" style="font-size:13px">🩺 PROJECT HEALTH — ${d.summary||''}</div>
     <div style="font-size:11px;padding:6px 0;line-height:1.9"><b>FEEDS:</b> ${feeds}</div>
@@ -254,7 +267,7 @@ function renderQuadrants(cv){const L=LIVE||{};
       `<div class="quad-champ">champ: ${champ||'—'}</div><div class="quad-st" title="${mh.msg}">${st}</div></div>`;}).join('');}
 function renderAcct(L){if(!L)return;
   const quads=['crypto','stock','metal','energy'],meta={crypto:{n:'CRYPTO',abbr:'C'},stock:{n:'STOCK',abbr:'S'},metal:{n:'METAL',abbr:'M'},energy:{n:'ENERGY',abbr:'E'}};
-  let rows=[['COMBINED EQUITY','$'+f(L.combined_equity),''],['REALIZED P&L','$'+f(L.combined_realized_pnl),(L.combined_realized_pnl>=0?'pos':'neg')]];
+  let rows=[['ALL 4 BOOKS (independent) · total equity','$'+f(L.combined_equity),''],['SUM REALIZED P&L (4 separate books)','$'+f(L.combined_realized_pnl),(L.combined_realized_pnl>=0?'pos':'neg')]];
   for(const q of quads){const b=L[q]||{},m=meta[q];rows.push([m.n,'$'+f(b.equity)+'  ('+sg(b.return_pct||0)+'%)',(b.return_pct||0)>=0?'pos':'neg']);}
   rows.push(['OPEN',quads.map(q=>(L[q]||{}).open_positions||0).join('+'),'dim'],['CHAMPIONS',quads.map(q=>L['champion_'+q]?q[0].toUpperCase():'-').join(''),'dim']);
   $('acct').innerHTML=rows.map(([k,v,c2])=>`<div class="stat"><div class="k">${k}</div><div class="val ${c2}${k==='CHAMPIONS'?' dim':''}">${v}</div></div>`).join('');}

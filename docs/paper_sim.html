@@ -57,8 +57,8 @@
   </div>
 
   <div class="top">
-    <div class="stat"><div class="k">Combined Equity</div><div class="v" id="combeq">—</div></div>
-    <div class="stat"><div class="k">Combined Realized P&amp;L</div><div class="v" id="compnl">—</div></div>
+    <div class="stat"><div class="k">All 4 Books (independent) — total equity</div><div class="v" id="combeq">—</div></div>
+    <div class="stat"><div class="k">Sum of 4 independent books — realized P&amp;L</div><div class="v" id="compnl">—</div></div>
     <div class="stat"><div class="k">Strategy</div><div class="v" id="strat" style="font-size:12px">—</div></div>
   </div>
 
@@ -113,7 +113,7 @@ async function load(){
       e.style.borderLeft='3px solid #3fb950';
       e.innerHTML=`<div class="k">3-Day Backtest Proof (crypto)</div><div class="v" style="font-size:13px">`+
         `${bt.trades} trades · ${bt.win_pct||bt.win_rate_pct||''}% win · ${(bt.mean_net_pct>=0?'+':'')+bt.mean_net_pct}%/trade · `+
-        `<span class="${bt.equity>=10000?'pos':'neg'}">$${Number(bt.equity).toLocaleString()}</span></div>`;
+        `<span class="${(bt.equity_after||0)>=10000?'pos':'neg'}">$${Number(bt.equity_after||0).toLocaleString()}</span></div>`;
       document.querySelector('.top').appendChild(e);
     }
     side($('cryptoPanel'), d.crypto, 'CRYPTO · ' + (d.champion_crypto||'no champion'));

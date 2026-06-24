@@ -175,6 +175,11 @@ if __name__ == "__main__":
     ap.add_argument("--accounts", default="all",
                     help="'all' or comma list: LEGACY,HARVEST_3,HARVEST_5")
     ap.add_argument("--baseline", type=float, default=10000.0)
+    ap.add_argument("--with-backfill", action="store_true",
+                    help="after the reset, immediately rebuild price history / fingerprint "
+                         "so the dashboard has data on the very next run (one-step reset).")
+    ap.add_argument("--backfill-days", type=int, default=30,
+                    help="how many days of history to rebuild when --with-backfill is set")
     a = ap.parse_args()
     accts = (list(STATE_FILES.keys()) if a.accounts.strip().lower() == "all"
              else [x.strip() for x in a.accounts.split(",") if x.strip()])
@@ -184,4 +189,18 @@ if __name__ == "__main__":
     reset_shared_ledgers(accts, a.baseline)
     reset_paper_books(a.baseline)
     print("DONE. Pair this with the matching Alpaca dashboard reset/funding.")
-    print("Next engine run starts these account(s) clean.")
+    if a.with_backfill:
+        print(f"\n--with-backfill set → rebuilding {a.backfill_days}d of history/fingerprint now…")
+        try:
+            import backfill_history
+            tk = backfill_history._default_tickers()
+            if tk:
+                backfill_history.backfill(tk, a.backfill_days)
+                print("Backfill/fingerprint rebuild COMPLETE. Reset + history done in one step.")
+            else:
+                print("Backfill skipped: no ticker list available (need signals.json or --tickers).")
+        except Exception as _be:
+            print(f"Backfill step failed ({_be}). Reset still succeeded; run backfill_history.py manually.")
+    else:
+        print("Next engine run starts these account(s) clean.")
+        print("(Tip: add --with-backfill to also rebuild history in the same step.)")

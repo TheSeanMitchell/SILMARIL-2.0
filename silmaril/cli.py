@@ -2260,6 +2260,16 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
             except Exception as _253e:
                 log.warning("2.5.3 audits skipped: %s", _253e)
             try:
+                # 2.5.3 final engines — decision trace, capital router explainer, sector recovery.
+                from .execution.decision_trace import build_decision_trace as _dtr
+                from .execution.capital_router_explainer import build_capital_router_explainer as _cre
+                from .execution.sector_recovery import build_sector_recovery as _scr2
+                _dt = _dtr(out); _cre(out); _scr2(out)
+                log.info("  2.5.3 final: decision traces %s · exit reasons %s",
+                         _dt.get("n_traces"), _dt.get("exit_reason_breakdown"))
+            except Exception as _253fe:
+                log.warning("2.5.3 final engines skipped: %s", _253fe)
+            try:
                 # VALIDATION LAYER (Alpha 2.15) — instrumentation only, no signals.
                 # Each is fail-safe; they populate as the sim exits and events log.
                 from .execution.execution_leak import build_execution_leak as _el2
