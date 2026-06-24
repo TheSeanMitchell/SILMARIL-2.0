@@ -1,6 +1,6 @@
 {
   "version": "api-health-1.3",
-  "generated_at": "2026-06-24T13:11:53.169975+00:00",
+  "generated_at": "2026-06-24T13:28:08.207046+00:00",
   "overall": "healthy",
   "freshness": {
     "ok": 12,
@@ -58,32 +58,32 @@
       },
       "market_leaders.json": {
         "status": "fresh",
-        "age_hours": 0.2,
+        "age_hours": 0.3,
         "budget_hours": 36
       },
       "debug_stream.json": {
         "status": "fresh",
-        "age_hours": 0.2,
+        "age_hours": 0.3,
         "budget_hours": 24
       }
     }
   },
   "news": {
-    "distinct_sources": 183,
-    "articles_in_cycle": 431,
+    "distinct_sources": 211,
+    "articles_in_cycle": 461,
     "top_sources": {
-      "Yahoo Finance": 72,
-      "The Motley Fool": 19,
-      "simplywall.st": 16,
+      "Yahoo Finance": 65,
+      "simplywall.st": 23,
       "Seeking Alpha": 13,
-      "CoinMarketCap": 12,
-      "Benzinga": 10,
-      "CoinDesk": 9,
-      "Reuters": 9,
-      "MarketBeat": 8,
-      "MarketWatch": 8,
-      "TradingView": 8,
-      "GuruFocus": 6
+      "CoinMarketCap": 13,
+      "MarketBeat": 11,
+      "PR Newswire": 11,
+      "The Motley Fool": 11,
+      "CoinDesk": 10,
+      "CNBC": 9,
+      "MarketWatch": 9,
+      "Stock Titan": 6,
+      "Binance": 6
     },
     "gated_by_domain_clock": false,
     "note": "Quota note: providers don't expose remaining minutes; delivery (sources x volume) is the real meter \u2014 a rate-limited feed collapses here first."
@@ -100,7 +100,7 @@
       "errors_logged": 20,
       "errors_recent_48h": 20,
       "last_error": "{'time': '2026-06-23T19:29:10.652989+00:00', 'msg': 'POST https://paper-api.alpaca.markets/v2/orders -> HTTP 422: {\"code\":42210000,\"message\":\"fractional orders ",
-      "last_error_age_hours": 17.7,
+      "last_error_age_hours": 18.0,
       "errors_note": null,
       "equity": 9938.2
     },
@@ -127,7 +127,7 @@
   },
   "domain_clocks": {
     "version": "domain-clock-1.0",
-    "checked_at": "2026-06-24T13:11:53.169975+00:00",
+    "checked_at": "2026-06-24T13:28:08.207046+00:00",
     "domains": {
       "stocks": {
         "open": true,
@@ -142,8 +142,8 @@
         "reason": "always open \u2014 markets never close"
       },
       "social": {
-        "open": true,
-        "reason": "hourly cadence \u2014 61 min since last"
+        "open": false,
+        "reason": "hourly cadence \u2014 16 min since last"
       },
       "edgar": {
         "open": true,
@@ -151,25 +151,25 @@
       }
     },
     "last_allowed": {
-      "stocks_news": "2026-06-24T13:02:01.691690+00:00",
-      "edgar": "2026-06-24T12:57:08.697866+00:00",
-      "social": "2026-06-24T12:10:33.757207+00:00"
+      "stocks_news": "2026-06-24T13:17:27.580553+00:00",
+      "edgar": "2026-06-24T13:11:56.490835+00:00",
+      "social": "2026-06-24T13:11:56.958648+00:00"
     },
     "today_budget": {
       "stocks": {
-        "allowed": 5,
+        "allowed": 7,
         "skipped": 84
       },
       "stocks_news": {
-        "allowed": 15,
+        "allowed": 16,
         "skipped": 30
       },
       "edgar": {
-        "allowed": 44,
+        "allowed": 45,
         "skipped": 0
       },
       "social": {
-        "allowed": 12,
+        "allowed": 13,
         "skipped": 32
       }
     },
@@ -177,10 +177,10 @@
     "note": "the cron may run 24/7: stock TRADING-adjacent fetches (earnings/ipo-cal) keep 08:30-16:30 ET Mon-Fri; equity NEWS runs every cycle in-window and hourly off-hours (information never sleeps); valuables always; social hourly; EDGAR every run through the SPCX window then 4h"
   },
   "storage": {
-    "repo_mb": 310.9,
-    "worktree_mb": 138.1,
-    "git_history_mb": 172.8,
-    "data_dir_mb": 131.4,
+    "repo_mb": 321.7,
+    "worktree_mb": 138.2,
+    "git_history_mb": 183.5,
+    "data_dir_mb": 131.5,
     "archive_mb": 11.6,
     "archive_share_pct": 8.8,
     "status": "ok",
@@ -193,18 +193,18 @@
   },
   "cron_pressure": {
     "runs_observed_today": 0,
-    "stock_window_runs_today": 5,
+    "stock_window_runs_today": 7,
     "providers": {
       "marketaux": {
-        "est_calls_today": 10.0,
+        "est_calls_today": 14.0,
         "free_per_day": 100,
-        "pct_of_budget": 10.0,
+        "pct_of_budget": 14.0,
         "status": "headroom"
       },
       "newsapi": {
-        "est_calls_today": 10.0,
+        "est_calls_today": 14.0,
         "free_per_day": 100,
-        "pct_of_budget": 10.0,
+        "pct_of_budget": 14.0,
         "status": "headroom"
       },
       "finnhub": {
@@ -215,15 +215,15 @@
         "note": "60/min limit, effectively per-day huge"
       },
       "alpha_vantage": {
-        "est_calls_today": 1.0,
+        "est_calls_today": 1.4,
         "free_per_day": 25,
-        "pct_of_budget": 4.0,
+        "pct_of_budget": 5.6,
         "status": "headroom"
       },
       "fmp": {
-        "est_calls_today": 10.0,
+        "est_calls_today": 14.0,
         "free_per_day": 250,
-        "pct_of_budget": 4.0,
+        "pct_of_budget": 5.6,
         "status": "headroom"
       },
       "twelve_data": {
