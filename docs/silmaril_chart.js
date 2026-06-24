@@ -10,7 +10,7 @@
   if (window.__silmarilChartBooted) return;
   window.__silmarilChartBooted = true;
 
-  var DATA = {}, POS = {}, RHY = {}, READY = false;
+  var DATA = {}, POS = {}, RHY = {}, OV = {}, READY = false;
   var MO = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   function j(p) { return fetch(p + "?t=" + Date.now()).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); }
@@ -22,10 +22,11 @@
   function spanMs(tf) { return { "1D": 864e5, "3D": 3 * 864e5, "1W": 7 * 864e5, "ALL": 1e15 }[tf] || 1e15; }
 
   function boot() {
-    return Promise.all([j("data/price_samples.json"), j("data/paper_sim_live.json"), j("data/PEAK_RHYTHM.json"), j("data/champion_crypto.json"), j("data/champion_stock.json")])
+    return Promise.all([j("data/price_samples.json"), j("data/paper_sim_live.json"), j("data/PEAK_RHYTHM.json"), j("data/champion_crypto.json"), j("data/champion_stock.json"), j("data/CHART_OVERLAYS.json")])
       .then(function (r) {
-        var ps = r[0], live = r[1], rhy = r[2], cc = r[3], cs = r[4];
+        var ps = r[0], live = r[1], rhy = r[2], cc = r[3], cs = r[4], ovf = r[5];
         if (ps && ps.samples) DATA = ps.samples;
+        if (ovf && ovf.symbols) OV = ovf.symbols;
         function ts(nm) { var t = /_t(\d+)/.exec(nm || ""), s = /_s(\d+)/.exec(nm || ""); return [t ? +t[1] : null, s ? +s[1] : null]; }
         var champ = { crypto: cc && cc.name, stock: cs && cs.name };
         if (live) ["crypto", "stock", "metal", "energy"].forEach(function (bk) {
@@ -93,6 +94,31 @@
     if (p.mark != null) { var my = Y(p.mark); s += "<circle cx='" + (w - padR - 2) + "' cy='" + my.toFixed(1) + "' r='3.2' fill='#f7c948'><animate attributeName='r' values='3.2;5;3.2' dur='1.6s' repeatCount='indefinite'/></circle>"; }
     var ry = RHY[sym];
     if (ry && ry.predicted_next_peak_at) { var pt = tsParse(ry.predicted_next_peak_at); if (pt && pt >= xs[0] && pt <= xs[xs.length - 1] + 36e5) { var px = Math.min(X(pt), w - padR); s += "<line x1='" + px.toFixed(1) + "' x2='" + px.toFixed(1) + "' y1='" + padT + "' y2='" + (padT + ih) + "' stroke='#b388ff' stroke-width='1' stroke-dasharray='2 3'/><text x='" + (px - 2).toFixed(1) + "' y='" + (padT + 9) + "' font-size='8' fill='#b388ff' text-anchor='end'>next peak~</text>"; } }
+    // ---- SILMARIL overlays: closed-trade markers + GOLD target + Dr Strange ----
+    var ov = OV[sym] || {};
+    var goldTgt = (p.target != null) ? null : null;   // open-position target already drawn green
+    if (p.target == null && ov.trades && ov.trades.length) {
+      var lt = ov.trades[ov.trades.length - 1];
+      if (lt.target != null) hline(lt.target, "#f7c948", "TARGET (cash-out) " + fmtP(lt.target));
+    }
+    (ov.trades || []).forEach(function (t) {
+      var et = tsParse(t.entry_t), xt = tsParse(t.exit_t);
+      if (et && et >= xs[0] && et <= xs[xs.length - 1] && t.entry != null) {
+        var ex = X(et), ey = Y(t.entry);
+        s += "<path d='M" + ex.toFixed(1) + "," + (ey + 6).toFixed(1) + " l-4,7 l8,0 z' fill='#9aa4b8' opacity='.95'/>";
+      }
+      if (xt && xt >= xs[0] && xt <= xs[xs.length - 1] && t.exit != null) {
+        var xx2 = X(xt), xy = Y(t.exit), c2 = t.pnl_pct >= 0 ? "#16c784" : "#ea3943";
+        s += "<path d='M" + xx2.toFixed(1) + "," + (xy - 6).toFixed(1) + " l-4,-7 l8,0 z' fill='" + c2 + "'/>";
+      }
+    });
+    if (ov.dr_strange && ov.dr_strange.expected_move_pct != null) {
+      var dsm = ov.dr_strange.expected_move_pct, cur = ys[ys.length - 1], projP = cur * (1 + dsm / 100);
+      if (projP >= mn && projP <= mx) {
+        var py2 = Y(projP);
+        s += "<line x1='" + (w - padR - 64).toFixed(1) + "' x2='" + (w - padR).toFixed(1) + "' y1='" + Y(cur).toFixed(1) + "' y2='" + py2.toFixed(1) + "' stroke='#b388ff' stroke-width='1.3' stroke-dasharray='3 2'/><circle cx='" + (w - padR).toFixed(1) + "' cy='" + py2.toFixed(1) + "' r='2.6' fill='#b388ff'/><text x='" + (w - padR - 2).toFixed(1) + "' y='" + (py2 - 4).toFixed(1) + "' font-size='8' fill='#b388ff' text-anchor='end'>DrStrange " + ov.dr_strange.direction + " " + (dsm >= 0 ? "+" : "") + dsm + "%</text>";
+      }
+    }
     if (withCross) s += "<g class='cross' style='display:none'><line stroke='#ffffff66' stroke-width='1'/><circle r='3.6' fill='#fff'/><g class='ctip'></g></g>";
     s += "</svg>";
     return { svg: s, rows: rows, X: X, Y: Y, w: w, h: h, up: up, st: stats(rows) };
@@ -135,6 +161,18 @@
       H += row("Typical amplitude", (ry.typical_peak_amplitude_pct != null ? ry.typical_peak_amplitude_pct + "%" : "—"));
       H += row("Current trend", (ry.current_trend || "—"), ry.current_trend === "up" ? "#16c784" : "#ea3943");
       H += row("Predicted next peak", ry.predicted_next_peak_at ? fmtDateTime(tsParse(ry.predicted_next_peak_at)) : "—", "#b388ff");
+    }
+    var ov = OV[sym] || {};
+    if (ov.dr_strange || ov.conviction || (ov.trades && ov.trades.length)) {
+      H += "<div style='font-weight:700;color:#b388ff;margin:10px 0 6px'>🔮 PREDICTIONS & SIGNALS</div>";
+      if (ov.dr_strange) H += row("Dr Strange (" + (ov.dr_strange.horizon_days || 3) + "d)", ov.dr_strange.direction + " " + (ov.dr_strange.expected_move_pct >= 0 ? "+" : "") + ov.dr_strange.expected_move_pct + "% · " + Math.round((ov.dr_strange.agreement || 0) * 100) + "% agree", ov.dr_strange.expected_move_pct >= 0 ? "#16c784" : "#ea3943");
+      if (ov.conviction) H += row("Conviction", (ov.conviction.signal || "—") + " · " + (ov.conviction.backers || 0) + " agents · " + (ov.conviction.trend || ""), ov.conviction.signal === "BUY" ? "#16c784" : "#9aa4b8");
+      if (ov.trades && ov.trades.length) {
+        var wins = ov.trades.filter(function (t) { return t.pnl_pct > 0; }).length;
+        H += row("Past trades here", ov.trades.length + " · " + wins + "W/" + (ov.trades.length - wins) + "L");
+        var lastT = ov.trades[ov.trades.length - 1];
+        H += row("Last exit", (lastT.pnl_pct >= 0 ? "+" : "") + lastT.pnl_pct + "% · " + fmtDateTime(tsParse(lastT.exit_t)), lastT.pnl_pct >= 0 ? "#16c784" : "#ea3943");
+      }
     }
     H += "</div>";
     return H;
@@ -228,12 +266,30 @@
   }
   function autotag(root) {
     if (!READY) return;
+    // (a) whole-element tickers (e.g. a cell that is exactly "BTC-USD")
     (root || document).querySelectorAll("td,th,span,div,b,strong,a,li").forEach(function (c) {
       if (c.__slm || c.children.length || c.classList.contains("tick") || (c.dataset && c.dataset.sym)) return;
       var m = TICK_RE.exec((c.textContent || "").trim()); if (!m) return;
       var s = symFromEl(c); if (!s) return;
       c.__slm = 1; c.dataset.sym = s; c.style.cursor = "pointer"; c.style.borderBottom = "1px dotted #ffffff40";
       c.title = "Click for fullscreen chart + full detail" + (hasHover ? " · hover to preview" : "");
+    });
+    // (b) ticker TEXT NODES inside cells that also hold a badge — e.g. "[SELL] DYDX-USD".
+    //     This is why hovering past-trade rows did nothing: the symbol was a bare text node.
+    (root || document).querySelectorAll("td,li,div,span,p").forEach(function (c) {
+      if (c.__slmTx) return;
+      var nodes = [];
+      for (var n = c.firstChild; n; n = n.nextSibling) if (n.nodeType === 3 && n.nodeValue.trim()) nodes.push(n);
+      nodes.forEach(function (n) {
+        var txt = n.nodeValue.trim(); var m = TICK_RE.exec(txt); if (!m) return;
+        var sym = DATA[txt] ? txt : (DATA[txt + "-USD"] ? txt + "-USD" : (DATA[txt.toUpperCase()] ? txt.toUpperCase() : (DATA[txt.toUpperCase() + "-USD"] ? txt.toUpperCase() + "-USD" : null)));
+        if (!sym) return;
+        var span = document.createElement("span");
+        span.className = "tick"; span.dataset.sym = sym; span.textContent = txt;
+        span.style.cssText = "cursor:pointer;border-bottom:1px dotted #ffffff40";
+        span.title = "Click for chart + detail" + (hasHover ? " · hover to preview" : "");
+        n.parentNode.replaceChild(span, n); c.__slmTx = 1;
+      });
     });
   }
 

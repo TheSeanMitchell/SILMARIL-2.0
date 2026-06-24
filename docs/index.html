@@ -49,7 +49,7 @@
   .quad-sub{font-size:11px;opacity:.85}.quad-champ{font-size:10px;opacity:.7;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .quad-st{font-size:10px;opacity:.6;margin-top:2px}
   </style></head><body><div class="wrap">
-<div class="banner"><h1>SILMARIL&nbsp;2.5 · 4-QUADRANT LAB</h1><span class="dim" style="font-size:12px;font-weight:bold" id="clock">—</span><span class="dim" style="font-size:10px" id="ts">—</span><button class="themebtn" id="themeBtn" onclick="toggleTheme()">🌙 Dark</button></div>
+<div class="banner" style="position:relative"><h1 style="font-weight:900;letter-spacing:.5px">SILMARIL&nbsp;2.5.4</h1><span class="dim" style="font-size:12px;font-weight:bold" id="clock">—</span><span class="dim" style="font-size:10px" id="ts">—</span><button class="themebtn" id="themeBtn" onclick="toggleTheme()" style="position:absolute;top:6px;right:6px;padding:1px 6px;font-size:10px;line-height:1.3">🌙</button></div>
 <div class="tabs">
   <button class="on" data-p="cmd">COMMAND</button><button data-p="arena">ARENA</button>
   <button data-p="forensics">FORENSICS</button><button data-p="authority">AUTHORITY LAB</button><button data-p="settings">SETTINGS</button>
@@ -83,6 +83,12 @@
     <table><thead><tr><th>Sym</th><th>Entry</th><th>Mark</th><th>uPL%</th><th>→T/→S</th></tr></thead><tbody id="posCrypto"></tbody></table>
     <div class="dim" style="font-size:11px;margin-top:8px">◆ STOCK</div>
     <table><thead><tr><th>Sym</th><th>Entry</th><th>Mark</th><th>uPL%</th><th>→T/→S</th></tr></thead><tbody id="posStock"></tbody></table>
+  </div></section>
+  <section><div class="hd">🧾 RECENT TRADES — all books (hover/tap any symbol for its chart)</div><div class="bd">
+    <div class="dim" style="font-size:11px">◆ CRYPTO</div>
+    <table><thead><tr><th>Trade</th><th>Px</th><th>P&L</th></tr></thead><tbody id="trCrypto"></tbody></table>
+    <div class="dim" style="font-size:11px;margin-top:8px">◆ STOCK</div>
+    <table><thead><tr><th>Trade</th><th>Px</th><th>P&L</th></tr></thead><tbody id="trStock"></tbody></table>
   </div></section>
 </div>
 
@@ -120,6 +126,9 @@
   <section><div class="hd">🔗 DECISION TRACE — why each trade happened & ended</div><div class="bd">
     <div class="note"><b>What:</b> per-trade chain — why entered, why exited, outcome. <b>Why:</b> every trade auditable end-to-end. <b>Action:</b> if TIMEOUT_GAIN/LOSS dominate over TARGET_HIT, exits fire before target = leaving edge on the table.</div>
     <div id="traceBox"></div></div></section>
+  <section><div class="hd">⏱️ TIMER / EDGE-CAPTURE SIMULATION — what hold-timer captures the most edge</div><div class="bd">
+    <div class="note"><b>What:</b> replays every closed trade under many hold-timers (and no timer) to find the optimum per quadrant. <b>Why:</b> trades keep ending on TIMEOUT not target — this proves the best timer. <b>Action:</b> champion the best timer per book; leak breakdown says if we sell too early/late or the thesis is slow.</div>
+    <div id="timerBox">loading…</div></div></section>
   <section><div class="hd">💵 CAPITAL ROUTER EXPLAINED — the allocation math (hypothetical)</div><div class="bd">
     <div class="note"><b>HYPOTHETICAL research only.</b> How a single $10k would split across top strategies. The 4 books each trade their OWN independent $10k — they are NOT pooled.</div>
     <div id="routerBox"></div></div></section>
@@ -209,9 +218,9 @@ async function load(){
   const safe=(fn,name)=>{try{fn();}catch(e){console.error(name,e);}};
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
-  safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS');
+  safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderTrades(),'trades');
   safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
-  safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
+  safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
   const g=s.overall_grade,arrow=s.trend==='up'?'▲':s.trend==='down'?'▼':'■';
@@ -265,6 +274,24 @@ async function renderChampTruth(){const g=await jget('data/CHAMPION_GOVERNANCE.j
     <div class="dim" style="margin:10px 0 4px">PER-BOOK CHAMPIONS (independent):</div>
     <table><thead><tr><th>book</th><th>champion</th><th></th></tr></thead><tbody>${bookRows}</tbody></table>
     <div class="note">Selection rule: ${g.selection_rule||'forward survivability, sticky (anti-flip-flop margin)'}. Status: ${g.governance_status||''}</div>`;}
+async function renderTimer(){const d=await jget('data/TIMER_OPTIMIZATION.json');if(!d||!d.by_book){$('timerBox').innerHTML='<div class=dim>no closed trades to simulate yet</div>';return;}
+  let h='';for(const bk of ['crypto','stock','metal','energy']){const v=d.by_book[bk];if(!v)continue;
+    const rec=(d.recommendation_by_book||{})[bk]||'';
+    const curve=Object.entries(v.by_timeout||{}).map(([k,o])=>`<tr style="${(v.optimal_timeout_min==null&&k==='none')||String(v.optimal_timeout_min)===k?'font-weight:bold;color:var(--pos)':''}"><td>${k==='none'?'no timer':k+'m'}</td><td class="${o.avg_realized_pct>=0?'pos':'neg'}">${o.avg_realized_pct>=0?'+':''}${o.avg_realized_pct}%</td><td>${o.win_pct}%</td></tr>`).join('');
+    const leaks=Object.entries(v.leak_breakdown||{}).map(([k,n])=>`${k.replace(/_/g,' ')}: <b>${n}</b>`).join(' · ');
+    h+=`<div style="margin-top:10px;padding:8px;border:1px solid var(--line,#333);border-radius:6px">
+      <div style="font-weight:bold;text-transform:uppercase">${bk} · ${v.trades} trades</div>
+      <div class="pos" style="font-size:13px;margin:3px 0">▶ ${rec}</div>
+      <div class="dim" style="font-size:11px;margin-bottom:4px">today's avg ${v.actual_avg_realized_pct}%/trade · leaks: ${leaks}</div>
+      <table style="font-size:11px"><thead><tr><th>timer</th><th>avg realized</th><th>win%</th></tr></thead><tbody>${curve}</tbody></table></div>`;}
+  $('timerBox').innerHTML=h||'<div class=dim>not enough closed trades per book yet</div>';}
+async function renderTrades(){const L=await jget('data/paper_sim_live.json');if(!L)return;
+  function rows(bk){const rt=((L[bk]||{}).recent_trades)||[];if(!rt.length)return '<tr><td colspan=3 class="dim">no trades yet</td></tr>';
+    return rt.slice(0,25).map(function(x){const pnl=x.pnl;const c=pnl==null?'dim':(pnl>=0?'pos':'neg');
+      return `<tr><td><span style="font-size:9px;opacity:.7">${x.side}</span> <span class="tick" data-sym="${x.sym}">${x.sym}</span></td><td>${x.price}</td><td class="${c}">${pnl==null?'—':(pnl>=0?'+$':'-$')+Math.abs(pnl).toFixed(2)}</td></tr>`;}).join('');}
+  if($('trCrypto'))$('trCrypto').innerHTML=rows('crypto');
+  if($('trStock'))$('trStock').innerHTML=rows('stock');
+  if(window.SilmarilChart)setTimeout(function(){SilmarilChart.autotag(document);},50);}
 async function renderHealthMatrix(){const d=await jget('data/HEALTH_MATRIX.json');if(!d){return;}
   const dot=s=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴',GRAY:'⚪'}[s]||'⚪');
   const feeds=(d.feeds||[]).map(f=>`<span style="white-space:nowrap">${dot(f.status)} ${f.name} <span class=dim>${f.detail}</span></span>`).join(' &nbsp;·&nbsp; ');

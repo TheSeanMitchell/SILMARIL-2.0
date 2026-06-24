@@ -1,0 +1,97 @@
+{
+  "generated_at": "2026-06-24T10:43:50.838046+00:00",
+  "candidates_min": [
+    30,
+    60,
+    120,
+    180,
+    240,
+    360,
+    480,
+    600,
+    720,
+    "none"
+  ],
+  "by_book": {
+    "crypto": {
+      "trades": 40,
+      "actual_avg_realized_pct": 0.309,
+      "by_timeout": {
+        "30": {
+          "avg_realized_pct": 0.386,
+          "total_realized_pct": 15.44,
+          "win_pct": 55.0,
+          "n": 40
+        },
+        "60": {
+          "avg_realized_pct": 0.125,
+          "total_realized_pct": 5.01,
+          "win_pct": 70.0,
+          "n": 40
+        },
+        "120": {
+          "avg_realized_pct": -0.07,
+          "total_realized_pct": -2.79,
+          "win_pct": 45.0,
+          "n": 40
+        },
+        "180": {
+          "avg_realized_pct": 0.051,
+          "total_realized_pct": 2.04,
+          "win_pct": 60.0,
+          "n": 40
+        },
+        "240": {
+          "avg_realized_pct": 0.063,
+          "total_realized_pct": 2.52,
+          "win_pct": 60.0,
+          "n": 40
+        },
+        "360": {
+          "avg_realized_pct": 0.124,
+          "total_realized_pct": 4.95,
+          "win_pct": 67.5,
+          "n": 40
+        },
+        "480": {
+          "avg_realized_pct": 0.183,
+          "total_realized_pct": 7.31,
+          "win_pct": 62.5,
+          "n": 40
+        },
+        "600": {
+          "avg_realized_pct": -0.212,
+          "total_realized_pct": -8.47,
+          "win_pct": 50.0,
+          "n": 40
+        },
+        "720": {
+          "avg_realized_pct": -0.23,
+          "total_realized_pct": -9.21,
+          "win_pct": 47.5,
+          "n": 40
+        },
+        "none": {
+          "avg_realized_pct": -0.175,
+          "total_realized_pct": -7.0,
+          "win_pct": 50.0,
+          "n": 40
+        }
+      },
+      "optimal_timeout_min": 30,
+      "optimal_avg_realized_pct": 0.386,
+      "improvement_vs_actual_pct": 0.077,
+      "leak_breakdown": {
+        "sold_too_early": 13,
+        "sold_too_late": 27
+      }
+    }
+  },
+  "recommendation_by_book": {
+    "crypto": "set timer \u2248 30 min \u2192 +0.077%/trade vs today"
+  },
+  "what": "Replays each closed trade under many hold-timers to find the one that captures the most edge.",
+  "why": "Trades keep ending on TIMEOUT, not target. This proves whether a longer/shorter/no timer would have captured more, per quadrant.",
+  "action": "Champion the best timer per book like any other parameter. Leak breakdown says WHY: sold_too_early = raise/RemoveTimer; sold_too_late = tighten exit; thesis_slow = entry/regime.",
+  "note": "Simulation over real forward price paths (24h horizon). Recommends only \u2014 does not change live timers during the learning pause. Each quadrant evaluated independently."
+}
