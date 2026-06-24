@@ -59,7 +59,7 @@ def fetch_ticker_news(
     ticker: str,
     name: str,
     max_articles: int = 6,
-    polite_delay: float = 0.4,
+    polite_delay: float = 0.15,
 ) -> List[Article]:
     """Fetch recent news for one ticker via Google News RSS.
 
