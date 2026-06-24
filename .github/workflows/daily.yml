@@ -69,7 +69,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1   # SHALLOW — was 0 (full 375MB history every run). Huge checkout speedup.
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
@@ -125,23 +125,28 @@ jobs:
       # Outputs (sentiment_calibration.json, agent_scorecard.json,
       # broker_reconciliation.json, debug_stream.json) are committed by the
       # existing "git add docs/data/" step below.
+      # HEAVY analytics now run ONCE PER HOUR (top-of-hour tick), not every 15 min.
+      # They summarise data that barely moves intra-hour, so this is free time back
+      # on 3 of every 4 session runs. The trade cycle above always runs.
       - name: Sanitize price history (drop corrupt feed ticks)
         run: |
-          python scripts/sanitize_history.py || true
+          MIN=$(date -u +%M)
+          if [ "$MIN" -lt 15 ]; then python scripts/sanitize_history.py || true; else echo "skip sanitize (only top-of-hour)"; fi
 
-      - name: Post-cycle analytics suite
+      - name: Post-cycle analytics suite (top-of-hour only)
         if: always()
         env:
-          # market_leaders ingestion (key-first, all optional — degrades gracefully)
           FMP_API_KEY:           ${{ secrets.FMP_API_KEY }}
           ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
           POLYGON_API_KEY:       ${{ secrets.POLYGON_API_KEY }}
         run: |
-          python -m silmaril.analytics.suite --output docs/data || true
+          MIN=$(date -u +%M)
+          if [ "$MIN" -lt 15 ]; then python -m silmaril.analytics.suite --output docs/data || true; else echo "skip heavy analytics (only top-of-hour)"; fi
 
-      - name: Generate social brag sheet
+      - name: Generate social brag sheet (top-of-hour only)
         run: |
-          python scripts/brag_sheet.py || true
+          MIN=$(date -u +%M)
+          if [ "$MIN" -lt 15 ]; then python scripts/brag_sheet.py || true; else echo "skip brag sheet (only top-of-hour)"; fi
 
       - name: Verify learning state preserved
         run: |
@@ -167,9 +172,10 @@ jobs:
             exit 0
           fi
           git commit -m "🤖 daily run $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          # Retry push up to 3 times with rebase if a concurrent commit landed
+          # Shallow-safe push: try push; if rejected, fetch just the tip and rebase onto it.
           for i in 1 2 3; do
-            git pull --rebase origin main && git push && break || true
-            echo "push attempt $i failed; sleeping 5s"
-            sleep 5
+            git push && break || true
+            echo "push attempt $i failed; fetching tip + rebasing"
+            git fetch --depth=1 origin main && git rebase origin/main || git rebase --abort || true
+            sleep 4
           done
