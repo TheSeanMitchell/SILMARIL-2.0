@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from statistics import median
 from typing import Any, Dict, List
 from .atomic_io import write_json_atomic
 
@@ -92,6 +93,35 @@ def build_parameter_registry(out_dir) -> Dict[str, Any]:
         "Hold-timer", ("no timer" if (opt is None and cryp) else (str(opt) + " min" if opt else None)),
         None, "edge captured per trade", cryp.get("optimal_avg_realized_pct"),
         lb, "ROTATING (crypto)" + (f" · {','.join(gated)} data-gated" if gated else ""), "TIMER_OPTIMIZATION.json"))
+
+    # 6) Regime (trend) per book — the parameter the held-stocks loss exposed
+    reg = _load(out, "REGIME_CLASSIFIER.json")
+    rb = reg.get("by_book") or {}
+    reg_champ = " · ".join(f"{b}:{d.get('regime','?')}" for b, d in rb.items() if d.get("regime") not in (None, "NO DATA")) or None
+    entries.append(_entry(
+        "Regime (per book)", reg_champ, None, "classify up/sideways/down to match target aggression",
+        (rb.get("crypto", {}) or {}).get("median_slope_pct"),
+        [{"value": f"{b}", "note": f"{d.get('regime')} {d.get('median_slope_pct')}%"} for b, d in rb.items() if d.get("regime") not in (None, "NO DATA")],
+        "CLASSIFYING (method-champion data-gated)", "REGIME_CLASSIFIER.json"))
+
+    # 7) Peak-rhythm — minutes between bounces; prioritize fast-cycling names for the 30m hold
+    pk = _load(out, "PEAK_RHYTHM.json"); ps = pk.get("by_symbol") or {}
+    cyc = [(s, d.get("median_minutes_between_peaks")) for s, d in ps.items() if d.get("median_minutes_between_peaks")]
+    med_cyc = round(median([c for _, c in cyc]), 0) if cyc else None
+    fast = sorted([c for c in cyc if c[1]], key=lambda x: x[1])[:5]
+    entries.append(_entry(
+        "Peak-rhythm", (f"{med_cyc:.0f} min median cycle") if med_cyc else None, None,
+        "time between bounces → find names that bounce inside the 30m hold", med_cyc,
+        [{"value": s, "note": f"{m:.0f} min/cycle"} for s, m in fast],
+        "ROTATING (crypto)", "PEAK_RHYTHM.json"))
+
+    # 8) Time-of-day edge — which hours actually pay, per book
+    tod = _load(out, "TIME_OF_DAY.json"); bw = tod.get("best_window_by_book") or {}
+    tod_champ = " · ".join(f"{b}:{w}" for b, w in bw.items()) or None
+    entries.append(_entry(
+        "Time-of-day edge", tod_champ, None, "concentrate trading in the hours with measured edge",
+        None, [{"value": b, "note": w} for b, w in bw.items()],
+        "ROTATING", "TIME_OF_DAY.json"))
 
     greens = sum(1 for e in entries if e["health"] == "GREEN")
     payload = {

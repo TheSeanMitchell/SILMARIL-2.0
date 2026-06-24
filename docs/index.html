@@ -83,12 +83,20 @@
     <table><thead><tr><th>Sym</th><th>Entry</th><th>Mark</th><th>uPL%</th><th>→T/→S</th></tr></thead><tbody id="posCrypto"></tbody></table>
     <div class="dim" style="font-size:11px;margin-top:8px">◆ STOCK</div>
     <table><thead><tr><th>Sym</th><th>Entry</th><th>Mark</th><th>uPL%</th><th>→T/→S</th></tr></thead><tbody id="posStock"></tbody></table>
+    <div class="dim" style="font-size:11px;margin-top:8px">◆ METAL</div>
+    <table><thead><tr><th>Sym</th><th>Entry</th><th>Mark</th><th>uPL%</th><th>→T/→S</th></tr></thead><tbody id="posMetal"></tbody></table>
+    <div class="dim" style="font-size:11px;margin-top:8px">◆ ENERGY</div>
+    <table><thead><tr><th>Sym</th><th>Entry</th><th>Mark</th><th>uPL%</th><th>→T/→S</th></tr></thead><tbody id="posEnergy"></tbody></table>
   </div></section>
   <section><div class="hd">🧾 RECENT TRADES — all books (hover/tap any symbol for its chart)</div><div class="bd">
     <div class="dim" style="font-size:11px">◆ CRYPTO</div>
-    <table><thead><tr><th>Trade</th><th>Px</th><th>P&L</th></tr></thead><tbody id="trCrypto"></tbody></table>
+    <table><thead><tr><th>Trade</th><th>Px</th><th>P&L</th><th>When</th></tr></thead><tbody id="trCrypto"></tbody></table>
     <div class="dim" style="font-size:11px;margin-top:8px">◆ STOCK</div>
-    <table><thead><tr><th>Trade</th><th>Px</th><th>P&L</th></tr></thead><tbody id="trStock"></tbody></table>
+    <table><thead><tr><th>Trade</th><th>Px</th><th>P&L</th><th>When</th></tr></thead><tbody id="trStock"></tbody></table>
+    <div class="dim" style="font-size:11px;margin-top:8px">◆ METAL</div>
+    <table><thead><tr><th>Trade</th><th>Px</th><th>P&L</th><th>When</th></tr></thead><tbody id="trMetal"></tbody></table>
+    <div class="dim" style="font-size:11px;margin-top:8px">◆ ENERGY</div>
+    <table><thead><tr><th>Trade</th><th>Px</th><th>P&L</th><th>When</th></tr></thead><tbody id="trEnergy"></tbody></table>
   </div></section>
 </div>
 
@@ -111,6 +119,10 @@
 
 <!-- FORENSICS -->
 <div class="page" id="p-forensics">
+  <section><div class="hd">📔 DAILY JOURNAL — the log, in plain human words</div><div class="bd">
+    <div class="note">A human-voice note each run that points out what's genuinely going well — even on a rough day. Composed only from true state, never invented.</div>
+    <div id="journalBox" style="font-size:13px;line-height:1.5;padding:6px 0">loading…</div>
+    <div id="journalSignals" class="dim" style="font-size:10px"></div></div></section>
   <section><div class="hd">🏛️ PARAMETER-CHAMPION REGISTRY — every rotating champion, one view</div><div class="bd">
     <div class="note"><b>What:</b> every parameter SILMARIL elects a champion for on each daily run — strategy, drop, bounce, the drop×bounce combo, hold-timer. <b>Why:</b> verify at a glance (human or AI) that each champion is alive, sensible, and rotating. <b>Health:</b> 🟢 electing from a live leaderboard · 🟡 thin · 🔴 none yet.</div>
     <div id="registryBox">loading…</div></div></section>
@@ -181,7 +193,7 @@
     <p class="note">SILMARIL 2.5 · validation phase · champion must survive 100 out-of-sample trades. $100–300/day is an unproven hope, never income.</p>
   </div></section>
 </div>
-<div id="healthMatrix" style="margin-top:14px"></div><div id="healthFooter" style="border-top:2px solid var(--line);margin-top:14px;padding:8px 0;font-size:11px" class="dim">—</div></div>
+<div id="healthMatrix" style="margin-top:14px"></div><div id="healthFooter" style="border-top:2px solid var(--line);margin-top:14px;padding:8px 0;font-size:11px" class="dim">—</div><div id="journalFooter" style="padding:6px 0 14px;font-size:11px;font-style:italic;opacity:.75" class="dim">—</div></div>
 
 <div id="modal"><div id="modalBox"><button id="modalClose" onclick="document.getElementById('modal').style.display='none'">CLOSE ✕</button>
   <div id="modalTitle" style="font-size:17px;font-weight:bold"></div><div id="modalThesis" class="note"></div>
@@ -227,8 +239,8 @@ async function load(){
   const safe=(fn,name)=>{try{fn();}catch(e){console.error(name,e);}};
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
-  safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderTrades(),'trades');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderRegistry(),'reg'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -295,11 +307,14 @@ async function renderTimer(){const d=await jget('data/TIMER_OPTIMIZATION.json');
       <table style="font-size:11px"><thead><tr><th>timer</th><th>avg realized</th><th>win%</th></tr></thead><tbody>${curve}</tbody></table></div>`;}
   $('timerBox').innerHTML=h||'<div class=dim>not enough closed trades per book yet</div>';}
 async function renderTrades(){const L=await jget('data/paper_sim_live.json');if(!L)return;
-  function rows(bk){const rt=((L[bk]||{}).recent_trades)||[];if(!rt.length)return '<tr><td colspan=3 class="dim">no trades yet</td></tr>';
+  function rows(bk){const rt=((L[bk]||{}).recent_trades)||[];if(!rt.length)return '<tr><td colspan=4 class="dim">no trades yet</td></tr>';
     return rt.slice(0,25).map(function(x){const pnl=x.pnl;const c=pnl==null?'dim':(pnl>=0?'pos':'neg');
-      return `<tr><td><span style="font-size:9px;opacity:.7">${x.side}</span> <span class="tick" data-sym="${x.sym}">${x.sym}</span></td><td>${x.price}</td><td class="${c}">${pnl==null?'—':(pnl>=0?'+$':'-$')+Math.abs(pnl).toFixed(2)}</td></tr>`;}).join('');}
+      const when=x.t?new Date(x.t).toLocaleString([], {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'';
+      return `<tr><td><span style="font-size:9px;opacity:.7">${x.side}</span> <span class="tick" data-sym="${x.sym}">${x.sym}</span></td><td>${x.price}</td><td class="${c}">${pnl==null?'—':(pnl>=0?'+$':'-$')+Math.abs(pnl).toFixed(2)}</td><td style="font-size:9px;opacity:.6;white-space:nowrap">${when}</td></tr>`;}).join('');}
   if($('trCrypto'))$('trCrypto').innerHTML=rows('crypto');
   if($('trStock'))$('trStock').innerHTML=rows('stock');
+  if($('trMetal'))$('trMetal').innerHTML=rows('metal');
+  if($('trEnergy'))$('trEnergy').innerHTML=rows('energy');
   if(window.SilmarilChart)setTimeout(function(){SilmarilChart.autotag(document);},50);}
 async function renderThreshChamp(){const d=await jget('data/THRESHOLD_CHAMPION.json');if(!d){$('threshChampBox').innerHTML='<div class=dim>no data yet</div>';return;}
   const cc=d.champion_combo||{},ac=d.accuracy_champion_combo||{};
@@ -311,6 +326,10 @@ async function renderThreshChamp(){const d=await jget('data/THRESHOLD_CHAMPION.j
     </div>
     <div class="dim" style="font-size:11px;margin-bottom:3px">champion DROP <b>${d.champion_drop_pct}%</b> · champion BOUNCE <b>${d.champion_bounce_pct}%</b> · live is ${d.current_live.drop_pct}%/${d.current_live.bounce_pct}%</div>
     <table style="font-size:11px"><thead><tr><th>drop</th><th>target</th><th>expectancy</th><th>hit%</th><th>n</th></tr></thead><tbody>${grid}</tbody></table>`;}
+async function renderJournal(){const d=await jget('data/DAILY_JOURNAL.json');if(!d||!d.entry)return;
+  if($('journalFooter'))$('journalFooter').textContent='📔 '+d.entry;
+  if($('journalBox'))$('journalBox').textContent=d.entry;
+  if($('journalSignals')){const g=(d.good_signals||[]).length,w=(d.watch_items||[]).length;$('journalSignals').textContent=`${g} good signal(s) · ${w} watch item(s) this cycle`;}}
 async function renderRegistry(){const d=await jget('data/PARAMETER_REGISTRY.json');if(!d||!d.parameters){$('registryBox').innerHTML='<div class=dim>no data</div>';return;}
   const dot=h=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴'}[h]||'⚪');
   const rows=d.parameters.map(e=>`<tr><td>${dot(e.health)} <b>${e.parameter}</b></td><td style="color:var(--pos)">${e.champion||'—'}</td><td class=dim>${e.challenger||'—'}</td><td class=dim>${e.optimized_for}</td><td class=dim>${e.status}</td></tr>`).join('');

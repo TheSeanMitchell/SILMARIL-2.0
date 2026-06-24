@@ -22,8 +22,8 @@ from .paper_sim import asset_class
 from .atomic_io import write_json_atomic
 
 def _now(): return datetime.now(timezone.utc).isoformat()
-DROPS = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
-BOUNCES = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
+DROPS = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0]
+BOUNCES = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0]
 LOOKBACK = 6     # samples to measure the drop over (~1h on 10-12min cadence)
 HORIZON = 18     # samples to allow the bounce (~3h)
 MIN_SIGNALS = 15
