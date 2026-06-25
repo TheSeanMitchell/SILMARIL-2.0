@@ -122,6 +122,9 @@
   <section><div class="hd">📦 TODAY'S SESSION — black box recorder (since 1 PM Vegas)</div><div class="bd">
     <div class="note" style="background:#1a2f1a;border-left:3px solid #16c784"><b>OBSERVATIONAL ONLY.</b> Reconstructs every trade in today's session from REAL fills — no synthetic data, no 30-trade cap. Answers "why did crypto work today" with evidence and preserves the config so it can be recreated.</div>
     <div id="sessionBox">loading…</div></div></section>
+  <section><div class="hd">🔬 SESSION ANATOMY — why each buy & sell fired, and did we capture the move</div><div class="bd">
+    <div class="note" style="background:#1a2f1a;border-left:3px solid #16c784"><b>OBSERVATIONAL ONLY.</b> Replays every session trade against the real price path: how deep the entry dip was, the best exit that existed (MFE), the drawdown taken (MAE), how much of the move we captured, and what we left on the table. All real data.</div>
+    <div id="anatomyBox">loading…</div></div></section>
   <section><div class="hd">📔 DAILY JOURNAL — the log, in plain human words</div><div class="bd">
     <div class="note">A human-voice note each run that points out what's genuinely going well — even on a rough day. Composed only from true state, never invented.</div>
     <div id="journalBox" style="font-size:13px;line-height:1.5;padding:6px 0">loading…</div>
@@ -243,7 +246,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -333,6 +336,32 @@ async function renderJournal(){const d=await jget('data/DAILY_JOURNAL.json');if(
   if($('journalFooter'))$('journalFooter').textContent='📔 '+d.entry;
   if($('journalBox'))$('journalBox').textContent=d.entry;
   if($('journalSignals')){const g=(d.good_signals||[]).length,w=(d.watch_items||[]).length;$('journalSignals').textContent=`${g} good signal(s) · ${w} watch item(s) this cycle`;}}
+async function renderAnatomy(){const d=await jget('data/SESSION_ANATOMY.json');if(!d||!d.overall){$('anatomyBox').innerHTML='<div class=dim>no anatomy yet</div>';return;}
+  const o=d.overall,mk=d.top_symbol_anatomy||{},rs=d.rest_anatomy||{};
+  const vbar=v=>Object.entries(v||{}).map(([k,n])=>k.replace(/_/g,' ')+': <b>'+n+'</b>').join(' · ');
+  let h=`<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+    <div style="flex:1;min-width:140px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>AVG DIP AT ENTRY</div><div style="font-size:17px;font-weight:bold" class="neg">${o.avg_dip_at_entry_pct}%</div><div class=dim>how oversold our buys were</div></div>
+    <div style="flex:1;min-width:140px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>CAPTURE EFFICIENCY</div><div style="font-size:17px;font-weight:bold" class="pos">${o.avg_capture_efficiency_pct}%</div><div class=dim>of the available up-move banked</div></div>
+    <div style="flex:1;min-width:140px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>LEFT ON TABLE</div><div style="font-size:17px;font-weight:bold">${o.avg_left_on_table_pct}%</div><div class=dim>avg more available after exit</div></div>
+    <div style="flex:1;min-width:140px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>WORST HEAT TAKEN</div><div style="font-size:17px;font-weight:bold" class="neg">${o.worst_drawdown_taken_pct}%</div><div class=dim>max drawdown sat through</div></div></div>`;
+  h+=`<div class=dim style="font-size:11px;margin-bottom:6px">verdicts: ${vbar(o.verdicts)}</div>`;
+  // the concentration dissection
+  h+=`<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+    <div style="flex:1;min-width:200px;padding:8px;border:1px solid #f7c94855;border-radius:6px;background:#2a2410"><div style="font-weight:bold">🔑 ${d.top_symbol} — why it carried</div><div class=dim>${mk.n} trips · entries on <b class=neg>${mk.avg_dip_at_entry_pct}%</b> dips · captured <b class=pos>${mk.avg_capture_efficiency_pct}%</b> · ${mk.avg_hold_min}min avg hold</div></div>
+    <div style="flex:1;min-width:200px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div style="font-weight:bold">everything else</div><div class=dim>${rs.n} trips · entries on only <b>${rs.avg_dip_at_entry_pct}%</b> dips · captured ${rs.avg_capture_efficiency_pct}%</div></div></div>`;
+  h+=`<div class="note" style="font-size:11px">The signal in today's data: ${d.top_symbol}'s entries were on much deeper dips than the rest, and deeper dips bounced harder. Capture efficiency was high across the board — exits were not the problem today; entry dip-depth was the differentiator.</div>`;
+  // dip-depth buckets — the lesson in one table
+  if(d.dip_depth_buckets&&d.dip_depth_buckets.length){
+    const br=d.dip_depth_buckets.map(b=>`<tr><td>${b.dip_band}</td><td>${b.trades}</td><td class="${(b.avg_return_pct||0)>0?'pos':'dim'}">${b.avg_return_pct!=null?'+'+b.avg_return_pct+'%':''}</td><td>${b.win_rate_pct!=null?b.win_rate_pct+'%':''}</td><td>${b.avg_capture_pct!=null?b.avg_capture_pct+'%':''}</td></tr>`).join('');
+    h+=`<div style="font-weight:bold;font-size:12px;margin:8px 0 3px">Entry dip depth → outcome (today, small samples):</div><table style="font-size:11px"><thead><tr><th>dip at entry</th><th>trades</th><th>avg return</th><th>win%</th><th>capture</th></tr></thead><tbody>${br}</tbody></table>`;
+  }
+  // per-trade anatomy table
+  const rows=(d.trades||[]).slice().sort((a,b)=>(b.realized_pct||0)-(a.realized_pct||0)).map(t=>{const vc=t.verdict==='CAPTURED_WELL'?'pos':(t.verdict==='FLAT_TIMEOUT'?'dim':'');
+    return `<tr><td><span class="tick" data-sym="${t.sym}">${t.sym}</span></td><td class="neg">${t.dip_at_entry_pct!=null?t.dip_at_entry_pct+'%':''}</td><td class="${(t.realized_pct||0)>0?'pos':'dim'}">${t.realized_pct!=null?(t.realized_pct>0?'+':'')+t.realized_pct+'%':''}</td><td>${t.mfe_pct!=null?'+'+t.mfe_pct+'%':''}</td><td>${t.capture_efficiency_pct!=null?t.capture_efficiency_pct+'%':''}</td><td>${t.left_on_table_pct!=null?t.left_on_table_pct+'%':''}</td><td>${t.hold_min!=null?t.hold_min+'m':''}</td><td class="${vc}" style="font-size:10px">${t.verdict.replace(/_/g,' ')}</td></tr>`;}).join('');
+  h+=`<div style="font-weight:bold;font-size:12px;margin:8px 0 3px">Every trade, dissected (sorted by return):</div><table style="font-size:11px"><thead><tr><th>sym</th><th>entry dip</th><th>result</th><th>MFE</th><th>capture</th><th>left</th><th>hold</th><th>verdict</th></tr></thead><tbody>${rows}</tbody></table>`;
+  h+=`<div class="note" style="font-size:10px;margin-top:6px">${d.honest_note}</div>`;
+  $('anatomyBox').innerHTML=h;
+  if(window.SilmarilChart)setTimeout(()=>SilmarilChart.autotag(document),50);}
 async function renderSession(){const d=await jget('data/SESSION_TODAY.json');if(!d||!d.by_book){$('sessionBox').innerHTML='<div class=dim>no session data yet</div>';return;}
   const c=d.by_book.crypto||{};const rot=d.champion_rotated_during_session;
   let h=`<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
