@@ -2287,9 +2287,11 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 from .execution.daily_journal import build_daily_journal as _djr
                 from .execution.session_reconstruction import build_session_reconstruction as _sess
                 from .execution.session_anatomy import build_session_anatomy as _anat
+                from .execution.crypto_concentration import build_crypto_concentration as _conc
+                from .execution.reality_check import build_reality_check as _rchk
                 _rgc(out)
                 _tor = _to(out); _cor = _co(out); _tcr = _tc(out); _pregr = _preg(out); _cmp(out); _djent = _djr(out)
-                _sessr = _sess(out); _anatr = _anat(out)
+                _sessr = _sess(out); _anatr = _anat(out); _concr = _conc(out); _rchkr = _rchk(out)
                 log.info("  timer-opt: %s · chart overlays: %s symbols",
                          _tor.get("recommendation_by_book"), _cor.get("count"))
                 log.info("  threshold champion: combo %s", _tcr.get("champion_combo"))

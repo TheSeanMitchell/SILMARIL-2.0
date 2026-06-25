@@ -1,0 +1,34 @@
+{
+  "generated_at": "2026-06-25T11:33:46.904400+00:00",
+  "status_label": "OBSERVATIONAL ONLY \u2014 a cost MODEL, not measured execution.",
+  "cost_model": {
+    "crypto_taker_bps_per_side": 25.0,
+    "slippage_bps_per_side": 2.0,
+    "round_trip_bps": 54.0,
+    "source": "fees_truth.json (documented rates)"
+  },
+  "lifetime": {
+    "gross_realized_usd": 302.93,
+    "modeled_friction_usd": -269.07,
+    "estimated_live_usd": 33.86,
+    "round_trips": 62,
+    "survives_pct": 11
+  },
+  "today_session": {
+    "gross_realized_usd": 549.43,
+    "modeled_friction_usd": -72.06,
+    "estimated_live_usd": 477.37,
+    "round_trips": 24,
+    "survives_pct": 87
+  },
+  "what": "Estimate of how much crypto P&L survives real-exchange fees + modeled slippage.",
+  "why": "Paper fills at mid with no cost; this haircuts by the documented fee model to gauge reality.",
+  "NOT_modeled": [
+    "real-time bid/ask spread (not captured anywhere \u2014 mid-price only)",
+    "partial fills",
+    "exchange latency / outages",
+    "delisted/halted/unavailable assets",
+    "market impact beyond flat slippage bps"
+  ],
+  "honest_note": "This applies DOCUMENTED fee/slippage rates (real, from fees_truth.json) \u2014 it does NOT fabricate per-trade spread. Because spread and the items above are unmeasured, the true live result would likely be somewhat LOWER than this estimate. Treat 'survives_pct' as a fee-only floor, not a precise reality score."
+}

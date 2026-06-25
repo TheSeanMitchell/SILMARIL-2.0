@@ -125,6 +125,12 @@
   <section><div class="hd">🔬 SESSION ANATOMY — why each buy & sell fired, and did we capture the move</div><div class="bd">
     <div class="note" style="background:#1a2f1a;border-left:3px solid #16c784"><b>OBSERVATIONAL ONLY.</b> Replays every session trade against the real price path: how deep the entry dip was, the best exit that existed (MFE), the drawdown taken (MAE), how much of the move we captured, and what we left on the table. All real data.</div>
     <div id="anatomyBox">loading…</div></div></section>
+  <section><div class="hd">💎 CRYPTO EDGE CONCENTRATION — broad edge, or a few names?</div><div class="bd">
+    <div class="note"><b>OBSERVATIONAL ONLY.</b> How much of the crypto book's profit is broad vs concentrated in a handful of names. Real fills only.</div>
+    <div id="concBox">loading…</div></div></section>
+  <section><div class="hd">🧪 REALITY CHECK — does the edge survive live fees?</div><div class="bd">
+    <div class="note"><b>OBSERVATIONAL ONLY — a cost MODEL, not measured execution.</b> Applies the documented fee/slippage rates (fees_truth.json) to estimate what survives live friction. Does NOT fabricate spread; lists what it can't measure.</div>
+    <div id="realityBox">loading…</div></div></section>
   <section><div class="hd">📔 DAILY JOURNAL — the log, in plain human words</div><div class="bd">
     <div class="note">A human-voice note each run that points out what's genuinely going well — even on a rough day. Composed only from true state, never invented.</div>
     <div id="journalBox" style="font-size:13px;line-height:1.5;padding:6px 0">loading…</div>
@@ -246,7 +252,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -336,6 +342,33 @@ async function renderJournal(){const d=await jget('data/DAILY_JOURNAL.json');if(
   if($('journalFooter'))$('journalFooter').textContent='📔 '+d.entry;
   if($('journalBox'))$('journalBox').textContent=d.entry;
   if($('journalSignals')){const g=(d.good_signals||[]).length,w=(d.watch_items||[]).length;$('journalSignals').textContent=`${g} good signal(s) · ${w} watch item(s) this cycle`;}}
+async function renderConc(){const d=await jget('data/CRYPTO_CONCENTRATION.json');if(!d){$('concBox').innerHTML='<div class=dim>no data</div>';return;}
+  const tc=d.top_contributor||{};
+  const rows=(d.per_symbol||[]).slice(0,12).map(r=>`<tr><td><span class="tick" data-sym="${r.sym}">${r.sym}</span></td><td class="${r.pnl>=0?'pos':'neg'}">${r.pnl>=0?'+$':'-$'}${Math.abs(r.pnl).toFixed(2)}</td><td>${r.trips}</td><td class=dim>${r.wins}W/${r.losses}L</td><td>${r.pct_of_net!=null?r.pct_of_net+'%':''}</td></tr>`).join('');
+  $('concBox').innerHTML=`
+    <div style="padding:8px;border:1px solid #ea394455;border-radius:6px;background:#2a1414;margin-bottom:8px"><div style="font-weight:bold;color:#ea3943">${d.verdict}</div></div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+      <div style="flex:1;min-width:130px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>TOTAL REALIZED</div><div style="font-size:16px;font-weight:bold" class="${d.total_realized_usd>=0?'pos':'neg'}">${d.total_realized_usd>=0?'+$':'-$'}${Math.abs(d.total_realized_usd).toFixed(2)}</div></div>
+      <div style="flex:1;min-width:130px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>TOP NAME (${tc.sym})</div><div style="font-size:16px;font-weight:bold">${tc.pct_of_net}% of net</div></div>
+      <div style="flex:1;min-width:130px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>WITHOUT ${tc.sym}</div><div style="font-size:16px;font-weight:bold" class="${d.book_without_top_contributor_usd>=0?'pos':'neg'}">${d.book_without_top_contributor_usd>=0?'+$':'-$'}${Math.abs(d.book_without_top_contributor_usd).toFixed(2)}</div></div>
+      <div style="flex:1;min-width:130px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>UPSIDE HHI</div><div style="font-size:16px;font-weight:bold">${d.upside_concentration_hhi}</div><div class=dim>0=broad, 1=one name</div></div></div>
+    <div class=dim style="font-size:11px;margin-bottom:3px">winners: ${d.winners_count} (+$${d.winners_total_usd}) · losers: ${d.losers_count} ($${d.losers_total_usd})</div>
+    <table style="font-size:11px"><thead><tr><th>symbol</th><th>P&L</th><th>trips</th><th>W/L</th><th>% of net</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="note" style="font-size:10px">${d.honest_note}</div>`;
+  if(window.SilmarilChart)setTimeout(()=>SilmarilChart.autotag(document),50);}
+async function renderReality(){const d=await jget('data/REALITY_CHECK.json');if(!d){$('realityBox').innerHTML='<div class=dim>no data</div>';return;}
+  const cm=d.cost_model||{};
+  function card(b,title){return `<div style="flex:1;min-width:220px;padding:8px;border:1px solid var(--line,#333);border-radius:6px">
+    <div style="font-weight:bold">${title}</div>
+    <div class=dim>gross <span class="pos">+$${b.gross_realized_usd}</span></div>
+    <div class=dim>modeled friction <span class="neg">$${b.modeled_friction_usd}</span></div>
+    <div style="font-size:15px;font-weight:bold" class="${b.estimated_live_usd>=0?'pos':'neg'}">est. live ${b.estimated_live_usd>=0?'+$':'-$'}${Math.abs(b.estimated_live_usd)}</div>
+    <div class=dim>${b.survives_pct!=null?b.survives_pct+'% survives fees · ':''}${b.round_trips} trips</div></div>`;}
+  $('realityBox').innerHTML=`
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px">${card(d.today_session,'TODAY SESSION')}${card(d.lifetime,'LIFETIME')}</div>
+    <div class=dim style="font-size:11px">cost model: ${cm.round_trip_bps} bps round trip (${cm.crypto_taker_bps_per_side}bps taker + ${cm.slippage_bps_per_side}bps slippage per side) · ${cm.source}</div>
+    <div class=dim style="font-size:10px;margin-top:4px"><b>NOT modeled:</b> ${(d.NOT_modeled||[]).join(' · ')}</div>
+    <div class="note" style="font-size:10px;color:#f7c948">${d.honest_note}</div>`;}
 async function renderAnatomy(){const d=await jget('data/SESSION_ANATOMY.json');if(!d||!d.overall){$('anatomyBox').innerHTML='<div class=dim>no anatomy yet</div>';return;}
   const o=d.overall,mk=d.top_symbol_anatomy||{},rs=d.rest_anatomy||{};
   const vbar=v=>Object.entries(v||{}).map(([k,n])=>k.replace(/_/g,' ')+': <b>'+n+'</b>').join(' · ');
