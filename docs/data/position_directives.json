@@ -1,6 +1,6 @@
 {
   "version": "5.1",
-  "generated_at": "2026-06-25T18:04:26.750284+00:00",
+  "generated_at": "2026-06-25T18:20:45.499825+00:00",
   "directives": [
     {
       "owner": "LEGACY",
@@ -14,6 +14,16 @@
     },
     {
       "owner": "LEGACY",
+      "ticker": "PNC",
+      "action": "SCALE_OUT",
+      "size_pct": 0.25,
+      "trigger": "unrealized_plpc\u22653%",
+      "rationale": "first target +3% reached; trim 25%",
+      "priority": 3,
+      "tag": "scale_out_3"
+    },
+    {
+      "owner": "LEGACY",
       "ticker": "TECH",
       "action": "SCALE_OUT",
       "size_pct": 0.25,
@@ -24,6 +34,15 @@
     },
     {
       "owner": "LEGACY",
+      "ticker": "GLW",
+      "action": "TIGHTEN_STOP",
+      "new_stop_pct": 0.025,
+      "trigger": "unrealized_plpc\u22655%",
+      "rationale": "+5% reached; tighten trailing stop to 2.5% below peak",
+      "priority": 4
+    },
+    {
+      "owner": "LEGACY",
       "ticker": "RVTY",
       "action": "TIGHTEN_STOP",
       "new_stop_pct": 0.025,
@@ -42,11 +61,20 @@
     },
     {
       "owner": "LEGACY",
+      "ticker": "GLW",
+      "action": "SCALE_IN",
+      "size_pct": 0.2,
+      "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
+      "rationale": "healthy winner (5.2%, momentum 0.56); add 20% size",
+      "priority": 5
+    },
+    {
+      "owner": "LEGACY",
       "ticker": "RVTY",
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (7.6%, momentum 0.70); add 20% size",
+      "rationale": "healthy winner (7.3%, momentum 0.70); add 20% size",
       "priority": 5
     },
     {
@@ -60,12 +88,12 @@
     }
   ],
   "summary": {
-    "directives": 6,
+    "directives": 9,
     "by_action": {
-      "SCALE_OUT": 2,
-      "TIGHTEN_STOP": 2,
-      "SCALE_IN": 2
+      "SCALE_OUT": 3,
+      "TIGHTEN_STOP": 3,
+      "SCALE_IN": 3
     }
   },
-  "rationale": "6 directives issued \u00b7 2 scale-outs \u00b7 2 scale-ins"
+  "rationale": "9 directives issued \u00b7 3 scale-outs \u00b7 3 scale-ins"
 }
