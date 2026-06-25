@@ -1,7 +1,16 @@
 {
   "version": "5.1",
-  "generated_at": "2026-06-25T13:34:54.915028+00:00",
+  "generated_at": "2026-06-25T13:58:20.559554+00:00",
   "directives": [
+    {
+      "owner": "LEGACY",
+      "ticker": "GLW",
+      "action": "PROFIT_LOCK",
+      "size_pct": 1.0,
+      "trigger": "peak_gain\u22654% AND giveback\u22655%",
+      "rationale": "peaked 6.6% above entry, now back 5.2% from peak \u2014 lock",
+      "priority": 1
+    },
     {
       "owner": "LEGACY",
       "ticker": "TECH",
@@ -13,7 +22,7 @@
     },
     {
       "owner": "LEGACY",
-      "ticker": "GLW",
+      "ticker": "PNC",
       "action": "SCALE_OUT",
       "size_pct": 0.25,
       "trigger": "unrealized_plpc\u22653%",
@@ -26,10 +35,10 @@
       "ticker": "RVTY",
       "action": "SCALE_OUT",
       "size_pct": 0.25,
-      "trigger": "unrealized_plpc\u22653%",
-      "rationale": "first target +3% reached; trim 25%",
+      "trigger": "unrealized_plpc\u22656%",
+      "rationale": "second target +6% reached; trim 25%",
       "priority": 3,
-      "tag": "scale_out_3"
+      "tag": "scale_out_6"
     },
     {
       "owner": "LEGACY",
@@ -40,6 +49,15 @@
       "rationale": "first target +3% reached; trim 25%",
       "priority": 3,
       "tag": "scale_out_3"
+    },
+    {
+      "owner": "LEGACY",
+      "ticker": "PNC",
+      "action": "BREAK_EVEN_STOP",
+      "new_stop_pct": 0.0,
+      "trigger": "unrealized_plpc\u22652%",
+      "rationale": "move stop to entry \u2014 risk-free trade established",
+      "priority": 4
     },
     {
       "owner": "LEGACY",
@@ -74,7 +92,7 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (1.8%, momentum 0.56); add 20% size",
+      "rationale": "healthy winner (2.2%, momentum 0.57); add 20% size",
       "priority": 5
     },
     {
@@ -83,7 +101,16 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (1.9%, momentum 0.57); add 20% size",
+      "rationale": "healthy winner (3.2%, momentum 0.60); add 20% size",
+      "priority": 5
+    },
+    {
+      "owner": "LEGACY",
+      "ticker": "RCL",
+      "action": "SCALE_IN",
+      "size_pct": 0.2,
+      "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
+      "rationale": "healthy winner (1.7%, momentum 0.56); add 20% size",
       "priority": 5
     },
     {
@@ -92,7 +119,7 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (5.2%, momentum 0.64); add 20% size",
+      "rationale": "healthy winner (6.4%, momentum 0.67); add 20% size",
       "priority": 5
     },
     {
@@ -101,19 +128,20 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (17.9%, momentum 0.83); add 20% size",
+      "rationale": "healthy winner (17.8%, momentum 0.82); add 20% size",
       "priority": 5
     }
   ],
   "summary": {
-    "directives": 11,
+    "directives": 14,
     "by_action": {
+      "PROFIT_LOCK": 1,
       "INTRADAY_EXHAUSTION": 1,
       "SCALE_OUT": 3,
-      "BREAK_EVEN_STOP": 1,
+      "BREAK_EVEN_STOP": 2,
       "TIGHTEN_STOP": 2,
-      "SCALE_IN": 4
+      "SCALE_IN": 5
     }
   },
-  "rationale": "11 directives issued \u00b7 3 scale-outs \u00b7 4 scale-ins"
+  "rationale": "14 directives issued \u2014 1 profit-locks \u00b7 3 scale-outs \u00b7 5 scale-ins"
 }
