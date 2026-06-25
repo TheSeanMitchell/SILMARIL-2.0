@@ -2293,6 +2293,14 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 _rgc(out)
                 _tor = _to(out); _cor = _co(out); _tcr = _tc(out); _pregr = _preg(out); _cmp(out); _djent = _djr(out)
                 _sessr = _sess(out); _anatr = _anat(out); _concr = _conc(out); _rchkr = _rchk(out); _ctlr = _ctl(out)
+                try:
+                    import datetime as _dtm
+                    if _dtm.datetime.utcnow().minute < 10:   # hourly: real Kraken spread (network call)
+                        from .ingestion.kraken_spread import build_kraken_spread as _kspr
+                        _ksr = _kspr(out)
+                        log.info("  kraken spread: %s symbols quoted", _ksr.get("symbols_quoted"))
+                except Exception as _kse:
+                    log.warning("kraken spread skipped: %s", _kse)
                 log.info("  timer-opt: %s · chart overlays: %s symbols",
                          _tor.get("recommendation_by_book"), _cor.get("count"))
                 log.info("  threshold champion: combo %s", _tcr.get("champion_combo"))

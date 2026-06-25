@@ -134,6 +134,9 @@
   <section><div class="hd">👑 CHAMPION TIMELINE — did rotation actually help?</div><div class="bd">
     <div class="note"><b>OBSERVATIONAL ONLY.</b> Every champion reign with the REAL trades, win rate, and P&L produced under it (attributed by the champion active at exit). $/hr normalizes for reign length.</div>
     <div id="timelineBox">loading…</div></div></section>
+  <section><div class="hd">🐙 LIVE KRAKEN SPREAD — real bid/ask from a live exchange (no keys)</div><div class="bd">
+    <div class="note"><b>The missing data.</b> price_samples is mid-only; this pulls REAL best bid/ask + spread from Kraken's public API so execution reality can finally be measured, not modeled. Populates on the next Actions run.</div>
+    <div id="krakenBox">loading…</div></div></section>
   <section><div class="hd">📔 DAILY JOURNAL — the log, in plain human words</div><div class="bd">
     <div class="note">A human-voice note each run that points out what's genuinely going well — even on a rough day. Composed only from true state, never invented.</div>
     <div id="journalBox" style="font-size:13px;line-height:1.5;padding:6px 0">loading…</div>
@@ -255,7 +258,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -345,6 +348,11 @@ async function renderJournal(){const d=await jget('data/DAILY_JOURNAL.json');if(
   if($('journalFooter'))$('journalFooter').textContent='📔 '+d.entry;
   if($('journalBox'))$('journalBox').textContent=d.entry;
   if($('journalSignals')){const g=(d.good_signals||[]).length,w=(d.watch_items||[]).length;$('journalSignals').textContent=`${g} good signal(s) · ${w} watch item(s) this cycle`;}}
+async function renderKraken(){const d=await jget('data/KRAKEN_SPREAD.json');if(!d||!d.by_symbol||!Object.keys(d.by_symbol).length){$('krakenBox').innerHTML='<div class=dim>no Kraken data yet — runs hourly on the live GitHub Actions runner; check after the next top-of-hour cycle.</div>';return;}
+  const ents=Object.entries(d.by_symbol).sort((a,b)=>(a[1].spread_bps||0)-(b[1].spread_bps||0));
+  const rows=ents.slice(0,20).map(([s,r])=>`<tr><td><span class="tick" data-sym="${s}">${s}</span></td><td>${r.bid}</td><td>${r.ask}</td><td class="${(r.spread_bps||0)<10?'pos':(r.spread_bps||0)<40?'':'neg'}">${r.spread_bps!=null?r.spread_bps+' bps':''}</td></tr>`).join('');
+  $('krakenBox').innerHTML=`<div class=dim style="margin-bottom:4px">${d.symbols_quoted} symbols quoted live · median spread <b>${d.median_spread_bps} bps</b> · ${d.source}</div><table style="font-size:11px"><thead><tr><th>symbol</th><th>bid</th><th>ask</th><th>spread</th></tr></thead><tbody>${rows}</tbody></table><div class="note" style="font-size:10px">${d.honest_note}</div>`;
+  if(window.SilmarilChart)setTimeout(()=>SilmarilChart.autotag(document),50);}
 async function renderTimeline(){const d=await jget('data/CHAMPION_TIMELINE.json');if(!d||!d.reigns){$('timelineBox').innerHTML='<div class=dim>no data</div>';return;}
   const rows=d.reigns.map(r=>{const traded=r.trips>0;const pc=r.realized_usd>=0?'pos':'neg';
     return `<tr style="${traded?'':'opacity:.45'}"><td>${r.champion}</td><td class=dim style="font-size:10px">${r.from===''?'':(r.from==='(earliest)'?'earliest':new Date(r.from).toLocaleString([], {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}))} → ${r.to==='now'?'<b>now</b>':(r.to?new Date(r.to).toLocaleString([], {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'')}</td><td>${r.duration_hours!=null?r.duration_hours+'h':''}</td><td>${r.trips}</td><td>${r.win_rate_pct!=null?r.win_rate_pct+'%':'—'}</td><td class="${pc}">${r.realized_usd>=0?'+$':'-$'}${Math.abs(r.realized_usd).toFixed(2)}</td><td class="${(r.usd_per_hour||0)>=0?'pos':'neg'}">${r.usd_per_hour!=null?(r.usd_per_hour>=0?'+$':'-$')+Math.abs(r.usd_per_hour)+'/hr':''}</td></tr>`;}).join('');
