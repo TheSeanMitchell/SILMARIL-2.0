@@ -2010,6 +2010,24 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
             #   3. missed_opportunity — runners we didn't bank (needs #2 + coverage)
             #   4. authority_catalyst — Trump/Elon/Fed/megacap events
             # Each guarded so it can never break the cycle.
+            # ── PERF (2.5.5): heavy forensics run at most ~ONCE PER HOUR ──────────
+            # The workflow is on-demand now (external cron runner), so a wall-clock
+            # minute gate is unreliable — instead a small committed timestamp file is
+            # the cross-run gate. The trade-critical path always runs every cycle.
+            _HOURLY = True
+            try:
+                import json as _pj_perf, time as _pt_perf
+                from pathlib import Path as _PP_perf
+                _fstamp = _PP_perf("docs/data/_forensics_last.json")
+                _flast = _pj_perf.loads(_fstamp.read_text()).get("ts", 0) if _fstamp.exists() else 0
+                if _pt_perf.time() - _flast < 2700:        # < 45 min since last forensics
+                    _HOURLY = False
+                else:
+                    _fstamp.write_text(_pj_perf.dumps({"ts": _pt_perf.time()}))
+            except Exception:
+                _HOURLY = True                              # on any error, run them (safe default)
+            if not _HOURLY:
+                log.info("  [perf] skipping heavy forensics this cycle (ran < 45 min ago)")
             try:
                 from .execution.trade_forensics import build_trade_forensics
                 _tf = build_trade_forensics(out)
@@ -2100,7 +2118,7 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 # the dictionary through the honest sim and rank by edge. This is
                 # the system testing tens of strategies each cycle.
                 from .execution.strategy_lab import run_leaderboard as _lb
-                _lbr = _lb(out)
+                _lbr = _lb(out) if _HOURLY else {}
                 log.info("  strategy leaderboard: %s", _lbr.get("verdict", "")[:80])
             except Exception as _lbe:
                 log.warning("strategy leaderboard skipped: %s", _lbe)
@@ -2108,7 +2126,7 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 # 2.5.1 MARKET SEPARATION: independent crypto and stock arenas, each
                 # strategy run on its own universe → its own champion. No contamination.
                 from .execution.strategy_lab import run_split_leaderboards as _split
-                _sp = _split(out)
+                _sp = _split(out) if _HOURLY else {}
                 log.info("  arenas: crypto best=%s · stock best=%s",
                          (_sp.get("crypto", {}).get("best_trusted") or {}).get("strategy"),
                          (_sp.get("stock", {}).get("best_trusted") or {}).get("strategy"))
@@ -2183,7 +2201,7 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 # Monitoring/context — only wired to capital if a state shows a
                 # measured net-of-cost edge (evidence-first; it currently does not).
                 from .execution.lifecycle import measure_lifecycle as _lc
-                _lcr = _lc(out)
+                _lcr = _lc(out) if _HOURLY else {}
                 log.info("  lifecycle: %s", _lcr.get("verdict", "")[:70])
             except Exception as _lce:
                 log.warning("lifecycle skipped: %s", _lce)
@@ -2191,7 +2209,7 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 # AUTHORITY EVENT ENGINE (Alpha 2.13): authority -> beneficiary
                 # cascade. Fires on live headline text; intelligence/context only.
                 from .execution.authority_events import build_authority_events as _ae
-                _aer = _ae(out)
+                _aer = _ae(out) if _HOURLY else {}
                 log.info("  authority events: %s detected", _aer.get("events_detected", 0))
             except Exception as _aee:
                 log.warning("authority events skipped: %s", _aee)
@@ -2200,7 +2218,7 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 # available move did we actually take. Instrumentation, not a
                 # strategy. Emits edge_capture_engine.json.
                 from .execution.edge_capture_engine import build_edge_capture as _ec
-                _ecr = _ec(out)
+                _ecr = _ec(out) if _HOURLY else {}
                 log.info("  EDGE CAPTURE (primary KPI): %s%% | %s",
                          _ecr.get("PRIMARY_KPI_portfolio_capture_pct", 0),
                          _ecr.get("headline", "")[:60])
@@ -2211,7 +2229,7 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 # are we selling winners too early, and do stocks even mean-revert?
                 from .execution.exit_forensics import build_exit_forensics as _ef
                 from .execution.stock_recovery import build_stock_recovery as _sr
-                _efr = _ef(out); _srr = _sr(out)
+                _efr = _ef(out) if _HOURLY else {}; _srr = _sr(out) if _HOURLY else {}
                 log.info("  exit forensics: %s | recovery: %s",
                          (_efr.get("overall", {}) or {}).get("verdict", "")[:60],
                          _srr.get("headline", "")[:50])
@@ -2221,27 +2239,29 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 # 2.5.1 P1 — OPPORTUNITY AUDIT. Every name classified with the exact
                 # rule it hit. Explains every missed trade; no black boxes.
                 from .execution.opportunity_audit import build_opportunity_audit as _oa
-                _oar = _oa(out)
+                _oar = _oa(out) if _HOURLY else {}
                 log.info("  opportunity audit: crypto qualified=%s · stock qualified=%s",
-                         _oar["books"]["crypto"]["funnel"]["discovered_qualified"],
-                         _oar["books"]["stock"]["funnel"]["discovered_qualified"])
+                         (_oar.get("books",{}).get("crypto",{}).get("funnel",{}) or {}).get("discovered_qualified"),
+                         (_oar.get("books",{}).get("stock",{}).get("funnel",{}) or {}).get("discovered_qualified"))
             except Exception as _oae:
                 log.warning("opportunity audit skipped: %s", _oae)
             try:
                 # 2.5.1 PROOF MODE — REGIME OBSERVER. Tags every trade with the market
                 # regime (independent per book) and reports which strategies win where.
                 from .execution.regime_observer import build_regime_analysis as _rg
-                _rgr = _rg(out)
-                log.info("  regime: crypto now=%s · stock now=%s",
-                         _rgr["books"]["crypto"]["current_regime"]["market"],
-                         _rgr["books"]["stock"]["current_regime"]["market"])
+                _rgr = _rg(out) if _HOURLY else {}
+                if _rgr:
+                    log.info("  regime: crypto now=%s · stock now=%s",
+                             _rgr["books"]["crypto"]["current_regime"]["market"],
+                             _rgr["books"]["stock"]["current_regime"]["market"])
             except Exception as _rge:
                 log.warning("regime observer skipped: %s", _rge)
             try:
                 # 2.5.1 capstones — PROJECT SCORECARD + PERFORMANCE AUDIT.
                 from .execution.scorecard import build_scorecard as _scd
                 from .execution.performance_audit import build_performance_audit as _pa
-                _scr = _scd(out); _pa(out)
+                _scr = _scd(out) if _HOURLY else {}
+                if _HOURLY: _pa(out)
                 log.info("  scorecard: %s/10 (%s)", _scr.get("overall_grade"), _scr.get("trend"))
             except Exception as _sce:
                 log.warning("scorecard skipped: %s", _sce)
@@ -2291,11 +2311,16 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 from .execution.reality_check import build_reality_check as _rchk
                 from .execution.champion_timeline import build_champion_timeline as _ctl
                 _rgc(out)
-                _tor = _to(out); _cor = _co(out); _tcr = _tc(out); _pregr = _preg(out); _cmp(out); _djent = _djr(out)
-                _sessr = _sess(out); _anatr = _anat(out); _concr = _conc(out); _rchkr = _rchk(out); _ctlr = _ctl(out)
+                if _HOURLY:
+                    _tor = _to(out); _cor = _co(out); _tcr = _tc(out); _pregr = _preg(out); _cmp(out); _djent = _djr(out)
+                else:
+                    _tor = _cor = _tcr = _pregr = _djent = {}
+                if _HOURLY:
+                    _sessr = _sess(out); _anatr = _anat(out); _concr = _conc(out); _rchkr = _rchk(out); _ctlr = _ctl(out)
+                else:
+                    _sessr = _anatr = _concr = _rchkr = _ctlr = {}
                 try:
-                    import datetime as _dtm
-                    if _dtm.datetime.utcnow().minute < 10:   # hourly: real Kraken spread (network call)
+                    if _HOURLY:   # same hourly gate as forensics: real Kraken spread (network call)
                         from .ingestion.kraken_spread import build_kraken_spread as _kspr
                         _ksr = _kspr(out)
                         log.info("  kraken spread: %s symbols quoted", _ksr.get("symbols_quoted"))

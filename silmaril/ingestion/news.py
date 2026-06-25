@@ -131,14 +131,29 @@ def fetch_news_bulk(
     place. Set to True from ad-hoc scripts.
     """
     results: Dict[str, List[Article]] = {}
-    for i, (ticker, name) in enumerate(ticker_name_pairs):
+    # PERF (2.5.5): fetch tickers CONCURRENTLY. Each fetch is independent and network-bound,
+    # so a small thread pool cuts a multi-minute sequential loop to well under a minute. RSS /
+    # Google News tolerate ~8 concurrent fine. Per-ticker failures stay isolated.
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    def _one(pair):
+        ticker, name = pair
         try:
-            results[ticker] = fetch_ticker_news(ticker, name, max_articles=max_articles_per)
+            return ticker, fetch_ticker_news(ticker, name, max_articles=max_articles_per)
         except Exception as e:
             log.warning("News fetch failed for %s: %s", ticker, e)
-            results[ticker] = []
-        if i % 10 == 9:
-            log.info("News fetched: %d/%d tickers", i + 1, len(ticker_name_pairs))
+            return ticker, []
+
+    total = len(ticker_name_pairs)
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        futs = [ex.submit(_one, p) for p in ticker_name_pairs]
+        done = 0
+        for fut in as_completed(futs):
+            ticker, arts = fut.result()
+            results[ticker] = arts
+            done += 1
+            if done % 25 == 0:
+                log.info("News fetched: %d/%d tickers", done, total)
 
     if apply_disambiguation:
         try:
