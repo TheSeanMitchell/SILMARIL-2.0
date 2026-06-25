@@ -2285,13 +2285,19 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 from .execution.compounding_projection import build_compounding_projection as _cmp
                 from .execution.regime_classifier import build_regime_classifier as _rgc
                 from .execution.daily_journal import build_daily_journal as _djr
+                from .execution.session_reconstruction import build_session_reconstruction as _sess
                 _rgc(out)
                 _tor = _to(out); _cor = _co(out); _tcr = _tc(out); _pregr = _preg(out); _cmp(out); _djent = _djr(out)
+                _sessr = _sess(out)
                 log.info("  timer-opt: %s · chart overlays: %s symbols",
                          _tor.get("recommendation_by_book"), _cor.get("count"))
                 log.info("  threshold champion: combo %s", _tcr.get("champion_combo"))
                 log.info("  parameter registry: %s", _pregr.get("summary"))
                 log.info("  journal: %s", (_djent.get("entry") or "")[:80])
+                log.info("  session: crypto %s trips, $%s, champion-rotated=%s",
+                         (_sessr.get("by_book", {}).get("crypto", {}) or {}).get("round_trips"),
+                         (_sessr.get("by_book", {}).get("crypto", {}) or {}).get("realized_usd"),
+                         _sessr.get("champion_rotated_during_session"))
             except Exception as _toe:
                 log.warning("timer/overlays skipped: %s", _toe)
             try:

@@ -32,7 +32,7 @@ def _classify_exit(tr):
         return "TIMEOUT_GAIN", f"exited +{r}% on time/conditions before full target"
     return "TIMEOUT_LOSS", f"exited {r}% on time/conditions before stop"
 
-def build_decision_trace(out_dir, limit: int = 30) -> Dict[str, Any]:
+def build_decision_trace(out_dir, limit: int = 200) -> Dict[str, Any]:
     out = Path(out_dir)
     trades = closed_trades(out)
     # most recent first by exit time

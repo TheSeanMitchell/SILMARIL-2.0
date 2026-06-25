@@ -119,6 +119,9 @@
 
 <!-- FORENSICS -->
 <div class="page" id="p-forensics">
+  <section><div class="hd">📦 TODAY'S SESSION — black box recorder (since 1 PM Vegas)</div><div class="bd">
+    <div class="note" style="background:#1a2f1a;border-left:3px solid #16c784"><b>OBSERVATIONAL ONLY.</b> Reconstructs every trade in today's session from REAL fills — no synthetic data, no 30-trade cap. Answers "why did crypto work today" with evidence and preserves the config so it can be recreated.</div>
+    <div id="sessionBox">loading…</div></div></section>
   <section><div class="hd">📔 DAILY JOURNAL — the log, in plain human words</div><div class="bd">
     <div class="note">A human-voice note each run that points out what's genuinely going well — even on a rough day. Composed only from true state, never invented.</div>
     <div id="journalBox" style="font-size:13px;line-height:1.5;padding:6px 0">loading…</div>
@@ -240,7 +243,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -330,6 +333,24 @@ async function renderJournal(){const d=await jget('data/DAILY_JOURNAL.json');if(
   if($('journalFooter'))$('journalFooter').textContent='📔 '+d.entry;
   if($('journalBox'))$('journalBox').textContent=d.entry;
   if($('journalSignals')){const g=(d.good_signals||[]).length,w=(d.watch_items||[]).length;$('journalSignals').textContent=`${g} good signal(s) · ${w} watch item(s) this cycle`;}}
+async function renderSession(){const d=await jget('data/SESSION_TODAY.json');if(!d||!d.by_book){$('sessionBox').innerHTML='<div class=dim>no session data yet</div>';return;}
+  const c=d.by_book.crypto||{};const rot=d.champion_rotated_during_session;
+  let h=`<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+    <div style="flex:1;min-width:150px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>CRYPTO THIS SESSION</div><div style="font-size:17px;font-weight:bold" class="${(c.realized_usd||0)>=0?'pos':'neg'}">${(c.realized_usd||0)>=0?'+$':'-$'}${Math.abs(c.realized_usd||0).toFixed(2)}</div><div class=dim>${c.round_trips} trips · ${c.wins}W/${c.losses}L/${c.flat} flat · ${c.win_rate_pct}% win</div></div>
+    <div style="flex:1;min-width:150px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>CHAMPION</div><div style="font-size:14px;font-weight:bold">${d.champion_during_session||'—'}</div><div class="${rot?'neg':'pos'}">${rot?'⚠ ROTATED mid-session':'✓ STABLE — no rotation'}</div></div>
+    <div style="flex:1;min-width:150px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>TOP SYMBOL SHARE</div><div style="font-size:17px;font-weight:bold">${c.top_symbol_share_pct!=null?c.top_symbol_share_pct+'%':'—'}</div><div class=dim>${c.top_symbols&&c.top_symbols[0]?c.top_symbols[0].sym+' concentration':''}</div></div></div>`;
+  h+=`<div class=dim style="font-size:11px;margin:6px 0 3px">exit reasons: ${Object.entries(c.exit_reasons||{}).map(([k,v])=>k.replace(/_/g,' ')+': '+v).join(' · ')}</div>`;
+  h+=`<div class=dim style="font-size:11px;margin-bottom:3px">top contributors: ${(c.top_symbols||[]).slice(0,6).map(s=>`<span class="tick" data-sym="${s.sym}">${s.sym}</span> $${s.usd}`).join(' · ')}</div>`;
+  // full chronological trade list (no cap)
+  const rows=(c.trades||[]).slice().reverse().map(t=>{const w=t.outcome==='win'?'pos':(t.outcome==='loss'?'neg':'dim');const when=t.exit_t?new Date(t.exit_t).toLocaleString([], {hour:'2-digit',minute:'2-digit'}):'';
+    return `<tr><td><span class="tick" data-sym="${t.sym}">${t.sym}</span></td><td class="${w}">${t.pnl_usd>=0?'+$':'-$'}${Math.abs(t.pnl_usd||0).toFixed(2)}</td><td>${t.realized_pct!=null?t.realized_pct+'%':''}</td><td>${t.hold_min!=null?t.hold_min+'m':''}</td><td class=dim style="font-size:10px">${t.exit_reason.replace(/_/g,' ')}</td><td class=dim style="font-size:10px">${when}</td></tr>`;}).join('');
+  h+=`<div style="font-weight:bold;font-size:12px;margin:8px 0 3px">All ${c.round_trips} session trades (no cap):</div><table style="font-size:11px"><thead><tr><th>sym</th><th>P&L</th><th>%</th><th>hold</th><th>exit reason</th><th>when</th></tr></thead><tbody>${rows}</tbody></table>`;
+  h+=`<div class="note" style="font-size:10px;margin-top:6px">${d.honest_note}</div>`;
+  h+=`<div class=dim style="font-size:10px">Fingerprint to recreate: champion <b>${d.fingerprint.champion}</b> · target ${d.fingerprint.target_pct}% · stop ${d.fingerprint.stop_pct}%</div>`;
+  // other books
+  h+='<div style="font-size:11px;margin-top:8px" class=dim>other books this session: '+['stock','metal','energy'].map(b=>{const bb=d.by_book[b]||{};return bb.round_trips?`${b} ${bb.round_trips} trips $${bb.realized_usd}`:`${b} idle`;}).join(' · ')+'</div>';
+  $('sessionBox').innerHTML=h;
+  if(window.SilmarilChart)setTimeout(()=>SilmarilChart.autotag(document),50);}
 async function renderRegistry(){const d=await jget('data/PARAMETER_REGISTRY.json');if(!d||!d.parameters){$('registryBox').innerHTML='<div class=dim>no data</div>';return;}
   const dot=h=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴'}[h]||'⚪');
   const rows=d.parameters.map(e=>`<tr><td>${dot(e.health)} <b>${e.parameter}</b></td><td style="color:var(--pos)">${e.champion||'—'}</td><td class=dim>${e.challenger||'—'}</td><td class=dim>${e.optimized_for}</td><td class=dim>${e.status}</td></tr>`).join('');
