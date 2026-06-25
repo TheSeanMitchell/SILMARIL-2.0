@@ -1,19 +1,19 @@
 {
   "version": "6.0",
-  "generated_at": "2026-06-25T14:59:23.191422+00:00",
-  "overall_status": "YELLOW",
+  "generated_at": "2026-06-25T15:28:11.336185+00:00",
+  "overall_status": "RED",
   "summary": {
-    "overall_status": "YELLOW",
+    "overall_status": "RED",
     "files_fresh": 22,
     "files_stale": 0,
     "files_missing": 2,
-    "wiring_intact": 4,
+    "wiring_intact": 3,
     "wiring_total": 4,
     "accounts_green": 2,
     "accounts_yellow": 1,
     "accounts_red": 0
   },
-  "rationale": "2 files missing",
+  "rationale": "2 files missing \u00b7 1 wiring gaps",
   "files": [
     {
       "module": "orchestrator",
@@ -53,7 +53,7 @@
     {
       "module": "policy_router",
       "file": "execution_policy.json",
-      "age_minutes": 6.8,
+      "age_minutes": 6.6,
       "threshold_min": 90,
       "status": "FRESH"
     },
@@ -67,28 +67,28 @@
     {
       "module": "risk_state",
       "file": "risk_state.json",
-      "age_minutes": 7.2,
+      "age_minutes": 7.0,
       "threshold_min": 90,
       "status": "FRESH"
     },
     {
       "module": "alpaca_LEGACY",
       "file": "alpaca_paper_state.json",
-      "age_minutes": 0.9,
+      "age_minutes": 1.8,
       "threshold_min": 90,
       "status": "FRESH"
     },
     {
       "module": "alpaca_HARVEST_3",
       "file": "alpaca_h3_state.json",
-      "age_minutes": 0.8,
+      "age_minutes": 1.8,
       "threshold_min": 90,
       "status": "FRESH"
     },
     {
       "module": "alpaca_HARVEST_5",
       "file": "alpaca_h5_state.json",
-      "age_minutes": 0.8,
+      "age_minutes": 1.7,
       "threshold_min": 90,
       "status": "FRESH"
     },
@@ -123,7 +123,7 @@
     {
       "module": "order_quality",
       "file": "order_quality.json",
-      "age_minutes": 6.8,
+      "age_minutes": 6.6,
       "threshold_min": 90,
       "status": "FRESH"
     },
@@ -137,14 +137,14 @@
     {
       "module": "agent_beliefs",
       "file": "agent_beliefs.json",
-      "age_minutes": 12.8,
+      "age_minutes": 27.7,
       "threshold_min": 1440,
       "status": "FRESH"
     },
     {
       "module": "agent_evolution_cards",
       "file": "agent_evolution_cards.json",
-      "age_minutes": 12.8,
+      "age_minutes": 27.7,
       "threshold_min": 1440,
       "status": "FRESH"
     },
@@ -172,24 +172,24 @@
     {
       "module": "run_health",
       "file": "run_health.json",
-      "age_minutes": 15.2,
+      "age_minutes": 28.8,
       "threshold_min": 90,
       "status": "FRESH"
     },
     {
       "module": "persistence_status",
       "file": "persistence_status.json",
-      "age_minutes": 7.2,
+      "age_minutes": 7.0,
       "threshold_min": 1440,
       "status": "FRESH"
     }
   ],
   "wiring": {
     "directive_flow": {
-      "directives_emitted_this_cycle": 12,
-      "directives_consumed_24h": 15,
+      "directives_emitted_this_cycle": 8,
+      "directives_consumed_24h": 16,
       "wired": true,
-      "rationale": "12 emitted, 15 consumed in last 24h"
+      "rationale": "8 emitted, 16 consumed in last 24h"
     },
     "forced_rotation_flow": {
       "emitted_this_cycle": 0,
@@ -199,9 +199,9 @@
     },
     "sweep_cap_enforcement": {
       "accounts_audited": 3,
-      "over_swept_count": 0,
-      "wired": true,
-      "rationale": "no over-sweeps"
+      "over_swept_count": 1,
+      "wired": false,
+      "rationale": "1 accounts breached sweep cap"
     },
     "hard_stops": {
       "accounts_audited": 3,
@@ -214,16 +214,15 @@
   "accounts": [
     {
       "account_id": "LEGACY",
-      "live_equity": 10018.96,
-      "live_cash": 5879.41,
-      "live_sgov": 150.71,
-      "deployed_ratio": 0.3981,
+      "live_equity": 9979.21,
+      "live_cash": 5718.34,
+      "live_sgov": 162.9,
+      "deployed_ratio": 0.4107,
       "status": "YELLOW",
       "flags": [
-        "UNDERDEPLOYED",
-        "STRANDED_CAPITAL"
+        "OVER_SWEPT"
       ],
-      "rationale": "sweep cap $19 \u00b7 underdeployed 40% < 65% \u00b7 VIOLATIONS: UNDERDEPLOYED, STRANDED_CAPITAL"
+      "rationale": "redeploy $163 from SGOV \u00b7 underdeployed 41% < 65% \u00b7 VIOLATIONS: OVER_SWEPT"
     },
     {
       "account_id": "HARVEST_3",
