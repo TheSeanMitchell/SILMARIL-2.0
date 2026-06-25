@@ -33,19 +33,10 @@ concurrency:
 # ────────────────────────────────────────────────────────────────────
 
 on:
-  schedule:
-    # Regular US session — every 15 min, weekdays. 13:00–20:45 UTC spans the
-    # session across both EDT (13:30–20:00) and EST (14:30–21:00) with a short
-    # pre-open and post-close tail. Live equity orders + clean intraday
-    # scoring data happen here.
-    - cron: '*/15 13-20 * * 1-5'
-    # Pre-market warm-up (news ingest + analytics prep), weekdays: 2 light runs.
-    - cron: '0,40 12 * * 1-5'
-    # One off-hours sample per day, EVERY day (incl. weekends), for the 24/7
-    # simulated compounders and overnight news. The live equity book is closed
-    # here, so a single daily touch is enough — no dense overnight/weekend
-    # cadence (that only burned API quota for no clean data).
-    - cron: '0 1 * * *'
+  # NO internal schedule. This workflow runs ONLY on demand — the GitHub "Run
+  # workflow" button or an external cron runner hitting the workflow_dispatch
+  # API. Removing the cron triggers stops GitHub's own scheduler from firing
+  # runs on top of the external trigger (a source of the run stacking).
   workflow_dispatch:
     inputs:
       reason:
