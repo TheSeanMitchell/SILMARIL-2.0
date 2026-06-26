@@ -3,6 +3,11 @@
 <title>SILMARIL 2.5</title>
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg"/>
 <style>
+.master-card{background:linear-gradient(110deg,#15120a,#2b2410,#4a3d16,#2b2410,#15120a);background-size:220% 100%;animation:goldSh 7s linear infinite;border:2px solid #d4af37;border-radius:9px;box-shadow:0 0 26px rgba(212,175,55,.4),inset 0 0 34px rgba(212,175,55,.07);cursor:pointer;padding:18px;text-align:center;transition:transform .15s,box-shadow .2s}
+.master-card:hover{transform:scale(1.012);box-shadow:0 0 42px rgba(212,175,55,.65)}
+.master-eq{font-size:44px;font-weight:bold;line-height:1.1;background:linear-gradient(110deg,#bfa14a,#fff8dc,#e8e8e8,#fff3c4,#bfa14a);background-size:220% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#d4af37;animation:goldSh 4.5s linear infinite}
+@keyframes goldSh{0%{background-position:0% 50%}100%{background-position:220% 50%}}
+
   :root[data-theme="light"]{--bg:#fff;--fg:#000;--line:#000;--soft:#f4f4f4;--pos:#008000;--neg:#c00000;--hd:#000;--hdfg:#fff;--accent:#0000cc}
   :root[data-theme="dark"]{--bg:#0b0b0c;--fg:#e9e9ea;--line:#555;--soft:#161617;--pos:#39d353;--neg:#ff6b66;--hd:#e9e9ea;--hdfg:#0b0b0c;--accent:#6ea8ff}
   *{box-sizing:border-box}
@@ -61,6 +66,14 @@
   <section><div class="hd">📊 PROJECT SCORECARD — honest self-grade, every cycle</div><div class="bd">
     <div class="note"><b>What:</b> the platform grading itself from real data. <b>Why care:</b> one number for "is this getting better?" <b>Action:</b> low confidence/profitability = let it gather trades, don't tinker.</div>
     <div id="scorecard"></div></div></section>
+  <section style="margin-bottom:10px">
+    <div class="master-card" onclick="(document.getElementById('masterBox')||{}).scrollIntoView&&document.getElementById('masterBox').scrollIntoView({behavior:'smooth'})">
+      <div style="color:#d4af37;font-size:13px;letter-spacing:2px;font-weight:bold">\u2605 MASTER ACCOUNT \u00b7 the one real account \u00b7 starts now</div>
+      <div class="master-eq" id="mcEq">$10,000.00</div>
+      <div id="mcSub" style="color:#e8d9a0;font-size:13px;margin-top:2px">loading\u2026</div>
+      <div style="color:#9a8a55;font-size:11px;margin-top:6px">click to open the full rehearsal \u2193</div>
+    </div>
+  </section>
   <section><div class="hd">🌐 MARKET COMMAND CENTER — asset classes (independent by design)</div><div class="bd">
     <div class="quads" id="quadrants"></div>
     <div id="scanStatus" class="dim" style="font-size:11px;margin-top:8px;padding:7px;border:1px dashed var(--line)">scanning…</div>
@@ -279,7 +292,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMaster(),'mstr'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -457,6 +470,10 @@ async function renderRegistry(){const d=await jget('data/PARAMETER_REGISTRY.json
   const dot=h=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴'}[h]||'⚪');
   const rows=d.parameters.map(e=>`<tr><td>${dot(e.health)} <b>${e.parameter}</b></td><td style="color:var(--pos)">${e.champion||'—'}</td><td class=dim>${e.challenger||'—'}</td><td class=dim>${e.optimized_for}</td><td class=dim>${e.status}</td></tr>`).join('');
   $('registryBox').innerHTML=`<div class="dim" style="margin-bottom:5px">${d.summary}</div><table style="font-size:11px"><thead><tr><th>parameter</th><th>champion</th><th>challenger</th><th>optimized for</th><th>status</th></tr></thead><tbody>${rows}</tbody></table><div class="note" style="font-size:10px">${d.how_to_extend}</div>`;}
+async function renderMasterCard(){const d=await jget('data/MASTER_ACCOUNT.json');if(!d)return;
+  const eq=d.live_equity||10000,pct=(d.live_pct||0);
+  var e=$('mcEq'); if(e)e.textContent='$'+eq.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  var s=$('mcSub'); if(s)s.innerHTML='<span style="color:'+(pct>=0?'#39d353':'#ff6b6b')+'">'+(pct>=0?'+':'')+pct+'%</span> \u00b7 '+(d.live_status||'')+' \u00b7 champion '+(d.champion||'\u2014')+' \u00b7 '+(d.live_trades_count||0)+' trades since inception';}
 async function renderMaster(){const d=await jget('data/MASTER_ACCOUNT.json');if(!d){$('masterBox').innerHTML='<div class=dim>no data</div>';return;}
   const g='#d4af37';
   const chain=(d.gross_to_spendable_chain||[]).map(c=>`<tr><td>${c.step}</td><td class="${c.amount>=0?'pos':'neg'}">${c.amount>=0?'+':''}$${c.amount}</td></tr>`).join('');
@@ -548,7 +565,7 @@ async function renderHealthMatrix(){const d=await jget('data/HEALTH_MATRIX.json'
     <div style="font-size:10px;padding:4px 0;color:var(--dim)">${d.note||''}</div>`;}
 
 function renderQuadrants(cv){const L=LIVE||{};
-  const meta={crypto:{n:'CRYPTO',col:'#f7931a'},stock:{n:'STOCKS',col:'#2f74ff'},metal:{n:'METALS',col:'#b9bcc4'},energy:{n:'ENERGY',col:'#22b07d'}};
+  const meta={crypto:{n:'CRYPTO',col:'#a855f7'},stock:{n:'STOCKS',col:'#2f74ff'},metal:{n:'METALS',col:'#b9bcc4'},energy:{n:'ENERGY',col:'#22b07d'}};
   $('quadrants').innerHTML=['crypto','stock','metal','energy'].map(bk=>{const b=L[bk]||{},champ=L['champion_'+bk];
     const eq=b.equity!=null?b.equity:10000,r=b.return_pct||0,o=b.open_positions||0;
     const st=champ?'TRADING':(b.equity!=null?'READY · awaiting data feed':'—'),m=meta[bk],mh=getMarketHours(bk);
@@ -595,8 +612,8 @@ async function renderQuadrantArena(){const quads=['crypto','stock','metal','ener
   for(const q of quads){const lb=await jget('data/strategy_leaderboard_'+q+'.json'),champ=await jget('data/champion_'+q+'.json');
     if(!lb)continue;const bt=lb.best_trusted||{},rows=(lb.leaderboard||[]).slice(0,8);
     const champRow=rows.find(r=>r.strategy===champ.champion)||{};
-    html+=`<div class="dim" style="margin:8px 0;padding:8px;border-left:3px solid ${['#f7931a','#2f74ff','#b9bcc4','#22b07d'][quads.indexOf(q)]}">
-      <b>${q.toUpperCase()}</b> · <span style="color:${['#f7931a','#2f74ff','#b9bcc4','#22b07d'][quads.indexOf(q)]}">${champ.champion||'—'}</span> (champion) · edge ${bt.mean_net_pct||0}%/trade over ${bt.trades||0}<br>
+    html+=`<div class="dim" style="margin:8px 0;padding:8px;border-left:3px solid ${['#a855f7','#2f74ff','#b9bcc4','#22b07d'][quads.indexOf(q)]}">
+      <b>${q.toUpperCase()}</b> · <span style="color:${['#a855f7','#2f74ff','#b9bcc4','#22b07d'][quads.indexOf(q)]}">${champ.champion||'—'}</span> (champion) · edge ${bt.mean_net_pct||0}%/trade over ${bt.trades||0}<br>
       <span style="font-size:10px">${champ.reason||''}</span><br>
       <table style="font-size:11px;margin-top:4px"><thead><tr><th>strategy</th><th>trades</th><th>edge</th><th>win%</th></tr></thead><tbody>
       ${rows.map(r=>`<tr style="${r.strategy===champ.champion?'font-weight:bold;background:rgba(255,255,255,.05)':''}">`+

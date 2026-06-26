@@ -94,6 +94,19 @@ def build_master_account(out_dir) -> Dict[str, Any]:
         {"step": "withdrawal to cash (1 network fee)", "amount": round(-WITHDRAW_FLAT, 2)},
     ]
 
+    # ----- LIVE "STARTS NOW" account: a fresh $10k from inception, grows with proven trades forward -----
+    prior = _load(out, "MASTER_ACCOUNT.json")
+    inception = prior.get("inception_ts") or _now()
+    post = [t for t in book.get("trades", [])
+            if t.get("side") == "SELL" and t.get("t", "") >= inception
+            and abs((t.get("qty") or 0) * (t.get("price") or 0)) >= 1.0]
+    post_gross = sum(float(t.get("pnl") or 0) for t in post)
+    post_turn = sum(abs((t.get("qty") or 0) * (t.get("price") or 0)) for t in post)
+    post_costs = post_turn * ((fee_bps + float(spread_bps) + slip_bps) / 10000.0)
+    live_net = post_gross - post_costs
+    live_equity = round(SEED + live_net, 2)
+    live_pct = round(live_net / SEED * 100, 2)
+    live_status = "TRADING" if accepted else "WATCHING"
     equity = SEED + net_spendable
     # 4) daily briefing
     gov = _load(out, "CHAMPION_GOVERNANCE.json")
@@ -160,6 +173,11 @@ def build_master_account(out_dir) -> Dict[str, Any]:
         "generated_at": _now(),
         "status_label": "PRODUCTION REHEARSAL v1 — single account, proven champions only, full reality chain. OBSERVATIONAL.",
         "seed_usd": SEED,
+        "inception_ts": inception,
+        "live_equity": live_equity,
+        "live_pct": live_pct,
+        "live_trades_count": len(post),
+        "live_status": live_status,
         "equity_net_spendable": round(equity, 2),
         "gross_to_spendable_chain": chain,
         "net_spendable_cash": round(net_spendable, 2),
