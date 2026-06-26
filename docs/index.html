@@ -147,6 +147,9 @@
   <section><div class="hd">💰 DAILY TAKE-HOME — what we actually kept after fees</div><div class="bd">
     <div class="note"><b>What:</b> real realized P&L per day (resets midnight Vegas), minus the documented 54 bps/round-trip fee bill, = net take-home. <b>Why:</b> see if early over-trading dragged us down and how recent days really net out. <span class="dim">OBSERVATIONAL.</span></div>
     <div id="dthBox">loading…</div></div></section>
+  <section style="border:2px solid #d4af37;box-shadow:0 0 12px rgba(212,175,55,.25)"><div class="hd" style="color:#d4af37">★ MASTER ACCOUNT — production rehearsal (the one real account)</div><div class="bd">
+    <div class="note" style="color:#d4af37">The fifth book: a single $10k that funds ONLY proven champions and reports NET SPENDABLE CASH — what would actually land in checking after the full fee+tax+withdrawal chain. <span class="dim">v1 · OBSERVATIONAL · adopts proven trades, full reality chain.</span></div>
+    <div id="masterBox">loading…</div></div></section>
   <section><div class="hd">💱 FEE SCENARIOS — same trades, different venue/order type</div><div class="bd">
     <div class="note"><b>What:</b> our exact realized trades, re-charged at real 2026 fee rates for different venues and order types. <b>Why:</b> order type and venue are the biggest lever we have — limit (maker) orders and a low-flat venue can multiply take-home with no change to the edge. <span class="dim">OBSERVATIONAL.</span></div>
     <div id="feeScenBox">loading…</div></div></section>
@@ -276,7 +279,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMaster(),'mstr'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -454,6 +457,23 @@ async function renderRegistry(){const d=await jget('data/PARAMETER_REGISTRY.json
   const dot=h=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴'}[h]||'⚪');
   const rows=d.parameters.map(e=>`<tr><td>${dot(e.health)} <b>${e.parameter}</b></td><td style="color:var(--pos)">${e.champion||'—'}</td><td class=dim>${e.challenger||'—'}</td><td class=dim>${e.optimized_for}</td><td class=dim>${e.status}</td></tr>`).join('');
   $('registryBox').innerHTML=`<div class="dim" style="margin-bottom:5px">${d.summary}</div><table style="font-size:11px"><thead><tr><th>parameter</th><th>champion</th><th>challenger</th><th>optimized for</th><th>status</th></tr></thead><tbody>${rows}</tbody></table><div class="note" style="font-size:10px">${d.how_to_extend}</div>`;}
+async function renderMaster(){const d=await jget('data/MASTER_ACCOUNT.json');if(!d){$('masterBox').innerHTML='<div class=dim>no data</div>';return;}
+  const g='#d4af37';
+  const chain=(d.gross_to_spendable_chain||[]).map(c=>`<tr><td>${c.step}</td><td class="${c.amount>=0?'pos':'neg'}">${c.amount>=0?'+':''}$${c.amount}</td></tr>`).join('');
+  const dt=Object.entries(d.decision_tree||{}).map(([b,q])=>`<tr><td>${b}</td><td style="color:${q.decision==='ACCEPT'?'#39d353':'#888'}">${q.decision}</td><td class=dim style="font-size:10px">${q.reason}</td></tr>`).join('');
+  const br=d.daily_briefing||{};
+  const recs=Object.entries(d.quadrant_recommendations||{}).map(([b,r])=>`<tr><td>${b}</td><td style="color:${r.signal==='BUY'?'#39d353':r.signal==='WAIT'?'#d4af37':'#888'}"><b>${r.signal}</b></td><td class=dim>conf ${r.confidence_pct}%</td></tr>`).join('');
+  const rv=d.reality_validation||{}; const sc=rv.production_readiness_score||0;
+  const exch=(d.exchange_comparison||[]).map(e=>`<tr style="${e.best_for_us?'color:#39d353':''}"><td>${e.venue}${e.best_for_us?' ★':''}</td><td class=dim>${e.maker_pct}% / ${e.taker_pct}%</td><td class=dim style="font-size:10px">${e.note}</td></tr>`).join('');
+  $('masterBox').innerHTML=`<div style="font-size:20px;color:${g};font-weight:bold;margin-bottom:2px">$${(d.equity_net_spendable||0).toLocaleString()}</div><div class=dim style="margin-bottom:6px">net-spendable equity · seed $${d.seed_usd.toLocaleString()} · champion ${d.champion||'—'}</div>
+    <div style="font-weight:bold;font-size:11px;margin:4px 0 2px;color:${g}">GROSS → SPENDABLE CASH</div><table style="font-size:11px"><tbody>${chain}<tr style="border-top:1px solid ${g}"><td><b>NET SPENDABLE CASH</b></td><td class="${d.net_spendable_cash>=0?'pos':'neg'}"><b>${d.net_spendable_cash>=0?'+':''}$${d.net_spendable_cash}</b></td></tr></tbody></table>
+    <div style="font-weight:bold;font-size:11px;margin:8px 0 2px;color:${g}">📋 DAILY BRIEFING</div><div style="font-size:12px">${br.headline||''}</div>
+    <div style="font-weight:bold;font-size:11px;margin:8px 0 2px;color:${g}">🧠 QUADRANTS RECOMMEND → MASTER DECIDES</div><table style="font-size:11px"><tbody>${recs}</tbody></table><div class=dim style="font-size:11px;margin-top:2px">▸ ${d.master_decision||''}</div>
+    <div style="font-weight:bold;font-size:11px;margin:8px 0 2px;color:${g}">🔍 REALITY VALIDATION — production readiness</div>
+    <div style="background:#222;border-radius:3px;height:14px;width:100%;overflow:hidden"><div style="height:14px;width:${sc}%;background:${sc<50?'#cc4444':sc<75?'#d4af37':'#39d353'}"></div></div>
+    <div style="font-size:12px;margin-top:2px"><b>${sc}/100</b> — ${rv.verdict||''}</div><div class=dim style="font-size:10px">${rv.needs||''} · ${rv.honest_note||''}</div>
+    <div style="font-weight:bold;font-size:11px;margin:8px 0 2px;color:${g}">🏦 EXCHANGE COMPARISON (maker/taker · verified 2026)</div><table style="font-size:11px"><tbody>${exch}</tbody></table>
+    <div class="note" style="font-size:10px;margin-top:5px">${d.honest_note}</div>`;}
 async function renderFeeScenarios(){const d=await jget('data/THRESHOLD_TAKEHOME.json');if(!d||!d.fee_scenarios){$('feeScenBox').innerHTML='<div class=dim>no data</div>';return;}
   const g=d.gross_total_window;
   const rows=d.fee_scenarios.map(s=>`<tr><td>${s.label}</td><td class=dim>${s.bps_round_trip}bps</td><td class="${s.lifetime_net>=0?'pos':'neg'}"><b>${s.lifetime_net>=0?'+':''}$${s.lifetime_net}</b></td><td class=dim>${g?Math.round(s.lifetime_net/g*100):0}% kept</td></tr>`).join('');
