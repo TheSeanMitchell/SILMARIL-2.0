@@ -2326,6 +2326,17 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                         log.info("  kraken spread: %s symbols quoted", _ksr.get("symbols_quoted"))
                 except Exception as _kse:
                     log.warning("kraken spread skipped: %s", _kse)
+                if _HOURLY:
+                    try:
+                        from .execution.trade_quality import build_trade_quality as _tq
+                        from .execution.kraken_mirror import build_kraken_mirror as _kmir
+                        from .execution.master_log import build_master_log as _mlog
+                        _tqr = _tq(out); _kmr = _kmir(out); _mlr = _mlog(out)
+                        log.info("  trade quality net $%s today · kraken survival %s%% · master log %s trades",
+                                 (_tqr.get("by_book", {}).get("crypto", {}).get("today", {}) or {}).get("net_realized_usd"),
+                                 _kmr.get("survival_pct"), _mlr.get("total_trades"))
+                    except Exception as _tqe:
+                        log.warning("trade_quality/kraken_mirror/master_log skipped: %s", _tqe)
                 log.info("  timer-opt: %s · chart overlays: %s symbols",
                          _tor.get("recommendation_by_book"), _cor.get("count"))
                 log.info("  threshold champion: combo %s", _tcr.get("champion_combo"))

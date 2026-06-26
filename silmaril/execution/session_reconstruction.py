@@ -30,8 +30,8 @@ def _ts_params(name: str):
     return (float(t.group(1)) if t else None, float(s.group(1)) if s else None)
 
 def _session_start(now: datetime) -> datetime:
-    """1 PM Vegas (PDT = UTC-7) = 20:00 UTC. Rolls to yesterday if we're before it."""
-    start = now.replace(hour=20, minute=0, second=0, microsecond=0)
+    """Local midnight Vegas (PDT = UTC-7) = 07:00 UTC. Rolls to yesterday if we're before it."""
+    start = now.replace(hour=7, minute=0, second=0, microsecond=0)
     if now < start:
         start -= timedelta(days=1)
     return start
@@ -125,7 +125,7 @@ def build_session_reconstruction(out_dir) -> Dict[str, Any]:
     payload = {
         "generated_at": now.isoformat(),
         "session_start_utc": start.isoformat(),
-        "session_label": "since 1 PM Vegas (20:00 UTC)",
+        "session_label": "since midnight Vegas (07:00 UTC)",
         "champion_during_session": champ,
         "champion_rotated_during_session": bool(rotated),
         "rotations_in_window": rotated,

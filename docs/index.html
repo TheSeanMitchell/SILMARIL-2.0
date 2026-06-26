@@ -144,8 +144,17 @@
   <section><div class="hd">🏛️ PARAMETER-CHAMPION REGISTRY — every rotating champion, one view</div><div class="bd">
     <div class="note"><b>What:</b> every parameter SILMARIL elects a champion for on each daily run — strategy, drop, bounce, the drop×bounce combo, hold-timer. <b>Why:</b> verify at a glance (human or AI) that each champion is alive, sensible, and rotating. <b>Health:</b> 🟢 electing from a live leaderboard · 🟡 thin · 🔴 none yet.</div>
     <div id="registryBox">loading…</div></div></section>
+  <section><div class="hd">🔬 TRADE QUALITY LEDGER — what the $0.00 trades actually are</div><div class="bd">
+    <div class="note"><b>What:</b> every sell bucketed into real-win / real-loss / flat-timeout / dust, from the book's own P&L. <b>Why:</b> $0.00 rows are NOT hidden losses — sub-$1 dust (leftover-cash buys) or dips that never moved (sold at entry on timeout). <span class="dim">OBSERVATIONAL.</span></div>
+    <div id="tqBox">loading…</div></div></section>
+  <section><div class="hd">🐙 KRAKEN MIRROR — internal vs live Kraken, side by side</div><div class="bd">
+    <div class="note"><b>What:</b> our SAME internal round-trips, each charged the REAL Kraken bid/ask spread it would cross live — shown trade-by-trade (internal P&L | spread | Kraken P&L). <b>Why:</b> measured proof the edge survives real friction. <span class="dim">OBSERVATIONAL · no orders sent.</span></div>
+    <div id="kmirBox">loading…</div></div></section>
+  <section><div class="hd">📒 MASTER TRADE LOG — every trade, all books, paginated</div><div class="bd">
+    <div class="note"><b>What:</b> the complete trade history, newest first, 100 per page — flip back through all of it with win/loss and exact timestamp. <span class="dim">OBSERVATIONAL.</span></div>
+    <div id="mlogControls" style="margin-bottom:6px"></div><div id="mlogBox">loading…</div></div></section>
   <section><div class="hd">📈 COMPOUNDING PROJECTION — what the champion edge compounds to</div><div class="bd">
-    <div class="note"><b>What:</b> if the champion's observed edge + pace held, $10k over 1d…1y vs holding BTC. <b>⚠️ Projection, not a promise</b> — real edges decay; anything past ~2 weeks is illustrative only.</div>
+    <div class="note"><b>What:</b> what the account becomes if our running daily average holds — 1d…1y, linear (honest). <b>⚠️ Scoreboard, not a promise</b> — built on a few days of a volatile, MKR-heavy edge; only 1d–1wk is credible. <span class="dim">OBSERVATIONAL.</span></div>
     <div id="compoundBox">loading…</div></div></section>
   <section><div class="hd">⏱ TIME-OF-DAY ATTRIBUTION — which hours actually have edge</div><div class="bd">
     <div class="note"><b>What:</b> win rate & expectancy by hour window, crypto/stock separate. <b>Why:</b> some hours are noise, some are edge. <b>Action:</b> evidence for later session-gating — not enforced yet.</div>
@@ -258,7 +267,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -436,10 +445,36 @@ async function renderRegistry(){const d=await jget('data/PARAMETER_REGISTRY.json
   const dot=h=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴'}[h]||'⚪');
   const rows=d.parameters.map(e=>`<tr><td>${dot(e.health)} <b>${e.parameter}</b></td><td style="color:var(--pos)">${e.champion||'—'}</td><td class=dim>${e.challenger||'—'}</td><td class=dim>${e.optimized_for}</td><td class=dim>${e.status}</td></tr>`).join('');
   $('registryBox').innerHTML=`<div class="dim" style="margin-bottom:5px">${d.summary}</div><table style="font-size:11px"><thead><tr><th>parameter</th><th>champion</th><th>challenger</th><th>optimized for</th><th>status</th></tr></thead><tbody>${rows}</tbody></table><div class="note" style="font-size:10px">${d.how_to_extend}</div>`;}
-async function renderCompound(){const d=await jget('data/COMPOUNDING_PROJECTION.json');if(!d||d.status!=='active'){$('compoundBox').innerHTML='<div class=dim>need closed trades to project</div>';return;}
-  const order=['1d','3d','1w','2w','4w','3mo','1y'];
-  const rows=order.map(h=>{const r=d.projections[h];if(!r)return '';const cred=r.credible?'':' <span class=dim>(illustrative)</span>';return `<tr style="${r.credible?'':'opacity:.6'}"><td>${h}${cred}</td><td class="${r.champion_return_pct>=0?'pos':'neg'}">${r.champion_return_pct>=0?'+':''}${r.champion_return_pct.toLocaleString()}%</td><td class=dim>${r.passive_btc_return_pct!=null?(r.passive_btc_return_pct>=0?'+':'')+r.passive_btc_return_pct+'%':'—'}</td></tr>`;}).join('');
-  $('compoundBox').innerHTML=`<div class="dim" style="margin-bottom:4px">champion edge <b>${d.per_trade_expectancy_pct}%/trade</b> · ~${d.trades_per_day} trades/day · daily <b>${d.daily_compounded_pct}%</b> (from ${d.trades_observed} trades / ${d.observed_span_days}d)</div><table style="font-size:11px"><thead><tr><th>horizon</th><th>champion ($10k)</th><th>hold BTC</th></tr></thead><tbody>${rows}</tbody></table><div class="note" style="font-size:10px;color:var(--neg)">${d.honest_warning}</div>`;}
+async function renderTradeQuality(){const d=await jget('data/TRADE_QUALITY.json');if(!d||!d.by_book||!d.by_book.crypto){$('tqBox').innerHTML='<div class=dim>no data</div>';return;}
+  const bk=d.by_book.crypto;
+  const mk=(o,lbl)=>`<table style="font-size:11px;margin-bottom:6px"><thead><tr><th>${lbl}</th><th>count</th><th>$</th></tr></thead><tbody>
+    <tr><td class=pos>real wins</td><td>${o.real_wins}</td><td class=pos>+$${o.real_win_usd}</td></tr>
+    <tr><td class=neg>real losses</td><td>${o.real_losses}</td><td class=neg>$${o.real_loss_usd}</td></tr>
+    <tr><td>flat timeouts</td><td>${o.flat_timeouts}</td><td class=dim>~$0 \u2014 never moved</td></tr>
+    <tr><td class=dim>dust (&lt;$1 pos)</td><td>${o.dust}</td><td class=dim>$${o.dust_usd} \u2014 noise</td></tr>
+    <tr style="border-top:1px solid var(--bd)"><td><b>NET REALIZED</b></td><td>${o.real_round_trips} real</td><td class="${o.net_realized_usd>=0?'pos':'neg'}"><b>${o.net_realized_usd>=0?'+':''}$${o.net_realized_usd}</b></td></tr>
+    <tr><td>real win rate</td><td colspan=2>${o.real_win_rate_pct!=null?o.real_win_rate_pct+'%':'\u2014'}</td></tr></tbody></table>`;
+  $('tqBox').innerHTML=mk(bk.today,'TODAY')+mk(bk.lifetime,'LIFETIME')+`<div class="note" style="font-size:10px">${d.why_zero}</div>`;}
+async function renderKrakenMirror(){const d=await jget('data/KRAKEN_MIRROR.json');if(!d){$('kmirBox').innerHTML='<div class=dim>no data</div>';return;}
+  if(!d.available){$('kmirBox').innerHTML=`<div class=dim>${d.note||'waiting for Kraken quotes'}</div>`;return;}
+  const rows=(d.by_trade||[]).slice(0,15).map(r=>`<tr><td><span class="tick" data-sym="${r.sym}">${r.sym}</span>${r.spread_is_proxy?' <span class=dim>*</span>':''}</td><td class="${r.internal_pnl>=0?'pos':'neg'}">${r.internal_pnl>=0?'+':''}$${r.internal_pnl}</td><td class=dim>${r.kraken_spread_bps}bps</td><td class="${r.kraken_pnl>=0?'pos':'neg'}">${r.kraken_pnl>=0?'+':''}$${r.kraken_pnl}</td></tr>`).join('');
+  $('kmirBox').innerHTML=`<div class="dim" style="margin-bottom:4px">${d.kraken_symbols_quoted} symbols quoted live \u00b7 median ${d.kraken_median_spread_bps}bps \u00b7 ${d.round_trips_mirrored} round-trips mirrored</div>
+    <div style="font-size:13px;margin-bottom:6px">internal <b class="${d.internal_net_today>=0?'pos':'neg'}">${d.internal_net_today>=0?'+':''}$${d.internal_net_today}</b> \u2192 after real Kraken spread <b class="${d.kraken_net_today>=0?'pos':'neg'}">${d.kraken_net_today>=0?'+':''}$${d.kraken_net_today}</b> \u00b7 <b>${d.survival_pct}% survives</b></div>
+    <table style="font-size:11px"><thead><tr><th>symbol</th><th>internal</th><th>spread</th><th>on kraken</th></tr></thead><tbody>${rows}</tbody></table><div class="note" style="font-size:10px">* spread proxied from median. ${d.honest_note}</div>`;
+  if(window.SilmarilChart)setTimeout(()=>SilmarilChart.autotag(document),50);}
+var _mlogPage=0, _mlogData=null;
+function _mlogRender(){const d=_mlogData;if(!d||!d.trades){$('mlogBox').innerHTML='<div class=dim>no data</div>';return;}
+  const ps=d.page_size||100, pages=Math.max(1,Math.ceil(d.trades.length/ps));
+  if(_mlogPage>=pages)_mlogPage=pages-1; if(_mlogPage<0)_mlogPage=0;
+  const slice=d.trades.slice(_mlogPage*ps,(_mlogPage+1)*ps);
+  const rows=slice.map(r=>{const cls=r.result==='win'?'pos':r.result==='loss'?'neg':'dim';const pnl=r.pnl==null?'\u2014':(r.pnl>=0?'+':'')+'$'+r.pnl;return `<tr><td class=dim style="font-size:10px">${r.date} ${r.time}</td><td>${r.book}</td><td>${r.side}</td><td><span class="tick" data-sym="${r.sym}">${r.sym}</span></td><td class=${cls}>${pnl}</td></tr>`;}).join('');
+  $('mlogControls').innerHTML=`<button onclick="_mlogPage--;_mlogRender()" ${_mlogPage<=0?'disabled':''}>\u2039 newer</button> <span class=dim>page ${_mlogPage+1}/${pages} \u00b7 ${d.total_trades} trades \u00b7 lifetime ${d.lifetime_win_rate_pct}% win</span> <button onclick="_mlogPage++;_mlogRender()" ${_mlogPage>=pages-1?'disabled':''}>older \u203a</button>`;
+  $('mlogBox').innerHTML=`<table style="font-size:11px"><thead><tr><th>when</th><th>book</th><th>side</th><th>symbol</th><th>P&L</th></tr></thead><tbody>${rows}</tbody></table>`;
+  if(window.SilmarilChart)setTimeout(()=>SilmarilChart.autotag(document),50);}
+async function renderMasterLog(){_mlogData=await jget('data/MASTER_LOG.json');_mlogPage=0;_mlogRender();}
+async function renderCompound(){const d=await jget('data/COMPOUNDING_PROJECTION.json');if(!d||!d.projection_on_recent3_avg){$('compoundBox').innerHTML='<div class=dim>need \u22652 days of snapshots to project</div>';return;}
+  const rows=d.projection_on_recent3_avg.map(r=>{const cred=r.credibility==='credible'?'':r.credibility==='speculative'?' <span class=dim>(speculative)</span>':' <span class=dim>(illustrative)</span>';const op=r.credibility==='credible'?'':'opacity:.6';return `<tr style="${op}"><td>${r.horizon}${cred}</td><td class="${r.projected_gain_linear>=0?'pos':'neg'}">$${r.projected_equity_linear.toLocaleString()}</td><td class="${r.projected_gain_linear>=0?'pos':'neg'}">${r.projected_gain_linear>=0?'+':''}$${r.projected_gain_linear.toLocaleString()}</td></tr>`;}).join('');
+  $('compoundBox').innerHTML=`<div class="dim" style="margin-bottom:4px">equity now <b>$${d.current_equity.toLocaleString()}</b> \u00b7 running avg <b>$${d.avg_daily_usd_recent3}/day</b> (last 3d) \u00b7 all-time $${d.avg_daily_usd_all}/day \u00b7 from ${d.observed_days} days</div><table style="font-size:11px"><thead><tr><th>horizon</th><th>projected equity</th><th>gain</th></tr></thead><tbody>${rows}</tbody></table><div class="note" style="font-size:10px;color:var(--neg)">${d.honest_note}</div>`;}
 async function renderHealthMatrix(){const d=await jget('data/HEALTH_MATRIX.json');if(!d){return;}
   const dot=s=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴',GRAY:'⚪'}[s]||'⚪');
   const feeds=(d.feeds||[]).map(f=>`<span style="white-space:nowrap">${dot(f.status)} ${f.name} <span class=dim>${f.detail}</span></span>`).join(' &nbsp;·&nbsp; ');
