@@ -1,6 +1,6 @@
 {
   "version": "5.1",
-  "generated_at": "2026-06-26T13:12:23.188536+00:00",
+  "generated_at": "2026-06-26T13:34:41.106595+00:00",
   "directives": [
     {
       "owner": "LEGACY",
@@ -10,6 +10,16 @@
       "trigger": "extension\u22655% AND giveback\u22653% same session",
       "rationale": "late-stage intraday extension \u2014 trim half",
       "priority": 2
+    },
+    {
+      "owner": "LEGACY",
+      "ticker": "ARE",
+      "action": "SCALE_OUT",
+      "size_pct": 0.25,
+      "trigger": "unrealized_plpc\u22653%",
+      "rationale": "first target +3% reached; trim 25%",
+      "priority": 3,
+      "tag": "scale_out_3"
     },
     {
       "owner": "LEGACY",
@@ -30,6 +40,15 @@
       "rationale": "first target +3% reached; trim 25%",
       "priority": 3,
       "tag": "scale_out_3"
+    },
+    {
+      "owner": "LEGACY",
+      "ticker": "ARE",
+      "action": "TIGHTEN_STOP",
+      "new_stop_pct": 0.025,
+      "trigger": "unrealized_plpc\u22655%",
+      "rationale": "+5% reached; tighten trailing stop to 2.5% below peak",
+      "priority": 4
     },
     {
       "owner": "LEGACY",
@@ -55,7 +74,7 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (2.8%, momentum 0.56); add 20% size",
+      "rationale": "healthy winner (5.7%, momentum 0.66); add 20% size",
       "priority": 5
     },
     {
@@ -64,7 +83,7 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (7.6%, momentum 0.70); add 20% size",
+      "rationale": "healthy winner (7.7%, momentum 0.70); add 20% size",
       "priority": 5
     },
     {
@@ -73,18 +92,18 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (19.2%, momentum 0.90); add 20% size",
+      "rationale": "healthy winner (18.8%, momentum 0.88); add 20% size",
       "priority": 5
     }
   ],
   "summary": {
-    "directives": 8,
+    "directives": 10,
     "by_action": {
       "INTRADAY_EXHAUSTION": 1,
-      "SCALE_OUT": 2,
-      "TIGHTEN_STOP": 2,
+      "SCALE_OUT": 3,
+      "TIGHTEN_STOP": 3,
       "SCALE_IN": 3
     }
   },
-  "rationale": "8 directives issued \u00b7 2 scale-outs \u00b7 3 scale-ins"
+  "rationale": "10 directives issued \u00b7 3 scale-outs \u00b7 3 scale-ins"
 }
