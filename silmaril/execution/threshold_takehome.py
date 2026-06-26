@@ -146,6 +146,40 @@ def build_threshold_takehome(out_dir) -> Dict[str, Any]:
     except Exception as e:
         sweep = {"available": False, "error": str(e)[:120]}
 
+    # ---- FEE SCENARIOS: what we keep under different order types / venues (real 2026 rates) ----
+    # Round-trip bps = both sides. Limit (maker) orders cost less than market (taker) but may not fill.
+    SCENARIOS = [
+        ("Kraken taker / market order", 60.0),
+        ("our current model", fee_bps),
+        ("Kraken maker / limit order", 40.0),
+        ("Binance.US 0.10% flat", 20.0),
+    ]
+    gross_total = sum(r["gross"] for r in daily) if daily else 0.0
+    scen_rows = []
+    for label, bps in SCENARIOS:
+        frac = bps / 10000.0
+        per_day = []
+        net_total = 0.0
+        for r in daily:
+            # reconstruct notional from the fee we stored at the model rate
+            day_notional = (abs(r["fees"]) / fee_frac) if fee_frac else 0.0
+            day_fee = day_notional * frac
+            net = r["gross"] - day_fee
+            net_total += net
+            per_day.append({"day": r["day"], "net": round(net, 2)})
+        scen_rows.append({"label": label, "bps_round_trip": bps,
+                          "lifetime_net": round(net_total, 2), "per_day": per_day})
+
+    # low-fee drop sweep: same signals, charged the 20bps flat venue, to show the table go green
+    low_fee_per_trade = NOTIONAL * 0.0020
+    low_fee_sweep = []
+    if sweep.get("available"):
+        for r in sweep["drop_sweep"]:
+            gross_pt = r["gross_per_trade"]
+            low_net = round(gross_pt - low_fee_per_trade, 2)
+            low_fee_sweep.append({"drop_pct": r["drop_pct"], "signals": r["signals"],
+                                  "net_per_trade_lowfee": low_net, "clears_fees": gross_pt > 0.20})
+
     payload = {
         "generated_at": _now(),
         "status_label": "OBSERVATIONAL — what we kept after fees, and what different thresholds would yield.",
@@ -155,6 +189,9 @@ def build_threshold_takehome(out_dir) -> Dict[str, Any]:
         "notional_assumed": NOTIONAL,
         "daily_takehome": daily,
         "threshold_sweep": sweep,
+        "fee_scenarios": scen_rows,
+        "low_fee_drop_sweep": low_fee_sweep,
+        "gross_total_window": round(gross_total, 2),
         "what": "BOX A = real net take-home per day after fees. BOX B = simulated trade-count + net-per-trade after fees at each drop/bounce threshold.",
         "how_to_read": (f"Every trade must clear {round(fee_bps/100,2)}% just to pay its fees. In BOX B, "
                         "rows where clears_fees is false LOSE money on average — that's the fat to cut. "
