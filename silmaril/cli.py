@@ -2331,7 +2331,8 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                         from .execution.trade_quality import build_trade_quality as _tq
                         from .execution.kraken_mirror import build_kraken_mirror as _kmir
                         from .execution.master_log import build_master_log as _mlog
-                        _tqr = _tq(out); _kmr = _kmir(out); _mlr = _mlog(out)
+                        from .execution.threshold_takehome import build_threshold_takehome as _tth
+                        _tqr = _tq(out); _kmr = _kmir(out); _mlr = _mlog(out); _tthr = _tth(out)
                         log.info("  trade quality net $%s today · kraken survival %s%% · master log %s trades",
                                  (_tqr.get("by_book", {}).get("crypto", {}).get("today", {}) or {}).get("net_realized_usd"),
                                  _kmr.get("survival_pct"), _mlr.get("total_trades"))

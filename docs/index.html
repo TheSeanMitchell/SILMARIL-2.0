@@ -144,6 +144,12 @@
   <section><div class="hd">🏛️ PARAMETER-CHAMPION REGISTRY — every rotating champion, one view</div><div class="bd">
     <div class="note"><b>What:</b> every parameter SILMARIL elects a champion for on each daily run — strategy, drop, bounce, the drop×bounce combo, hold-timer. <b>Why:</b> verify at a glance (human or AI) that each champion is alive, sensible, and rotating. <b>Health:</b> 🟢 electing from a live leaderboard · 🟡 thin · 🔴 none yet.</div>
     <div id="registryBox">loading…</div></div></section>
+  <section><div class="hd">💰 DAILY TAKE-HOME — what we actually kept after fees</div><div class="bd">
+    <div class="note"><b>What:</b> real realized P&L per day (resets midnight Vegas), minus the documented 54 bps/round-trip fee bill, = net take-home. <b>Why:</b> see if early over-trading dragged us down and how recent days really net out. <span class="dim">OBSERVATIONAL.</span></div>
+    <div id="dthBox">loading…</div></div></section>
+  <section><div class="hd">🎯 THRESHOLD SWEEP — cut the fat (fewer, deeper, profitable)</div><div class="bd">
+    <div class="note"><b>What:</b> simulated over REAL price history — at each drop trigger and bounce target, how many trades fire and the NET take-home PER TRADE after fees. <b>Why:</b> every trade must clear ~0.54% just to pay fees; this shows exactly which thresholds make money. <span class="dim">OBSERVATIONAL · simulation, not a guarantee.</span></div>
+    <div id="sweepBox">loading…</div></div></section>
   <section><div class="hd">🔬 TRADE QUALITY LEDGER — what the $0.00 trades actually are</div><div class="bd">
     <div class="note"><b>What:</b> every sell bucketed into real-win / real-loss / flat-timeout / dust, from the book's own P&L. <b>Why:</b> $0.00 rows are NOT hidden losses — sub-$1 dust (leftover-cash buys) or dips that never moved (sold at entry on timeout). <span class="dim">OBSERVATIONAL.</span></div>
     <div id="tqBox">loading…</div></div></section>
@@ -267,7 +273,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -445,6 +451,19 @@ async function renderRegistry(){const d=await jget('data/PARAMETER_REGISTRY.json
   const dot=h=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴'}[h]||'⚪');
   const rows=d.parameters.map(e=>`<tr><td>${dot(e.health)} <b>${e.parameter}</b></td><td style="color:var(--pos)">${e.champion||'—'}</td><td class=dim>${e.challenger||'—'}</td><td class=dim>${e.optimized_for}</td><td class=dim>${e.status}</td></tr>`).join('');
   $('registryBox').innerHTML=`<div class="dim" style="margin-bottom:5px">${d.summary}</div><table style="font-size:11px"><thead><tr><th>parameter</th><th>champion</th><th>challenger</th><th>optimized for</th><th>status</th></tr></thead><tbody>${rows}</tbody></table><div class="note" style="font-size:10px">${d.how_to_extend}</div>`;}
+async function renderDailyTakehome(){const d=await jget('data/THRESHOLD_TAKEHOME.json');if(!d||!d.daily_takehome||!d.daily_takehome.length){$('dthBox').innerHTML='<div class=dim>no daily data yet</div>';return;}
+  const rows=d.daily_takehome.slice().reverse().map(r=>`<tr><td>${r.day}</td><td class="${r.gross>=0?'pos':'neg'}">${r.gross>=0?'+':''}$${r.gross}</td><td class=neg>$${r.fees}</td><td class="${r.net_takehome>=0?'pos':'neg'}"><b>${r.net_takehome>=0?'+':''}$${r.net_takehome}</b></td><td class=dim>${r.trips}</td></tr>`).join('');
+  $('dthBox').innerHTML=`<table style="font-size:11px"><thead><tr><th>day</th><th>gross</th><th>fees</th><th>NET kept</th><th>trips</th></tr></thead><tbody>${rows}</tbody></table><div class="note" style="font-size:10px">Fee bill = ${d.fee_model_bps_round_trip} bps/round-trip ($${d.fee_per_1k_trade} per $1k trade). High-trip days pay the most — that's the fat.</div>`;}
+async function renderSweep(){const d=await jget('data/THRESHOLD_TAKEHOME.json');if(!d||!d.threshold_sweep||!d.threshold_sweep.available){$('sweepBox').innerHTML='<div class=dim>sweep needs price history — populates on the next hourly run</div>';return;}
+  const sw=d.threshold_sweep, be=d.breakeven_pct_per_trade;
+  const drop=sw.drop_sweep.map(r=>`<tr style="${r.clears_fees?'':'opacity:.55'}"><td>${r.drop_pct}%</td><td class=dim>${r.signals}</td><td>${r.avg_captured_pct}%</td><td class="${r.net_per_trade>=0?'pos':'neg'}"><b>${r.net_per_trade>=0?'+':''}$${r.net_per_trade}</b></td><td>${r.clears_fees?'<span class=pos>✓ profit</span>':'<span class=neg>✗ loses</span>'}</td></tr>`).join('');
+  const bnc=sw.bounce_sweep.map(r=>`<tr style="${r.clears_fees?'':'opacity:.55'}"><td>${r.bounce_pct}%</td><td class=dim>${r.hit_rate_pct}%</td><td class="${r.net_per_trade>=0?'pos':'neg'}"><b>${r.net_per_trade>=0?'+':''}$${r.net_per_trade}</b></td><td>${r.clears_fees?'<span class=pos>✓</span>':'<span class=neg>✗</span>'}</td></tr>`).join('');
+  $('sweepBox').innerHTML=`<div class="dim" style="margin-bottom:3px">break-even = ${be}%/trade · simulated over ${sw.names_simulated} crypto names · faded rows LOSE money after fees</div>
+    <div style="font-weight:bold;font-size:11px;margin:4px 0 2px">DROP TRIGGER (bounce held 3%) — deeper = fewer but more profitable</div>
+    <table style="font-size:11px"><thead><tr><th>drop≥</th><th>trades</th><th>avg move</th><th>net/trade</th><th></th></tr></thead><tbody>${drop}</tbody></table>
+    <div style="font-weight:bold;font-size:11px;margin:6px 0 2px">BOUNCE TARGET (drop held 3%) — bigger target = bigger win, lower hit</div>
+    <table style="font-size:11px"><thead><tr><th>bounce≥</th><th>hit rate</th><th>net/trade</th><th></th></tr></thead><tbody>${bnc}</tbody></table>
+    <div class="note" style="font-size:10px">${d.honest_note}</div>`;}
 async function renderTradeQuality(){const d=await jget('data/TRADE_QUALITY.json');if(!d||!d.by_book||!d.by_book.crypto){$('tqBox').innerHTML='<div class=dim>no data</div>';return;}
   const bk=d.by_book.crypto;
   const mk=(o,lbl)=>`<table style="font-size:11px;margin-bottom:6px"><thead><tr><th>${lbl}</th><th>count</th><th>$</th></tr></thead><tbody>
