@@ -1,0 +1,20 @@
+name: Reset Internal Clean (post-fix wipe)
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type WIPE to confirm a clean $10k reset of all internal books'
+        required: true
+jobs:
+  reset:
+    if: ${{ github.event.inputs.confirm == 'WIPE' }}
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/reset_internal_clean.py
+      - run: |
+          git config user.name "silmaril-bot"
+          git config user.email "bot@silmaril"
+          git add -A && git commit -m "clean internal reset to \$10k (post freshness fix)" || echo "nothing to commit"
+          git push
