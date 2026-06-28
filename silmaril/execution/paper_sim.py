@@ -218,19 +218,29 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
     def px_of(sym):
         return [p2 for _, p2 in samples.get(sym, []) if p2 and p2 > 0]
 
+    def _market_open_stock(n):
+        # US regular session ~13:30-20:00 UTC, weekdays only. Outside this, stock
+        # "prices" are stale Friday/after-hours prints — never tradeable.
+        if n.weekday() >= 5:
+            return False
+        mins = n.hour * 60 + n.minute
+        return (13 * 60 + 30) <= mins <= (20 * 60)
+
     def fresh_ok(sym):
         pp = px_of(sym)
         if len(pp) <= 20:
             return False
+        # stale-oscillation guard (applies to EVERY book): a frozen feed bouncing
+        # between 1-2 cached values is NOT a live market, even though it "moves"
+        # every sample. This is the CSGP/MTCH weekend fake-P&L bug. Require genuine
+        # multi-value movement in the recent window.
+        distinct = len(set(pp[-8:]))
+        if distinct < 3:
+            return False
         if crypto:
-            return is_tradeable(pp)        # crypto path UNCHANGED (24/7, 80% bar)
-        # STOCKS: the crypto 80%-of-all-intervals freshness bar is structurally
-        # impossible — stocks only quote ~6.5h of 24 (and not on weekends), so they
-        # are "frozen" most of the time and were ALL rejected (0/536). Instead, treat
-        # a stock as tradeable when it is ACTIVELY quoting right now — its price has
-        # moved within the last few samples — which naturally gates to market hours.
-        recent = pp[-6:]
-        return len(set(recent)) > 1
+            return is_tradeable(pp)        # crypto: keep the 80% freshness bar too
+        # STOCKS: additionally require the live regular session.
+        return _market_open_stock(now)
 
     # EXITS — target / stop / timeout (same for either direction once we're long)
     for sym in list(pbook.positions.keys()):
