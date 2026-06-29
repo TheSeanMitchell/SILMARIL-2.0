@@ -28,7 +28,7 @@ from typing import Any, Dict, List
 
 EXCHANGE = "binance"      # or "coinbase"
 QUOTE = "USDT"
-TOP_N = 250               # 2.6.1: expanded liquid universe (was 150). Past ~300 is micro-cap
+TOP_N = 600               # 2.6.1: FULL liquid coverage (runtime not a concern per directive)
                           # junk the freshness filter rejects; raise further only if runtime holds.
 TIMEFRAME = "5m"
 CANDLES = 300             # ~25h of 5m history per pair
