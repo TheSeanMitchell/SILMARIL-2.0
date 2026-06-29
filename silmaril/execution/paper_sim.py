@@ -407,7 +407,7 @@ def backtest_through_sim(out_dir, crypto_only: Optional[bool] = None) -> Dict[st
     samples = load_all_samples(out)
     if not samples:
         return {"error": "no samples"}
-    series = {tk: [p for _, p in rows if p and p > 0] for tk, rows in samples.items()}
+    series = {tk: [p for t, p in rows if p and p > 0 and "T00:00:00" not in t] for tk, rows in samples.items()}
     fresh = {tk: px for tk, px in series.items()
              if len(px) > 20 and is_tradeable(px)
              and (crypto_only is None or _is_crypto(tk) == crypto_only)}

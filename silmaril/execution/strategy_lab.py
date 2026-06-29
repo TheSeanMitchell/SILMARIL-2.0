@@ -109,7 +109,7 @@ def run_leaderboard(out_dir) -> Dict[str, Any]:
     samples = load_all_samples(out)
     if not samples:
         return {"error": "no samples"}
-    series = {tk: [p for _, p in rows if p and p > 0] for tk, rows in samples.items()}
+    series = {tk: [p for t, p in rows if p and p > 0 and "T00:00:00" not in t] for tk, rows in samples.items()}
     fresh_all = {tk: px for tk, px in series.items() if len(px) > 20 and is_tradeable(px)}
     costs = {tk: round_trip_cost(px) for tk, px in fresh_all.items()}
     fresh_crypto = {k: v for k, v in fresh_all.items() if _is_crypto(k)}
@@ -174,7 +174,7 @@ def run_split_leaderboards(out_dir):
     samples = load_all_samples(out)
     if not samples:
         return {}
-    series = {tk: [p for _, p in rows if p and p > 0] for tk, rows in samples.items()}
+    series = {tk: [p for t, p in rows if p and p > 0 and "T00:00:00" not in t] for tk, rows in samples.items()}
     fresh_all = {tk: px for tk, px in series.items() if len(px) > 20}
     costs = {tk: round_trip_cost(px) for tk, px in fresh_all.items()}
     out_payloads = {}

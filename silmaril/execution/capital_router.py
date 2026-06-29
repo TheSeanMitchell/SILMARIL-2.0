@@ -168,7 +168,7 @@ def route(out_dir, total: float = TOTAL) -> Dict[str, Any]:
     samples = load_all_samples(out)
     marks = _marks_from_samples(samples)
     fresh = {tk: px for tk, px in
-             ((k, [p for _, p in v if p and p > 0]) for k, v in samples.items())
+             ((k, [p for t, p in v if p and p > 0 and "T00:00:00" not in t]) for k, v in samples.items())
              if _is_crypto(tk) and len(px) > 20 and is_tradeable(px)}
     costs = {tk: round_trip_cost(px) for tk, px in fresh.items()}
 
