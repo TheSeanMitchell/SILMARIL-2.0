@@ -670,7 +670,7 @@ function renderAcct(L){if(!L)return;
 function renderChamp(cv,st,gov){if(!cv)return;
   const name=cv.declared_champion, row=(cv.strategies||[]).find(r=>r.strategy===name)||{},sv=row.survivability||{};
   $('champCards').innerHTML=[
-    ['CHAMPION',name||'—',''],['SURVIVABILITY',(sv.score??'—')+'/100',(sv.score>=70?'pos':sv.score>=40?'':'neg')],
+    ['CHAMPION',pokeLabel(name),''],['SURVIVABILITY',(sv.score??'—')+'/100',(sv.score>=70?'pos':sv.score>=40?'':'neg')],
     ['TIER',(st&&st.promotion_tier)||row.tier||'—',''],['TRADES',row.n??'—',''],
     ['WIN RATE',f(row.win_pct,1)+'%',''],['EXPECTANCY',sg(row.avg_return_pct)+'%/trade',(row.avg_return_pct>=0?'pos':'neg')],
   ].map(([k,v,c2])=>`<div class="stat"><div class="k">${k}</div><div class="val ${c2}">${v}</div></div>`).join('');
@@ -706,8 +706,18 @@ function renderPos(bk,host){const L=LIVE&&LIVE[bk]?LIVE[bk]:{},pos=L.positions||
       +'<td style="font-size:10px;opacity:.75">'+holdTxt+'</td>'
       +'<td>'+bar+'</td></tr>';}).join('');
 }
+
+const POKE=["Bulbasaur","Ivysaur","Venusaur","Charmander","Charmeleon","Charizard","Squirtle","Wartortle","Blastoise","Caterpie","Metapod","Butterfree","Weedle","Kakuna","Beedrill","Pidgey","Pidgeotto","Pidgeot","Rattata","Raticate","Spearow","Fearow","Ekans","Arbok","Pikachu","Raichu","Sandshrew","Sandslash","NidoranF","Nidorina","Nidoqueen","NidoranM","Nidorino","Nidoking","Clefairy","Clefable","Vulpix","Ninetales","Jigglypuff","Wigglytuff","Zubat","Golbat","Oddish","Gloom","Vileplume","Paras","Parasect","Venonat","Venomoth","Diglett","Dugtrio","Meowth","Persian","Psyduck","Golduck","Mankey","Primeape","Growlithe","Arcanine","Poliwag","Poliwhirl","Poliwrath","Abra","Kadabra","Alakazam","Machop","Machoke","Machamp","Bellsprout","Weepinbell","Victreebel","Tentacool","Tentacruel","Geodude","Graveler","Golem","Ponyta","Rapidash","Slowpoke","Slowbro","Magnemite","Magneton","Farfetchd","Doduo","Dodrio","Seel","Dewgong","Grimer","Muk","Shellder","Cloyster","Gastly","Haunter","Gengar","Onix","Drowzee","Hypno","Krabby","Kingler","Voltorb","Electrode","Exeggcute","Exeggutor","Cubone","Marowak","Hitmonlee","Hitmonchan","Lickitung","Koffing","Weezing","Rhyhorn","Rhydon","Chansey","Tangela","Kangaskhan","Horsea","Seadra","Goldeen","Seaking","Staryu","Starmie","MrMime","Scyther","Jynx","Electabuzz","Magmar","Pinsir","Tauros","Magikarp","Gyarados","Lapras","Ditto","Eevee","Vaporeon","Jolteon","Flareon","Porygon","Omanyte","Omastar","Kabuto","Kabutops","Aerodactyl","Snorlax","Articuno","Zapdos","Moltres","Dratini","Dragonair","Dragonite","Mewtwo","Mew"];
+function pokeFor(s){s=String(s||'');let hsh=0;for(let i=0;i<s.length;i++)hsh=(hsh*31+s.charCodeAt(i))>>>0;return POKE[hsh%POKE.length];}
+function stratDesc(s){s=String(s||'');let m;
+  if(m=s.match(/^MR_d(\d+)_t(\d+)_s(\d+)$/))return 'Mean Reversion \u00b7 buy '+m[1]+'% dip \u2192 target +'+m[2]+'% \u00b7 stop -'+m[3]+'%';
+  if(m=s.match(/^MOM_u(\d+)_t(\d+)_s(\d+)$/))return 'Momentum \u00b7 enter +'+m[1]+'% breakout \u2192 target +'+m[2]+'% \u00b7 stop -'+m[3]+'%';
+  if(m=s.match(/^MR_patient_d(\d+)$/))return 'Mean Reversion (patient) \u00b7 buy '+m[1]+'% dip, longer hold';
+  if(m=s.match(/^PERSIST_u(\d+)_h(\d+)$/))return 'Trend Persistence \u00b7 '+(parseInt(m[1])/10)+'% move, hold '+m[2]+'h';
+  return 'strategy';}
+function pokeLabel(s){if(!s||s==='\u2014')return s||'\u2014';return '<div style="line-height:1.15"><span title="'+stratDesc(s)+'">\ud83d\udd34 <b>'+pokeFor(s)+'</b></span><div style="font-size:8px;opacity:.55">'+s+' \u00b7 '+stratDesc(s)+'</div></div>';}
 function renderArena(cv,gov){if(!cv)return;
-  $('arenaBody').innerHTML=(cv.strategies||[]).map(r=>{const s=r.survivability||{};return `<tr><td>${r.strategy}</td><td>${r.n}</td><td><b>${s.score??0}</b></td><td class="${cl(r.total_return_pct)}">${sg(r.total_return_pct)}</td><td class="${cl(r.avg_return_pct)}">${sg(r.avg_return_pct)}</td><td>${f(r.win_pct,1)}</td><td>${f(r.sharpe_proxy)}</td><td class="neg">${f(r.max_drawdown_pct)}</td><td>${r.tier}</td></tr>`;}).join('');
+  $('arenaBody').innerHTML=(cv.strategies||[]).map(r=>{const s=r.survivability||{};return `<tr><td>${pokeLabel(r.strategy)}</td><td>${r.n}</td><td><b>${s.score??0}</b></td><td class="${cl(r.total_return_pct)}">${sg(r.total_return_pct)}</td><td class="${cl(r.avg_return_pct)}">${sg(r.avg_return_pct)}</td><td>${f(r.win_pct,1)}</td><td>${f(r.sharpe_proxy)}</td><td class="neg">${f(r.max_drawdown_pct)}</td><td>${r.tier}</td></tr>`;}).join('');
   $('arenaNote').textContent=cv.verdict||'';
   const lad=(gov&&gov.promotion_ladder)||{};$('ladder').innerHTML=Object.keys(lad).length?Object.entries(lad).map(([t,a])=>`<div><b>${t}:</b> ${a.join(', ')}</div>`).join(''):'<span class="dim">accumulating</span>';
 }

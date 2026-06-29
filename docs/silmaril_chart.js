@@ -100,6 +100,7 @@
     if (p.target == null && ov.trades && ov.trades.length) {
       var lt = ov.trades[ov.trades.length - 1];
       if (lt.target != null) hline(lt.target, "#f7c948", "TARGET (cash-out) " + fmtP(lt.target));
+      if (lt.stop != null) hline(lt.stop, "#ea3943", "STOP " + fmtP(lt.stop));
     }
     (ov.trades || []).forEach(function (t) {
       var et = tsParse(t.entry_t), xt = tsParse(t.exit_t);
