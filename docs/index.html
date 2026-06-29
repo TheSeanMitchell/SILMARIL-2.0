@@ -67,14 +67,14 @@
     <div class="note"><b>What:</b> the platform grading itself from real data. <b>Why care:</b> one number for "is this getting better?" <b>Action:</b> low confidence/profitability = let it gather trades, don't tinker.</div>
     <div id="scorecard"></div></div></section>
   <section style="margin-bottom:10px">
-    <div class="master-card" onclick="(document.getElementById('masterBox')||{}).scrollIntoView&&document.getElementById('masterBox').scrollIntoView({behavior:'smooth'})">
-      <div style="color:#d4af37;font-size:13px;letter-spacing:2px;font-weight:bold">\u2605 MASTER ACCOUNT \u00b7 the one real account \u00b7 starts now</div>
+    <div class="master-card" onclick="openMaster()">
+      <div style="color:#d4af37;font-size:13px;letter-spacing:2px;font-weight:bold">MASTER ACCOUNT</div>
       <div class="master-eq" id="mcEq">$10,000.00</div>
       <div id="mcSub" style="color:#e8d9a0;font-size:13px;margin-top:2px">loading\u2026</div>
-      <div style="color:#9a8a55;font-size:11px;margin-top:6px">click to open the full rehearsal \u2193</div>
+      <div style="color:#9a8a55;font-size:11px;margin-top:6px">Click to Expand</div>
     </div>
   </section>
-  <section><div class="hd">🌐 MARKET COMMAND CENTER — asset classes (independent by design)</div><div class="bd">
+  <section><div class="hd">Market Engines</div><div class="bd">
     <div class="quads" id="quadrants"></div>
     <div id="scanStatus" class="dim" style="font-size:11px;margin-top:8px;padding:7px;border:1px dashed var(--line)">scanning…</div>
     <div class="note">Crypto &amp; Stocks are live. Metals &amp; Energy are blank placeholders — each will get its OWN arena, champion, survivability and account when built (2.5.1 goal: no shared champions or capital). Crypto and Stocks still share one champion today; separating them is the next milestone.</div>
@@ -565,6 +565,32 @@ async function renderHealthMatrix(){const d=await jget('data/HEALTH_MATRIX.json'
     <div style="font-size:10px;padding:4px 0;color:var(--dim)">${d.note||''}</div>`;}
 
 
+
+function _kv(o){
+  if(o==null) return '<span class=dim>\u2014</span>';
+  if(Array.isArray(o)) return o.map(function(x){return _kv(x);}).join('<br>');
+  if(typeof o==='object') return Object.entries(o).map(function(e){var v=e[1];return '<b>'+e[0]+':</b> '+(typeof v==='object'?_kv(v):v);}).join(' \u00b7 ');
+  return String(o);
+}
+async function openMaster(){
+  const d=await jget('data/MASTER_ACCOUNT.json')||{};
+  const g=(d.live_pct||0)>=0?'#39d353':'#ff6b6b';
+  let H='<div style="font-size:18px;font-weight:900;color:#d4af37;letter-spacing:1px">MASTER ACCOUNT \u2014 the brain &amp; feed</div>';
+  H+='<div style="font-size:26px;font-weight:900;color:'+g+';margin-top:4px">$'+(d.live_equity||10000).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>';
+  H+='<div class=dim style="font-size:11px;margin-bottom:8px">'+(d.live_status||'')+' \u00b7 '+((d.live_pct||0)>=0?'+':'')+(d.live_pct||0)+'% since inception \u00b7 champion '+(d.champion||'\u2014')+' \u00b7 '+(d.live_trades_count||0)+' trades</div>';
+  const sec=function(t,v){return v?'<div style="font-weight:800;margin:12px 0 3px;border-bottom:1px solid #ffffff22;color:#d4af37">'+t+'</div><div style="font-size:11px;opacity:.92;line-height:1.5">'+_kv(v)+'</div>':'';};
+  H+=sec('FUNDING DECISION', d.master_decision);
+  H+=sec("HOW IT'S FED \u2014 quadrant recommendations", d.quadrant_recommendations);
+  H+=sec('NET-SPENDABLE CHAIN (gross \u2192 cash)', d.gross_to_spendable_chain);
+  H+=sec('REALITY VALIDATION', d.reality_validation);
+  H+=sec('EXCHANGE FEES \u2014 Binance.US vs Coinbase', d.exchange_comparison);
+  H+=sec('DECISION TREE', d.decision_tree);
+  H+=sec('DAILY BRIEFING', d.daily_briefing);
+  if(d.honest_note)H+='<div class=dim style="font-size:11px;margin-top:10px;font-style:italic">'+d.honest_note+'</div>';
+  const box=$('modalBox');
+  box.innerHTML='<button id="modalClose" onclick="document.getElementById(\''+'modal'+'\').style.display=\''+'none'+'\'" style="position:absolute;top:8px;right:8px">CLOSE \u2715</button><div style="padding:6px 2px">'+H+'</div>';
+  $('modal').style.display='flex';
+}
 async function openQuadrant(bk){
   const NM={crypto:'CRYPTO',stock:'STOCKS',metal:'METALS',energy:'ENERGY'}[bk]||bk.toUpperCase();
   const COL={crypto:'#a855f7',stock:'#2f74ff',metal:'#b9bcc4',energy:'#22b07d'}[bk]||'#fff';
@@ -589,14 +615,18 @@ async function openQuadrant(bk){
   // DECISION TREE — what it is considering and WHY
   H+='<div style="font-weight:800;margin:14px 0 4px;border-bottom:1px solid #ffffff22">DECISION TREE — what it\'s weighing now</div>';
   H+='<div class="dim" style="font-size:11px;margin-bottom:4px">market mode: <b>'+(conv.market_mode||'—')+'</b> · deployment pressure: <b>'+(conv.deployment_pressure??'—')+'</b></div>';
-  const ranked=(conv.ranked_opportunities||[]).slice(0,12);
+  // classify a ticker to its quadrant so panels never mix asset classes
+  const _METAL=new Set(['GLD','IAU','SLV','SIVR','PPLT','PALL','CPER','GDX','GDXJ','SIL','XAU','XAG','XPT','XPD','GLDM','AAAU']);
+  const _ENER=new Set(['XLE','XOP','OIH','USO','BNO','UNG','UGA','DBO','DBC','URA','URNM','ICLN','TAN','FAN','PBW','WTI','BRENT','NG','CL','RB','HO']);
+  const _cls=t=>(/-USD$/.test(t)?'crypto':(_METAL.has(t)?'metal':(_ENER.has(t)?'energy':'stock')));
+  const ranked=(conv.ranked_opportunities||[]).filter(r=>_cls(String(r.ticker||r.symbol||r.sym||''))===bk).slice(0,12);
   if(ranked.length){H+='<table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="opacity:.6"><td>rank</td><td>ticker</td><td>score</td><td>reason</td></tr>';
     ranked.forEach((r,i)=>{const t=r.ticker||r.symbol||r.sym||'—',sc=r.score??r.conviction??r.rank_score??'—',why=r.reason||r.why||r.note||r.action||'';
       H+='<tr><td>'+(i+1)+'</td><td style="color:'+COL+'">'+t+'</td><td>'+(typeof sc==='number'?f(sc,2):sc)+'</td><td style="opacity:.85">'+String(why).slice(0,80)+'</td></tr>';});
     H+='</table>';} else H+='<div class="dim" style="font-size:11px">no opportunities ranked this cycle</div>';
 
   // RECENT EXITS (the thinking on closes)
-  const traces=(trace.traces||[]).filter(t=>!bk||!t.book||t.book===bk).slice(-10).reverse();
+  const traces=(trace.traces||[]).filter(t=>_cls(String(t.ticker||t.sym||''))===bk).slice(-10).reverse();
   H+='<div style="font-weight:800;margin:14px 0 4px;border-bottom:1px solid #ffffff22">RECENT EXITS — why trades closed</div>';
   if(trace.exit_reason_breakdown)H+='<div class="dim" style="font-size:11px;margin-bottom:4px">'+Object.entries(trace.exit_reason_breakdown).map(([k,v])=>k+': '+v).join(' · ')+'</div>';
   if(traces.length){H+='<table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="opacity:.6"><td>ticker</td><td>exit reason</td><td>pnl</td></tr>';
