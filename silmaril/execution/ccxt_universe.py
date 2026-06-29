@@ -28,7 +28,7 @@ from typing import Any, Dict, List
 
 EXCHANGE = "binance"      # or "coinbase"
 QUOTE = "USDT"
-TOP_N = 600               # 2.6.1: FULL liquid coverage (runtime not a concern per directive)
+TOP_N = 600               # 2.6.1: full liquid coverage
                           # junk the freshness filter rejects; raise further only if runtime holds.
 TIMEFRAME = "5m"
 CANDLES = 300             # ~25h of 5m history per pair
