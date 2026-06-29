@@ -1,0 +1,18 @@
+name: Cleanup Root (archive historical docs)
+on:
+  workflow_dispatch:
+    inputs:
+      confirm: { description: 'Type CLEAN to archive ~91 historical root docs into attic/root_docs/', required: true }
+jobs:
+  cleanup:
+    if: ${{ github.event.inputs.confirm == 'CLEAN' }}
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/cleanup_root.py
+      - run: |
+          git config user.name "silmaril-bot"
+          git config user.email "bot@silmaril"
+          git add -A && git commit -m "cleanup: archive historical root docs -> attic/root_docs/" || echo "nothing"
+          git push
