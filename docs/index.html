@@ -63,9 +63,6 @@
 <!-- COMMAND CENTER -->
 <div class="page on" id="p-cmd">
   <div id="alerts"></div>
-  <section><div class="hd">📊 PROJECT SCORECARD — honest self-grade, every cycle</div><div class="bd">
-    <div class="note"><b>What:</b> the platform grading itself from real data. <b>Why care:</b> one number for "is this getting better?" <b>Action:</b> low confidence/profitability = let it gather trades, don't tinker.</div>
-    <div id="scorecard"></div></div></section>
   <section style="margin-bottom:10px">
     <div class="master-card" onclick="openMaster()">
       <div style="color:#d4af37;font-size:13px;letter-spacing:2px;font-weight:bold">MASTER ACCOUNT</div>
@@ -131,6 +128,9 @@
 </div>
 
 <!-- FORENSICS -->
+  <section><div class="hd">📊 PROJECT SCORECARD — honest self-grade, every cycle</div><div class="bd">
+    <div class="note"><b>What:</b> the platform grading itself from real data. <b>Why care:</b> one number for "is this getting better?" <b>Action:</b> low confidence/profitability = let it gather trades, don't tinker.</div>
+    <div id="scorecard"></div></div></section>
 <div class="page" id="p-forensics">
   <section><div class="hd">📦 TODAY'S SESSION — black box recorder (since 1 PM Vegas)</div><div class="bd">
     <div class="note" style="background:#1a2f1a;border-left:3px solid #16c784"><b>OBSERVATIONAL ONLY.</b> Reconstructs every trade in today's session from REAL fills — no synthetic data, no 30-trade cap. Answers "why did crypto work today" with evidence and preserves the config so it can be recreated.</div>
@@ -487,7 +487,7 @@ async function renderMaster(){const d=await jget('data/MASTER_ACCOUNT.json');if(
   const recs=Object.entries(d.quadrant_recommendations||{}).map(([b,r])=>`<tr><td>${b}</td><td style="color:${r.signal==='BUY'?'#39d353':r.signal==='WAIT'?'#d4af37':'#888'}"><b>${r.signal}</b></td><td class=dim>conf ${r.confidence_pct}%</td></tr>`).join('');
   const rv=d.reality_validation||{}; const sc=rv.production_readiness_score||0;
   const exch=(d.exchange_comparison||[]).map(e=>`<tr style="${e.best_for_us?'color:#39d353':''}"><td>${e.venue}${e.best_for_us?' ★':''}</td><td class=dim>${e.maker_pct}% / ${e.taker_pct}%</td><td class=dim style="font-size:10px">${e.note}</td></tr>`).join('');
-  $('masterBox').innerHTML=`<div style="font-size:20px;color:${g};font-weight:bold;margin-bottom:2px">$${(d.equity_net_spendable||0).toLocaleString()}</div><div class=dim style="margin-bottom:6px">net-spendable equity · seed $${d.seed_usd.toLocaleString()} · champion ${d.champion||'—'}</div>
+  $('masterBox').innerHTML=`<div style="font-size:20px;color:${g};font-weight:bold;margin-bottom:2px">$${(d.live_equity||10000).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div><div class=dim style="margin-bottom:6px">live equity · the starts-now account · ${(d.live_pct||0)>=0?'+':''}${d.live_pct||0}% · champion ${d.champion||'—'} · net-spendable on proven edge $${(d.equity_net_spendable||0).toLocaleString()}</div>
     <div style="font-weight:bold;font-size:11px;margin:4px 0 2px;color:${g}">GROSS → SPENDABLE CASH</div><table style="font-size:11px"><tbody>${chain}<tr style="border-top:1px solid ${g}"><td><b>NET SPENDABLE CASH</b></td><td class="${d.net_spendable_cash>=0?'pos':'neg'}"><b>${d.net_spendable_cash>=0?'+':''}$${d.net_spendable_cash}</b></td></tr></tbody></table>
     <div style="font-weight:bold;font-size:11px;margin:8px 0 2px;color:${g}">📋 DAILY BRIEFING</div><div style="font-size:12px">${br.headline||''}</div>
     <div style="font-weight:bold;font-size:11px;margin:8px 0 2px;color:${g}">🧠 QUADRANTS RECOMMEND → MASTER DECIDES</div><table style="font-size:11px"><tbody>${recs}</tbody></table><div class=dim style="font-size:11px;margin-top:2px">▸ ${d.master_decision||''}</div>
