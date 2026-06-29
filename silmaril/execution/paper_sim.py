@@ -136,7 +136,18 @@ def _marks_from_samples(samples: Dict[str, List]) -> Dict[str, tuple]:
                 except Exception:
                     pass
             recent = rec
-        if len(recent) < 8:             # warmup: not enough fresh data yet -> no signal
+        # WARMUP (pre-beta): a coin cannot trade until it has built >= 2 HOURS of live
+        # context, so it never jumps into a name (e.g. WLD-USD) before it understands its
+        # recent volatility. Right after a wipe this means ~2h of quiet, by design.
+        WARMUP_MIN_POINTS = 24          # ~2h at the 5-min cadence
+        WARMUP_MIN_SPAN_S = 2 * 3600
+        if len(recent) < WARMUP_MIN_POINTS:
+            continue
+        try:
+            _span = (_dt.fromisoformat(recent[-1][0]) - _dt.fromisoformat(recent[0][0])).total_seconds()
+            if _span < WARMUP_MIN_SPAN_S:
+                continue
+        except Exception:
             continue
         last_t, last_p = recent[-1]
         try:
