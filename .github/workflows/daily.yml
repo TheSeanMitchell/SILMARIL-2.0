@@ -124,6 +124,9 @@ jobs:
           MIN=$(date -u +%M)
           if [ "$MIN" -lt 15 ]; then python scripts/sanitize_history.py || true; else echo "skip sanitize (only top-of-hour)"; fi
 
+      - name: Canonicalize price-history keys (FUTURE-PROOF — graphs never break again)
+        run: python scripts/remap_keys.py || true
+
       - name: Post-cycle analytics suite (top-of-hour only)
         if: always()
         env:
