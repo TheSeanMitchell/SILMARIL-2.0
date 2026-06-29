@@ -132,7 +132,7 @@
     <div class="note"><b>What:</b> the platform grading itself from real data. <b>Why care:</b> one number for "is this getting better?" <b>Action:</b> low confidence/profitability = let it gather trades, don't tinker.</div>
     <div id="scorecard"></div></div></section>
 <div class="page" id="p-forensics">
-  <section><div class="hd">📦 TODAY'S SESSION — black box recorder (since 1 PM Vegas)</div><div class="bd">
+  <section><div class="hd">📦 TODAY'S SESSION — black box recorder (since midnight Vegas)</div><div class="bd">
     <div class="note" style="background:#1a2f1a;border-left:3px solid #16c784"><b>OBSERVATIONAL ONLY.</b> Reconstructs every trade in today's session from REAL fills — no synthetic data, no 30-trade cap. Answers "why did crypto work today" with evidence and preserves the config so it can be recreated.</div>
     <div id="sessionBox">loading…</div></div></section>
   <section><div class="hd">🔬 SESSION ANATOMY — why each buy & sell fired, and did we capture the move</div><div class="bd">
@@ -242,6 +242,7 @@
 <!-- SETTINGS -->
 <div class="page" id="p-settings">
   <section><div class="hd">SETTINGS &amp; LINKS</div><div class="bd">
+    <details style="margin-bottom:10px;border:1px dashed #d4af3766;border-radius:6px;padding:6px"><summary style="cursor:pointer;font-size:12px;color:#d4af37">\ud83e\udd5a experimental \u2014 BOT HANDOFF (plug a live trader into the Master output)</summary><div id="handoffBox" style="padding:8px">loading\u2026</div></details>
     <p>Theme: <button class="themebtn" onclick="toggleTheme()">toggle light / dark</button> (saved on this device)</p>
     <p class="dim">Deep / debug views:</p>
     <p><a href="legacy_dashboard.html">Legacy dashboard</a> · <a href="strategy_leaderboard.html">Raw leaderboard</a> · <a href="lifecycle.html">Lifecycle/validation</a> · <a href="paper_sim.html">Paper sim detail</a></p>
@@ -295,7 +296,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -430,7 +431,22 @@ async function renderReality(){const d=await jget('data/REALITY_CHECK.json');if(
 async function renderAnatomy(){const d=await jget('data/SESSION_ANATOMY.json');if(!d||!d.overall){$('anatomyBox').innerHTML='<div class=dim>no anatomy yet</div>';return;}
   const o=d.overall,mk=d.top_symbol_anatomy||{},rs=d.rest_anatomy||{};
   const vbar=v=>Object.entries(v||{}).map(([k,n])=>k.replace(/_/g,' ')+': <b>'+n+'</b>').join(' · ');
-  let h=`<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+  let h=`<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+    <div style="flex:1;min-width:230px;padding:10px;border:1px solid #2f74ff66;border-radius:8px;background:#0e1622">
+      <div style="font-weight:800;color:#4f9bff">ALL 4 QUADRANTS \u00b7 working together</div>
+      <div style="font-size:23px;font-weight:900" class="${cR>=0?'pos':'neg'}">${cR>=0?'+$':'-$'}${Math.abs(cR).toFixed(2)}</div>
+      <div class=dim style="font-size:11px">${cT} trips \u00b7 ${cW}W/${cL}L/${cF} flat \u00b7 ${cWin}% win \u00b7 sim realized</div>
+      <div class=dim style="font-size:10px">${['crypto','stock','metal','energy'].map(b=>{const x=d.by_book[b]||{};return b+' $'+(x.realized_usd||0).toFixed(0);}).join(' \u00b7 ')}</div>
+    </div>
+    <div style="flex:1;min-width:230px;padding:10px;border:2px solid #d4af37;border-radius:8px;background:#15120a">
+      <div style="font-weight:800;color:#d4af37">\ud83c\udfc6 MASTER ACCOUNT only \u00b7 distilled output</div>
+      <div style="font-size:23px;font-weight:900" class="${mPnl>=0?'pos':'neg'}">${mPnl>=0?'+$':'-$'}${Math.abs(mPnl).toFixed(2)}</div>
+      <div class=dim style="font-size:11px">equity $${mEq.toLocaleString(undefined,{maximumFractionDigits:2})} \u00b7 ${mPct>=0?'+':''}${mPct}% \u00b7 ${mTr} trades \u00b7 NET of real fees</div>
+      <div class=dim style="font-size:10px">what a live account plugged into the Master would have done today</div>
+    </div></div>
+  <div class=dim style="font-size:10px;margin-bottom:10px">LEFT = all four workhorse books combined (sim realized). RIGHT = the Master's single distilled output, after full Binance.US/Coinbase-style fees \u2014 the more conservative, real number. Watch which you trust more before going live.</div>
+  <div style="font-weight:bold;font-size:12px;margin:4px 0">Crypto detail \u2014</div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
     <div style="flex:1;min-width:140px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>AVG DIP AT ENTRY</div><div style="font-size:17px;font-weight:bold" class="neg">${o.avg_dip_at_entry_pct}%</div><div class=dim>how oversold our buys were</div></div>
     <div style="flex:1;min-width:140px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>CAPTURE EFFICIENCY</div><div style="font-size:17px;font-weight:bold" class="pos">${o.avg_capture_efficiency_pct}%</div><div class=dim>of the available up-move banked</div></div>
     <div style="flex:1;min-width:140px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>LEFT ON TABLE</div><div style="font-size:17px;font-weight:bold">${o.avg_left_on_table_pct}%</div><div class=dim>avg more available after exit</div></div>
@@ -455,7 +471,26 @@ async function renderAnatomy(){const d=await jget('data/SESSION_ANATOMY.json');i
   if(window.SilmarilChart)setTimeout(()=>SilmarilChart.autotag(document),50);}
 async function renderSession(){const d=await jget('data/SESSION_TODAY.json');if(!d||!d.by_book){$('sessionBox').innerHTML='<div class=dim>no session data yet</div>';return;}
   const c=d.by_book.crypto||{};const rot=d.champion_rotated_during_session;
-  let h=`<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+  const m=await jget('data/MASTER_ACCOUNT.json')||{};
+  let cR=0,cT=0,cW=0,cL=0,cF=0;['crypto','stock','metal','energy'].forEach(b=>{const x=d.by_book[b]||{};cR+=x.realized_usd||0;cT+=x.round_trips||0;cW+=x.wins||0;cL+=x.losses||0;cF+=x.flat||0;});
+  const cWin=(cW+cL)?Math.round(cW/(cW+cL)*100):0;
+  const mEq=m.live_equity||10000,mPct=m.live_pct||0,mTr=m.live_trades_count||0,mSeed=m.seed_usd||10000,mPnl=mEq-mSeed;
+  let h=`<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+    <div style="flex:1;min-width:230px;padding:10px;border:1px solid #2f74ff66;border-radius:8px;background:#0e1622">
+      <div style="font-weight:800;color:#4f9bff">ALL 4 QUADRANTS \u00b7 working together</div>
+      <div style="font-size:23px;font-weight:900" class="${cR>=0?'pos':'neg'}">${cR>=0?'+$':'-$'}${Math.abs(cR).toFixed(2)}</div>
+      <div class=dim style="font-size:11px">${cT} trips \u00b7 ${cW}W/${cL}L/${cF} flat \u00b7 ${cWin}% win \u00b7 sim realized</div>
+      <div class=dim style="font-size:10px">${['crypto','stock','metal','energy'].map(b=>{const x=d.by_book[b]||{};return b+' $'+(x.realized_usd||0).toFixed(0);}).join(' \u00b7 ')}</div>
+    </div>
+    <div style="flex:1;min-width:230px;padding:10px;border:2px solid #d4af37;border-radius:8px;background:#15120a">
+      <div style="font-weight:800;color:#d4af37">\ud83c\udfc6 MASTER ACCOUNT only \u00b7 distilled output</div>
+      <div style="font-size:23px;font-weight:900" class="${mPnl>=0?'pos':'neg'}">${mPnl>=0?'+$':'-$'}${Math.abs(mPnl).toFixed(2)}</div>
+      <div class=dim style="font-size:11px">equity $${mEq.toLocaleString(undefined,{maximumFractionDigits:2})} \u00b7 ${mPct>=0?'+':''}${mPct}% \u00b7 ${mTr} trades \u00b7 NET of real fees</div>
+      <div class=dim style="font-size:10px">what a live account plugged into the Master would have done today</div>
+    </div></div>
+  <div class=dim style="font-size:10px;margin-bottom:10px">LEFT = all four workhorse books combined (sim realized). RIGHT = the Master's single distilled output, after full Binance.US/Coinbase-style fees \u2014 the more conservative, real number. Watch which you trust more before going live.</div>
+  <div style="font-weight:bold;font-size:12px;margin:4px 0">Crypto detail \u2014</div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
     <div style="flex:1;min-width:150px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>CRYPTO THIS SESSION</div><div style="font-size:17px;font-weight:bold" class="${(c.realized_usd||0)>=0?'pos':'neg'}">${(c.realized_usd||0)>=0?'+$':'-$'}${Math.abs(c.realized_usd||0).toFixed(2)}</div><div class=dim>${c.round_trips} trips · ${c.wins}W/${c.losses}L/${c.flat} flat · ${c.win_rate_pct}% win</div></div>
     <div style="flex:1;min-width:150px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>CHAMPION</div><div style="font-size:14px;font-weight:bold">${d.champion_during_session||'—'}</div><div class="${rot?'neg':'pos'}">${rot?'⚠ ROTATED mid-session':'✓ STABLE — no rotation'}</div></div>
     <div style="flex:1;min-width:150px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>TOP SYMBOL SHARE</div><div style="font-size:17px;font-weight:bold">${c.top_symbol_share_pct!=null?c.top_symbol_share_pct+'%':'—'}</div><div class=dim>${c.top_symbols&&c.top_symbols[0]?c.top_symbols[0].sym+' concentration':''}</div></div></div>`;
@@ -583,6 +618,13 @@ async function renderHeatshield(){const d=await jget('data/HEATSHIELD.json');if(
     `<tr><td>tight -${d.tight_stop_pct}%</td><td>${t.trades}</td><td class="${t.total_return_pct>=0?'pos':'neg'}">${sg(t.total_return_pct)}</td><td>${t.avg_pct}</td><td>${t.win_pct}%</td><td>${t.exits.STOP}</td></tr>`+
     `<tr style="font-weight:bold"><td>🛡 HEATSHIELD -${d.heatshield_floor_pct}%</td><td>${s.trades}</td><td class="${s.total_return_pct>=0?'pos':'neg'}">${sg(s.total_return_pct)}</td><td>${s.avg_pct}</td><td>${s.win_pct}%</td><td>${s.exits.STOP}</td></tr>`+
     `</tbody></table><div style="margin-top:6px;font-weight:bold" class="${dl>=0?'pos':'neg'}">Δ ${sg(dl)}% over ${t.trades} signals — ${d.verdict}</div>`;}
+async function renderHandoff(){const d=await jget('data/MASTER_ACCOUNT.json');if(!d||!$('handoffBox'))return;
+  $('handoffBox').innerHTML='<div style="font-size:11px;line-height:1.7">'
+   +'<b>Current Master signal</b> \u00b7 champion <b>'+(d.champion||'\u2014')+'</b> \u00b7 status <b>'+(d.live_status||'\u2014')+'</b> \u00b7 equity $'+(d.live_equity||10000).toLocaleString(undefined,{maximumFractionDigits:2})+' \u00b7 net-spendable $'+(d.net_spendable_cash||0)
+   +'<div style="margin-top:8px"><b>1.</b> The engine writes the Master\u2019s decision to <code>data/MASTER_ACCOUNT.json</code> every cycle.</div>'
+   +'<div><b>2.</b> Your bot polls that file and reads <code>master_decision</code>, <code>champion</code>, and the per-quadrant confidence.</div>'
+   +'<div><b>3.</b> Execute the BUY / exit on Binance.US or Coinbase with your sizing. (Confidence gate + wager knobs land in the next phase.)</div>'
+   +'<div class=dim style="margin-top:6px">Raw signal: <code>https://theseanmitchell.github.io/SILMARIL-2.0/data/MASTER_ACCOUNT.json</code></div></div>';}
 async function openMaster(){
   const d=await jget('data/MASTER_ACCOUNT.json')||{};
   const g=(d.live_pct||0)>=0?'#39d353':'#ff6b6b';
