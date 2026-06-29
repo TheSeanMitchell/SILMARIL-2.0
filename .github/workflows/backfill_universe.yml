@@ -1,0 +1,19 @@
+name: Backfill Universe (full coin + 1y fingerprint)
+on:
+  workflow_dispatch:
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: pip install ccxt yfinance
+      - run: python scripts/backfill_universe.py
+      - run: |
+          git config user.name "silmaril-bot"
+          git config user.email "bot@silmaril"
+          git add -A && git commit -m "2.6.1: full universe + 1y fingerprint backfill" || echo "nothing"
+          git push
