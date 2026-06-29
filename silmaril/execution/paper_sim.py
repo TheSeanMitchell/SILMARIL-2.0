@@ -109,25 +109,48 @@ def load_all_samples(out) -> Dict[str, List]:
 
 
 def _marks_from_samples(samples: Dict[str, List]) -> Dict[str, tuple]:
-    """{sym: (last_price, h1_drop_fraction)} computed straight from each series by
-    timestamp (works across cadences: 11-min system samples and 5-min CCXT)."""
-    from datetime import datetime as _dt
+    """{sym: (last_price, h1_drop_fraction)} from each series, using ONLY the last
+    few hours of LIVE samples. This excludes daily-history backfill (which would make
+    today look like a -40% crash vs an old daily close) AND enforces a warmup: a coin
+    cannot signal a drop until it has accumulated enough recent intraday points
+    spanning >1h. Right after a wipe, nothing trades until that baseline forms."""
+    from datetime import datetime as _dt, timezone as _tz
+    RECENT_WINDOW_S = 6 * 3600          # only trust the last 6h for the live drop signal
     out = {}
+    try:
+        nowt = _dt.now(_tz.utc)
+    except Exception:
+        nowt = None
     for sym, rows in samples.items():
         pr = [(t, p) for t, p in rows if p and p > 0]
         if len(pr) < 8:
             continue
-        last_t, last_p = pr[-1]
+        # keep only RECENT live points (drop daily backfill history)
+        recent = pr
+        if nowt is not None:
+            rec = []
+            for t, p in pr:
+                try:
+                    if (nowt - _dt.fromisoformat(t)).total_seconds() <= RECENT_WINDOW_S:
+                        rec.append((t, p))
+                except Exception:
+                    pass
+            recent = rec
+        if len(recent) < 8:             # warmup: not enough fresh data yet -> no signal
+            continue
+        last_t, last_p = recent[-1]
         try:
             lt = _dt.fromisoformat(last_t)
-            ref = last_p
-            for t, p in reversed(pr[:-1]):
+            ref = None
+            for t, p in reversed(recent[:-1]):
                 if (lt - _dt.fromisoformat(t)).total_seconds() >= 3600:
                     ref = p
                     break
+            if ref is None:             # window does not yet span 1h -> warmup, no signal
+                continue
             h1 = last_p / ref - 1 if ref > 0 else 0.0
         except Exception:
-            h1 = last_p / pr[-7][1] - 1 if pr[-7][1] > 0 else 0.0
+            continue
         out[sym] = (last_p, h1)
     return out
 
