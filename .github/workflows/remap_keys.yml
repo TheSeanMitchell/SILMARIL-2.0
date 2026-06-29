@@ -1,0 +1,15 @@
+name: Remap Keys (fix crypto graphs)
+on:
+  workflow_dispatch:
+jobs:
+  remap:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/remap_keys.py
+      - run: |
+          git config user.name "silmaril-bot"
+          git config user.email "bot@silmaril"
+          git add -A && git commit -m "2.6.1: remap crypto keys -> BASE-USD (graphs show full year)" || echo "nothing"
+          git push
