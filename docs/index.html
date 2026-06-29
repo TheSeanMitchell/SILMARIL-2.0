@@ -163,6 +163,9 @@
   <section style="border:2px solid #d4af37;box-shadow:0 0 12px rgba(212,175,55,.25)"><div class="hd" style="color:#d4af37">★ MASTER ACCOUNT — production rehearsal (the one real account)</div><div class="bd">
     <div class="note" style="color:#d4af37">The fifth book: a single $10k that funds ONLY proven champions and reports NET SPENDABLE CASH — what would actually land in checking after the full fee+tax+withdrawal chain. <span class="dim">v1 · OBSERVATIONAL · adopts proven trades, full reality chain.</span></div>
     <div id="masterBox">loading…</div></div></section>
+  <section><div class="hd">🛡 HEATSHIELD — heat-tolerance what-if (default ON · -5% floor)</div><div class="bd">
+    <div class="note"><b>What:</b> replays the SAME entry signals under the tight stop vs the -5% HEATSHIELD floor on real intraday price history. <b>Why:</b> mean-reversion winners often dip below a tight stop before bouncing — this proves whether sitting through more heat nets more after fees. <b>Action:</b> if Δ stays positive over the week, keep HEATSHIELD on; if negative, flip it off.</div>
+    <div id="heatBox">accumulating signals…</div></div></section>
   <section><div class="hd">💱 FEE SCENARIOS — same trades, different venue/order type</div><div class="bd">
     <div class="note"><b>What:</b> our exact realized trades, re-charged at real 2026 fee rates for different venues and order types. <b>Why:</b> order type and venue are the biggest lever we have — limit (maker) orders and a low-flat venue can multiply take-home with no change to the edge. <span class="dim">OBSERVATIONAL.</span></div>
     <div id="feeScenBox">loading…</div></div></section>
@@ -292,7 +295,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -574,6 +577,12 @@ function _kv(o){
   if(typeof o==='object') return Object.entries(o).map(function(e){var v=e[1];return '<b>'+e[0]+':</b> '+(typeof v==='object'?_kv(v):v);}).join(' \u00b7 ');
   return String(o);
 }
+async function renderHeatshield(){const d=await jget('data/HEATSHIELD.json');if(!d||!d.tight_stop){return;}
+  const t=d.tight_stop,s=d.heatshield,dl=d.delta_total_pct;
+  if($('heatBox'))$('heatBox').innerHTML=`<table style="font-size:11px"><thead><tr><th>stop mode</th><th>trades</th><th>total %</th><th>avg %</th><th>win %</th><th>stop-outs</th></tr></thead><tbody>`+
+    `<tr><td>tight -${d.tight_stop_pct}%</td><td>${t.trades}</td><td class="${t.total_return_pct>=0?'pos':'neg'}">${sg(t.total_return_pct)}</td><td>${t.avg_pct}</td><td>${t.win_pct}%</td><td>${t.exits.STOP}</td></tr>`+
+    `<tr style="font-weight:bold"><td>🛡 HEATSHIELD -${d.heatshield_floor_pct}%</td><td>${s.trades}</td><td class="${s.total_return_pct>=0?'pos':'neg'}">${sg(s.total_return_pct)}</td><td>${s.avg_pct}</td><td>${s.win_pct}%</td><td>${s.exits.STOP}</td></tr>`+
+    `</tbody></table><div style="margin-top:6px;font-weight:bold" class="${dl>=0?'pos':'neg'}">Δ ${sg(dl)}% over ${t.trades} signals — ${d.verdict}</div>`;}
 async function openMaster(){
   const d=await jget('data/MASTER_ACCOUNT.json')||{};
   const g=(d.live_pct||0)>=0?'#39d353':'#ff6b6b';

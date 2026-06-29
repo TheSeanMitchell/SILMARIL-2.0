@@ -45,6 +45,11 @@ PER_NAME_FRAC = 0.10      # 10% of the book per position
 MAX_NAMES = 10
 # mean-reversion params (the proven-direction strategy; tune in one place)
 DROP, BOUNCE, STOP, MAX_HOLD_MIN = 0.02, 0.02, 0.04, 240.0
+# HEATSHIELD (2.6.1): mean-reversion winners often dip BELOW a tight stop before bouncing, so a tight
+# stop cuts trades that would have recovered. When active, no position stops out tighter than this floor
+# — it sits through more heat to let the reversion play out. Default ON. Flip HEATSHIELD=False to disable.
+HEATSHIELD = True
+HEATSHIELD_FLOOR = 0.05
 
 
 def _now() -> str:
@@ -287,7 +292,8 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
             hold = (now - datetime.fromisoformat(pos["t"])).total_seconds() / 60.0
         except Exception:
             hold = 0.0
-        why = ("STOP" if chg <= -stop_ else "TAKE" if chg >= target
+        eff_stop = max(stop_, HEATSHIELD_FLOOR) if HEATSHIELD else stop_
+        why = ("STOP" if chg <= -eff_stop else "TAKE" if chg >= target
                else "TIMEOUT" if hold >= max_hold else None)
         if why:
             pnl = pbook.sell(sym, cur, now.isoformat())
@@ -372,6 +378,8 @@ def live_step(out_dir) -> Dict[str, Any]:
         "champion_metal": champ_names["metal"],
         "champion_energy": champ_names["energy"],
         "champion_live_params": champ_params,
+        "heatshield": {"active": HEATSHIELD, "floor_pct": round(HEATSHIELD_FLOOR * 100, 2),
+                       "note": "no position stops out tighter than this floor — sits through heat for the bounce"},
         "strategy": (f"CHAMPION: {champ_name}" if champ_name else
                      "mean_reversion (default — champion not set yet)"),
         "params": {"drop": DROP, "bounce": BOUNCE, "stop": STOP, "max_hold_min": MAX_HOLD_MIN,
@@ -435,3 +443,57 @@ if __name__ == "__main__":
     a = sys.argv[1] if len(sys.argv) > 1 else "docs/data"
     print("BACKTEST:", json.dumps(backtest_through_sim(a)))
     print("LIVE STEP:", json.dumps(live_step(a))[:400])
+
+
+def heatshield_whatif(out_dir) -> Dict[str, Any]:
+    """FORENSIC: replay the SAME mean-reversion entry signals under the tight stop vs the -5% HEATSHIELD
+    floor on real price history, to prove whether sitting through more heat actually nets more. Writes
+    docs/data/HEATSHIELD.json. Real data only."""
+    from datetime import datetime as _dt, timezone as _tz
+    out = Path(out_dir)
+    samples = load_all_samples(out)
+    if not samples:
+        return {"error": "no samples"}
+    series = {tk: [p for t, p in rows if p and p > 0 and "T00:00:00" not in t]
+              for tk, rows in samples.items()}
+    fresh = {tk: px for tk, px in series.items() if len(px) > 20 and is_tradeable(px)}
+
+    def run(stop):
+        rets, exits = [], {"TAKE": 0, "STOP": 0, "TIMEOUT": 0}
+        for tk, px in fresh.items():
+            n = len(px); c = round_trip_cost(px); i = 6
+            while i < n - 1:
+                if px[i - 6] <= 0 or (px[i] / px[i - 6] - 1) > -DROP:
+                    i += 1; continue
+                ep = px[i]; j = i + 1; oc = None
+                while j < n:
+                    ch = px[j] / ep - 1
+                    if ch <= -stop: oc, k = "STOP", j; break
+                    if ch >= BOUNCE: oc, k = "TAKE", j; break
+                    if (j - i) >= 22: oc, k = "TIMEOUT", j; break
+                    j += 1
+                if oc is None: break
+                rets.append((px[k] / ep - 1) - c); exits[oc] += 1; i = k + 1
+        n = len(rets); tot = sum(rets); wins = sum(1 for r in rets if r > 0)
+        return {"trades": n, "total_return_pct": round(tot * 100, 2),
+                "avg_pct": round((tot / n * 100) if n else 0, 3),
+                "win_pct": round((wins / n * 100) if n else 0, 1), "exits": exits}
+
+    tight = run(STOP); shield = run(HEATSHIELD_FLOOR)
+    delta = round(shield["total_return_pct"] - tight["total_return_pct"], 2)
+    res = {
+        "generated_at": _dt.now(_tz.utc).isoformat(),
+        "tight_stop_pct": round(STOP * 100, 2),
+        "heatshield_floor_pct": round(HEATSHIELD_FLOOR * 100, 2),
+        "heatshield_active": HEATSHIELD,
+        "tight_stop": tight, "heatshield": shield, "delta_total_pct": delta,
+        "verdict": ("HEATSHIELD nets more — sitting through heat pays" if delta > 0
+                    else "tighter stop nets more — HEATSHIELD costs here" if delta < 0
+                    else "no difference yet (need more signals)"),
+        "what": "same entry signals, tight stop vs -5% floor, replayed on real price history; proves whether more heat tolerance nets more after fees.",
+    }
+    try:
+        (out / "HEATSHIELD.json").write_text(json.dumps(res, indent=2))
+    except Exception:
+        pass
+    return res
