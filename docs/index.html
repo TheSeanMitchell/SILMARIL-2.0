@@ -564,15 +564,71 @@ async function renderHealthMatrix(){const d=await jget('data/HEALTH_MATRIX.json'
     ${clocks?`<div style="font-size:10px;padding:2px 0;color:var(--dim)"><b>domain clocks:</b> ${clocks}</div>`:''}
     <div style="font-size:10px;padding:4px 0;color:var(--dim)">${d.note||''}</div>`;}
 
+
+async function openQuadrant(bk){
+  const NM={crypto:'CRYPTO',stock:'STOCKS',metal:'METALS',energy:'ENERGY'}[bk]||bk.toUpperCase();
+  const COL={crypto:'#a855f7',stock:'#2f74ff',metal:'#b9bcc4',energy:'#22b07d'}[bk]||'#fff';
+  const book=await jget('data/paper_book_'+bk+'.json')||{};
+  const conv=await jget('data/conviction_ranking.json')||{};
+  const trace=await jget('data/DECISION_TRACE.json')||{};
+  const led=await jget('data/decision_ledger.json')||{};
+  const L=LIVE||{}, b=L[bk]||{};
+  const eq=b.equity!=null?b.equity:(book.cash!=null?(book.cash+ (book.realized_pnl||0)):10000);
+  let H='<div style="font-size:18px;font-weight:900;color:'+COL+';letter-spacing:1px">'+NM+' — portfolio &amp; decision tree</div>';
+  H+='<div class="dim" style="font-size:11px;margin:3px 0 10px">equity $'+f(eq)+' · realized $'+f(book.realized_pnl||0)+' · champion '+(L['champion_'+bk]||'—')+'</div>';
+
+  // OPEN POSITIONS
+  const pos=book.positions||{}; const pk=Object.keys(pos);
+  H+='<div style="font-weight:800;margin:8px 0 4px;border-bottom:1px solid #ffffff22">OPEN POSITIONS ('+pk.length+')</div>';
+  if(pk.length){H+='<table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="opacity:.6"><td>ticker</td><td>qty</td><td>entry</td><td>cost</td></tr>';
+    pk.forEach(k=>{const q=pos[k]||{};const qty=q.qty||q.quantity||0,ep=q.entry_price||q.entry||q.price||0;
+      H+='<tr><td style="color:'+COL+'">'+k+'</td><td>'+f(qty,4)+'</td><td>$'+f(ep,4)+'</td><td>$'+f(qty*ep)+'</td></tr>';});
+    H+='</table>';}
+  else H+='<div class="dim" style="font-size:11px">no open positions right now (in warmup or no qualifying dip)</div>';
+
+  // DECISION TREE — what it is considering and WHY
+  H+='<div style="font-weight:800;margin:14px 0 4px;border-bottom:1px solid #ffffff22">DECISION TREE — what it\'s weighing now</div>';
+  H+='<div class="dim" style="font-size:11px;margin-bottom:4px">market mode: <b>'+(conv.market_mode||'—')+'</b> · deployment pressure: <b>'+(conv.deployment_pressure??'—')+'</b></div>';
+  const ranked=(conv.ranked_opportunities||[]).slice(0,12);
+  if(ranked.length){H+='<table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="opacity:.6"><td>rank</td><td>ticker</td><td>score</td><td>reason</td></tr>';
+    ranked.forEach((r,i)=>{const t=r.ticker||r.symbol||r.sym||'—',sc=r.score??r.conviction??r.rank_score??'—',why=r.reason||r.why||r.note||r.action||'';
+      H+='<tr><td>'+(i+1)+'</td><td style="color:'+COL+'">'+t+'</td><td>'+(typeof sc==='number'?f(sc,2):sc)+'</td><td style="opacity:.85">'+String(why).slice(0,80)+'</td></tr>';});
+    H+='</table>';} else H+='<div class="dim" style="font-size:11px">no opportunities ranked this cycle</div>';
+
+  // RECENT EXITS (the thinking on closes)
+  const traces=(trace.traces||[]).filter(t=>!bk||!t.book||t.book===bk).slice(-10).reverse();
+  H+='<div style="font-weight:800;margin:14px 0 4px;border-bottom:1px solid #ffffff22">RECENT EXITS — why trades closed</div>';
+  if(trace.exit_reason_breakdown)H+='<div class="dim" style="font-size:11px;margin-bottom:4px">'+Object.entries(trace.exit_reason_breakdown).map(([k,v])=>k+': '+v).join(' · ')+'</div>';
+  if(traces.length){H+='<table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="opacity:.6"><td>ticker</td><td>exit reason</td><td>pnl</td></tr>';
+    traces.forEach(t=>{const tk=t.ticker||t.sym||'—',rs=t.exit_reason||t.reason||'—',pl=t.pnl??t.realized??0;
+      H+='<tr><td style="color:'+COL+'">'+tk+'</td><td style="opacity:.85">'+rs+'</td><td class="'+(pl>=0?'pos':'neg')+'">$'+f(pl)+'</td></tr>';});
+    H+='</table>';} else H+='<div class="dim" style="font-size:11px">no exits recorded yet</div>';
+
+  // ACCEPT / REJECT LEDGER
+  if(led.by_category){H+='<div style="font-weight:800;margin:14px 0 4px;border-bottom:1px solid #ffffff22">ACCEPT / REJECT LEDGER</div>';
+    H+='<div class="dim" style="font-size:11px">'+Object.entries(led.by_category).map(([k,v])=>k+': '+(typeof v==='object'?(v.count||Object.keys(v).length):v)).join(' · ')+'</div>';}
+
+  // TRADE HISTORY
+  const tr=(book.trades||[]).slice(-25).reverse();
+  H+='<div style="font-weight:800;margin:14px 0 4px;border-bottom:1px solid #ffffff22">TRADE HISTORY (last '+tr.length+')</div>';
+  if(tr.length){H+='<table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="opacity:.6"><td>side</td><td>ticker</td><td>price</td><td>pnl</td><td>time</td></tr>';
+    tr.forEach(t=>{const sd=t.side||'',sy=t.sym||t.ticker||'',pr=t.price||0,pl=t.pnl,tm=(t.t||'').slice(5,16).replace('T',' ');
+      H+='<tr><td>'+(sd==='BUY'?'▲ BUY':'▼ SELL')+'</td><td style="color:'+COL+'">'+sy+'</td><td>$'+f(pr,4)+'</td><td class="'+(pl>=0?'pos':'neg')+'">'+(pl!=null?'$'+f(pl):'—')+'</td><td class="dim">'+tm+'</td></tr>';});
+    H+='</table>';} else H+='<div class="dim" style="font-size:11px">no trades yet</div>';
+
+  const box=$('modalBox');
+  box.innerHTML='<button id="modalClose" onclick="document.getElementById(\'modal\').style.display=\'none\'" style="position:absolute;top:8px;right:8px">CLOSE ✕</button><div style="padding:6px 2px">'+H+'</div>';
+  $('modal').style.display='flex';
+}
 function renderQuadrants(cv){const L=LIVE||{};
   const meta={crypto:{n:'CRYPTO',col:'#a855f7'},stock:{n:'STOCKS',col:'#2f74ff'},metal:{n:'METALS',col:'#b9bcc4'},energy:{n:'ENERGY',col:'#22b07d'}};
   $('quadrants').innerHTML=['crypto','stock','metal','energy'].map(bk=>{const b=L[bk]||{},champ=L['champion_'+bk];
     const eq=b.equity!=null?b.equity:10000,r=b.return_pct||0,o=b.open_positions||0;
     const st=champ?'TRADING':(b.equity!=null?'READY · awaiting data feed':'—'),m=meta[bk],mh=getMarketHours(bk);
-    return `<div class="quad" style="border-top:5px solid ${m.col}"><div class="quad-h" style="color:${m.col}">${m.n} · ${mh.name}</div>`+
+    return `<div class="quad" onclick="openQuadrant('${bk}')" style="cursor:pointer;border-top:5px solid ${m.col}"><div class="quad-h" style="color:${m.col}">${m.n} · ${mh.name}</div>`+
       `<div class="quad-eq ${r>0?'pos':r<0?'neg':''}">$${f(eq)}</div>`+
       `<div class="quad-sub">${sg(r)}% · ${o} open</div>`+
-      `<div class="quad-champ">champ: ${champ||'—'}</div><div class="quad-st" title="${mh.msg}">${st}</div></div>`;}).join('');}
+      `<div class="quad-champ">champ: ${champ||'—'}</div><div class="quad-st" title="${mh.msg}">${st}</div><div style="font-size:9px;opacity:.55;margin-top:4px;color:${m.col}">click → portfolio &amp; decisions ↗</div></div>`;}).join('');}
 function renderAcct(L){if(!L)return;
   const quads=['crypto','stock','metal','energy'],meta={crypto:{n:'CRYPTO',abbr:'C'},stock:{n:'STOCK',abbr:'S'},metal:{n:'METAL',abbr:'M'},energy:{n:'ENERGY',abbr:'E'}};
   let rows=[['ALL 4 BOOKS (independent) · total equity','$'+f(L.combined_equity),''],['SUM REALIZED P&L (4 separate books)','$'+f(L.combined_realized_pnl),(L.combined_realized_pnl>=0?'pos':'neg')]];
