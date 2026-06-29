@@ -127,6 +127,9 @@ jobs:
       - name: Canonicalize price-history keys (FUTURE-PROOF — graphs never break again)
         run: python scripts/remap_keys.py || true
 
+      - name: HEATSHIELD what-if (tight stop vs -5% floor on real data)
+        run: python -c "from silmaril.execution.paper_sim import heatshield_whatif; heatshield_whatif('docs/data')" || true
+
       - name: Post-cycle analytics suite (top-of-hour only)
         if: always()
         env:
