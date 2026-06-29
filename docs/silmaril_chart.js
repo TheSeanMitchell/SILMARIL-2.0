@@ -19,7 +19,7 @@
   function pad(n) { return String(n).padStart(2, "0"); }
   function fmtDateTime(ms) { var d = new Date(ms); return MO[d.getMonth()] + " " + d.getDate() + ", " + pad(d.getHours()) + ":" + pad(d.getMinutes()); }
   function fmtAxis(ms, span) { var d = new Date(ms); if (span <= 864e5) return pad(d.getHours()) + ":" + pad(d.getMinutes()); if (span <= 7 * 864e5) return MO[d.getMonth()] + " " + d.getDate() + " " + pad(d.getHours()) + "h"; return MO[d.getMonth()] + " " + d.getDate(); }
-  function spanMs(tf) { return { "1D": 864e5, "3D": 3 * 864e5, "1W": 7 * 864e5, "ALL": 1e15 }[tf] || 1e15; }
+  function spanMs(tf) { var m=60000,H=36e5,D=864e5; return { "5m":5*m,"15m":15*m,"30m":30*m,"1h":H,"2h":2*H,"4h":4*H,"8h":8*H,"12h":12*H,"1D":D,"2D":2*D,"3D":3*D,"1W":7*D,"2W":14*D,"1M":30*D,"2M":60*D,"YTD":(Date.now()-new Date(new Date().getFullYear(),0,1).getTime()),"1Y":365*D,"MAX":1e15 }[tf] || 1e15; }
 
   function boot() {
     return Promise.all([j("data/price_samples.json"), j("data/paper_sim_live.json"), j("data/PEAK_RHYTHM.json"), j("data/champion_crypto.json"), j("data/champion_stock.json"), j("data/CHART_OVERLAYS.json")])
@@ -269,10 +269,10 @@
   function openFull(sym) {
     if (!READY) { boot().then(function () { openFull(sym); }); return; }
     curSym = sym; ensureModal(); modal.style.display = "flex"; modal.__resp();
-    var tabs = modal.querySelector("#slm-tabs"); tabs.innerHTML = "";
-    ["1D", "3D", "1W", "ALL"].forEach(function (tf) {
+    var tabs = modal.querySelector("#slm-tabs"); tabs.innerHTML = ""; tabs.style.flexWrap="wrap"; tabs.style.gap="4px";
+    ["5m","15m","30m","1h","2h","4h","8h","12h","1D","2D","3D","1W","2W","1M","2M","YTD","1Y","MAX"].forEach(function (tf) {
       var b = document.createElement("button"); b.textContent = tf;
-      b.style.cssText = "background:" + (tf === curTF ? "#2f74ff" : "#ffffff12") + ";border:0;color:#fff;padding:5px 13px;border-radius:7px;cursor:pointer;font-size:12px";
+      b.style.cssText = "background:" + (tf === curTF ? "#2f74ff" : "#ffffff12") + ";border:0;color:#fff;padding:4px 9px;border-radius:6px;cursor:pointer;font-size:11px";
       b.onclick = function () { curTF = tf; tabs.querySelectorAll("button").forEach(function (x) { x.style.background = "#ffffff12"; }); b.style.background = "#2f74ff"; draw(); };
       tabs.appendChild(b);
     });
