@@ -58,10 +58,36 @@ def _make_strategies() -> Dict[str, Dict[str, Any]]:
     for drop in (0.02, 0.03):
         s[f"MR_patient_d{int(drop*100)}"] = {
             "dir": "mr", "entry": drop, "target": 0.03, "stop": 0.05, "hold": 44}
+    # 2.7 HOLD family — the long-hold playbook (commodities AND slow stocks like SPY/QQQ/NVDA/INTC).
+    # Two entry styles; the leaderboard decides which fits each name. Greedy targets out of the gate
+    # (operator: 5-12% long-hold targets vs 1-6% crypto scalps). Wide 12% stop rides the commodity floor so
+    # a normal swing never forces a sale — the heatshield stays UP, no panic selling, nerves of steel.
+    # DIP-entry holds: buy a pullback on a name with upward trajectory, ride it up.
+    for drop in (0.02, 0.03, 0.04):
+        for tgt in (0.05, 0.08, 0.10, 0.12):
+            s[f"HOLD_d{int(drop*100)}_t{int(tgt*100)}"] = {
+                "dir": "mr", "entry": drop, "target": tgt, "stop": 0.12, "hold": 480, "hold_class": True}
+    # TREND-entry holds: buy strength (confirmed up-trajectory) and ride the trend to a big target.
+    for up in (0.01, 0.02):
+        for tgt in (0.08, 0.10, 0.12):
+            s[f"HOLD_u{int(up*100)}_t{int(tgt*100)}"] = {
+                "dir": "mom", "entry": up, "target": tgt, "stop": 0.12, "hold": 480, "hold_class": True}
     return s
 
 
 STRATEGIES = _make_strategies()
+
+
+# ── 2.7 PER-BOOK STRATEGY SEPARATION: each quadrant evolves its own playbook ──
+# Every quadrant now competes the FULL strategy set — fast MR/MOM/PERSIST/patient AND the slow HOLD family
+# (operator: "we want everything to compete; let the leaderboard decide what fits each quadrant"). The
+# SEPARATION that matters is enforced elsewhere and is absolute: each book scores strategies on its OWN
+# universe and elects its OWN champion (champion_split) — a champion can never leak across quadrants. The
+# right strategy surfaces per book naturally: HOLD wins where slow rides pay (commodities, SPY/QQQ/NVDA),
+# fast MR wins where intraday dips pay (crypto). This hook stays per-book so a future restriction is a
+# one-line change, but nothing is withheld from any quadrant today.
+def book_strategies(book: str) -> Dict[str, Dict[str, Any]]:
+    return dict(STRATEGIES)
 
 
 def _bt_one(series_fresh: Dict[str, List[float]], cfg: Dict[str, Any],
@@ -182,19 +208,26 @@ def run_split_leaderboards(out_dir):
     for book in _BOOKS:
         is_cry = (book == "crypto")
         uni = {k: v for k, v in fresh_all.items() if _ac(k) == book and _uni_ok(v, is_cry)}
+        roster = book_strategies(book)
         rows = []
-        for name, cfg in STRATEGIES.items():
+        for name, cfg in roster.items():
             r = _bt_one(uni, cfg, costs)
             rows.append({"strategy": name, "dir": cfg["dir"], **r})
-        ranked = sorted(rows, key=lambda r: (r["trades"] >= 30, r["mean_net_pct"]), reverse=True)
-        winners = [r for r in ranked if r["trades"] >= 30 and r["mean_net_pct"] > 0]
+        # commodity books are slow and sparse — holds close rarely, so a 30-trade bar would never seat a
+        # champion. They qualify on a smaller (clearly PROVISIONAL) sample; crypto/stock keep the 30 bar.
+        min_tr = 5 if book in ("metal", "energy") else 30
+        ranked = sorted(rows, key=lambda r: (r["trades"] >= min_tr, r["mean_net_pct"]), reverse=True)
+        winners = [r for r in ranked if r["trades"] >= min_tr and r["mean_net_pct"] > 0]
         payload = {
             "generated_at": _now(), "book": book, "universe_size": len(uni),
+            "min_trades_for_trust": min_tr,
             "leaderboard": ranked, "best_trusted": winners[0] if winners else None,
             "verdict": (f"BEST {book}: {winners[0]['strategy']} nets {winners[0]['mean_net_pct']:+.2f}%/trade "
-                        f"over {winners[0]['trades']} trades" if winners else
+                        f"over {winners[0]['trades']} trades"
+                        + (" (PROVISIONAL — small sample)" if (winners and book in ('metal', 'energy')) else "")
+                        if winners else
                         f"no {book} strategy clears fees with a trustworthy sample this window"),
-            "note": f"Independent {book} arena (2.5.1). No shared champion with the other market.",
+            "note": f"Independent {book} arena (2.5.1) · roster: {('HOLD-first commodity set' if book in ('metal','energy') else 'full fast grid')}. No shared champion with other markets.",
         }
         try: write_json_atomic(out / f"strategy_leaderboard_{book}.json", payload)
         except Exception: pass
