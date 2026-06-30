@@ -2130,6 +2130,16 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 log.info("  arenas: crypto best=%s · stock best=%s",
                          (_sp.get("crypto", {}).get("best_trusted") or {}).get("strategy"),
                          (_sp.get("stock", {}).get("best_trusted") or {}).get("strategy"))
+                try:
+                    # 2.7 ISOLATED daily-candle HOLD backtest — crunch months of daily history so slow HOLD
+                    # strategies get evaluated. Reads ONLY daily candles; never touches the intraday path.
+                    from .execution.strategy_lab import run_daily_hold_leaderboards as _dhold
+                    _dh = _dhold(out) if _HOURLY else {}
+                    log.info("  daily-HOLD: energy=%s · stock=%s",
+                             (_dh.get("energy", {}).get("best_trusted") or {}).get("strategy"),
+                             (_dh.get("stock", {}).get("best_trusted") or {}).get("strategy"))
+                except Exception as _dhe:
+                    log.warning("daily-HOLD backtest skipped: %s", _dhe)
             except Exception as _spe:
                 log.warning("split arenas skipped: %s", _spe)
             try:

@@ -70,30 +70,41 @@ def backfill_equities(samples):
         import yfinance as yf
     except Exception as e:
         print("  yfinance missing:", e); return
-    syms = set(BROAD) | set(METAL_ETF) | set(ENERGY_ETF)
+    # 2.7 ROBUSTNESS: one bulk yf.download of 500+ symbols silently fails / rate-limits, which is why the
+    # commodity ETFs had NO daily history (metals/energy couldn't be evaluated on daily candles). Fix: batch
+    # the download, with a per-batch try/except so one failure can't kill the rest, and put the commodity
+    # ETFs in the FIRST batch so they populate even if a later SP500 batch fails.
+    priority = sorted(set(METAL_ETF) | set(ENERGY_ETF))
+    rest = set(BROAD)
     try:
         from silmaril.universe.expanded import SP500, HARD_CURRENCY_FULL, OIL_COMPLEX_FULL
         for lst in (SP500, HARD_CURRENCY_FULL, OIL_COMPLEX_FULL):
-            for t in lst: syms.add(t[0] if isinstance(t, (list, tuple)) else t)
+            for t in lst: rest.add(t[0] if isinstance(t, (list, tuple)) else t)
     except Exception as e:
         print("  universe import (non-fatal):", e)
-    syms = sorted(s for s in syms if s)
-    print(f"  equities/metals/energy: {len(syms)} symbols (yfinance 1y daily)")
-    try:
-        data = yf.download(syms, period="1y", interval="1d", auto_adjust=True, threads=True, progress=False)
-        closes = data["Close"]                       # DataFrame: columns = tickers
-    except Exception as e:
-        print("  yfinance bulk failed:", e); return
+    rest = sorted(s for s in rest if s and s not in set(priority))
+    ordered = priority + rest
+    print(f"  equities/metals/energy: {len(ordered)} symbols (yfinance 1y daily, batched; commodities first)")
+    BATCH = 40
     n = 0
-    for s in syms:
+    for b in range(0, len(ordered), BATCH):
+        chunk = ordered[b:b + BATCH]
         try:
-            ser = closes[s].dropna() if hasattr(closes, "columns") else closes.dropna()
-            rows = []
-            for idx, v in ser.items():
-                ts = idx.isoformat() if getattr(idx, "tzinfo", None) else idx.tz_localize("UTC").isoformat()
-                rows.append([ts, float(v)])
-            if rows: _merge(samples, s, rows); n += 1
-        except Exception: pass
+            data = yf.download(chunk, period="1y", interval="1d", auto_adjust=True, threads=True, progress=False)
+            closes = data["Close"]                   # DataFrame: columns = tickers
+        except Exception as e:
+            print(f"    batch {b // BATCH} ({len(chunk)} syms) failed, continuing: {e}"); continue
+        for s in chunk:
+            try:
+                ser = closes[s].dropna() if hasattr(closes, "columns") else closes.dropna()
+                rows = []
+                for idx, v in ser.items():
+                    ts = idx.isoformat() if getattr(idx, "tzinfo", None) else idx.tz_localize("UTC").isoformat()
+                    rows.append([ts, float(v)])
+                if rows:
+                    _merge(samples, s, rows); n += 1
+            except Exception:
+                pass
     print(f"    equities: backfilled {n} symbols")
 
 def main():

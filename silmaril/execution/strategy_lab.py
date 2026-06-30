@@ -233,3 +233,48 @@ def run_split_leaderboards(out_dir):
         except Exception: pass
         out_payloads[book] = payload
     return out_payloads
+
+
+# ── 2.7 DAILY-CANDLE HOLD BACKTEST: crunch MONTHS into minutes ────────────────
+# Slow HOLD strategies (5-12% targets) almost never close inside a 24h intraday window, so the intraday
+# leaderboard can't evaluate them and metals/energy wait weeks for a champion. This backtests HOLD over the
+# YEAR of DAILY candles instead, so a real HOLD champion can be elected from real history immediately.
+#
+# ISOLATION (the whole point — this is the bug that has hurt the operator most): this function reads ONLY
+# daily candles — the "T00:00:00" timestamps that the intraday/trading path deliberately EXCLUDES. It writes
+# ONLY strategy_leaderboard_holds_{book}.json. It never touches run_split_leaderboards, never feeds the
+# intraday MR path, and the intraday path never sees a daily candle. The two are rigorously separate.
+def run_daily_hold_leaderboards(out_dir):
+    out = Path(out_dir)
+    samples = load_all_samples(out)
+    if not samples:
+        return {}
+    # DAILY ONLY — the exact inverse of the intraday filter, kept apart on purpose.
+    daily = {tk: [p for t, p in rows if p and p > 0 and "T00:00:00" in t] for tk, rows in samples.items()}
+    daily = {tk: px for tk, px in daily.items() if len(px) >= 30}     # need real history to mean anything
+    costs = {tk: round_trip_cost(px) for tk, px in daily.items()}
+    holds = {k: v for k, v in STRATEGIES.items() if k.startswith("HOLD_")}
+    from .paper_sim import asset_class as _ac, BOOKS as _BOOKS
+    MIN_TR = 10
+    out_payloads = {}
+    for book in _BOOKS:
+        uni = {k: v for k, v in daily.items() if _ac(k) == book}
+        rows = []
+        for name, cfg in holds.items():
+            r = _bt_one(uni, cfg, costs)
+            rows.append({"strategy": name, "dir": cfg["dir"], **r})
+        ranked = sorted(rows, key=lambda r: (r["trades"] >= MIN_TR, r["mean_net_pct"]), reverse=True)
+        winners = [r for r in ranked if r["trades"] >= MIN_TR and r["mean_net_pct"] > 0]
+        payload = {
+            "generated_at": _now(), "book": book, "basis": "DAILY candles (months of real history)",
+            "universe_size": len(uni), "min_trades_for_trust": MIN_TR,
+            "leaderboard": ranked, "best_trusted": winners[0] if winners else None,
+            "verdict": (f"BEST {book} HOLD: {winners[0]['strategy']} nets {winners[0]['mean_net_pct']:+.2f}%/trade "
+                        f"over {winners[0]['trades']} daily-candle trades" if winners else
+                        f"no HOLD strategy clears fees over daily history for {book} yet"),
+            "note": "ISOLATED daily-candle backtest — reads only daily candles, never feeds the intraday path.",
+        }
+        try: write_json_atomic(out / f"strategy_leaderboard_holds_{book}.json", payload)
+        except Exception: pass
+        out_payloads[book] = payload
+    return out_payloads
