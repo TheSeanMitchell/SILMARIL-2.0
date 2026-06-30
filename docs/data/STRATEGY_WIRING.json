@@ -1,0 +1,60 @@
+{
+  "generated_at": "2026-06-30T10:21:08.069974+00:00",
+  "trading_path_files": [
+    "paper_sim.py",
+    "strategy_lab.py",
+    "capital_router.py",
+    "champion.py",
+    "champion_split.py"
+  ],
+  "what_the_engine_actually_decides_on": "the active champion's parameters (entry dip / target / stop / direction) plus the freshness and corrupt-feed gates. Nothing else is consulted at entry, exit, or champion selection.",
+  "modules": {
+    "peak_rhythm": {
+      "feeds_live_decision": false,
+      "consumed_by": [],
+      "role": "per-name peak/trough rhythm \u2014 when to expect the next bounce",
+      "status": "COMPUTED BUT IGNORED \u2014 not referenced by the live trading path"
+    },
+    "fingerprint": {
+      "feeds_live_decision": false,
+      "consumed_by": [],
+      "role": "per-name behavioral fingerprint / repeat signature",
+      "status": "COMPUTED BUT IGNORED \u2014 not referenced by the live trading path"
+    },
+    "heat_tolerance": {
+      "feeds_live_decision": false,
+      "consumed_by": [],
+      "role": "how much adverse heat a name tolerates before the thesis fails",
+      "status": "COMPUTED BUT IGNORED \u2014 not referenced by the live trading path"
+    },
+    "heartbeat": {
+      "feeds_live_decision": false,
+      "consumed_by": [],
+      "role": "cadence/heartbeat of a name's moves",
+      "status": "COMPUTED BUT IGNORED \u2014 not referenced by the live trading path"
+    },
+    "dr_strange": {
+      "feeds_live_decision": false,
+      "consumed_by": [],
+      "role": "next-peak / expected-move projection",
+      "status": "COMPUTED BUT IGNORED \u2014 not referenced by the live trading path"
+    },
+    "edge_capture": {
+      "feeds_live_decision": true,
+      "consumed_by": [
+        "capital_router.py"
+      ],
+      "role": "edge-capture / repeat-striker engine (proven names like MKR)",
+      "status": "FED \u2014 consumed by capital_router.py"
+    },
+    "lifecycle": {
+      "feeds_live_decision": false,
+      "consumed_by": [],
+      "role": "attention-lifecycle state classifier",
+      "status": "COMPUTED BUT IGNORED \u2014 not referenced by the live trading path"
+    }
+  },
+  "fed_count": 1,
+  "ignored_count": 6,
+  "verdict": "1/7 intelligence modules feed live decisions (edge_capture); 6 are computed but ignored: peak_rhythm, fingerprint, heat_tolerance, heartbeat, dr_strange, lifecycle. Until an ignored module is wired into the trading path, it does not affect a single trade."
+}
