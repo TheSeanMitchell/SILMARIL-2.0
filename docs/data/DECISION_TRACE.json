@@ -1,8 +1,51 @@
 {
-  "generated_at": "2026-06-30T13:29:01.069026+00:00",
-  "n_traces": 0,
-  "exit_reason_breakdown": {},
-  "traces": [],
+  "generated_at": "2026-06-30T13:40:21.238606+00:00",
+  "n_traces": 2,
+  "exit_reason_breakdown": {
+    "TIMEOUT_GAIN": 2
+  },
+  "traces": [
+    {
+      "sym": "WAVES-USD",
+      "book": "crypto",
+      "strategy": "MR_d1_t1_s6",
+      "is_book_champion": false,
+      "entry": {
+        "price": 0.254188,
+        "at": "2026-06-30T12:58:49.320426+00:00",
+        "why": "MR_d1_t1_s6 fired: price dropped enough to trigger a mean-reversion entry; target +1%, stop -6%"
+      },
+      "exit": {
+        "price": 0.256087,
+        "at": "2026-06-30T13:40:18.287268+00:00",
+        "hold_min": 41,
+        "realized_pct": 0.75,
+        "reason": "TIMEOUT_GAIN",
+        "why": "exited +0.75% on time/conditions before full target"
+      },
+      "outcome": "WIN"
+    },
+    {
+      "sym": "EOS-USD",
+      "book": "crypto",
+      "strategy": "crypto",
+      "is_book_champion": false,
+      "entry": {
+        "price": 0.060087,
+        "at": "2026-06-30T12:39:43.482168+00:00",
+        "why": "crypto fired: price dropped enough to trigger a mean-reversion entry; target +None%, stop -None%"
+      },
+      "exit": {
+        "price": 0.060994,
+        "at": "2026-06-30T13:29:04.562131+00:00",
+        "hold_min": 49,
+        "realized_pct": 1.51,
+        "reason": "TIMEOUT_GAIN",
+        "why": "exited +1.51% on time/conditions before full target"
+      },
+      "outcome": "WIN"
+    }
+  ],
   "what": "Per-trade decision chain: why entered, why exited, outcome.",
   "why": "Makes every trade auditable end-to-end instead of a bare P&L line.",
   "action": "If TIMEOUT_GAIN dominates, exits fire before target = leaving edge on the table (matches the EARLY_EXIT forensics finding).",
