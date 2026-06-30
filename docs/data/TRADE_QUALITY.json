@@ -1,61 +1,8 @@
 {
-  "generated_at": "2026-06-30T08:37:46.763007+00:00",
+  "generated_at": "2026-06-30T09:29:00.986224+00:00",
   "status_label": "OBSERVATIONAL \u2014 legibility for the trade log; changes no trading logic.",
   "dust_threshold_usd": 1.0,
-  "by_book": {
-    "crypto": {
-      "lifetime": {
-        "real_wins": 31,
-        "real_win_usd": 638.07,
-        "real_losses": 27,
-        "real_loss_usd": -621.69,
-        "flat_timeouts": 0,
-        "dust": 9,
-        "dust_usd": 0,
-        "net_realized_usd": 16.38,
-        "real_round_trips": 58,
-        "real_win_rate_pct": 53.4
-      },
-      "today": {
-        "real_wins": 15,
-        "real_win_usd": 105.1,
-        "real_losses": 13,
-        "real_loss_usd": -195.68,
-        "flat_timeouts": 0,
-        "dust": 5,
-        "dust_usd": 0,
-        "net_realized_usd": -90.58,
-        "real_round_trips": 28,
-        "real_win_rate_pct": 53.6
-      }
-    },
-    "stock": {
-      "lifetime": {
-        "real_wins": 5,
-        "real_win_usd": 157.74,
-        "real_losses": 5,
-        "real_loss_usd": -68.81,
-        "flat_timeouts": 0,
-        "dust": 0,
-        "dust_usd": 0,
-        "net_realized_usd": 88.93,
-        "real_round_trips": 10,
-        "real_win_rate_pct": 50.0
-      },
-      "today": {
-        "real_wins": 0,
-        "real_win_usd": 0,
-        "real_losses": 0,
-        "real_loss_usd": 0,
-        "flat_timeouts": 0,
-        "dust": 0,
-        "dust_usd": 0,
-        "net_realized_usd": 0,
-        "real_round_trips": 0,
-        "real_win_rate_pct": null
-      }
-    }
-  },
+  "by_book": {},
   "what": "Every SELL bucketed into real-win / real-loss / flat-timeout / dust using the book's own pnl.",
   "why_zero": "$0.00 trades are NOT hidden losses. They are either DUST (sub-$1 positions bought with leftover cash at the tail of the entry loop \u2014 can't move the needle) or FLAT TIMEOUTS (a dip that never reverted to target nor hit stop, sold at ~entry when the hold timer expired). The book's realized P&L already reflects their negligible effect.",
   "honest_note": "Read net_realized_usd as the truth; real_win_rate_pct counts only real-sized round-trips. Dust count is high by design of the sizing loop \u2014 it is log noise, not risk. No investment logic was touched to produce this."

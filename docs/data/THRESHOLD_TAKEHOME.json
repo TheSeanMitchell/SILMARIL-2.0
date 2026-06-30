@@ -1,19 +1,11 @@
 {
-  "generated_at": "2026-06-30T08:37:47.494231+00:00",
+  "generated_at": "2026-06-30T09:29:01.699512+00:00",
   "status_label": "OBSERVATIONAL \u2014 what we kept after fees, and what different thresholds would yield.",
   "fee_model_bps_round_trip": 54.0,
   "fee_per_1k_trade": 5.4,
   "breakeven_pct_per_trade": 0.54,
   "notional_assumed": 1000.0,
-  "daily_takehome": [
-    {
-      "day": "2026-06-29",
-      "gross": 16.38,
-      "fees": -213.57,
-      "net_takehome": -197.19,
-      "trips": 58
-    }
-  ],
+  "daily_takehome": [],
   "threshold_sweep": {
     "available": true,
     "drop_sweep": [
@@ -257,46 +249,26 @@
     {
       "label": "Kraken taker / market order",
       "bps_round_trip": 60.0,
-      "lifetime_net": -220.92,
-      "per_day": [
-        {
-          "day": "2026-06-29",
-          "net": -220.92
-        }
-      ]
+      "lifetime_net": 0.0,
+      "per_day": []
     },
     {
       "label": "our current model",
       "bps_round_trip": 54.0,
-      "lifetime_net": -197.19,
-      "per_day": [
-        {
-          "day": "2026-06-29",
-          "net": -197.19
-        }
-      ]
+      "lifetime_net": 0.0,
+      "per_day": []
     },
     {
       "label": "Kraken maker / limit order",
       "bps_round_trip": 40.0,
-      "lifetime_net": -141.82,
-      "per_day": [
-        {
-          "day": "2026-06-29",
-          "net": -141.82
-        }
-      ]
+      "lifetime_net": 0.0,
+      "per_day": []
     },
     {
       "label": "Binance.US 0.10% flat",
       "bps_round_trip": 20.0,
-      "lifetime_net": -62.72,
-      "per_day": [
-        {
-          "day": "2026-06-29",
-          "net": -62.72
-        }
-      ]
+      "lifetime_net": 0.0,
+      "per_day": []
     }
   ],
   "low_fee_drop_sweep": [
@@ -367,7 +339,7 @@
       "clears_fees": false
     }
   ],
-  "gross_total_window": 16.38,
+  "gross_total_window": 0.0,
   "what": "BOX A = real net take-home per day after fees. BOX B = simulated trade-count + net-per-trade after fees at each drop/bounce threshold.",
   "how_to_read": "Every trade must clear 0.54% just to pay its fees. In BOX B, rows where clears_fees is false LOSE money on average \u2014 that's the fat to cut. A higher drop trigger means fewer signals (lower 'signals') but usually a higher net_per_trade \u2014 the 'fewer but deeper' tradeoff, in dollars.",
   "honest_note": "BOX A is real realized history. BOX B is a simulation over real price paths across the top-45 crypto names \u2014 it shows opportunity economics, not a guarantee, and total_net_est assumes a $1k trade per signal (real capital caps how many you can hold at once, so treat totals as an upper sketch and net_per_trade as the honest per-trade truth). Bounce targets here are evaluated against actual forward price paths; they are not yet auto-tuned by trajectory \u2014 that is the judge-mode step."
