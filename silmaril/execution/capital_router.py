@@ -33,7 +33,8 @@ from statistics import median
 from typing import Any, Dict, List
 
 from .paper_sim import (PaperBook, load_all_samples, is_tradeable, round_trip_cost,
-                        _is_crypto, _marks_from_samples, MAX_NAMES, PER_NAME_FRAC)
+                        _is_crypto, _marks_from_samples, MAX_NAMES, PER_NAME_FRAC,
+                        HEATSHIELD, HEATSHIELD_FLOOR, TIMEOUT_EXIT)
 from .strategy_lab import STRATEGIES
 
 TOP_K = 3
@@ -84,7 +85,7 @@ def _bt_attrib(fresh: Dict[str, List[float]], cfg: Dict[str, Any],
                 ch = px[j] / ep - 1
                 if ch <= -stop_: oc, k = "STOP", j; break
                 if ch >= tgt: oc, k = "TAKE", j; break
-                if (j - i) >= hold_steps: oc, k = "TIMEOUT", j; break
+                if TIMEOUT_EXIT and (j - i) >= hold_steps: oc, k = "TIMEOUT", j; break
                 j += 1
             if oc is None: break
             realized = px[k] / ep - 1 - c
@@ -135,7 +136,9 @@ def _run_strategy_book(out: Path, name: str, capital: float, p: Dict[str, Any],
             hold = (now - datetime.fromisoformat(pos["t"])).total_seconds() / 60.0
         except Exception:
             hold = 0.0
-        if chg <= -p["stop"] or chg >= p["target"] or hold >= p["max_hold_min"]:
+        eff_stop = max(p["stop"], HEATSHIELD_FLOOR) if HEATSHIELD else p["stop"]
+        timed_out = TIMEOUT_EXIT and hold >= p["max_hold_min"]
+        if chg <= -eff_stop or chg >= p["target"] or timed_out:
             book.sell(s, cur, now.isoformat())
     # entries
     mr = p["dir"] == "mr"

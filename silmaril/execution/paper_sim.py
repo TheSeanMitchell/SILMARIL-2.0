@@ -51,6 +51,25 @@ DROP, BOUNCE, STOP, MAX_HOLD_MIN = 0.02, 0.02, 0.04, 240.0
 HEATSHIELD = True
 HEATSHIELD_FLOOR = 0.05
 
+# 2.7 — TIMEOUT EXITS REMOVED. The mean-reversion thesis is "sit through the heat and let price revert."
+# A mechanical max-hold clock was dumping positions at break-even/loss (the 248m TIMEOUT LOSS/FLAT rows)
+# exactly when they needed more time. With this False, a position exits ONLY on its target (a win) or the
+# HEATSHIELD floor (a catastrophic -5% cut). NOTHING exits on elapsed time. Set True to restore the clock.
+# TRADEOFF TO WATCH IN THE DATA: with no clock, a position that dips but never reaches target or the floor
+# can sit indefinitely, locking that 10% of the book. The heatshield floor is now the only downside recycler.
+TIMEOUT_EXIT = False
+
+# 2.7 — CORRUPT-FEED GATE. Some names' price feed intermittently injects a wrong value ~10% off the true
+# price, then snaps back (MKR-USD flips ~1365 <-> ~1229, even printing the SAME wrong value three samples
+# running). freshness() passes it (the value DOES change), so the sim trades the fake dip and books a fake
+# win or a fake -10% loss — this is where MKR's whole "edge" came from. A liquid name does NOT print
+# >= SPIKE_PCT single-sample (10-min) moves repeatedly; >= SPIKE_MIN_COUNT of them in the recent window
+# means the feed is untradeable, so it is excluded like a ghost. Verified on real history: 3 of 1656 names
+# flagged (MKR, MOG, MANTA); zero real names (incl. volatile small-caps like TURBO/BONK/WIF) touched.
+SPIKE_PCT = 0.06
+SPIKE_MIN_COUNT = 2
+SPIKE_WINDOW = 60
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -90,12 +109,44 @@ def noise_floor(prices: List[float]) -> float:
     return median(rr) if rr else 0.0
 
 
+def _feed_unreliable(prices: List[float]) -> bool:
+    """True if the recent feed shows repeated big round-trip spikes — an intermittent bad-data feed that
+    fabricates dips/bounces. Excludes nothing real; isolates corrupted feeds (see SPIKE_* above)."""
+    p = [x for x in prices[-SPIKE_WINDOW:] if x and x > 0]
+    if len(p) < 10:
+        return False
+    jumps = sum(1 for i in range(1, len(p)) if p[i - 1] > 0 and abs(p[i] / p[i - 1] - 1) >= SPIKE_PCT)
+    return jumps >= SPIKE_MIN_COUNT
+
+
 def is_tradeable(prices: List[float]) -> bool:
-    return freshness(prices) >= MIN_FRESHNESS
+    return freshness(prices) >= MIN_FRESHNESS and not _feed_unreliable(prices)
 
 
 def round_trip_cost(prices: List[float]) -> float:
     return max(MIN_COST, 2.0 * noise_floor(prices))
+
+
+def feed_integrity(samples: Dict[str, List]) -> Dict[str, Any]:
+    """FORENSIC: which names have a corrupt/intermittent feed (repeated big round-trip spikes) and are
+    therefore EXCLUDED from trading like ghosts. Real data only — fabricates nothing; it just refuses to
+    trade names whose prints are provably not a real market (this is where MKR's fake P&L came from)."""
+    flagged = []
+    for sym, rows in samples.items():
+        px = [p for t, p in rows if p and p > 0 and "T00:00:00" not in t][-SPIKE_WINDOW:]
+        if len(px) < 10:
+            continue
+        jumps = sum(1 for i in range(1, len(px)) if px[i - 1] > 0 and abs(px[i] / px[i - 1] - 1) >= SPIKE_PCT)
+        if jumps >= SPIKE_MIN_COUNT:
+            mx = max((abs(px[i] / px[i - 1] - 1) for i in range(1, len(px)) if px[i - 1] > 0), default=0.0)
+            flagged.append({"sym": sym, "big_jumps": jumps, "max_move_pct": round(mx * 100, 1)})
+    flagged.sort(key=lambda d: -d["big_jumps"])
+    return {"generated_at": _now(), "spike_pct": round(SPIKE_PCT * 100, 1),
+            "min_count": SPIKE_MIN_COUNT, "window": SPIKE_WINDOW,
+            "excluded_count": len(flagged), "excluded": flagged,
+            "what": ("names whose recent feed prints >=%d single-sample moves of >=%d%% — a real liquid "
+                     "market does not do that; these are intermittent bad-data feeds, excluded from trading "
+                     "so they cannot book fake P&L." % (SPIKE_MIN_COUNT, int(SPIKE_PCT * 100)))}
 
 
 def load_all_samples(out) -> Dict[str, List]:
@@ -276,6 +327,8 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
         distinct = len(set(pp[-8:]))
         if distinct < 3:
             return False
+        if _feed_unreliable(pp):           # 2.7 corrupt-feed gate — applies to BOTH books
+            return False
         if crypto:
             return is_tradeable(pp)        # crypto: keep the 80% freshness bar too
         # STOCKS: additionally require the live regular session.
@@ -294,7 +347,7 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
             hold = 0.0
         eff_stop = max(stop_, HEATSHIELD_FLOOR) if HEATSHIELD else stop_
         why = ("STOP" if chg <= -eff_stop else "TAKE" if chg >= target
-               else "TIMEOUT" if hold >= max_hold else None)
+               else ("TIMEOUT" if (TIMEOUT_EXIT and hold >= max_hold) else None))
         if why:
             pnl = pbook.sell(sym, cur, now.isoformat())
             actions.append({"act": "SELL", "sym": sym, "why": f"{why} {chg*100:+.1f}%",
@@ -339,6 +392,11 @@ def live_step(out_dir) -> Dict[str, Any]:
     out = Path(out_dir)
     samples = load_all_samples(out)
     marks = _marks_from_samples(samples)
+    try:
+        feed_intel = feed_integrity(samples)
+        (out / "FEED_INTEGRITY.json").write_text(json.dumps(feed_intel, indent=2))
+    except Exception:
+        feed_intel = {}
     # CHAMPION MODE: trade whatever the champion currently is on the crypto side
     champ_params = None
     champ_name = None
@@ -380,6 +438,10 @@ def live_step(out_dir) -> Dict[str, Any]:
         "champion_live_params": champ_params,
         "heatshield": {"active": HEATSHIELD, "floor_pct": round(HEATSHIELD_FLOOR * 100, 2),
                        "note": "no position stops out tighter than this floor — sits through heat for the bounce"},
+        "timeout_exit": TIMEOUT_EXIT,
+        "exit_policy": ("target (win) or heatshield floor only — timeouts removed" if not TIMEOUT_EXIT
+                        else "target / heatshield floor / max-hold timeout"),
+        "feed_integrity": feed_intel,
         "strategy": (f"CHAMPION: {champ_name}" if champ_name else
                      "mean_reversion (default — champion not set yet)"),
         "params": {"drop": DROP, "bounce": BOUNCE, "stop": STOP, "max_hold_min": MAX_HOLD_MIN,
@@ -422,7 +484,7 @@ def backtest_through_sim(out_dir, crypto_only: Optional[bool] = None) -> Dict[st
                 ch = px[j] / ep - 1
                 if ch <= -STOP: oc, k = "STOP", j; break
                 if ch >= BOUNCE: oc, k = "TAKE", j; break
-                if (j - i) >= 22: oc, k = "TIMEOUT", j; break
+                if TIMEOUT_EXIT and (j - i) >= 22: oc, k = "TIMEOUT", j; break
                 j += 1
             if oc is None: break
             rets.append((px[k] / ep - 1) - c); exits[oc] += 1; i = k + 1
@@ -470,7 +532,7 @@ def heatshield_whatif(out_dir) -> Dict[str, Any]:
                     ch = px[j] / ep - 1
                     if ch <= -stop: oc, k = "STOP", j; break
                     if ch >= BOUNCE: oc, k = "TAKE", j; break
-                    if (j - i) >= 22: oc, k = "TIMEOUT", j; break
+                    if TIMEOUT_EXIT and (j - i) >= 22: oc, k = "TIMEOUT", j; break
                     j += 1
                 if oc is None: break
                 rets.append((px[k] / ep - 1) - c); exits[oc] += 1; i = k + 1

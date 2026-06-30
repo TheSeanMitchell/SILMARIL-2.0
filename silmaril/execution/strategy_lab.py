@@ -25,7 +25,7 @@ from pathlib import Path
 from statistics import mean, median
 from typing import Any, Dict, List
 
-from .paper_sim import is_tradeable, round_trip_cost, _is_crypto, load_all_samples
+from .paper_sim import is_tradeable, round_trip_cost, _is_crypto, load_all_samples, TIMEOUT_EXIT
 
 PER_NAME_FRAC = 0.10
 
@@ -86,7 +86,7 @@ def _bt_one(series_fresh: Dict[str, List[float]], cfg: Dict[str, Any],
                 ch = px[j] / ep - 1
                 if ch <= -stop: oc, k = "STOP", j; break
                 if ch >= tgt: oc, k = "TAKE", j; break
-                if (j - i) >= hold: oc, k = "TIMEOUT", j; break
+                if TIMEOUT_EXIT and (j - i) >= hold: oc, k = "TIMEOUT", j; break
                 j += 1
             if oc is None: break
             rets.append((px[k] / ep - 1) - c); exits[oc] += 1; i = k + 1
