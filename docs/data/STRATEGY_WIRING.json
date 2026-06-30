@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-30T20:28:47.029684+00:00",
+  "generated_at": "2026-06-30T21:44:15.815167+00:00",
   "trading_path_files": [
     "paper_sim.py",
     "strategy_lab.py",
@@ -9,6 +9,14 @@
   ],
   "what_the_engine_actually_decides_on": "the active champion's parameters (entry dip / target / stop / direction) plus the freshness and corrupt-feed gates. Nothing else is consulted at entry, exit, or champion selection.",
   "modules": {
+    "conviction_score": {
+      "feeds_live_decision": true,
+      "consumed_by": [
+        "paper_sim.py"
+      ],
+      "role": "per-candidate MR conviction (dip depth + bounce reliability) \u2014 embodies rhythm/heat",
+      "status": "FED \u2014 consumed by paper_sim.py"
+    },
     "peak_rhythm": {
       "feeds_live_decision": false,
       "consumed_by": [],
@@ -54,7 +62,7 @@
       "status": "COMPUTED BUT IGNORED \u2014 not referenced by the live trading path"
     }
   },
-  "fed_count": 1,
+  "fed_count": 2,
   "ignored_count": 6,
-  "verdict": "1/7 intelligence modules feed live decisions (edge_capture); 6 are computed but ignored: peak_rhythm, fingerprint, heat_tolerance, heartbeat, dr_strange, lifecycle. Until an ignored module is wired into the trading path, it does not affect a single trade."
+  "verdict": "2/8 intelligence modules feed live decisions (conviction_score, edge_capture); 6 are computed but ignored: peak_rhythm, fingerprint, heat_tolerance, heartbeat, dr_strange, lifecycle. Until an ignored module is wired into the trading path, it does not affect a single trade."
 }
