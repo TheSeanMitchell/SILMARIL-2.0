@@ -53,27 +53,38 @@ def _pair_book(trades: List[dict], tgt_pct, stop_pct, start: datetime):
                 continue
             entry = buy.get("price"); exitp = tr.get("price")
             pnl = tr.get("pnl")                       # REAL dollar P&L from the sim
-            rp = ((exitp / entry - 1) * 100) if (entry and exitp) else None
-            # win/loss is decided by the REAL pnl sign, never by a recomputed price
-            if pnl is None:
+            # 2.7.2: judge by REAL realized_pct, NOT rounded dollars. A +0.9% win on a tiny position rounds
+            # to $0.00 — judging by dollars mislabels real wins as "flat"/"timeout". Prefer the recorded
+            # realized_pct; fall back to recomputing only if it's absent.
+            rp = tr.get("realized_pct")
+            if rp is None:
+                rp = ((exitp / entry - 1) * 100) if (entry and exitp) else None
+            if rp is None:
                 outcome = "flat"
-            elif pnl > 0.005:
+            elif rp > 0.01:
                 outcome = "win"
-            elif pnl < -0.005:
+            elif rp < -0.01:
                 outcome = "loss"
             else:
                 outcome = "flat"
-            # exit reason: honest reconstruction from real price vs champion target/stop
-            if outcome == "flat":
-                reason = "TIMEOUT_FLAT"
-            elif rp is not None and tgt_pct and rp >= tgt_pct * 0.97:
+            # exit reason — timeouts are OFF, so every closed trade is a TARGET hit (minus fees) or a STOP/
+            # floor hit. Use the RECORDED target/stop and % of goal. A fee-haircut target lands ~85-105% of
+            # goal, so anything >=85% of goal (or within fee range of target) is honestly a TARGET_HIT.
+            pog = tr.get("pct_of_goal")
+            use_tgt = tr.get("target_pct") if tr.get("target_pct") is not None else tgt_pct
+            use_stop = tr.get("stop_pct") if tr.get("stop_pct") is not None else stop_pct
+            if pog is not None and pog >= 85:
                 reason = "TARGET_HIT"
-            elif rp is not None and stop_pct and rp <= -stop_pct * 0.97:
+            elif rp is not None and use_stop and rp <= -use_stop * 0.95:
                 reason = "STOP_HIT"
+            elif rp is not None and use_tgt and rp >= use_tgt * 0.85:
+                reason = "TARGET_HIT"
             elif outcome == "win":
-                reason = "TIMEOUT_GAIN"
+                reason = "HELD_GAIN"
+            elif outcome == "loss":
+                reason = "HELD_LOSS"
             else:
-                reason = "TIMEOUT_LOSS"
+                reason = "FLAT"
             et = _dt(buy.get("t"))
             hold = round((xt - et).total_seconds() / 60) if (et and xt) else None
             out.append({

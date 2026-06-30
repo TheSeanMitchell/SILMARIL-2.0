@@ -266,7 +266,7 @@ class PaperBook:
         self.realized_pnl = 0.0
         self.trades: List[Dict[str, Any]] = []
 
-    def buy(self, sym, dollars, price, cost, t=None, target=None, stop=None, expected=None):
+    def buy(self, sym, dollars, price, cost, t=None, target=None, stop=None, expected=None, conviction=None):
         if price <= 0 or dollars <= 0 or dollars > self.cash + 1e-9:
             return False
         eff = price * (1 + cost / 2.0)
@@ -281,6 +281,8 @@ class PaperBook:
             pos["stop"] = stop
         if expected is not None:
             pos["expected_move"] = expected
+        if conviction is not None:
+            pos["conviction"] = conviction
         self.positions[sym] = pos
         trow = {"side": "BUY", "sym": sym, "qty": round(qty, 6), "price": round(eff, 6), "t": t or _now()}
         if target is not None:
@@ -289,6 +291,8 @@ class PaperBook:
             trow["stop_pct"] = round(stop * 100, 3)
         if expected is not None:
             trow["expected_move_pct"] = round(expected * 100, 3)
+        if conviction is not None:
+            trow["conviction"] = conviction
         self.trades.append(trow)
         return True
 
@@ -365,6 +369,36 @@ def _chain(out) -> Dict[str, Tuple[float, float]]:
     return res
 
 
+def _bounce_reliability(prices, dip=0.02, horizon=12):
+    """REAL heat-tolerance / rhythm signal from price history: of recent >= `dip` drops, what fraction
+    recovered to the pre-drop level within `horizon` samples? High = this name reliably bounces (strong MR
+    conviction). None when there isn't enough evidence to judge."""
+    p = [x for x in prices[-200:] if x and x > 0]
+    n = len(p); hits = tries = 0; i = 6
+    while i < n - 1:
+        if p[i - 6] <= 0:
+            i += 1; continue
+        if p[i] / p[i - 6] - 1 <= -dip:
+            tries += 1
+            if any(p[k] >= p[i - 6] for k in range(i + 1, min(n, i + 1 + horizon))):
+                hits += 1
+            i += 6
+        else:
+            i += 1
+    return (hits / tries) if tries >= 3 else None
+
+
+def conviction_score(prices, cur_move):
+    """0-1 mean-reversion conviction from REAL recent prices only. Blends dip DEPTH (deeper survives fees)
+    with BOUNCE RELIABILITY (does this name recover from dips). Falls back to depth alone with thin history.
+    The entry path ranks by this, so intelligence finally drives a live decision instead of being ignored."""
+    depth = min(1.0, abs(cur_move) / 0.06)
+    rel = _bounce_reliability(prices)
+    if rel is None:
+        return round(0.5 * depth, 4), {"depth": round(depth, 3), "bounce_reliability": None}
+    return round(0.5 * depth + 0.5 * rel, 4), {"depth": round(depth, 3), "bounce_reliability": round(rel, 3)}
+
+
 def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
     crypto = (book == "crypto")
     # Default config when a book has NO elected champion yet. Commodities (metal/energy) start on a HOLD
@@ -435,21 +469,25 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
             actions.append({"act": "SELL", "sym": sym, "why": f"{why} {chg*100:+.1f}%",
                             "pnl": round(pnl, 2)})
 
-    # ENTRIES — mean-reversion buys dips (deepest first); momentum buys strength
+    # ENTRIES — momentum buys strength; mean-reversion ranks eligible dips by CONVICTION (dip depth +
+    # bounce reliability) so the names that historically RECOVER get funded first. target/stop unchanged.
     if direction == "mom":
-        cands = sorted([(s, lp, h1) for s, (lp, h1) in side_marks.items()
+        cands = sorted([(s, lp, h1, None) for s, (lp, h1) in side_marks.items()
                         if h1 >= entry and s not in pbook.positions and fresh_ok(s)],
                        key=lambda x: x[2], reverse=True)
     else:
-        cands = sorted([(s, lp, h1) for s, (lp, h1) in side_marks.items()
-                        if h1 <= -entry and s not in pbook.positions and fresh_ok(s)],
-                       key=lambda x: x[2])
+        scored = []
+        for s, (lp, h1) in side_marks.items():
+            if h1 <= -entry and s not in pbook.positions and fresh_ok(s):
+                cv, _ = conviction_score(px_of(s), h1)
+                scored.append((s, lp, h1, cv))
+        cands = sorted(scored, key=lambda x: (x[3] if x[3] is not None else 0.0), reverse=True)
     mk = {s: v[0] for s, v in side_marks.items()}
-    for sym, lp, h1 in cands[:MAX_NAMES]:
+    for sym, lp, h1, cv in cands[:MAX_NAMES]:
         budget = min(pbook.equity(mk) * PER_NAME_FRAC, pbook.cash * 0.95)
         if pbook.buy(sym, budget, lp, round_trip_cost(px_of(sym)), now.isoformat(),
-                     target=target, stop=stop_):
-            actions.append({"act": "BUY", "sym": sym, "move_pct": round(h1 * 100, 2)})
+                     target=target, stop=stop_, conviction=cv):
+            actions.append({"act": "BUY", "sym": sym, "move_pct": round(h1 * 100, 2), "conviction": cv})
 
     pbook.save(out / f"paper_book_{book}.json")
     eq = pbook.equity(mk)

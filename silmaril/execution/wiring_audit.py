@@ -22,6 +22,7 @@ TRADING_PATH = ["paper_sim.py", "strategy_lab.py", "capital_router.py", "champio
 
 # Intelligence modules whose declared job is to INFORM trading decisions.
 INTEL = {
+    "conviction_score": "per-candidate MR conviction (dip depth + bounce reliability) — embodies rhythm/heat",
     "peak_rhythm":    "per-name peak/trough rhythm — when to expect the next bounce",
     "fingerprint":    "per-name behavioral fingerprint / repeat signature",
     "heat_tolerance": "how much adverse heat a name tolerates before the thesis fails",
