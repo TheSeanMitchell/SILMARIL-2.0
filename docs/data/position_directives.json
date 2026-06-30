@@ -1,6 +1,6 @@
 {
   "version": "5.1",
-  "generated_at": "2026-06-30T14:39:32.930350+00:00",
+  "generated_at": "2026-06-30T14:49:14.838637+00:00",
   "directives": [
     {
       "owner": "LEGACY",
@@ -11,6 +11,15 @@
       "rationale": "first target +3% reached; trim 25%",
       "priority": 3,
       "tag": "scale_out_3"
+    },
+    {
+      "owner": "LEGACY",
+      "ticker": "LCID",
+      "action": "BREAK_EVEN_STOP",
+      "new_stop_pct": 0.0,
+      "trigger": "unrealized_plpc\u22652%",
+      "rationale": "move stop to entry \u2014 risk-free trade established",
+      "priority": 4
     },
     {
       "owner": "LEGACY",
@@ -32,11 +41,20 @@
     },
     {
       "owner": "LEGACY",
+      "ticker": "LCID",
+      "action": "SCALE_IN",
+      "size_pct": 0.2,
+      "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
+      "rationale": "healthy winner (2.9%, momentum 0.59); add 20% size",
+      "priority": 5
+    },
+    {
+      "owner": "LEGACY",
       "ticker": "PANW",
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (2.5%, momentum 0.58); add 20% size",
+      "rationale": "healthy winner (1.7%, momentum 0.55); add 20% size",
       "priority": 5
     },
     {
@@ -45,7 +63,7 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (3.0%, momentum 0.59); add 20% size",
+      "rationale": "healthy winner (2.3%, momentum 0.57); add 20% size",
       "priority": 5
     },
     {
@@ -54,17 +72,18 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (5.4%, momentum 0.65); add 20% size",
+      "rationale": "healthy winner (5.9%, momentum 0.66); add 20% size",
       "priority": 5
     }
   ],
   "summary": {
-    "directives": 6,
+    "directives": 8,
     "by_action": {
       "SCALE_OUT": 1,
+      "BREAK_EVEN_STOP": 1,
       "TIGHTEN_STOP": 1,
-      "SCALE_IN": 4
+      "SCALE_IN": 5
     }
   },
-  "rationale": "6 directives issued \u00b7 1 scale-outs \u00b7 4 scale-ins"
+  "rationale": "8 directives issued \u00b7 1 scale-outs \u00b7 5 scale-ins"
 }
