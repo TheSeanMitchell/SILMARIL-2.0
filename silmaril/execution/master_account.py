@@ -19,21 +19,53 @@ from typing import Any, Dict
 
 SEED = 10000.0
 
+# ── 2.7 MASTER CONFIDENCE GATE ───────────────────────────────────────────────
+# The Master only adopts a quadrant's signal when that quadrant's CONFIDENCE clears this gate. This is the
+# single tunable knob: raise it to be stricter (fewer, surer signals reach the Master), lower it to let more
+# through. Confidence is DRIVEN by real evidence — never a flat number — so the data entering the Master
+# actually means something. Edit this one value to tune; nothing else changes.
+CONFIDENCE_GATE = 90.0
+
+def _confidence(survivability, win, trips, net) -> float:
+    """0-100 confidence from REAL evidence only. Zero if the book is losing or has no real trades — a
+    quadrant cannot earn Master trust without a positive, sampled, surviving edge. Weights: forward
+    survivability and sample size carry the most weight, because they predict forward behavior."""
+    if net is None or net <= 0 or (trips or 0) < 1:
+        return 0.0
+    surv_c = min(1.0, (survivability or 0) / 100.0)             # forward survivability (champion_validation)
+    win_c = max(0.0, min(1.0, ((win or 0) - 50.0) / 40.0))     # 50% win -> 0, 90%+ -> 1
+    n_c = min(1.0, (trips or 0) / 50.0)                         # sample size, saturates at 50 round-trips
+    return round(100.0 * (0.40 * surv_c + 0.30 * n_c + 0.30 * win_c), 1)
+
 def _now(): return datetime.now(timezone.utc).isoformat()
 def _load(out: Path, name: str, default=None):
     try: return json.loads((out / name).read_text())
     except Exception: return default if default is not None else {}
 
+def _book_survivability(out: Path, book: str) -> float:
+    """Forward survivability of the book's current champion, from champion_validation.json. 0 if unknown."""
+    champ = _load(out, f"champion_{book}.json").get("champion")
+    cv = _load(out, "champion_validation.json")
+    if champ:
+        for r in cv.get("strategies", []):
+            if r.get("strategy") == champ:
+                sv = r.get("survivability") or {}
+                return float(sv.get("score") if isinstance(sv, dict) else (r.get("survivability_score") or 0) or 0)
+    # fallback: the most-survivable score the validator found (declared, not book-specific)
+    return float(cv.get("most_survivable_score") or 0)
+
 def _quadrant_edge(out: Path, book: str) -> Dict[str, Any]:
-    """Proven? = positive net-after-fees realized with enough real round-trips."""
+    """Proven? = confidence (driven by survivability + sample + win + net-after-fees) clears CONFIDENCE_GATE."""
     tq = _load(out, "TRADE_QUALITY.json").get("by_book", {}).get(book, {})
     life = tq.get("lifetime", {}) if tq else {}
     net = life.get("net_realized_usd")
     trips = life.get("real_round_trips", 0) or 0
     win = life.get("real_win_rate_pct")
-    # fee-adjusted net: pull from threshold_takehome fee scenarios if this is crypto
-    proven = (net is not None and net > 0 and trips >= 5 and (win or 0) >= 48)
-    return {"net_realized_usd": net, "real_round_trips": trips, "win_rate_pct": win, "proven": proven}
+    surv = _book_survivability(out, book)
+    confidence = _confidence(surv, win, trips, net)
+    proven = confidence >= CONFIDENCE_GATE
+    return {"net_realized_usd": net, "real_round_trips": trips, "win_rate_pct": win,
+            "survivability": surv, "confidence": confidence, "gate": CONFIDENCE_GATE, "proven": proven}
 
 def build_master_account(out_dir) -> Dict[str, Any]:
     out = Path(out_dir)
@@ -42,15 +74,13 @@ def build_master_account(out_dir) -> Dict[str, Any]:
     quadrants = {}
     for bk in ("crypto", "stock", "metal", "energy"):
         e = _quadrant_edge(out, bk)
+        c, g = e["confidence"], e["gate"]
         if e["proven"]:
-            decision, reason = "ACCEPT", f"proven edge: net +${e['net_realized_usd']} over {e['real_round_trips']} trips, {e['win_rate_pct']}% win"
-        elif e["net_realized_usd"] is not None and e["real_round_trips"] >= 5:
-            if (e["net_realized_usd"] or 0) > 0 and (e["win_rate_pct"] or 0) < 48:
-                decision, reason = "REJECT", f"fragile: +${e['net_realized_usd']} but only {e['win_rate_pct']}% win — profit from a few outliers, not a durable edge"
-            else:
-                decision, reason = "REJECT", f"no proven edge: net ${e['net_realized_usd']} over {e['real_round_trips']} trips"
+            decision, reason = "ACCEPT", f"confidence {c}/100 ≥ gate {g} — survivability {e['survivability']:.0f}, {e['real_round_trips']} trips, {e['win_rate_pct']}% win, net +${e['net_realized_usd']}"
+        elif (e["net_realized_usd"] or 0) > 0:
+            decision, reason = "REJECT", f"confidence {c}/100 < gate {g} — positive but not yet trusted (survivability {e['survivability']:.0f}, {e['real_round_trips']} trips, {e['win_rate_pct']}% win)"
         else:
-            decision, reason = "REJECT", "insufficient data — quadrant still gathering (idle or <5 round-trips)"
+            decision, reason = "REJECT", f"confidence {c}/100 — no positive net edge yet (still gathering)"
         quadrants[bk] = {**e, "decision": decision, "reason": reason}
 
     accepted = [b for b, q in quadrants.items() if q["decision"] == "ACCEPT"]
@@ -116,20 +146,20 @@ def build_master_account(out_dir) -> Dict[str, Any]:
     # (A) Quadrant RECOMMENDATIONS — each lab submits a call; the Master decides from these.
     recs = {}
     for bk, q in quadrants.items():
-        wr = q.get("win_rate_pct") or 0
+        conf = q.get("confidence", 0)
         trips = q.get("real_round_trips") or 0
         if q["decision"] == "ACCEPT":
             sig = "BUY"
-            conf = min(95, int(40 + wr * 0.5 + min(trips, 50) * 0.4))
-        elif "fragile" in q["reason"]:
-            sig, conf = "WAIT", min(50, int(20 + wr * 0.3))
+        elif (q.get("net_realized_usd") or 0) > 0:
+            sig = "WAIT"
         else:
-            sig, conf = "NO-TRADE", 10
-        recs[bk] = {"signal": sig, "confidence_pct": conf,
+            sig = "NO-TRADE"
+        recs[bk] = {"signal": sig, "confidence_pct": conf, "gate_pct": q.get("gate"),
+                    "survivability": q.get("survivability"),
                     "expected_edge_pct": (round((q.get("net_realized_usd") or 0) / max(1, trips) / 1000 * 100, 3) if trips else None),
                     "reason": q["reason"]}
-    master_decision = (f"Fund {', '.join(accepted)} (highest proven confidence); hold the rest in R&D."
-                       if accepted else "No quadrant has earned funding — stay flat, keep gathering.")
+    master_decision = (f"Fund {', '.join(accepted)} (confidence ≥ {CONFIDENCE_GATE} gate); hold the rest in R&D."
+                       if accepted else f"No quadrant clears the {CONFIDENCE_GATE} confidence gate — stay flat, keep gathering.")
 
     # (B) REALITY VALIDATION — a single production-readiness confidence that refuses to flatter.
     km = _load(out, "KRAKEN_MIRROR.json")

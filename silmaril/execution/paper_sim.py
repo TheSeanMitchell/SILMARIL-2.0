@@ -54,6 +54,11 @@ HEATSHIELD_FLOOR = 0.05
 # failed thesis. A tight 5% floor would shake a long hold out of a position that's behaving normally, so
 # these books ride a WIDER floor. Crypto/stock are untouched (they keep HEATSHIELD_FLOOR).
 COMMODITY_FLOOR = 0.12
+# 2.7: a TRUE post-wipe quiet period, measured from WIPE TIME — not from price-sample density. The wipe
+# preserves price_samples.json (for graphs), which means the old density-based warmup no longer produces any
+# quiet after a wipe. This window does: for QUIET_AFTER_WIPE_MIN minutes after a reset, the engine takes no
+# trades at all, so a clean run starts from a known-quiet baseline. reset writes docs/data/WIPE_MARKER.json.
+QUIET_AFTER_WIPE_MIN = 120.0
 
 # 2.7 — TIMEOUT EXITS REMOVED. The mean-reversion thesis is "sit through the heat and let price revert."
 # A mechanical max-hold clock was dumping positions at break-even/loss (the 248m TIMEOUT LOSS/FLAT rows)
@@ -261,16 +266,37 @@ class PaperBook:
         self.realized_pnl = 0.0
         self.trades: List[Dict[str, Any]] = []
 
-    def buy(self, sym, dollars, price, cost, t=None):
+    def buy(self, sym, dollars, price, cost, t=None, target=None, stop=None, expected=None):
         if price <= 0 or dollars <= 0 or dollars > self.cash + 1e-9:
             return False
         eff = price * (1 + cost / 2.0)
         qty = dollars / eff
         self.cash -= dollars
-        self.positions[sym] = {"qty": qty, "entry": eff, "cost": cost, "t": t or _now()}
-        self.trades.append({"side": "BUY", "sym": sym, "qty": round(qty, 6),
-                            "price": round(eff, 6), "t": t or _now()})
+        # 2.7: record what this trade was AIMING for, at entry. Without this the dashboard cannot show
+        # "% of goal hit" or honestly compute "left on table". target/stop are fractions (0.03 = 3%).
+        pos = {"qty": qty, "entry": eff, "cost": cost, "t": t or _now(), "mfe": eff}
+        if target is not None:
+            pos["target"] = target
+        if stop is not None:
+            pos["stop"] = stop
+        if expected is not None:
+            pos["expected_move"] = expected
+        self.positions[sym] = pos
+        trow = {"side": "BUY", "sym": sym, "qty": round(qty, 6), "price": round(eff, 6), "t": t or _now()}
+        if target is not None:
+            trow["target_pct"] = round(target * 100, 3)
+        if stop is not None:
+            trow["stop_pct"] = round(stop * 100, 3)
+        if expected is not None:
+            trow["expected_move_pct"] = round(expected * 100, 3)
+        self.trades.append(trow)
         return True
+
+    def mark(self, sym, price):
+        """Track the high-water mark of a held position so 'left on table' is real, not guessed."""
+        pos = self.positions.get(sym)
+        if pos and price and price > pos.get("mfe", 0):
+            pos["mfe"] = price
 
     def sell(self, sym, price, t=None):
         pos = self.positions.get(sym)
@@ -281,8 +307,22 @@ class PaperBook:
         pnl = proceeds - pos["qty"] * pos["entry"]
         self.cash += proceeds
         self.realized_pnl += pnl
-        self.trades.append({"side": "SELL", "sym": sym, "qty": round(pos["qty"], 6),
-                            "price": round(eff, 6), "pnl": round(pnl, 2), "t": t or _now()})
+        realized_pct = (eff / pos["entry"] - 1) if pos["entry"] > 0 else 0.0
+        srow = {"side": "SELL", "sym": sym, "qty": round(pos["qty"], 6), "price": round(eff, 6),
+                "pnl": round(pnl, 2), "realized_pct": round(realized_pct * 100, 3), "t": t or _now()}
+        tgt = pos.get("target")
+        if tgt is not None:
+            srow["target_pct"] = round(tgt * 100, 3)
+            srow["pct_of_goal"] = round((realized_pct / tgt) * 100, 1) if tgt > 0 else None
+        if pos.get("stop") is not None:
+            srow["stop_pct"] = round(pos["stop"] * 100, 3)
+        # left on table = best the position reached vs what we actually captured (real high-water, not a guess)
+        mfe = pos.get("mfe")
+        if mfe and pos["entry"] > 0:
+            best_pct = mfe / pos["entry"] - 1
+            srow["best_pct"] = round(best_pct * 100, 3)
+            srow["left_on_table_pct"] = round(max(0.0, best_pct - realized_pct) * 100, 3)
+        self.trades.append(srow)
         del self.positions[sym]
         return pnl
 
@@ -380,6 +420,7 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
             continue
         pos = pbook.positions[sym]
         cur = side_marks.get(sym, (pos["entry"], 0))[0]
+        pbook.mark(sym, cur)                       # 2.7: update high-water so left-on-table is real
         chg = cur / pos["entry"] - 1 if pos["entry"] > 0 else 0
         try:
             hold = (now - datetime.fromisoformat(pos["t"])).total_seconds() / 60.0
@@ -406,7 +447,8 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
     mk = {s: v[0] for s, v in side_marks.items()}
     for sym, lp, h1 in cands[:MAX_NAMES]:
         budget = min(pbook.equity(mk) * PER_NAME_FRAC, pbook.cash * 0.95)
-        if pbook.buy(sym, budget, lp, round_trip_cost(px_of(sym)), now.isoformat()):
+        if pbook.buy(sym, budget, lp, round_trip_cost(px_of(sym)), now.isoformat(),
+                     target=target, stop=stop_):
             actions.append({"act": "BUY", "sym": sym, "move_pct": round(h1 * 100, 2)})
 
     pbook.save(out / f"paper_book_{book}.json")
@@ -427,12 +469,30 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
     }
 
 
+def _post_wipe_quiet_left(out: Path) -> float:
+    """Minutes remaining in the post-wipe quiet window, from WIPE_MARKER.json. 0 if none/expired."""
+    try:
+        wm = json.loads((out / "WIPE_MARKER.json").read_text())
+        wiped = datetime.fromisoformat(wm["wiped_at"])
+        if wiped.tzinfo is None:
+            wiped = wiped.replace(tzinfo=timezone.utc)
+        elapsed = (datetime.now(timezone.utc) - wiped).total_seconds() / 60.0
+        return max(0.0, QUIET_AFTER_WIPE_MIN - elapsed)
+    except Exception:
+        return 0.0
+
+
 def live_step(out_dir) -> Dict[str, Any]:
     """One paper-trading cycle for BOTH sides. Persists each book and emits the
     cockpit summary docs/data/paper_sim_live.json."""
     out = Path(out_dir)
     samples = load_all_samples(out)
     marks = _marks_from_samples(samples)
+    # 2.7 TRUE post-wipe quiet period (measured from wipe time): take no trades for the first window after a
+    # reset, so the clean run starts from a genuinely quiet baseline even though price history is preserved.
+    quiet_left = _post_wipe_quiet_left(out)
+    if quiet_left > 0:
+        marks = {}   # empty marks => no entries and no exits this cycle; the engine sits quiet by design
     try:
         feed_intel = feed_integrity(samples)
         (out / "FEED_INTEGRITY.json").write_text(json.dumps(feed_intel, indent=2))
@@ -480,6 +540,9 @@ def live_step(out_dir) -> Dict[str, Any]:
         "heatshield": {"active": HEATSHIELD, "floor_pct": round(HEATSHIELD_FLOOR * 100, 2),
                        "note": "no position stops out tighter than this floor — sits through heat for the bounce"},
         "timeout_exit": TIMEOUT_EXIT,
+        "post_wipe_quiet": {"active": quiet_left > 0, "minutes_left": round(quiet_left, 1),
+                            "note": ("engine intentionally quiet after a wipe — no trades until the window "
+                                     "elapses, so the clean run starts from a known baseline")},
         "exit_policy": ("target (win) or heatshield floor only — timeouts removed" if not TIMEOUT_EXIT
                         else "target / heatshield floor / max-hold timeout"),
         "feed_integrity": feed_intel,

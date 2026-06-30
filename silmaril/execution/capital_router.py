@@ -131,6 +131,7 @@ def _run_strategy_book(out: Path, name: str, capital: float, p: Dict[str, Any],
     # exits
     for s in list(book.positions.keys()):
         pos = book.positions[s]; cur = cmarks.get(s, (pos["entry"], 0))[0]
+        book.mark(s, cur)
         chg = cur / pos["entry"] - 1 if pos["entry"] > 0 else 0
         try:
             hold = (now - datetime.fromisoformat(pos["t"])).total_seconds() / 60.0
@@ -149,7 +150,8 @@ def _run_strategy_book(out: Path, name: str, capital: float, p: Dict[str, Any],
     for s, lp, h1 in cands[:MAX_NAMES]:
         budget = min(book.equity(mk) * PER_NAME_FRAC, book.cash * 0.95)
         if budget > 1:
-            book.buy(s, budget, lp, round_trip_cost(px_of(s)), now.isoformat())
+            book.buy(s, budget, lp, round_trip_cost(px_of(s)), now.isoformat(),
+                     target=p.get("target"), stop=p.get("stop"))
     book.save(out / f"paper_book_{name}.json")
     eq = book.equity(mk)
     return {"equity": round(eq, 2), "cash": round(book.cash, 2),

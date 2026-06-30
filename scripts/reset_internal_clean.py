@@ -13,6 +13,7 @@ PRESERVED: price_samples.json (graphs/fingerprints), favicons, all per-asset vis
 """
 import json
 from pathlib import Path
+from datetime import datetime, timezone
 
 DATA = Path(__file__).resolve().parents[1] / "docs" / "data"
 BASELINE = 10000.0
@@ -29,6 +30,11 @@ def main():
     sh = DATA / "snapshot_history.jsonl"
     if sh.exists():
         sh.write_text(""); print("  cleared snapshot_history.jsonl (equity restarts clean)")
+    # 2.7: stamp the wipe time so the engine enforces a TRUE quiet period from now (not from price density).
+    (DATA / "WIPE_MARKER.json").write_text(json.dumps(
+        {"wiped_at": datetime.now(timezone.utc).isoformat(),
+         "note": "engine stays quiet for QUIET_AFTER_WIPE_MIN minutes after this timestamp"}, indent=2))
+    print("  wrote WIPE_MARKER.json (true post-wipe quiet period starts now)")
     # PRESERVED on purpose: price_samples.json (graphs + fingerprints), favicon caches, per-asset data.
     print("  PRESERVED: price_samples.json (graphs/fingerprints) + favicons — dashboard will NOT go blank")
     print("CLEAN. Books pristine at $10k; all graph/fingerprint/favicon history intact.")

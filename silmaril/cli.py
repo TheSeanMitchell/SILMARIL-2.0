@@ -2335,6 +2335,12 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                         _tqr = _tq(out); _kmr = _kmir(out); _mlr = _mlog(out); _tthr = _tth(out)
                         from .execution.master_account import build_master_account as _macct
                         _mar = _macct(out)
+                        try:
+                            from .execution.wiring_audit import build_wiring_audit as _wire
+                            _wr = _wire(out)
+                            log.info("  wiring audit: %s", _wr.get("verdict", "")[:90])
+                        except Exception as _wre:
+                            log.warning("wiring audit skipped: %s", _wre)
                         log.info("  trade quality net $%s today · kraken survival %s%% · master log %s trades",
                                  (_tqr.get("by_book", {}).get("crypto", {}).get("today", {}) or {}).get("net_realized_usd"),
                                  _kmr.get("survival_pct"), _mlr.get("total_trades"))
