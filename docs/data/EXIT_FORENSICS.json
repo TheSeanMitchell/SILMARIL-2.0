@@ -1,17 +1,26 @@
 {
-  "generated_at": "2026-07-01T06:27:43.105399+00:00",
-  "overall": {},
+  "generated_at": "2026-07-01T07:17:38.940428+00:00",
+  "overall": {
+    "closed_trades": 2,
+    "avg_post_exit_leak_pct": 0.12,
+    "avg_saved_loss_pct": 5.51,
+    "avg_exit_quality": 5.39,
+    "losers": 1,
+    "execution_failures": 0,
+    "thesis_failures": 1,
+    "verdict": "0/1 losing trades bounced after exit (sold too early); 1 kept falling (thesis wrong)"
+  },
   "exit_class_counts": {
-    "GOOD_EXIT": 0,
+    "GOOD_EXIT": 1,
     "EARLY_EXIT": 0,
-    "LATE_EXIT": 0,
+    "LATE_EXIT": 1,
     "CATASTROPHIC_EXIT": 0
   },
   "exit_class_by_book": {
     "crypto": {
-      "GOOD_EXIT": 0,
+      "GOOD_EXIT": 1,
       "EARLY_EXIT": 0,
-      "LATE_EXIT": 0,
+      "LATE_EXIT": 1,
       "CATASTROPHIC_EXIT": 0
     },
     "stock": {
@@ -22,11 +31,58 @@
     }
   },
   "by_book": {
-    "crypto": {},
+    "crypto": {
+      "closed_trades": 2,
+      "avg_post_exit_leak_pct": 0.12,
+      "avg_saved_loss_pct": 5.51,
+      "avg_exit_quality": 5.39,
+      "losers": 1,
+      "execution_failures": 0,
+      "thesis_failures": 1,
+      "verdict": "0/1 losing trades bounced after exit (sold too early); 1 kept falling (thesis wrong)"
+    },
     "stock": {}
   },
-  "by_strategy": {},
-  "worst_offenders": [],
+  "by_strategy": {
+    "MR_d1_t2_s6": {
+      "closed_trades": 1,
+      "avg_post_exit_leak_pct": 0.11,
+      "avg_saved_loss_pct": 3.46,
+      "avg_exit_quality": 3.35,
+      "losers": 0,
+      "execution_failures": 0,
+      "thesis_failures": 0,
+      "verdict": "no losing trades to attribute yet"
+    },
+    "MR_d3_t2_s4": {
+      "closed_trades": 1,
+      "avg_post_exit_leak_pct": 0.13,
+      "avg_saved_loss_pct": 7.56,
+      "avg_exit_quality": 7.43,
+      "losers": 1,
+      "execution_failures": 0,
+      "thesis_failures": 1,
+      "verdict": "0/1 losing trades bounced after exit (sold too early); 1 kept falling (thesis wrong)"
+    }
+  },
+  "worst_offenders": [
+    {
+      "ticker": "DYDX-USD",
+      "strategy": "MR_d3_t2_s4",
+      "book": "crypto",
+      "realized_pct": -5.84,
+      "leak_pct": 0.13,
+      "exit_class": "LATE_EXIT"
+    },
+    {
+      "ticker": "STRK-USD",
+      "strategy": "MR_d1_t2_s6",
+      "book": "crypto",
+      "realized_pct": 1.47,
+      "leak_pct": 0.11,
+      "exit_class": "GOOD_EXIT"
+    }
+  ],
   "windows_note": "+1h/+4h added; +10/+20d stay null until history is that long (~5 days now).",
   "note": "Leak = ran up after we sold (too early). GOOD<1% leak, EARLY 1-4%, CATASTROPHIC>=4%, LATE = held into a non-bouncing loss."
 }
