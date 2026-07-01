@@ -1,19 +1,19 @@
 {
   "version": "6.0",
-  "generated_at": "2026-07-01T13:52:53.921015+00:00",
+  "generated_at": "2026-07-01T14:16:06.324748+00:00",
   "overall_status": "RED",
   "summary": {
     "overall_status": "RED",
     "files_fresh": 22,
     "files_stale": 0,
     "files_missing": 2,
-    "wiring_intact": 4,
+    "wiring_intact": 3,
     "wiring_total": 4,
     "accounts_green": 2,
     "accounts_yellow": 0,
     "accounts_red": 1
   },
-  "rationale": "1 accounts RED: LEGACY \u00b7 2 files missing",
+  "rationale": "1 accounts RED: LEGACY \u00b7 2 files missing \u00b7 1 wiring gaps",
   "files": [
     {
       "module": "orchestrator",
@@ -74,21 +74,21 @@
     {
       "module": "alpaca_LEGACY",
       "file": "alpaca_paper_state.json",
-      "age_minutes": 0.4,
+      "age_minutes": 0.8,
       "threshold_min": 90,
       "status": "FRESH"
     },
     {
       "module": "alpaca_HARVEST_3",
       "file": "alpaca_h3_state.json",
-      "age_minutes": 0.4,
+      "age_minutes": 0.8,
       "threshold_min": 90,
       "status": "FRESH"
     },
     {
       "module": "alpaca_HARVEST_5",
       "file": "alpaca_h5_state.json",
-      "age_minutes": 0.4,
+      "age_minutes": 0.8,
       "threshold_min": 90,
       "status": "FRESH"
     },
@@ -137,14 +137,14 @@
     {
       "module": "agent_beliefs",
       "file": "agent_beliefs.json",
-      "age_minutes": 7.2,
+      "age_minutes": 10.1,
       "threshold_min": 1440,
       "status": "FRESH"
     },
     {
       "module": "agent_evolution_cards",
       "file": "agent_evolution_cards.json",
-      "age_minutes": 7.2,
+      "age_minutes": 10.1,
       "threshold_min": 1440,
       "status": "FRESH"
     },
@@ -172,7 +172,7 @@
     {
       "module": "run_health",
       "file": "run_health.json",
-      "age_minutes": 21.9,
+      "age_minutes": 23.2,
       "threshold_min": 90,
       "status": "FRESH"
     },
@@ -186,10 +186,10 @@
   ],
   "wiring": {
     "directive_flow": {
-      "directives_emitted_this_cycle": 12,
+      "directives_emitted_this_cycle": 14,
       "directives_consumed_24h": 58,
       "wired": true,
-      "rationale": "12 emitted, 58 consumed in last 24h"
+      "rationale": "14 emitted, 58 consumed in last 24h"
     },
     "forced_rotation_flow": {
       "emitted_this_cycle": 0,
@@ -199,9 +199,9 @@
     },
     "sweep_cap_enforcement": {
       "accounts_audited": 3,
-      "over_swept_count": 0,
-      "wired": true,
-      "rationale": "no over-sweeps"
+      "over_swept_count": 1,
+      "wired": false,
+      "rationale": "1 accounts breached sweep cap"
     },
     "hard_stops": {
       "accounts_audited": 3,
@@ -214,18 +214,19 @@
   "accounts": [
     {
       "account_id": "LEGACY",
-      "live_equity": 10091.65,
-      "live_cash": -1217.71,
-      "live_sgov": 3.74,
-      "deployed_ratio": 1.1203,
+      "live_equity": 10216.42,
+      "live_cash": -1217.7,
+      "live_sgov": 303.71,
+      "deployed_ratio": 1.0895,
       "status": "RED",
       "flags": [
         "NEGATIVE_CASH",
         "OVER_DEPLOYED_MARGIN",
+        "OVER_SWEPT",
         "NEGATIVE_CASH",
-        "MARGIN_USED_SEVERE"
+        "MARGIN_USED"
       ],
-      "rationale": "MARGIN USED \u00b7 cash $-1218 \u00b7 sweep cap $92 \u00b7 OVER-DEPLOYED 112% \u00b7 VIOLATIONS: NEGATIVE_CASH, MARGIN_USED_SEVERE"
+      "rationale": "MARGIN USED \u00b7 cash $-1218 \u00b7 sweep cap $216 \u00b7 OVER-DEPLOYED 109% \u00b7 VIOLATIONS: OVER_SWEPT, NEGATIVE_CASH, MARGIN_USED"
     },
     {
       "account_id": "HARVEST_3",
