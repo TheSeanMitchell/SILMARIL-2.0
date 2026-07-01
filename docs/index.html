@@ -579,12 +579,25 @@ async function renderKrakenMirror(){const d=await jget('data/KRAKEN_MIRROR.json'
     <div style="font-size:13px;margin-bottom:6px">internal <b class="${d.internal_net_today>=0?'pos':'neg'}">${d.internal_net_today>=0?'+':''}$${d.internal_net_today}</b> \u2192 after real Kraken spread <b class="${d.kraken_net_today>=0?'pos':'neg'}">${d.kraken_net_today>=0?'+':''}$${d.kraken_net_today}</b> \u00b7 <b>${d.survival_pct}% survives</b></div>
     <table style="font-size:11px"><thead><tr><th>symbol</th><th>internal</th><th>spread</th><th>on kraken</th></tr></thead><tbody>${rows}</tbody></table><div class="note" style="font-size:10px">* spread proxied from median. ${d.honest_note}</div>`;
   if(window.SilmarilChart)setTimeout(()=>SilmarilChart.autotag(document),50);}
+// 2.7.2 SINGLE source of truth for P&L display. A real win on a tiny position rounds to $0.00, so when
+// dollars round to zero we show the real %% instead — a win never reads as a flat "$0" anywhere. Every P&L
+// cell routes through this, so no table can ever silently regress to bare dollars again.
+function fmtPnl(pnl,pct){
+  var hasP=(pct!=null); var pStr=hasP?((pct>=0?'+':'')+pct+'%'):null;
+  if(pnl==null) return pStr||'\u2014';
+  if(Math.abs(pnl)<0.005) return hasP?(pStr+' <span style="font-size:8px;opacity:.55">(&lt;$0.01)</span>'):'$0.00';
+  return (pnl>=0?'+$':'-$')+Math.abs(pnl).toFixed(2)+(hasP?(' <span style="font-size:8px;opacity:.7">('+pStr+')</span>'):'');
+}
+function pnlClass(pnl,pct){
+  var v=(pnl!=null&&Math.abs(pnl)>=0.005)?pnl:(pct!=null?pct:pnl);
+  return v==null?'dim':(v>=0?'pos':'neg');
+}
 var _mlogPage=0, _mlogData=null;
 function _mlogRender(){const d=_mlogData;if(!d||!d.trades){$('mlogBox').innerHTML='<div class=dim>no data</div>';return;}
   const ps=d.page_size||100, pages=Math.max(1,Math.ceil(d.trades.length/ps));
   if(_mlogPage>=pages)_mlogPage=pages-1; if(_mlogPage<0)_mlogPage=0;
   const slice=d.trades.slice(_mlogPage*ps,(_mlogPage+1)*ps);
-  const rows=slice.map(r=>{const cls=r.result==='win'?'pos':r.result==='loss'?'neg':'dim';const pnl=r.pnl==null?'\u2014':(r.pnl>=0?'+':'')+'$'+r.pnl;return `<tr><td class=dim style="font-size:10px">${r.date} ${r.time}</td><td>${r.book}</td><td>${r.side}</td><td><span class="tick" data-sym="${r.sym}">${r.sym}</span></td><td class=${cls}>${pnl}</td></tr>`;}).join('');
+  const rows=slice.map(r=>{const cls=pnlClass(r.pnl,r.realized_pct);const cell=fmtPnl(r.pnl,r.realized_pct);return `<tr><td class=dim style="font-size:10px">${r.date} ${r.time}</td><td>${r.book}</td><td>${r.side}</td><td><span class="tick" data-sym="${r.sym}">${r.sym}</span></td><td class=${cls}>${cell}</td></tr>`;}).join('');
   $('mlogControls').innerHTML=`<button onclick="_mlogPage--;_mlogRender()" ${_mlogPage<=0?'disabled':''}>\u2039 newer</button> <span class=dim>page ${_mlogPage+1}/${pages} \u00b7 ${d.total_trades} trades \u00b7 lifetime ${d.lifetime_win_rate_pct}% win</span> <button onclick="_mlogPage++;_mlogRender()" ${_mlogPage>=pages-1?'disabled':''}>older \u203a</button>`;
   $('mlogBox').innerHTML=`<table style="font-size:11px"><thead><tr><th>when</th><th>book</th><th>side</th><th>symbol</th><th>P&L</th></tr></thead><tbody>${rows}</tbody></table>`;
   if(window.SilmarilChart)setTimeout(()=>SilmarilChart.autotag(document),50);}

@@ -27,6 +27,7 @@ def build_master_log(out_dir) -> Dict[str, Any]:
         for t in trades:
             ts = t.get("t") or ""
             pnl = t.get("pnl")
+            rp = t.get("realized_pct")                  # fee-adjusted %; a tiny win rounds to $0.00 but rp>0
             rows.append({
                 "book": bk,
                 "ts": ts,
@@ -37,7 +38,10 @@ def build_master_log(out_dir) -> Dict[str, Any]:
                 "qty": t.get("qty"),
                 "price": t.get("price"),
                 "pnl": pnl,                              # None for BUYs
-                "result": ("win" if (pnl is not None and pnl > 0.005)
+                "realized_pct": rp,
+                # judge by REAL % (dollars round a +0.9% win to $0.00 and mislabel it "flat")
+                "result": (("win" if rp > 0 else "loss" if rp < 0 else "flat") if rp is not None
+                           else "win" if (pnl is not None and pnl > 0.005)
                            else "loss" if (pnl is not None and pnl < -0.005)
                            else "flat" if pnl is not None else None),
             })

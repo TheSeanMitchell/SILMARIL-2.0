@@ -43,6 +43,12 @@ FRESHNESS_LOOKBACK = 60
 START_CASH = 10000.0
 PER_NAME_FRAC = 0.10      # 10% of the book per position
 MAX_NAMES = 10
+# GOLDEN RULE — book-specific minimum post-fee take-home per trade (USD). A close must net at least this
+# much AFTER fees or the trade is not taken; positions are sized UP so the target clears it. This also
+# kills the dust-position bug (no more $0.01 buys from leftover cash). Tunable per book: raise toward 5.00
+# for fewer/bigger/more-concentrated positions, lower toward 1.00 for more trade frequency.
+MIN_TAKEHOME_DEFAULT = 1.00
+MIN_TAKEHOME = {"crypto": 1.00, "stock": 1.00, "metal": 1.00, "energy": 1.00}
 # mean-reversion params (the proven-direction strategy; tune in one place)
 DROP, BOUNCE, STOP, MAX_HOLD_MIN = 0.02, 0.02, 0.04, 240.0
 # HEATSHIELD (2.6.1): mean-reversion winners often dip BELOW a tight stop before bouncing, so a tight
@@ -483,11 +489,26 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
                 scored.append((s, lp, h1, cv))
         cands = sorted(scored, key=lambda x: (x[3] if x[3] is not None else 0.0), reverse=True)
     mk = {s: v[0] for s, v in side_marks.items()}
+    min_take = MIN_TAKEHOME.get(book, MIN_TAKEHOME_DEFAULT)   # book-specific post-fee $ floor (GOLDEN RULE)
     for sym, lp, h1, cv in cands[:MAX_NAMES]:
-        budget = min(pbook.equity(mk) * PER_NAME_FRAC, pbook.cash * 0.95)
-        if pbook.buy(sym, budget, lp, round_trip_cost(px_of(sym)), now.isoformat(),
+        cost = round_trip_cost(px_of(sym))
+        net_margin = target - cost              # fraction of the position kept if the target hits, after fees
+        # GOLDEN RULE: a close must net >= min_take AFTER fees or we don't take the trade. This also kills
+        # the dust bug: when cash is too low to clear the floor we SKIP instead of buying pennies.
+        if net_margin <= 0:
+            actions.append({"act": "SKIP", "sym": sym, "why": "fee>=target — can never net positive"})
+            continue
+        base = min(pbook.equity(mk) * PER_NAME_FRAC, pbook.cash * 0.95)
+        cap = pbook.cash * 0.95
+        budget = min(max(base, min_take / net_margin), cap)   # size UP so the target clears the floor
+        if budget * net_margin < min_take - 1e-9:             # even max affordable size can't clear it
+            actions.append({"act": "SKIP", "sym": sym,
+                            "why": "cannot clear $%.2f net (need $%.0f, cash $%.0f)" % (min_take, min_take / net_margin, cap)})
+            continue
+        if pbook.buy(sym, budget, lp, cost, now.isoformat(),
                      target=target, stop=stop_, conviction=cv):
-            actions.append({"act": "BUY", "sym": sym, "move_pct": round(h1 * 100, 2), "conviction": cv})
+            actions.append({"act": "BUY", "sym": sym, "move_pct": round(h1 * 100, 2), "conviction": cv,
+                            "expected_net_usd": round(budget * net_margin, 2)})
 
     pbook.save(out / f"paper_book_{book}.json")
     eq = pbook.equity(mk)
