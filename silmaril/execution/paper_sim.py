@@ -280,7 +280,7 @@ class PaperBook:
         self.cash -= dollars
         # 2.7: record what this trade was AIMING for, at entry. Without this the dashboard cannot show
         # "% of goal hit" or honestly compute "left on table". target/stop are fractions (0.03 = 3%).
-        pos = {"qty": qty, "entry": eff, "cost": cost, "t": t or _now(), "mfe": eff}
+        pos = {"qty": qty, "entry": eff, "cost": cost, "t": t or _now(), "mfe": eff, "wager_usd": round(dollars, 2)}
         if target is not None:
             pos["target"] = target
         if stop is not None:
@@ -290,7 +290,7 @@ class PaperBook:
         if conviction is not None:
             pos["conviction"] = conviction
         self.positions[sym] = pos
-        trow = {"side": "BUY", "sym": sym, "qty": round(qty, 6), "price": round(eff, 6), "t": t or _now()}
+        trow = {"side": "BUY", "sym": sym, "qty": round(qty, 6), "price": round(eff, 6), "t": t or _now(), "wager_usd": round(dollars, 2)}
         if target is not None:
             trow["target_pct"] = round(target * 100, 3)
         if stop is not None:
@@ -319,7 +319,8 @@ class PaperBook:
         self.realized_pnl += pnl
         realized_pct = (eff / pos["entry"] - 1) if pos["entry"] > 0 else 0.0
         srow = {"side": "SELL", "sym": sym, "qty": round(pos["qty"], 6), "price": round(eff, 6),
-                "pnl": round(pnl, 2), "realized_pct": round(realized_pct * 100, 3), "t": t or _now()}
+                "pnl": round(pnl, 2), "realized_pct": round(realized_pct * 100, 3), "t": t or _now(),
+                "wager_usd": round(pos["qty"] * pos["entry"], 2)}
         tgt = pos.get("target")
         if tgt is not None:
             srow["target_pct"] = round(tgt * 100, 3)
@@ -520,6 +521,7 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
         "open_positions": len(pbook.positions),
         "positions": [{"sym": s, "qty": round(p["qty"], 4), "entry": round(p["entry"], 6),
                        "mark": round(side_marks.get(s, (p["entry"], 0))[0], 6),
+                       "wager_usd": p.get("wager_usd"),
                        "upl_pct": round((side_marks.get(s, (p["entry"], 0))[0] / p["entry"] - 1) * 100, 2)}
                       for s, p in pbook.positions.items()],
         "recent_trades": pbook.trades[-25:][::-1],

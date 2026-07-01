@@ -39,6 +39,7 @@ def build_master_log(out_dir) -> Dict[str, Any]:
                 "price": t.get("price"),
                 "pnl": pnl,                              # None for BUYs
                 "realized_pct": rp,
+                "wager_usd": t.get("wager_usd"),         # $ staked — makes dust ($0.01 bets) obvious at a glance
                 # judge by REAL % (dollars round a +0.9% win to $0.00 and mislabel it "flat")
                 "result": (("win" if rp > 0 else "loss" if rp < 0 else "flat") if rp is not None
                            else "win" if (pnl is not None and pnl > 0.005)

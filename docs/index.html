@@ -377,7 +377,7 @@ async function renderTrades(){const L=await jget('data/paper_sim_live.json');if(
       if(pnl==null){cell='\u2014';}
       else if((Math.abs(pnl)<0.005)&&pct!=null){cell=pct+' <span style="font-size:8px;opacity:.55">(&lt;$0.01)</span>';}
       else{cell=dol+(pct!=null?' <span style="font-size:8px;opacity:.7">('+pct+')</span>':'');}
-      return '<tr><td><span style="font-size:9px;opacity:.7">'+x.side+'</span> <span class="tick" data-sym="'+x.sym+'">'+x.sym+'</span></td><td>$'+x.price+'</td><td class="'+c+'">'+cell+(why?'<div style="font-size:8px;opacity:.6">'+why+'</div>':'')+'</td><td style="font-size:9px;opacity:.6;white-space:nowrap">'+when+'</td></tr>';}).join('');}
+      return '<tr><td><span style="font-size:9px;opacity:.7">'+x.side+'</span> <span class="tick" data-sym="'+x.sym+'">'+x.sym+'</span>'+(x.wager_usd!=null?'<div style="font-size:8px;opacity:.55">$'+Math.round(x.wager_usd).toLocaleString()+' wagered</div>':'')+'</td><td>$'+x.price+'</td><td class="'+c+'">'+cell+(why?'<div style="font-size:8px;opacity:.6">'+why+'</div>':'')+'</td><td style="font-size:9px;opacity:.6;white-space:nowrap">'+when+'</td></tr>';}).join('');}
   if($('trCrypto'))$('trCrypto').innerHTML=rows('crypto');
   if($('trStock'))$('trStock').innerHTML=rows('stock');
   if($('trMetal'))$('trMetal').innerHTML=rows('metal');
@@ -597,7 +597,7 @@ function _mlogRender(){const d=_mlogData;if(!d||!d.trades){$('mlogBox').innerHTM
   const ps=d.page_size||100, pages=Math.max(1,Math.ceil(d.trades.length/ps));
   if(_mlogPage>=pages)_mlogPage=pages-1; if(_mlogPage<0)_mlogPage=0;
   const slice=d.trades.slice(_mlogPage*ps,(_mlogPage+1)*ps);
-  const rows=slice.map(r=>{const cls=pnlClass(r.pnl,r.realized_pct);const cell=fmtPnl(r.pnl,r.realized_pct);return `<tr><td class=dim style="font-size:10px">${r.date} ${r.time}</td><td>${r.book}</td><td>${r.side}</td><td><span class="tick" data-sym="${r.sym}">${r.sym}</span></td><td class=${cls}>${cell}</td></tr>`;}).join('');
+  const rows=slice.map(r=>{const cls=pnlClass(r.pnl,r.realized_pct);const cell=fmtPnl(r.pnl,r.realized_pct);const wag=r.wager_usd!=null?`<div style="font-size:8px;opacity:.5">$${Math.round(r.wager_usd).toLocaleString()} wagered</div>`:'';return `<tr><td class=dim style="font-size:10px">${r.date} ${r.time}</td><td>${r.book}</td><td>${r.side}</td><td><span class="tick" data-sym="${r.sym}">${r.sym}</span>${wag}</td><td class=${cls}>${cell}</td></tr>`;}).join('');
   $('mlogControls').innerHTML=`<button onclick="_mlogPage--;_mlogRender()" ${_mlogPage<=0?'disabled':''}>\u2039 newer</button> <span class=dim>page ${_mlogPage+1}/${pages} \u00b7 ${d.total_trades} trades \u00b7 lifetime ${d.lifetime_win_rate_pct}% win</span> <button onclick="_mlogPage++;_mlogRender()" ${_mlogPage>=pages-1?'disabled':''}>older \u203a</button>`;
   $('mlogBox').innerHTML=`<table style="font-size:11px"><thead><tr><th>when</th><th>book</th><th>side</th><th>symbol</th><th>P&L</th></tr></thead><tbody>${rows}</tbody></table>`;
   if(window.SilmarilChart)setTimeout(()=>SilmarilChart.autotag(document),50);}
@@ -774,7 +774,7 @@ function renderPos(bk,host){const L=LIVE&&LIVE[bk]?LIVE[bk]:{},pos=L.positions||
       +'<div style="position:absolute;left:calc('+mk+'% - 5px);top:0;font-size:13px;line-height:15px;color:'+(up?'#39d353':'#ff6b6b')+';text-shadow:0 0 4px '+(up?'#39d35399':'#ff6b6b99')+'" title="now $'+f(p.mark,4)+' ('+sg(p.upl_pct)+'%)">\u25be</div>'
       +'</div><div style="display:flex;justify-content:space-between;font-size:8px;opacity:.6;margin-top:1px"><span>\u25c4 $'+f(stop,4)+'</span><span>$'+f(tgt,4)+' \u25ba</span></div>';
     return '<tr><td class="tick" onclick="openChart(\''+p.sym+'\','+p.entry+','+p.mark+')">'+icon(p.sym)+p.sym+'</td>'
-      +'<td style="font-size:11px">$'+f(p.entry,4)+'<div style="font-size:8px;opacity:.6">now $'+f(p.mark,4)+'</div></td>'
+      +'<td style="font-size:11px">$'+f(p.entry,4)+'<div style="font-size:8px;opacity:.6">now $'+f(p.mark,4)+(p.wager_usd!=null?' \u00b7 $'+Math.round(p.wager_usd).toLocaleString()+' in':'')+'</div></td>'
       +'<td class="'+cl(p.upl_pct)+'" style="font-weight:bold">'+sg(p.upl_pct)+'%</td>'
       +'<td style="font-size:10px;opacity:.75">'+holdTxt+'</td>'
       +'<td>'+bar+'</td></tr>';}).join('');
