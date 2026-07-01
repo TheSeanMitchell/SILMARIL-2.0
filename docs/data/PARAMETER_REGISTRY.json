@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-01T05:38:10.471231+00:00",
+  "generated_at": "2026-07-01T06:27:53.748568+00:00",
   "parameters": [
     {
       "parameter": "Strategy",
@@ -118,14 +118,35 @@
     },
     {
       "parameter": "Hold-timer",
-      "champion": null,
+      "champion": "30 min",
       "challenger": null,
       "optimized_for": "edge captured per trade",
-      "metric_value": null,
-      "leaderboard": [],
+      "metric_value": 2.0,
+      "leaderboard": [
+        {
+          "value": "30m",
+          "note": "avg 2.0% \u00b7 win 100.0%"
+        },
+        {
+          "value": "60m",
+          "note": "avg 2.0% \u00b7 win 100.0%"
+        },
+        {
+          "value": "120m",
+          "note": "avg 2.0% \u00b7 win 100.0%"
+        },
+        {
+          "value": "180m",
+          "note": "avg 2.0% \u00b7 win 100.0%"
+        },
+        {
+          "value": "240m",
+          "note": "avg 2.0% \u00b7 win 100.0%"
+        }
+      ],
       "status": "ROTATING (crypto) \u00b7 stock,metal,energy data-gated",
-      "health": "RED",
-      "health_note": "no champion elected yet (data-gated or no signals)",
+      "health": "GREEN",
+      "health_note": "electing from a live leaderboard",
       "rotates": "every daily run",
       "source": "TIMER_OPTIMIZATION.json"
     },
@@ -168,15 +189,15 @@
       "leaderboard": [
         {
           "value": "SOL-USD",
-          "note": "160 min/cycle"
-        },
-        {
-          "value": "ETH-USD",
-          "note": "169 min/cycle"
+          "note": "167 min/cycle"
         },
         {
           "value": "BTC-USD",
-          "note": "180 min/cycle"
+          "note": "170 min/cycle"
+        },
+        {
+          "value": "ETH-USD",
+          "note": "170 min/cycle"
         },
         {
           "value": "LTCUSDT",
@@ -195,19 +216,24 @@
     },
     {
       "parameter": "Time-of-day edge",
-      "champion": null,
+      "champion": "crypto:PREMARKET",
       "challenger": null,
       "optimized_for": "concentrate trading in the hours with measured edge",
       "metric_value": null,
-      "leaderboard": [],
+      "leaderboard": [
+        {
+          "value": "crypto",
+          "note": "PREMARKET"
+        }
+      ],
       "status": "ROTATING",
-      "health": "RED",
-      "health_note": "no champion elected yet (data-gated or no signals)",
+      "health": "YELLOW",
+      "health_note": "champion present, thin leaderboard",
       "rotates": "every daily run",
       "source": "TIME_OF_DAY.json"
     }
   ],
-  "summary": "8 champion-elected parameters \u00b7 5 GREEN",
+  "summary": "8 champion-elected parameters \u00b7 6 GREEN",
   "how_to_extend": "Add a new rotating parameter by appending one reader here that returns _entry(...). It then shows up in this registry and its panel automatically.",
   "what": "Every parameter SILMARIL elects a champion for on each daily run, in one view.",
   "why": "So a human or an AI can verify at a glance that each champion is alive, sensible, and rotating.",
