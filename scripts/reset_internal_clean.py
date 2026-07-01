@@ -27,6 +27,9 @@ def main():
     ma = DATA / "MASTER_ACCOUNT.json"
     if ma.exists():
         ma.unlink(); print("  deleted MASTER_ACCOUNT.json (fresh $10k inception)")
+    md = data / "MASTER_DECISIONS.json"
+    if md.exists():
+        md.unlink(); print("  deleted MASTER_DECISIONS.json (decision ledger starts clean)")
     sh = DATA / "snapshot_history.jsonl"
     if sh.exists():
         sh.write_text(""); print("  cleared snapshot_history.jsonl (equity restarts clean)")

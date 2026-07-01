@@ -84,6 +84,39 @@ def build_master_account(out_dir) -> Dict[str, Any]:
         quadrants[bk] = {**e, "decision": decision, "reason": reason}
 
     accepted = [b for b, q in quadrants.items() if q["decision"] == "ACCEPT"]
+
+    # MASTER DECISION LEDGER — full transparency: one row per cycle, per-quadrant confidence vs the gate and
+    # the accept/reject verdict, so "how does the Master decide" is answerable from the dashboard, not faith.
+    try:
+        led_path = out / "MASTER_DECISIONS.json"
+        try:
+            ledger = json.loads(led_path.read_text())
+            if not isinstance(ledger, list):
+                ledger = []
+        except Exception:
+            ledger = []
+        row = {"t": _now(),
+               "gate": CONFIDENCE_GATE,
+               "books": {bk: {"confidence": q.get("confidence"), "decision": q.get("decision"),
+                              "survivability": round(q.get("survivability") or 0, 1),
+                              "trips": q.get("real_round_trips"), "win_pct": q.get("win_rate_pct")}
+                          for bk, q in quadrants.items()},
+               "accepted": accepted}
+        last = ledger[-1] if ledger else None
+        changed = (not last) or (last.get("accepted") != accepted) or any(
+            (last.get("books", {}).get(bk, {}) or {}).get("decision") != row["books"][bk]["decision"]
+            for bk in row["books"])
+        # append every cycle, but mark verdict-changes so the UI can highlight them
+        row["verdict_changed"] = bool(changed)
+        ledger.append(row)
+        ledger = ledger[-300:]
+        try:
+            from .atomic_io import write_json_atomic
+            write_json_atomic(led_path, ledger)
+        except Exception:
+            led_path.write_text(json.dumps(ledger, indent=1))
+    except Exception:
+        ledger = []
     # 2) allocation: 100% split across accepted quadrants (today: crypto only). Honest placeholder until more prove out.
     alloc = {b: round(100 / len(accepted), 1) for b in accepted} if accepted else {}
 
@@ -236,6 +269,7 @@ def build_master_account(out_dir) -> Dict[str, Any]:
                         "This is a rehearsal on paper; live fills still slip."),
     }
     try:
+        payload["decision_log_tail"] = (ledger[-12:])[::-1]
         from .atomic_io import write_json_atomic
         write_json_atomic(out / "MASTER_ACCOUNT.json", payload)
     except Exception:

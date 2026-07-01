@@ -22,15 +22,19 @@ def _load(out, n):
 def _classify_exit(tr):
     """Infer the exit reason from realized vs the strategy's target/stop."""
     r, tgt, stp = tr["realized_pct"], tr["target_pct"], tr["stop_pct"]
-    if tgt is not None and r >= tgt * 0.98:
-        return "TARGET_HIT", f"reached +{tgt}% take-profit"
-    if stp is not None and r <= -stp * 0.98:
-        return "STOP_HIT", f"hit -{stp}% stop-loss"
+    # timeouts are OFF in this engine — every close is a target hit (minus fees) or a floor hit. A fee
+    # haircut lands ~85-105% of goal, so >=85% of target is honestly a TARGET_HIT; the old 98% rule was
+    # relabeling real wins as "TIMEOUT_GAIN" and terrifying the operator for nothing.
+    pog = tr.get("pct_of_goal")
+    if (pog is not None and pog >= 85) or (tgt is not None and r >= tgt * 0.85):
+        return "TARGET_HIT", f"reached take-profit (+{r}% vs +{tgt}% goal, fees included)"
+    if stp is not None and r <= -stp * 0.95:
+        return "STOP_HIT", f"hit -{stp}% heatshield floor"
     if abs(r) < 0.15:
-        return "TIMEOUT_FLAT", "held to max hold, never moved (weak setup)"
+        return "FLAT", "closed near breakeven"
     if r > 0:
-        return "TIMEOUT_GAIN", f"exited +{r}% on time/conditions before full target"
-    return "TIMEOUT_LOSS", f"exited {r}% on time/conditions before stop"
+        return "HELD_GAIN", f"banked +{r}% before full target"
+    return "HELD_LOSS", f"closed {r}% before the floor"
 
 def build_decision_trace(out_dir, limit: int = 200) -> Dict[str, Any]:
     out = Path(out_dir)
@@ -66,7 +70,7 @@ def build_decision_trace(out_dir, limit: int = 200) -> Dict[str, Any]:
         "exit_reason_breakdown": reasons, "traces": chains,
         "what": "Per-trade decision chain: why entered, why exited, outcome.",
         "why": "Makes every trade auditable end-to-end instead of a bare P&L line.",
-        "action": ("If TIMEOUT_GAIN dominates, exits fire before target = leaving edge on the table "
+        "action": ("If HELD_GAIN dominates, exits fire before target = leaving edge on the table "
                    "(matches the EARLY_EXIT forensics finding)."),
         "note": "Exit reason inferred from realized vs target/stop (no stored per-trade exit tag yet).",
     }

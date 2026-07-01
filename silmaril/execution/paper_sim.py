@@ -47,6 +47,7 @@ MAX_NAMES = 10
 # much AFTER fees or the trade is not taken; positions are sized UP so the target clears it. This also
 # kills the dust-position bug (no more $0.01 buys from leftover cash). Tunable per book: raise toward 5.00
 # for fewer/bigger/more-concentrated positions, lower toward 1.00 for more trade frequency.
+_WARM_SYMS = set()          # symbols cleared for NEW ENTRIES (strict warmup); exits never need this
 MIN_TAKEHOME_DEFAULT = 1.00
 MIN_TAKEHOME = {"crypto": 1.00, "stock": 1.00, "metal": 1.00, "energy": 1.00}
 # mean-reversion params (the proven-direction strategy; tune in one place)
@@ -206,24 +207,32 @@ def load_all_samples(out) -> Dict[str, List]:
     return merged
 
 
-def _marks_from_samples(samples: Dict[str, List]) -> Dict[str, tuple]:
-    """{sym: (last_price, h1_drop_fraction)} from each series, using ONLY the last
-    few hours of LIVE samples. This excludes daily-history backfill (which would make
-    today look like a -40% crash vs an old daily close) AND enforces a warmup: a coin
-    cannot signal a drop until it has accumulated enough recent intraday points
-    spanning >1h. Right after a wipe, nothing trades until that baseline forms."""
+def _marks_from_samples(samples: Dict[str, List]):
+    """Returns (marks, warm, health).
+    marks: {sym: (last_price, h1_drop_fraction)} for EVERY symbol with a fresh last print (<=90 min old,
+           >=6 recent intraday points). These drive EXITS, position marks, and the dashboard, so a slow cron
+           cadence can never silently freeze the engine again (the 2.7.2 overnight-freeze root cause: the old
+           all-or-nothing gate demanded 24 points inside 6h; at a ~20-min cadence NO symbol could ever
+           qualify, marks came back empty, and exits/display/entries all stopped with no error).
+    warm:  the subset that ALSO passes the strict pre-entry warmup (>=24 points spanning >=2h in the last
+           6h) — ENTRIES still require this, so the safety that prevents jumping into a name without ~2h of
+           live context is unchanged.
+    health: counts + freshest-sample age, surfaced on the dashboard so degradation is VISIBLE, never silent."""
     from datetime import datetime as _dt, timezone as _tz
-    RECENT_WINDOW_S = 6 * 3600          # only trust the last 6h for the live drop signal
-    out = {}
+    RECENT_WINDOW_S = 6 * 3600
+    FRESH_MAX_AGE_S = 90 * 60          # a mark is only trusted if the last print is <= 90 min old
+    WARMUP_MIN_POINTS = 12          # >=12 points AND >=2h span = the same ~2h-of-context principle, but it
+    WARMUP_MIN_SPAN_S = 2 * 3600    # no longer assumes a 5-min cadence (24 pts bricked entries at ~20 min/pt)
+    out, warm = {}, set()
+    newest_age = None
     try:
         nowt = _dt.now(_tz.utc)
     except Exception:
         nowt = None
     for sym, rows in samples.items():
-        pr = [(t, p) for t, p in rows if p and p > 0]
-        if len(pr) < 8:
+        pr = [(t, p) for t, p in rows if p and p > 0 and "T00:00:00" not in t]
+        if len(pr) < 6:
             continue
-        # keep only RECENT live points (drop daily backfill history)
         recent = pr
         if nowt is not None:
             rec = []
@@ -234,37 +243,43 @@ def _marks_from_samples(samples: Dict[str, List]) -> Dict[str, tuple]:
                 except Exception:
                     pass
             recent = rec
-        # WARMUP (pre-beta): a coin cannot trade until it has built >= 2 HOURS of live
-        # context, so it never jumps into a name (e.g. WLD-USD) before it understands its
-        # recent volatility. Right after a wipe this means ~2h of quiet, by design.
-        WARMUP_MIN_POINTS = 24          # ~2h at the 5-min cadence
-        WARMUP_MIN_SPAN_S = 2 * 3600
-        if len(recent) < WARMUP_MIN_POINTS:
-            continue
-        try:
-            _span = (_dt.fromisoformat(recent[-1][0]) - _dt.fromisoformat(recent[0][0])).total_seconds()
-            if _span < WARMUP_MIN_SPAN_S:
-                continue
-        except Exception:
+        if len(recent) < 6:
             continue
         last_t, last_p = recent[-1]
         try:
+            age = (nowt - _dt.fromisoformat(last_t)).total_seconds() if nowt is not None else 0.0
+        except Exception:
+            continue
+        if age > FRESH_MAX_AGE_S:
+            continue
+        if newest_age is None or age < newest_age:
+            newest_age = age
+        ref = None
+        try:
             lt = _dt.fromisoformat(last_t)
-            ref = None
             for t, p in reversed(recent[:-1]):
                 if (lt - _dt.fromisoformat(t)).total_seconds() >= 3600:
                     ref = p
                     break
-            if ref is None:             # window does not yet span 1h -> warmup, no signal
-                continue
-            h1 = last_p / ref - 1 if ref > 0 else 0.0
         except Exception:
-            continue
-        out[sym] = (last_p, h1)
-    return out
+            ref = None
+        if ref is None:
+            ref = recent[0][1]
+        h1 = (last_p / ref - 1.0) if ref and ref > 0 else 0.0
+        out[sym] = (float(last_p), float(h1))
+        if len(recent) >= WARMUP_MIN_POINTS:
+            try:
+                _span = (_dt.fromisoformat(recent[-1][0]) - _dt.fromisoformat(recent[0][0])).total_seconds()
+                if _span >= WARMUP_MIN_SPAN_S:
+                    warm.add(sym)
+            except Exception:
+                pass
+    health = {"marked": len(out), "entry_warm": len(warm),
+              "newest_sample_age_min": round(newest_age / 60.0, 1) if newest_age is not None else None,
+              "state": ("OK" if warm else ("DEGRADED — marks live, entries paused (warmup starved; cron cadence slow?)"
+                                            if out else "STALLED — no fresh prices at all (ingestion down?)"))}
+    return out, warm, health
 
-
-# ── the paper book ───────────────────────────────────────────────────────────
 class PaperBook:
     def __init__(self, cash: float = START_CASH):
         self.cash = float(cash)
@@ -480,12 +495,12 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
     # bounce reliability) so the names that historically RECOVER get funded first. target/stop unchanged.
     if direction == "mom":
         cands = sorted([(s, lp, h1, None) for s, (lp, h1) in side_marks.items()
-                        if h1 >= entry and s not in pbook.positions and fresh_ok(s)],
+                        if h1 >= entry and s not in pbook.positions and fresh_ok(s) and s in _WARM_SYMS],
                        key=lambda x: x[2], reverse=True)
     else:
         scored = []
         for s, (lp, h1) in side_marks.items():
-            if h1 <= -entry and s not in pbook.positions and fresh_ok(s):
+            if h1 <= -entry and s not in pbook.positions and fresh_ok(s) and s in _WARM_SYMS:
                 cv, _ = conviction_score(px_of(s), h1)
                 scored.append((s, lp, h1, cv))
         cands = sorted(scored, key=lambda x: (x[3] if x[3] is not None else 0.0), reverse=True)
@@ -521,6 +536,7 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
         "open_positions": len(pbook.positions),
         "positions": [{"sym": s, "qty": round(p["qty"], 4), "entry": round(p["entry"], 6),
                        "mark": round(side_marks.get(s, (p["entry"], 0))[0], 6),
+                       "t": p.get("t"),
                        "wager_usd": p.get("wager_usd"),
                        "upl_pct": round((side_marks.get(s, (p["entry"], 0))[0] / p["entry"] - 1) * 100, 2)}
                       for s, p in pbook.positions.items()],
@@ -548,12 +564,14 @@ def live_step(out_dir) -> Dict[str, Any]:
     cockpit summary docs/data/paper_sim_live.json."""
     out = Path(out_dir)
     samples = load_all_samples(out)
-    marks = _marks_from_samples(samples)
+    global _WARM_SYMS
+    marks, _WARM_SYMS, marks_health = _marks_from_samples(samples)
     # 2.7 TRUE post-wipe quiet period (measured from wipe time): take no trades for the first window after a
     # reset, so the clean run starts from a genuinely quiet baseline even though price history is preserved.
     quiet_left = _post_wipe_quiet_left(out)
     if quiet_left > 0:
         marks = {}   # empty marks => no entries and no exits this cycle; the engine sits quiet by design
+        marks_health["state"] = "QUIET after wipe — %d min left (by design)" % int(quiet_left)
     try:
         feed_intel = feed_integrity(samples)
         (out / "FEED_INTEGRITY.json").write_text(json.dumps(feed_intel, indent=2))
@@ -591,6 +609,7 @@ def live_step(out_dir) -> Dict[str, Any]:
         bt = {}
     summary = {
         "generated_at": _now(),
+        "marks_health": marks_health,
         "start_cash_each": START_CASH,
         "champion_strategy": champ_name,
         "champion_crypto": champ_names["crypto"],

@@ -24,6 +24,15 @@
   .tabs button:last-child{border-right:0}
   .tabs button.on{background:var(--hd);color:var(--hdfg)}
   .page{display:none}.page.on{display:block}
+#ytWall{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.yttile{position:relative;background:#000;border:1px solid var(--line,#333);border-radius:6px;overflow:hidden}
+.yttile iframe{width:100%;aspect-ratio:16/9;border:0;display:block}
+.ytttl{font-size:10px;padding:2px 6px;opacity:.85;background:rgba(0,0,0,.55);position:absolute;top:0;left:0;z-index:2;border-radius:0 0 6px 0}
+.ytbar{position:absolute;bottom:0;left:0;right:0;display:flex;gap:6px;align-items:center;padding:3px 6px;background:linear-gradient(0deg,rgba(0,0,0,.75),transparent);z-index:2;font-size:11px}
+.ytbar input{flex:1;accent-color:#39d353}
+#ytWall.ytfull{position:fixed;inset:0;z-index:1000;background:#000;padding:6px;grid-template-rows:repeat(3,1fr)}
+#ytWall.ytfull .yttile iframe{height:100%;aspect-ratio:auto}
+@media(max-width:700px){#ytWall{grid-template-columns:1fr 1fr}}
   section{border:1px solid var(--line);margin:10px 0}
   section>.hd{background:var(--hd);color:var(--hdfg);padding:4px 9px;font-weight:bold;font-size:12px;letter-spacing:1px}
   section>.bd{padding:9px;overflow-x:auto}
@@ -54,7 +63,7 @@
   .quad-sub{font-size:11px;opacity:.85}.quad-champ{font-size:10px;opacity:.7;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .quad-st{font-size:10px;opacity:.6;margin-top:2px}
   </style></head><body><div class="wrap">
-<div class="banner" style="position:relative;padding-right:46px"><h1 style="font-weight:900;letter-spacing:.5px">SILMARIL&nbsp;2.6.1</h1><span class="dim" style="font-size:12px;font-weight:bold" id="clock">—</span><span class="dim" style="font-size:10px" id="ts">—</span><button class="themebtn" id="themeBtn" onclick="toggleTheme()" style="position:absolute;top:5px;right:5px;padding:1px 5px;font-size:10px;line-height:1.3">🌙</button></div>
+<div class="banner" style="position:relative;padding-right:46px"><h1 style="font-weight:900;letter-spacing:.5px" id="verHdr">SILMARIL&nbsp;2.6.1</h1><span class="dim" style="font-size:12px;font-weight:bold" id="clock">—</span><span class="dim" style="font-size:10px" id="ts">—</span><button class="themebtn" id="themeBtn" onclick="toggleTheme()" style="position:absolute;top:5px;right:5px;padding:1px 5px;font-size:10px;line-height:1.3">🌙</button></div>
 <div class="tabs">
   <button class="on" data-p="cmd">COMMAND</button><button data-p="arena">ARENA</button>
   <button data-p="forensics">FORENSICS</button><button data-p="authority">AUTHORITY LAB</button><button data-p="settings">SETTINGS</button>
@@ -89,6 +98,7 @@
     <div id="readySubs"></div>
   </div></section>
   <section><div class="hd">💓 LIVE POSITIONS — the ▾ marker shows where price sits between stop ◄ and target ► · tap a ticker for its chart</div><div class="bd">
+    <div id="marksHealth" class="note" style="display:none"></div>
     <div class="dim" style="font-size:11px">◆ CRYPTO</div>
     <table><thead><tr><th>Sym</th><th>Entry → Now</th><th>uPL%</th><th>Hold</th><th>◄ stop ·· target ►</th></tr></thead><tbody id="posCrypto"></tbody></table>
     <div class="dim" style="font-size:11px;margin-top:8px">◆ STOCK</div>
@@ -178,6 +188,11 @@
   <section><div class="hd">🐙 KRAKEN MIRROR — internal vs live Kraken, side by side</div><div class="bd">
     <div class="note"><b>What:</b> our SAME internal round-trips, each charged the REAL Kraken bid/ask spread it would cross live — shown trade-by-trade (internal P&L | spread | Kraken P&L). <b>Why:</b> measured proof the edge survives real friction. <span class="dim">OBSERVATIONAL · no orders sent.</span></div>
     <div id="kmirBox">loading…</div></div></section>
+  <section><div class="hd">🧠 MASTER DECISIONS — the confidence gate, every cycle</div><div class="bd">
+    <div class="note"><b>What:</b> per-quadrant confidence vs the {gate} bar and the ACCEPT/REJECT verdict, each cycle — how the Master decides, in numbers, not faith. Rows where a verdict flipped are highlighted. <span class="dim">OBSERVATIONAL.</span></div>
+    <div id="mDecBox"><div class="dim">loading…</div></div>
+  </div></section>
+
   <section><div class="hd">📒 MASTER TRADE LOG — every trade, all books, paginated</div><div class="bd">
     <div class="note"><b>What:</b> the complete trade history, newest first, 100 per page — flip back through all of it with win/loss and exact timestamp. <span class="dim">OBSERVATIONAL.</span></div>
     <div id="mlogControls" style="margin-bottom:6px"></div><div id="mlogBox">loading…</div></div></section>
@@ -233,6 +248,10 @@
 
 <!-- AUTHORITY -->
 <div class="page" id="p-authority">
+  <section><div class="hd">📺 LIVE MARKET FEEDS — 3×3 wall · sliders solo the audio · full-screen for the whole wall</div><div class="bd">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:4px"><button onclick="ytFull(true)" style="font-size:11px">⛶ full screen wall</button></div>
+    <div id="ytWall"></div>
+  </div></section>
   <section><div class="hd">⚡ AUTHORITY LAB — research only, never trades</div><div class="bd">
     <div id="authStatus" class="note"></div><div id="authEvents"></div>
     <div class="note">Tracks what happens after Trump / Musk / Pelosi / Congress / Fed / Nvidia speak. Evidence before "what to buy." Deploys no capital.</div>
@@ -246,7 +265,7 @@
     <p>Theme: <button class="themebtn" onclick="toggleTheme()">toggle light / dark</button> (saved on this device)</p>
     <p class="dim">Deep / debug views:</p>
     <p><a href="legacy_dashboard.html">Legacy dashboard</a> · <a href="strategy_leaderboard.html">Raw leaderboard</a> · <a href="lifecycle.html">Lifecycle/validation</a> · <a href="paper_sim.html">Paper sim detail</a></p>
-    <p class="note">SILMARIL 2.6.1 · validation phase · champion must survive 100 out-of-sample trades. $100–300/day is an unproven hope, never income.</p>
+    <p class="note">SILMARIL · validation phase · champion must survive 100 out-of-sample trades. $100–300/day is an unproven hope, never income.</p>
   </div></section>
 </div>
 <div id="healthMatrix" style="margin-top:14px"></div><div id="healthFooter" style="border-top:2px solid var(--line);margin-top:14px;padding:8px 0;font-size:11px" class="dim">—</div><div id="journalFooter" style="padding:6px 0 14px;font-size:11px;font-style:italic;opacity:.75" class="dim">—</div></div>
@@ -296,7 +315,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -592,6 +611,45 @@ function pnlClass(pnl,pct){
   var v=(pnl!=null&&Math.abs(pnl)>=0.005)?pnl:(pct!=null?pct:pnl);
   return v==null?'dim':(v>=0?'pos':'neg');
 }
+function renderMarksHealth(){try{const mh=(typeof LIVE!=='undefined'&&LIVE&&LIVE.marks_health)?LIVE.marks_health:null;const el=$('marksHealth');if(!el)return;if(!mh){el.style.display='none';return;}
+  const bad=/DEGRADED|STALLED/.test(mh.state||'');const quiet=/QUIET/.test(mh.state||'');
+  el.style.display='block';
+  el.style.color=bad?'var(--neg)':(quiet?'var(--dim)':'var(--pos)');
+  el.innerHTML='<b>ENGINE PULSE:</b> '+mh.state+' · '+mh.marked+' symbols marked · '+mh.entry_warm+' entry-warm · freshest sample '+(mh.newest_sample_age_min!=null?mh.newest_sample_age_min+' min old':'—')+(bad?' — positions and exits stay LIVE; only new entries pause. If this persists, GitHub Actions cadence has slowed.':'');
+}catch(e){}}
+async function renderMasterDecisions(){try{const d=await jget('data/MASTER_ACCOUNT.json');const el=$('mDecBox');if(!el)return;const rows=(d&&d.decision_log_tail)||[];
+  if(!rows.length){el.innerHTML='<div class=dim>no decisions yet this run — the ledger fills every cycle</div>';return;}
+  const bks=['crypto','stock','metal','energy'];
+  const body=rows.map(r=>{const t=r.t?new Date(r.t).toLocaleString([],{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
+    const cells=bks.map(b=>{const q=(r.books||{})[b]||{};const acc=q.decision==='ACCEPT';return '<td class="'+(acc?'pos':'dim')+'" style="font-size:10px">'+(q.confidence!=null?q.confidence:'—')+'<span style="opacity:.6">/'+(r.gate||90)+'</span> '+(acc?'✔':'✕')+'</td>';}).join('');
+    const hl=r.verdict_changed?' style="background:rgba(255,220,0,.07)"':'';
+    return '<tr'+hl+'><td class=dim style="font-size:10px;white-space:nowrap">'+t+'</td>'+cells+'<td style="font-size:10px">'+((r.accepted||[]).join(', ')||'<span class=dim>none — stay flat</span>')+'</td></tr>';}).join('');
+  el.innerHTML='<table style="font-size:11px"><thead><tr><th>cycle</th><th>crypto</th><th>stock</th><th>metal</th><th>energy</th><th>funded</th></tr></thead><tbody>'+body+'</tbody></table>';
+}catch(e){}}
+async function applyVersion(){try{const m=await jget('data/PROJECT_META.json');if(m&&m.version){const h=$('verHdr');if(h)h.innerHTML='SILMARIL&nbsp;'+m.version;document.title='SILMARIL '+m.version;}}catch(e){}}
+/* ---- LIVE MARKET FEED WALL — 3x3, per-tile volume, solo audio, full-screen ---- */
+const YT_FEEDS=[
+ {t:'Yahoo Finance',src:'KQp-e_XQnDE'},
+ {t:'Bloomberg Business',src:'QB5BNdBFujE'},
+ {t:'SP500 Live',src:'R6sB7NJm9LI'},
+ {t:'Gold & Silver Live (XAU/XAG)',src:'wJvRPbLvUig'},
+ {t:'CNBC (latest lives)',src:'videoseries?list=PLDt0J62yU45sN1rBmNiSRr12acZBnPAZy',pl:true},
+ {t:'Schwab Live',src:'THKWCO6ZNts'},
+ {t:'Daily Chart Analysis',src:'IWDz7ptmwRE',list:'PLPVve34yolHaEe5i98irKT8oZ_8CanC39'},
+ {t:'TraderTV Live',src:'FCRXA6DqiXU'},
+ {t:'Stock Market Live',src:'3i-LTNlwcQA'}];
+function ytCmd(i,func,args){const f=document.getElementById('ytf'+i);if(f&&f.contentWindow)f.contentWindow.postMessage(JSON.stringify({event:'command',func:func,args:args||[]}),'*');}
+function ytVol(i,v){v=+v; if(v>0){for(let j=0;j<YT_FEEDS.length;j++){if(j!==i){const s=document.getElementById('yts'+j);if(s&&+s.value>0){s.value=0;ytCmd(j,'setVolume',[0]);ytCmd(j,'mute');}}}
+    ytCmd(i,'unMute');ytCmd(i,'setVolume',[v]);ytCmd(i,'playVideo');}
+  else{ytCmd(i,'setVolume',[0]);ytCmd(i,'mute');}}
+function ytFull(on){const w=$('ytWall');if(!w)return;w.classList.toggle('ytfull',!!on);document.body.style.overflow=on?'hidden':'';const c=$('ytClose');if(c)c.style.display=on?'block':'none';}
+function buildYtWall(){const w=$('ytWall');if(!w||w.dataset.built)return;w.dataset.built='1';
+  let h='<button id="ytClose" onclick="ytFull(false)" style="display:none;position:fixed;top:8px;right:10px;z-index:1001;font-size:13px">✕ exit full screen</button>';
+  YT_FEEDS.forEach((f,i)=>{const base=f.pl?('https://www.youtube.com/embed/'+f.src):('https://www.youtube.com/embed/'+f.src+'?'+(f.list?('list='+f.list+'&'):''));
+    const src=f.pl?(base+'&enablejsapi=1&mute=1'):(base+'enablejsapi=1&mute=1');
+    h+='<div class="yttile"><div class="ytttl">'+f.t+'</div><iframe id="ytf'+i+'" src="'+src+'" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>'
+      +'<div class="ytbar">🔊 <input id="yts'+i+'" type="range" min="0" max="100" value="0" oninput="ytVol('+i+',this.value)"></div></div>';});
+  w.innerHTML=h;}
 var _mlogPage=0, _mlogData=null;
 function _mlogRender(){const d=_mlogData;if(!d||!d.trades){$('mlogBox').innerHTML='<div class=dim>no data</div>';return;}
   const ps=d.page_size||100, pages=Math.max(1,Math.ceil(d.trades.length/ps));

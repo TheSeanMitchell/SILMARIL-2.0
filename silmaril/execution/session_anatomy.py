@@ -8,7 +8,7 @@ synthetic data:
   - MAE (max adverse excursion): the worst drawdown taken during the hold,
   - CAPTURE EFFICIENCY: what % of the available up-move we actually banked (exit vs MFE),
   - POST-EXIT drift: how much more the price offered right after we sold (did we leave money?),
-  - a verdict per trade: CAPTURED_WELL / SOLD_TOO_EARLY / GAVE_BACK / FLAT_TIMEOUT.
+  - a verdict per trade: CAPTURED_WELL / SOLD_TOO_EARLY / GAVE_BACK / FLAT_CLOSE.
 Then aggregates: avg dip depth, avg capture, how often we left money, and a MKR-vs-rest split so
 today's concentration is dissected, not hidden. OBSERVATIONAL ONLY. Emits SESSION_ANATOMY.json.
 """
@@ -46,7 +46,7 @@ def _anatomy(t, ser):
     left_pct = round((post_high / exitp - 1) * 100, 2) if after else None     # more that was available after exit
     # verdict
     if t.get("outcome") == "flat":
-        verdict = "FLAT_TIMEOUT"
+        verdict = "FLAT_CLOSE"
     elif left_pct is not None and left_pct > 0.5:
         verdict = "SOLD_TOO_EARLY"      # price kept climbing after we sold
     elif capture is not None and capture < 60:
@@ -132,7 +132,7 @@ def build_session_anatomy(out_dir) -> Dict[str, Any]:
             "mae_pct": "max adverse excursion — the worst drawdown we sat through",
             "capture_efficiency_pct": "% of the available up-move we actually banked (exit vs MFE)",
             "left_on_table_pct": "how much MORE the price offered in the hour after we sold",
-            "verdict": "CAPTURED_WELL / SOLD_TOO_EARLY (kept climbing) / GAVE_BACK (<60% captured) / FLAT_TIMEOUT",
+            "verdict": "CAPTURED_WELL / SOLD_TOO_EARLY (kept climbing) / GAVE_BACK (<60% captured) / FLAT_CLOSE",
         },
         "what": "Trade-by-trade forensic replay of today's session against the real price path.",
         "why": ("To understand obsessively WHY each entry and exit happened and whether we captured the "
