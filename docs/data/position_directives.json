@@ -1,16 +1,7 @@
 {
   "version": "5.1",
-  "generated_at": "2026-07-01T13:30:59.891671+00:00",
+  "generated_at": "2026-07-01T13:52:53.875477+00:00",
   "directives": [
-    {
-      "owner": "LEGACY",
-      "ticker": "LCID",
-      "action": "INTRADAY_EXHAUSTION",
-      "size_pct": 0.5,
-      "trigger": "extension\u22655% AND giveback\u22653% same session",
-      "rationale": "late-stage intraday extension \u2014 trim half",
-      "priority": 2
-    },
     {
       "owner": "LEGACY",
       "ticker": "CRWD",
@@ -23,7 +14,17 @@
     },
     {
       "owner": "LEGACY",
-      "ticker": "SPCX",
+      "ticker": "LCID",
+      "action": "SCALE_OUT",
+      "size_pct": 0.25,
+      "trigger": "unrealized_plpc\u22653%",
+      "rationale": "first target +3% reached; trim 25%",
+      "priority": 3,
+      "tag": "scale_out_3"
+    },
+    {
+      "owner": "LEGACY",
+      "ticker": "PLTR",
       "action": "SCALE_OUT",
       "size_pct": 0.25,
       "trigger": "unrealized_plpc\u22653%",
@@ -34,6 +35,16 @@
     {
       "owner": "LEGACY",
       "ticker": "SPCX",
+      "action": "SCALE_OUT",
+      "size_pct": 0.25,
+      "trigger": "unrealized_plpc\u22653%",
+      "rationale": "first target +3% reached; trim 25%",
+      "priority": 3,
+      "tag": "scale_out_3"
+    },
+    {
+      "owner": "LEGACY",
+      "ticker": "LCID",
       "action": "TIGHTEN_STOP",
       "new_stop_pct": 0.025,
       "trigger": "unrealized_plpc\u22655%",
@@ -46,7 +57,34 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (4.2%, momentum 0.62); add 20% size",
+      "rationale": "healthy winner (4.1%, momentum 0.62); add 20% size",
+      "priority": 5
+    },
+    {
+      "owner": "LEGACY",
+      "ticker": "IGV",
+      "action": "SCALE_IN",
+      "size_pct": 0.2,
+      "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
+      "rationale": "healthy winner (1.9%, momentum 0.57); add 20% size",
+      "priority": 5
+    },
+    {
+      "owner": "LEGACY",
+      "ticker": "LCID",
+      "action": "SCALE_IN",
+      "size_pct": 0.2,
+      "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
+      "rationale": "healthy winner (7.3%, momentum 0.70); add 20% size",
+      "priority": 5
+    },
+    {
+      "owner": "LEGACY",
+      "ticker": "MSCI",
+      "action": "SCALE_IN",
+      "size_pct": 0.2,
+      "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
+      "rationale": "healthy winner (2.2%, momentum 0.57); add 20% size",
       "priority": 5
     },
     {
@@ -55,7 +93,7 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (2.4%, momentum 0.58); add 20% size",
+      "rationale": "healthy winner (2.5%, momentum 0.58); add 20% size",
       "priority": 5
     },
     {
@@ -64,7 +102,7 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (2.2%, momentum 0.55); add 20% size",
+      "rationale": "healthy winner (4.6%, momentum 0.63); add 20% size",
       "priority": 5
     },
     {
@@ -73,18 +111,17 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (6.2%, momentum 0.67); add 20% size",
+      "rationale": "healthy winner (4.0%, momentum 0.57); add 20% size",
       "priority": 5
     }
   ],
   "summary": {
-    "directives": 8,
+    "directives": 12,
     "by_action": {
-      "INTRADAY_EXHAUSTION": 1,
-      "SCALE_OUT": 2,
+      "SCALE_OUT": 4,
       "TIGHTEN_STOP": 1,
-      "SCALE_IN": 4
+      "SCALE_IN": 7
     }
   },
-  "rationale": "8 directives issued \u00b7 2 scale-outs \u00b7 4 scale-ins"
+  "rationale": "12 directives issued \u00b7 4 scale-outs \u00b7 7 scale-ins"
 }
