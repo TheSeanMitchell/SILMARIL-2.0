@@ -1,11 +1,40 @@
 {
-  "generated_at": "2026-07-01T06:07:35.556267+00:00",
-  "overall": {},
+  "generated_at": "2026-07-01T06:17:17.359622+00:00",
+  "overall": {
+    "trades": 1,
+    "target_hit_intrabar": 1,
+    "missed_target_exits": 1,
+    "missed_target_rate_pct": 100.0,
+    "avg_leak_when_missed_pct": 0.53,
+    "total_edge_left_pct": 0.53
+  },
   "by_book": {
-    "crypto": {},
+    "crypto": {
+      "trades": 1,
+      "target_hit_intrabar": 1,
+      "missed_target_exits": 1,
+      "missed_target_rate_pct": 100.0,
+      "avg_leak_when_missed_pct": 0.53,
+      "total_edge_left_pct": 0.53
+    },
     "stock": {}
   },
-  "worst": [],
+  "worst": [
+    {
+      "sym": "STRK-USD",
+      "strategy": "MR_d1_t2_s6",
+      "book": "crypto",
+      "realized_pct": 1.47,
+      "target_pct": 2,
+      "stop_pct": 6,
+      "target_hit_intrabar": true,
+      "stop_breached_intrabar": false,
+      "missed_target": true,
+      "captured_leak_pct": 0.53,
+      "intrabar_high_pct": 2.53,
+      "intrabar_low_pct": -1.02
+    }
+  ],
   "what": "Target hit between cycles but we exited lower = missed intrabar sell.",
   "why": "Quantifies edge lost to coarse 10-12min polling. High rate -> finer polling or limit orders matter.",
   "action": "If missed_target_rate is high, this is real recoverable edge, not strategy failure.",
