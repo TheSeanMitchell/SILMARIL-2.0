@@ -52,9 +52,10 @@ def _catalog_grid():
     return {}
 
 
-def _make_strategies() -> Dict[str, Dict[str, Any]]:
+def _make_strategies(wide: bool = False) -> Dict[str, Dict[str, Any]]:
     s: Dict[str, Dict[str, Any]] = {}
-    g = _catalog_grid()
+    g = _catalog_grid() if wide else {}   # hourly arena = compact classic grid (fast); the FULL catalog grid
+    # (280 MR strategies) competes once daily via run_wide_arena — same evidence, none of the cycle bloat
     mr = g.get("mr") or {}
     # MEAN-REVERSION grid: buy a drop, exit at bounce / stop / timeout
     for drop in tuple(mr.get("drops") or (0.01, 0.02, 0.03, 0.05)):
@@ -298,3 +299,40 @@ def run_daily_hold_leaderboards(out_dir):
         except Exception: pass
         out_payloads[book] = payload
     return out_payloads
+
+
+def run_wide_arena(out_dir):
+    """Once-daily WIDE arena: the FULL PARAM_CATALOG grid (every drop x bounce x stop, 280+ strategies)
+    backtested per book on real data — the drop/bounce sweet-spot sweep. Emits
+    strategy_leaderboard_wide_{book}.json. Gated to daily staleness in cli so the 10-minute trade cycle
+    never carries this weight (the July-1 15-18min balloons were this grid running hourly — fixed)."""
+    out = Path(out_dir)
+    samples = load_all_samples(out)
+    if not samples:
+        return {}
+    series = {tk: [p for t, p in rows if p and p > 0 and "T00:00:00" not in t] for tk, rows in samples.items()}
+    fresh_all = {tk: px for tk, px in series.items() if len(px) > 20}
+    costs = {tk: round_trip_cost(px) for tk, px in fresh_all.items()}
+    wide = _make_strategies(wide=True)
+    res = {}
+    from .paper_sim import asset_class as _ac, BOOKS as _BOOKS
+    for book in _BOOKS:
+        is_cry = (book == "crypto")
+        uni = {k: v for k, v in fresh_all.items() if _ac(k) == book and _uni_ok(v, is_cry)}
+        rows = []
+        for name, cfg in wide.items():
+            r = _bt_one(uni, cfg, costs)
+            rows.append({"strategy": name, "dir": cfg["dir"], **r})
+        min_tr = 5 if book in ("metal", "energy") else 30
+        ranked = sorted(rows, key=lambda r: (r["trades"] >= min_tr, r["mean_net_pct"]), reverse=True)
+        winners = [r for r in ranked if r["trades"] >= min_tr and r["mean_net_pct"] > 0]
+        payload = {"generated_at": _now(), "book": book, "universe_size": len(uni),
+                   "grid_size": len(wide), "min_trades_for_trust": min_tr,
+                   "leaderboard": ranked[:120], "best_trusted": winners[0] if winners else None,
+                   "what": "FULL catalog grid swept daily — the drop/bounce possibility space on real data"}
+        try:
+            write_json_atomic(out / f"strategy_leaderboard_wide_{book}.json", payload)
+        except Exception:
+            (out / f"strategy_leaderboard_wide_{book}.json").write_text(json.dumps(payload, indent=1))
+        res[book] = payload.get("best_trusted")
+    return res

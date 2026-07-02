@@ -2145,6 +2145,19 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                         except Exception:
                             _stale = True
                     _dh = _dhold(out) if (_HOURLY and _stale) else {}
+                    # 3.0 WIDE ARENA — full catalog grid, once daily (same staleness gate)
+                    try:
+                        _wf = out / "strategy_leaderboard_wide_crypto.json"
+                        _wstale = True
+                        if _wf.exists():
+                            _wg = json.loads(_wf.read_text()).get("generated_at")
+                            _wstale = ((datetime.now(timezone.utc) - datetime.fromisoformat(_wg)).total_seconds() / 3600.0) >= 20
+                        if _HOURLY and _wstale:
+                            from .execution.strategy_lab import run_wide_arena as _rwa
+                            _rw = _rwa(out)
+                            log.info("  WIDE arena swept: %s", {k: (v or {}).get("strategy") for k, v in (_rw or {}).items()})
+                    except Exception as _rwe:
+                        log.warning("wide arena skipped: %s", _rwe)
                     if _dh:
                         log.info("  daily-HOLD (refreshed): energy=%s · stock=%s",
                                  (_dh.get("energy", {}).get("best_trusted") or {}).get("strategy"),
@@ -2313,7 +2326,7 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
             try:
                 # 2.5.4 peak-rhythm — time between bounces, feeds the chart prediction overlay.
                 from .execution.peak_rhythm import build_peak_rhythm as _pr
-                _prr = _pr(out)
+                _prr = _pr(out, focus=['GLD','SLV','IAU','GDX','XAU','PPLT','SIVR','CPER','USO','UNG','BTC-USD','ETH-USD'])  # 3.0: gold/metals rhythm graphed every pass
                 log.info("  peak rhythm: tracking %s symbols", _prr.get("tracked"))
             except Exception as _pre:
                 log.warning("peak rhythm skipped: %s", _pre)

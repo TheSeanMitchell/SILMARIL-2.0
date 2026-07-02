@@ -63,6 +63,19 @@ def _catalog(out_dir=None):
     return {}
 
 
+def _longterm_up(samples_rows, min_days=60):
+    """STOCK RULE (operator law): nothing is bought whose LONG-TERM trajectory is down. Uses the nightly
+    daily candles (T00:00:00 rows). If history is too thin to judge (< min_days closes), the gate abstains
+    (no veto) but the brain page shows it as unjudged."""
+    try:
+        closes = [p for t, p in samples_rows if p and p > 0 and "T00:00:00" in t]
+        if len(closes) < min_days:
+            return None
+        return closes[-1] >= closes[0]
+    except Exception:
+        return None
+
+
 def _trajectory_6h(samples_rows):
     """6h slope as a fraction — the falling-knife signal. A name down hard across the whole window with no
     bounce is a COLLAPSE, not a dip (WLD-USD, Jul 1: -9.8% floor exit, then re-bought while still falling).
@@ -540,7 +553,17 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
     min_take = float(((cat.get("min_takehome_usd") or {}).get(book,
                MIN_TAKEHOME.get(book, MIN_TAKEHOME_DEFAULT))))   # book-specific post-fee $ floor (GOLDEN RULE)
     knife = float(cat.get("knife_veto_6h", -0.06))   # skip free-falling names (<= this over 6h); 0 disables
+    fmin = ((cat.get("floor_min") or {}).get(book))
+    if fmin:
+        stop_ = max(stop_, float(fmin))   # DEEPEN-THE-FLOOR: per-book minimum heatshield depth from the
+                                          # catalog. Champions still compete/rotate stops ABOVE this line.
     for sym, lp, h1, cv in cands[:MAX_NAMES]:
+        if book == "stock":
+            lt = _longterm_up(samples.get(sym) or [], int(cat.get("stock_longterm_min_days", 60)))
+            if lt is False:
+                actions.append({"act": "SKIP", "sym": sym,
+                                "why": "long-term trajectory DOWN — stock law: never buy a downtrend"})
+                continue
         if direction != "mom" and knife < 0:
             t6 = _trajectory_6h(samples.get(sym) or [])
             if t6 is not None and t6 <= knife:
@@ -562,7 +585,7 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
                             "why": "cannot clear $%.2f net (need $%.0f, cash $%.0f)" % (min_take, min_take / net_margin, cap)})
             continue
         if pbook.buy(sym, budget, lp, cost, now.isoformat(),
-                     target=target, stop=stop_, conviction=cv):
+                     target=target, stop=stop_, conviction=cv, expected=net_margin):
             actions.append({"act": "BUY", "sym": sym, "move_pct": round(h1 * 100, 2), "conviction": cv,
                             "expected_net_usd": round(budget * net_margin, 2)})
 
@@ -578,6 +601,10 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
                        "mark": round(side_marks.get(s, (p["entry"], 0))[0], 6),
                        "t": p.get("t"),
                        "wager_usd": p.get("wager_usd"),
+                       "target": p.get("target"), "stop": p.get("stop"),
+                       "conviction": p.get("conviction"),
+                       "exp_net_usd": (round(p.get("wager_usd") * p.get("expected_move"), 2)
+                                        if p.get("wager_usd") and p.get("expected_move") else None),
                        "upl_pct": round((side_marks.get(s, (p["entry"], 0))[0] / p["entry"] - 1) * 100, 2)}
                       for s, p in pbook.positions.items()],
         "recent_trades": pbook.trades[-25:][::-1],
