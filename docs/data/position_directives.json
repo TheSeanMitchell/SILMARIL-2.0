@@ -1,15 +1,15 @@
 {
   "version": "5.1",
-  "generated_at": "2026-07-02T05:41:19.074736+00:00",
+  "generated_at": "2026-07-02T06:14:12.475907+00:00",
   "directives": [
     {
       "owner": "LEGACY",
       "ticker": "SPCX",
-      "action": "INTRADAY_EXHAUSTION",
-      "size_pct": 0.5,
-      "trigger": "extension\u22655% AND giveback\u22653% same session",
-      "rationale": "late-stage intraday extension \u2014 trim half",
-      "priority": 2
+      "action": "PROFIT_LOCK",
+      "size_pct": 1.0,
+      "trigger": "peak_gain\u22654% AND giveback\u22655%",
+      "rationale": "peaked 5.3% above entry, now back 5.8% from peak \u2014 lock",
+      "priority": 1
     },
     {
       "owner": "LEGACY",
@@ -65,18 +65,18 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (6.7%, momentum 0.68); add 20% size",
+      "rationale": "healthy winner (6.5%, momentum 0.67); add 20% size",
       "priority": 5
     }
   ],
   "summary": {
     "directives": 7,
     "by_action": {
-      "INTRADAY_EXHAUSTION": 1,
+      "PROFIT_LOCK": 1,
       "SCALE_OUT": 3,
       "TIGHTEN_STOP": 1,
       "SCALE_IN": 2
     }
   },
-  "rationale": "7 directives issued \u00b7 3 scale-outs \u00b7 2 scale-ins"
+  "rationale": "7 directives issued \u2014 1 profit-locks \u00b7 3 scale-outs \u00b7 2 scale-ins"
 }

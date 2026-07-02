@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-07-02T05:04:30.182488+00:00",
+  "generated_at": "2026-07-02T06:13:58.277263+00:00",
   "parameters": [
     {
       "parameter": "Strategy",
       "champion": "MR_patient_d3",
       "challenger": null,
       "optimized_for": "forward survivability",
-      "metric_value": 75.0,
+      "metric_value": null,
       "leaderboard": [],
-      "status": "ALIGNED \u2014 declared champion is the most survivable strategy",
+      "status": "MISMATCH \u2014 selection has not yet converged (will on next cycle; champion now tracks survivability)",
       "health": "YELLOW",
       "health_note": "champion present, thin leaderboard",
       "rotates": "every daily run",
@@ -118,35 +118,14 @@
     },
     {
       "parameter": "Hold-timer",
-      "champion": "480 min",
+      "champion": null,
       "challenger": null,
       "optimized_for": "edge captured per trade",
-      "metric_value": 0.636,
-      "leaderboard": [
-        {
-          "value": "480m",
-          "note": "avg 0.636% \u00b7 win 77.3%"
-        },
-        {
-          "value": "600m",
-          "note": "avg 0.636% \u00b7 win 77.3%"
-        },
-        {
-          "value": "720m",
-          "note": "avg 0.636% \u00b7 win 77.3%"
-        },
-        {
-          "value": "no timer",
-          "note": "avg 0.636% \u00b7 win 77.3%"
-        },
-        {
-          "value": "360m",
-          "note": "avg 0.096% \u00b7 win 72.7%"
-        }
-      ],
+      "metric_value": null,
+      "leaderboard": [],
       "status": "ROTATING (crypto) \u00b7 stock,metal,energy data-gated",
-      "health": "GREEN",
-      "health_note": "electing from a live leaderboard",
+      "health": "RED",
+      "health_note": "no champion elected yet (data-gated or no signals)",
       "rotates": "every daily run",
       "source": "TIMER_OPTIMIZATION.json"
     },
@@ -155,23 +134,23 @@
       "champion": "crypto:DOWNTREND \u00b7 stock:SIDEWAYS \u00b7 metal:SIDEWAYS \u00b7 energy:SIDEWAYS",
       "challenger": null,
       "optimized_for": "classify up/sideways/down to match target aggression",
-      "metric_value": -16.98,
+      "metric_value": -16.96,
       "leaderboard": [
         {
           "value": "crypto",
-          "note": "DOWNTREND -16.98%"
+          "note": "DOWNTREND -16.96%"
         },
         {
           "value": "stock",
-          "note": "SIDEWAYS -0.04%"
+          "note": "SIDEWAYS -0.01%"
         },
         {
           "value": "metal",
-          "note": "SIDEWAYS -0.13%"
+          "note": "SIDEWAYS 0.01%"
         },
         {
           "value": "energy",
-          "note": "SIDEWAYS -0.12%"
+          "note": "SIDEWAYS -0.03%"
         }
       ],
       "status": "CLASSIFYING (method-champion data-gated)",
@@ -182,10 +161,10 @@
     },
     {
       "parameter": "Peak-rhythm",
-      "champion": "198 min median cycle",
+      "champion": "199 min median cycle",
       "challenger": null,
       "optimized_for": "time between bounces \u2192 find names that bounce inside the 30m hold",
-      "metric_value": 198.0,
+      "metric_value": 199.0,
       "leaderboard": [
         {
           "value": "USO",
@@ -193,11 +172,11 @@
         },
         {
           "value": "PPLT",
-          "note": "123 min/cycle"
+          "note": "126 min/cycle"
         },
         {
           "value": "CPER",
-          "note": "126 min/cycle"
+          "note": "134 min/cycle"
         },
         {
           "value": "ETH-USD",
@@ -216,24 +195,19 @@
     },
     {
       "parameter": "Time-of-day edge",
-      "champion": "crypto:AFTER_HOURS",
+      "champion": null,
       "challenger": null,
       "optimized_for": "concentrate trading in the hours with measured edge",
       "metric_value": null,
-      "leaderboard": [
-        {
-          "value": "crypto",
-          "note": "AFTER_HOURS"
-        }
-      ],
+      "leaderboard": [],
       "status": "ROTATING",
-      "health": "YELLOW",
-      "health_note": "champion present, thin leaderboard",
+      "health": "RED",
+      "health_note": "no champion elected yet (data-gated or no signals)",
       "rotates": "every daily run",
       "source": "TIME_OF_DAY.json"
     }
   ],
-  "summary": "8 champion-elected parameters \u00b7 6 GREEN",
+  "summary": "8 champion-elected parameters \u00b7 5 GREEN",
   "how_to_extend": "Add a new rotating parameter by appending one reader here that returns _entry(...). It then shows up in this registry and its panel automatically.",
   "what": "Every parameter SILMARIL elects a champion for on each daily run, in one view.",
   "why": "So a human or an AI can verify at a glance that each champion is alive, sensible, and rotating.",
