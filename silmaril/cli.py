@@ -30,6 +30,7 @@ ALPHA 2.0 ADDITIONS:
 from __future__ import annotations
 
 import argparse
+import os
 import json
 import logging
 import sys
@@ -2317,6 +2318,16 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
             except Exception as _pre:
                 log.warning("peak rhythm skipped: %s", _pre)
             try:
+                # 3.0 FEATURE GATES + NEWS TRIAL — every experimental signal in observe mode with a real
+                # evidence ledger; nothing unproven touches decisions (operator-specified judgment system).
+                from .execution.feature_gates import build_feature_gates as _fg
+                from .execution.news_trial import build_news_trial as _nt
+                _ntr = _nt(out); _fgr = _fg(out)
+                log.info("  gates: %d gated · news trial: %s entries, hit-rate %s",
+                         len((_fgr or {}).get("gates", {})), (_ntr or {}).get("entries"), (_ntr or {}).get("hit_rate_pct"))
+            except Exception as _fge:
+                log.warning("feature gates/news trial skipped: %s", _fge)
+            try:
                 # 2.5.4 timer/edge-capture simulation + consolidated chart overlays.
                 from .execution.timer_optimization import build_timer_optimization as _to
                 from .execution.chart_overlays import build_chart_overlays as _co
@@ -2354,6 +2365,20 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                         from .execution.threshold_takehome import build_threshold_takehome as _tth
                         _tqr = _tq(out); _kmr = _kmir(out); _mlr = _mlog(out); _tthr = _tth(out)
                         from .execution.master_account import build_master_account as _macct
+                        # 3.0 FAST-CYCLE TRUTH REFRESH — the views that decide whether the operator TRUSTS the engine
+                        # (per-symbol chart trades, the decision trace, the master ledger) must never lag behind reality:
+                        # a stale CHART_OVERLAYS.json once showed a WLD win while the ledger held a -9.8% loss. These
+                        # readers only touch the small book jsons, so they run EVERY cycle, fast path included.
+                        try:
+                            from .execution.chart_overlays import build_chart_overlays as _co_fast
+                            _co_fast(out)
+                        except Exception as _cofe:
+                            log.warning("fast overlays skipped: %s", _cofe)
+                        try:
+                            from .execution.decision_trace import build_decision_trace as _dt_fast
+                            _dt_fast(out)
+                        except Exception as _dtfe:
+                            log.warning("fast decision-trace skipped: %s", _dtfe)
                         _mar = _macct(out)
                         try:
                             from .execution.wiring_audit import build_wiring_audit as _wire

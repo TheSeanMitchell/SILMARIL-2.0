@@ -35,18 +35,38 @@ def _now() -> str:
 
 
 # ── a strategy is a small config; the grid below expands to dozens ───────────
+def _catalog_grid():
+    """PARAM_CATALOG.json drives the arena. Editing that ONE file changes which strategies compete on the
+    next cycle — no code changes, ever. This is the 'comprehensive, authoritative, tunable' layer: the full
+    drop/bounce/stop space is enumerated there, and the arena breeds over exactly what the file says."""
+    try:
+        from pathlib import Path as _P
+        for base in ("docs/data", "."):
+            f = _P(base) / "PARAM_CATALOG.json"
+            if f.exists():
+                g = json.loads(f.read_text()).get("arena_grid") or {}
+                if g:
+                    return g
+    except Exception:
+        pass
+    return {}
+
+
 def _make_strategies() -> Dict[str, Dict[str, Any]]:
     s: Dict[str, Dict[str, Any]] = {}
+    g = _catalog_grid()
+    mr = g.get("mr") or {}
     # MEAN-REVERSION grid: buy a drop, exit at bounce / stop / timeout
-    for drop in (0.01, 0.02, 0.03, 0.05):
-        for tgt in (0.01, 0.02, 0.03):
-            for stop in (0.02, 0.04, 0.06):
+    for drop in tuple(mr.get("drops") or (0.01, 0.02, 0.03, 0.05)):
+        for tgt in tuple(mr.get("targets") or (0.01, 0.02, 0.03)):
+            for stop in tuple(mr.get("stops") or (0.02, 0.04, 0.06)):
                 s[f"MR_d{int(drop*100)}_t{int(tgt*100)}_s{int(stop*100)}"] = {
                     "dir": "mr", "entry": drop, "target": tgt, "stop": stop, "hold": 22}
     # MOMENTUM grid: buy strength, exit at target / stop / timeout
-    for up in (0.01, 0.02, 0.03):
-        for tgt in (0.02, 0.04):
-            for stop in (0.02, 0.04):
+    mom = g.get("mom") or {}
+    for up in tuple(mom.get("ups") or (0.01, 0.02, 0.03)):
+        for tgt in tuple(mom.get("targets") or (0.02, 0.04)):
+            for stop in tuple(mom.get("stops") or (0.02, 0.04)):
                 s[f"MOM_u{int(up*100)}_t{int(tgt*100)}_s{int(stop*100)}"] = {
                     "dir": "mom", "entry": up, "target": tgt, "stop": stop, "hold": 22}
     # PERSISTENCE family (momentum that requires a sustained move, longer hold)

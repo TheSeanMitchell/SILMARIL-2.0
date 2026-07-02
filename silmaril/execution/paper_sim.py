@@ -48,6 +48,37 @@ MAX_NAMES = 10
 # kills the dust-position bug (no more $0.01 buys from leftover cash). Tunable per book: raise toward 5.00
 # for fewer/bigger/more-concentrated positions, lower toward 1.00 for more trade frequency.
 _WARM_SYMS = set()          # symbols cleared for NEW ENTRIES (strict warmup); exits never need this
+
+def _catalog(out_dir=None):
+    """PARAM_CATALOG.json = the ONE file that tunes the engine. Every value can be changed by editing that
+    file in the repo — no code changes, ever. Missing file/keys fall back to built-in defaults."""
+    from pathlib import Path as _P
+    for base in ([str(out_dir)] if out_dir else []) + ["docs/data", "."]:
+        try:
+            f = _P(base) / "PARAM_CATALOG.json"
+            if f.exists():
+                return json.loads(f.read_text())
+        except Exception:
+            pass
+    return {}
+
+
+def _trajectory_6h(samples_rows):
+    """6h slope as a fraction — the falling-knife signal. A name down hard across the whole window with no
+    bounce is a COLLAPSE, not a dip (WLD-USD, Jul 1: -9.8% floor exit, then re-bought while still falling).
+    Mean reversion wants oversold-in-a-range, never free-fall."""
+    from datetime import datetime as _dt, timezone as _tz
+    try:
+        nowt = _dt.now(_tz.utc)
+        px = [(t, p) for t, p in samples_rows if p and p > 0 and "T00:00:00" not in t]
+        recent = [(t, p) for t, p in px if (nowt - _dt.fromisoformat(t)).total_seconds() <= 6 * 3600]
+        if len(recent) < 6:
+            return None
+        first, last = recent[0][1], recent[-1][1]
+        return (last / first - 1.0) if first > 0 else None
+    except Exception:
+        return None
+
 MIN_TAKEHOME_DEFAULT = 1.00
 MIN_TAKEHOME = {"crypto": 1.00, "stock": 1.00, "metal": 1.00, "energy": 1.00}
 # mean-reversion params (the proven-direction strategy; tune in one place)
@@ -505,8 +536,17 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
                 scored.append((s, lp, h1, cv))
         cands = sorted(scored, key=lambda x: (x[3] if x[3] is not None else 0.0), reverse=True)
     mk = {s: v[0] for s, v in side_marks.items()}
-    min_take = MIN_TAKEHOME.get(book, MIN_TAKEHOME_DEFAULT)   # book-specific post-fee $ floor (GOLDEN RULE)
+    cat = _catalog(out)
+    min_take = float(((cat.get("min_takehome_usd") or {}).get(book,
+               MIN_TAKEHOME.get(book, MIN_TAKEHOME_DEFAULT))))   # book-specific post-fee $ floor (GOLDEN RULE)
+    knife = float(cat.get("knife_veto_6h", -0.06))   # skip free-falling names (<= this over 6h); 0 disables
     for sym, lp, h1, cv in cands[:MAX_NAMES]:
+        if direction != "mom" and knife < 0:
+            t6 = _trajectory_6h(samples.get(sym) or [])
+            if t6 is not None and t6 <= knife:
+                actions.append({"act": "SKIP", "sym": sym,
+                                "why": "falling knife — %.1f%% over 6h, no bounce (veto at %.0f%%)" % (t6 * 100, knife * 100)})
+                continue
         cost = round_trip_cost(px_of(sym))
         net_margin = target - cost              # fraction of the position kept if the target hits, after fees
         # GOLDEN RULE: a close must net >= min_take AFTER fees or we don't take the trade. This also kills
@@ -589,7 +629,16 @@ def live_step(out_dir) -> Dict[str, Any]:
     # per-book champions (2.5.1): every book trades its OWN arena champion —
     # crypto, stock, metal, energy are independent. champion_crypto = champion.json.
     results, champ_names = {}, {}
+    try:
+        from .market_calendar import equity_day_status
+        eq_status, eq_reason = equity_day_status()
+    except Exception:
+        eq_status, eq_reason = "OPEN", "calendar unavailable"
     for bk in BOOKS:
+        if bk != "crypto" and eq_status == "CLOSED":
+            # market holiday/weekend: equity books hold state, take no actions, burn no work. Crypto runs 24/7.
+            results[bk] = {"skipped": True, "why": "market closed — " + eq_reason}
+            continue
         if bk == "crypto":
             params, name = champ_params, champ_name
         else:
@@ -610,6 +659,7 @@ def live_step(out_dir) -> Dict[str, Any]:
     summary = {
         "generated_at": _now(),
         "marks_health": marks_health,
+        "equity_market": {"status": eq_status, "why": eq_reason},
         "start_cash_each": START_CASH,
         "champion_strategy": champ_name,
         "champion_crypto": champ_names["crypto"],

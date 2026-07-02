@@ -194,8 +194,12 @@
       if (ov.trades && ov.trades.length) {
         var wins = ov.trades.filter(function (t) { return t.pnl_pct > 0; }).length;
         H += row("Past trades here", ov.trades.length + " · " + wins + "W/" + (ov.trades.length - wins) + "L");
-        var lastT = ov.trades[ov.trades.length - 1];
-        H += row("Last exit", (lastT.pnl_pct >= 0 ? "+" : "") + lastT.pnl_pct + "% · " + fmtDateTime(tsParse(lastT.exit_t)), lastT.pnl_pct >= 0 ? "#16c784" : "#ea3943");
+        // every trade shown with its BOOK — a challenger win and a main-book loss are different animals
+        ov.trades.slice(-3).reverse().forEach(function (t) {
+          H += row((t.book || "?") + (t.strategy ? " · " + t.strategy : ""),
+                   (t.pnl_pct >= 0 ? "+" : "") + t.pnl_pct + "% · " + fmtDateTime(tsParse(t.exit_t)),
+                   t.pnl_pct >= 0 ? "#16c784" : "#ea3943");
+        });
       }
     }
     H += "</div>";

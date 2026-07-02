@@ -240,6 +240,7 @@ def build_master_account(out_dir) -> Dict[str, Any]:
         "live_equity": live_equity,
         "live_pct": live_pct,
         "live_trades_count": len(post),
+        "live_trades_tail": post[-10:][::-1],
         "live_status": live_status,
         "equity_net_spendable": round(equity, 2),
         "gross_to_spendable_chain": chain,
