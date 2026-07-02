@@ -1,0 +1,32 @@
+name: deep-analytics
+# Heavy brains (WIDE 280-grid arena + daily-HOLD backtest + full suite) run HERE, 3x/day in low-activity
+# windows — NEVER inside the 10-minute trade cycle. This is the permanent fix for 15-20 min runs stacking
+# and pages going stale: the trade workflow stays light, always.
+on:
+  schedule:
+    - cron: "20 7 * * *"
+    - cron: "20 15 * * *"
+    - cron: "20 23 * * *"
+  workflow_dispatch:
+concurrency:
+  group: silmaril-state
+  cancel-in-progress: false
+jobs:
+  deep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt || pip install requests feedparser ccxt yfinance
+      - name: deep analytics pass
+        env:
+          SILMARIL_ANALYTICS: "1"
+          SILMARIL_DEEP: "1"
+        run: python -m silmaril --live
+      - name: commit
+        run: |
+          git config user.name silmaril-bot && git config user.email bot@silmaril
+          git add -A && git commit -m "deep analytics" || echo "no changes"
+          git push || true
