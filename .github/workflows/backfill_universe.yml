@@ -1,5 +1,7 @@
 name: Backfill Universe (full coin + 1y fingerprint)
 on:
+  schedule:
+    - cron: "10 8 * * *"   # nightly gap-fill: daily candles + anything cron gaps missed, in the dead zone
   workflow_dispatch:
 jobs:
   backfill:
