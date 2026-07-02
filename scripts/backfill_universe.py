@@ -51,6 +51,14 @@ def backfill_crypto(samples):
         try:
             ex = getattr(ccxt, exname)({"enableRateLimit": True, "timeout": 30000}); mk = ex.load_markets()
         except Exception as e:
+            # chunk failed — rescue symbols one by one so a single bad ticker can't zero a whole batch
+            for _sym in chunk:
+                try:
+                    _d1 = yf.download(_sym, period="1y", interval="1d", auto_adjust=True, progress=False)
+                    if _d1 is not None and not _d1.empty:
+                        _ingest_frame({_sym: _d1}) if "_ingest_frame" in globals() else None
+                except Exception:
+                    pass
             print(f"  {exname} init failed: {e}"); continue
         pairs = [s for s, m in mk.items() if m.get("spot") and m.get("active") and m.get("quote") in ("USD", "USDT")]
         print(f"  {exname}: {len(pairs)} USD/USDT spot pairs")
@@ -91,6 +99,8 @@ def backfill_equities(samples):
         chunk = ordered[b:b + BATCH]
         try:
             data = yf.download(chunk, period="1y", interval="1d", auto_adjust=True, threads=True, progress=False)
+            if data is None or getattr(data, "empty", True):
+                raise RuntimeError("empty chunk")
             closes = data["Close"]                   # DataFrame: columns = tickers
         except Exception as e:
             print(f"    batch {b // BATCH} ({len(chunk)} syms) failed, continuing: {e}"); continue

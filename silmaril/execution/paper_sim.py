@@ -64,16 +64,17 @@ def _catalog(out_dir=None):
 
 
 def _longterm_up(samples_rows, min_days=60):
-    """STOCK RULE (operator law): nothing is bought whose LONG-TERM trajectory is down. Uses the nightly
-    daily candles (T00:00:00 rows). If history is too thin to judge (< min_days closes), the gate abstains
-    (no veto) but the brain page shows it as unjudged."""
+    """STOCK LAW (operator): nothing is bought whose LONG-TERM trajectory is down — and nothing is bought
+    BLIND either. July 2 the stock book bought 11 names with ZERO daily-candle history on file (backfill
+    hadn't landed), so the law couldn't see. New rule: <20 daily closes = VETO (wait for the nightly
+    backfill), 20+ closes = judge the trend over whatever span exists."""
     try:
         closes = [p for t, p in samples_rows if p and p > 0 and "T00:00:00" in t]
-        if len(closes) < min_days:
-            return None
+        if len(closes) < 20:
+            return False          # blind = no buy. Backfill fills history; the book resumes with eyes open.
         return closes[-1] >= closes[0]
     except Exception:
-        return None
+        return False
 
 
 def _trajectory_6h(samples_rows):
@@ -562,7 +563,7 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
             lt = _longterm_up(samples.get(sym) or [], int(cat.get("stock_longterm_min_days", 60)))
             if lt is False:
                 actions.append({"act": "SKIP", "sym": sym,
-                                "why": "long-term trajectory DOWN — stock law: never buy a downtrend"})
+                                "why": "stock law: long-term trend DOWN or <20 daily candles on file (never buy blind)"})
                 continue
         if direction != "mom" and knife < 0:
             t6 = _trajectory_6h(samples.get(sym) or [])

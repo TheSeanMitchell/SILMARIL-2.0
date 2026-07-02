@@ -160,9 +160,16 @@ def build_master_account(out_dir) -> Dict[str, Any]:
     # ----- LIVE "STARTS NOW" account: a fresh $10k from inception, grows with proven trades forward -----
     prior = _load(out, "MASTER_ACCOUNT.json")
     inception = prior.get("inception_ts") or _now()
+    # 3.0 FIX — the master mirrors ONLY quadrants it has ACCEPTED through the confidence gate. Before this,
+    # crypto sells appeared in the master ledger while the gate read 0/90 ("how can it sell with no buy?!").
+    # Until a quadrant clears the gate, the master holds $10k flat and its ledger stays honestly empty.
+    _acc_books = set(accepted or [])
     post = [t for t in book.get("trades", [])
             if t.get("side") == "SELL" and t.get("t", "") >= inception
-            and abs((t.get("qty") or 0) * (t.get("price") or 0)) >= 1.0]
+            and abs((t.get("qty") or 0) * (t.get("price") or 0)) >= 1.0
+            and "crypto" in _acc_books]
+    display_tail = ([t for t in book.get("trades", []) if t.get("t", "") >= inception][-12:][::-1]
+                    if "crypto" in _acc_books else [])
     post_gross = sum(float(t.get("pnl") or 0) for t in post)
     post_turn = sum(abs((t.get("qty") or 0) * (t.get("price") or 0)) for t in post)
     post_costs = post_turn * ((fee_bps + float(spread_bps) + slip_bps) / 10000.0)
@@ -240,7 +247,7 @@ def build_master_account(out_dir) -> Dict[str, Any]:
         "live_equity": live_equity,
         "live_pct": live_pct,
         "live_trades_count": len(post),
-        "live_trades_tail": post[-10:][::-1],
+        "live_trades_tail": display_tail,
         "live_status": live_status,
         "equity_net_spendable": round(equity, 2),
         "gross_to_spendable_chain": chain,

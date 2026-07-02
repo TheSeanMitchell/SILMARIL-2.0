@@ -30,6 +30,12 @@ def main():
     md = DATA / "MASTER_DECISIONS.json"
     if md.exists():
         md.unlink(); print("  deleted MASTER_DECISIONS.json (decision ledger starts clean)")
+    for f in ("SESSION_TODAY.json", "SESSION_ANATOMY.json", "DECISION_TRACE.json", "MASTER_LOG.json",
+              "CHART_OVERLAYS.json", "DAILY_TAKEHOME.json", "TRADE_QUALITY.json", "NEWS_TRIAL.json",
+              "NEWS_TRIAL_STATUS.json", "LIVE_ORDERS_PREVIEW.json"):
+        fp = DATA / f
+        if fp.exists():
+            fp.unlink(); print(f"  deleted {f} (derived view — rebuilds clean)")
     sh = DATA / "snapshot_history.jsonl"
     if sh.exists():
         sh.write_text(""); print("  cleared snapshot_history.jsonl (equity restarts clean)")

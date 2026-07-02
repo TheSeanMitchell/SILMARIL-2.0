@@ -24,6 +24,9 @@
   .tabs button:last-child{border-right:0}
   .tabs button.on{background:var(--hd);color:var(--hdfg)}
   .page{display:none}.page.on{display:block}
+.spr{display:inline-block}.spr-c{animation:sprBob 1.8s ease-in-out infinite}.spr-e{animation:sprBlink 4.2s step-end infinite}
+@keyframes sprBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes sprBlink{0%,92%,100%{opacity:1}94%,97%{opacity:0}}
 #ytWall{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .yttile{position:relative;background:#000;border:1px solid var(--line,#333);border-radius:6px;overflow:hidden}
 .yttile iframe{width:100%;aspect-ratio:16/9;border:0;display:block}
@@ -84,7 +87,7 @@
   <section><div class="hd">Market Engines</div><div class="bd">
     <div class="quads" id="quadrants"></div>
     <div id="scanStatus" class="dim" style="font-size:11px;margin-top:8px;padding:7px;border:1px dashed var(--line)">scanning…</div>
-    <div class="note">Crypto &amp; Stocks are live. Metals &amp; Energy are blank placeholders — each will get its OWN arena, champion, survivability and account when built (2.5.1 goal: no shared champions or capital). Crypto and Stocks still share one champion today; separating them is the next milestone.</div>
+    <div class="note">All four books are live and independent — own universe, own arena, own champion, own $10k (crypto 24/7 · stocks NYSE sessions · metals 24/5 · energy daily). Champions elected per book by forward survivability; the WIDE 280-grid sweeps 3×/day; quiet books still learn every cycle (fingerprints, rhythm, backtests) while waiting for a qualified setup.</div>
   </div></section>
   <section><div class="hd">ACCOUNT &middot; both books side by side</div><div class="bd">
     <div class="grid" id="acct"></div>
@@ -562,6 +565,7 @@ async function renderMaster(){const d=await jget('data/MASTER_ACCOUNT.json');if(
   const dt=Object.entries(d.decision_tree||{}).map(([b,q])=>`<tr><td>${b}</td><td style="color:${q.decision==='ACCEPT'?'#39d353':'#888'}">${q.decision}</td><td class=dim style="font-size:10px">${q.reason}</td></tr>`).join('');
   const br=d.daily_briefing||{};
   const recs=Object.entries(d.quadrant_recommendations||{}).map(([b,r])=>`<tr><td>${b}</td><td style="color:${r.signal==='BUY'?'#39d353':r.signal==='WAIT'?'#d4af37':'#888'}"><b>${r.signal}</b></td><td class=dim>conf ${r.confidence_pct}%</td></tr>`).join('');
+  if(!d){const rl=$('readyLab');if(rl)rl.textContent='accumulating — 0 verified forward trades (fills as the champion closes real trades)';const rf=$('readyFill');if(rf)rf.style.width='2%';return;}
   const rv=d.reality_validation||{}; const sc=rv.production_readiness_score||0;
   const exch=(d.exchange_comparison||[]).map(e=>`<tr style="${e.best_for_us?'color:#39d353':''}"><td>${e.venue}${e.best_for_us?' ★':''}</td><td class=dim>${e.maker_pct}% / ${e.taker_pct}%</td><td class=dim style="font-size:10px">${e.note}</td></tr>`).join('');
   $('masterBox').innerHTML=`<div style="font-size:20px;color:${g};font-weight:bold;margin-bottom:2px">$${(d.live_equity||10000).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div><div class=dim style="margin-bottom:6px">live equity · the starts-now account · ${(d.live_pct||0)>=0?'+':''}${d.live_pct||0}% · champion ${d.champion||'—'} · net-spendable on proven edge $${(d.equity_net_spendable||0).toLocaleString()}</div>
@@ -871,7 +875,10 @@ function renderReady(cv){if(!cv)return;const row=(cv.strategies||[]).find(r=>r.s
 function renderPos(bk,host){const L=LIVE&&LIVE[bk]?LIVE[bk]:{},pos=L.positions||[];
   if(!pos.length){host.innerHTML=`<tr><td colspan="5" class="dim">${bk==='stock'?'no stock positions — fires only during US market hours':'waiting for an oversold name · warmup needs ~2h live data'}</td></tr>`;return;}
   host.innerHTML=pos.map(p=>{
-    const tgt=(p.target!=null?p.target:p.entry*(1+EXIT.t)), stop=(p.stop!=null?p.stop:p.entry*(1-EXIT.s));
+    // PERMANENT bar geometry: engine records target/stop as FRACTIONS (0.03 = 3%). Convert to absolute
+    // prices here, and accept legacy absolute values too — this render can no longer break on either form.
+    const tgt=(p.target!=null?(p.target<1?p.entry*(1+p.target):p.target):p.entry*(1+EXIT.t));
+    const stop=(p.stop!=null?(p.stop<1?p.entry*(1-p.stop):p.stop):p.entry*(1-EXIT.s));
     const rng=Math.max(1e-9,tgt-stop);
     const mk=Math.max(0,Math.min(100,(p.mark-stop)/rng*100));
     const en=Math.max(0,Math.min(100,(p.entry-stop)/rng*100));
@@ -890,6 +897,8 @@ function renderPos(bk,host){const L=LIVE&&LIVE[bk]?LIVE[bk]:{},pos=L.positions||
       +'<td>'+bar+'</td></tr>';}).join('');
 }
 
+/* MAPPING IS PERMANENT: strategy→name uses hash % LENGTH of this array. NEVER change its length
+   or every nickname remaps and history becomes unreadable. Append-only is also forbidden. LOCKED. */
 const POKE=["Bulbasaur","Ivysaur","Venusaur","Charmander","Charmeleon","Charizard","Squirtle","Wartortle","Blastoise","Caterpie","Metapod","Butterfree","Weedle","Kakuna","Beedrill","Pidgey","Pidgeotto","Pidgeot","Rattata","Raticate","Spearow","Fearow","Ekans","Arbok","Pikachu","Raichu","Sandshrew","Sandslash","NidoranF","Nidorina","Nidoqueen","NidoranM","Nidorino","Nidoking","Clefairy","Clefable","Vulpix","Ninetales","Jigglypuff","Wigglytuff","Zubat","Golbat","Oddish","Gloom","Vileplume","Paras","Parasect","Venonat","Venomoth","Diglett","Dugtrio","Meowth","Persian","Psyduck","Golduck","Mankey","Primeape","Growlithe","Arcanine","Poliwag","Poliwhirl","Poliwrath","Abra","Kadabra","Alakazam","Machop","Machoke","Machamp","Bellsprout","Weepinbell","Victreebel","Tentacool","Tentacruel","Geodude","Graveler","Golem","Ponyta","Rapidash","Slowpoke","Slowbro","Magnemite","Magneton","Farfetchd","Doduo","Dodrio","Seel","Dewgong","Grimer","Muk","Shellder","Cloyster","Gastly","Haunter","Gengar","Onix","Drowzee","Hypno","Krabby","Kingler","Voltorb","Electrode","Exeggcute","Exeggutor","Cubone","Marowak","Hitmonlee","Hitmonchan","Lickitung","Koffing","Weezing","Rhyhorn","Rhydon","Chansey","Tangela","Kangaskhan","Horsea","Seadra","Goldeen","Seaking","Staryu","Starmie","MrMime","Scyther","Jynx","Electabuzz","Magmar","Pinsir","Tauros","Magikarp","Gyarados","Lapras","Ditto","Eevee","Vaporeon","Jolteon","Flareon","Porygon","Omanyte","Omastar","Kabuto","Kabutops","Aerodactyl","Snorlax","Articuno","Zapdos","Moltres","Dratini","Dragonair","Dragonite","Mewtwo","Mew",'Iron Man','Captain America','Thor','Hulk','Black Widow','Hawkeye','Spider-Man','Doctor Strange','Black Panther','Captain Marvel','Ant-Man','Wasp','Scarlet Witch','Vision','Falcon','Winter Soldier','Star-Lord','Gamora','Drax','Rocket','Groot','Nebula','Mantis','Loki','Thanos','Ultron','Nick Fury','War Machine','Shang-Chi','Ms. Marvel','Moon Knight','She-Hulk','Daredevil','Punisher','Ghost Rider','Blade','Silver Surfer','Adam Warlock','Nova','Quasar','Beta Ray Bill','Valkyrie','Heimdall','Odin','Hela','Dormammu','Kang','Galactus','Mysterio','Green Goblin','Doctor Octopus','Venom','Carnage','Rhino','Sandman','Electro','Vulture','Kingpin','Taskmaster','Wolverine','Cyclops','Jean Grey','Storm','Beast','Iceman','Angel','Nightcrawler','Colossus','Kitty Pryde','Rogue','Gambit','Jubilee','Bishop','Cable','Deadpool','Domino','Psylocke','Emma Frost','Magneto','Professor X','Mystique','Sabretooth','Juggernaut','Apocalypse','Mr. Sinister','Banshee','Havok','Polaris','Forge','X-23','Magik','Sunspot','Cannonball','Warpath','Quicksilver','Mirage','Cypher','Warlock-X','Legion','Moira','Mimic','Blink','Namor','Snow White','Cinderella','Aurora','Ariel','Belle','Jasmine','Pocahontas','Mulan','Tiana','Rapunzel','Merida','Moana','Elsa','Anna','Mickey','Minnie','Donald','Goofy','Pluto','Daisy','Chip','Dale','Stitch','Lilo','Simba','Nala','Mufasa','Timon','Pumbaa','Aladdin','Genie','Abu','Woody','Buzz','Jessie','Rex','Hamm','Nemo','Dory','Marlin','Remy','Wall-E','Eve','Baymax','Hiro','Judy Hopps','Nick Wilde','Maui','Hercules','Megara','Tarzan','Peter Pan','Tinker Bell','Alice','Cheshire','Mad Hatter','Bambi','Thumper','Dumbo','Pinocchio','Jiminy','Geppetto','Kuzco','Kronk','Yzma','Flynn Rider','Maximus','Pascal','Olaf','Sven','Kristoff','Scrooge McDuck'];
 function pokeFor(s){s=String(s||'');let hsh=0;for(let i=0;i<s.length;i++)hsh=(hsh*31+s.charCodeAt(i))>>>0;return POKE[hsh%POKE.length];}
 function stratDesc(s){s=String(s||'');let m;
@@ -898,8 +907,18 @@ function stratDesc(s){s=String(s||'');let m;
   if(m=s.match(/^MR_patient_d(\d+)$/))return 'Mean Reversion (patient) \u00b7 buy '+m[1]+'% dip, longer hold';
   if(m=s.match(/^PERSIST_u(\d+)_h(\d+)$/))return 'Trend Persistence \u00b7 '+(parseInt(m[1])/10)+'% move, hold '+m[2]+'h';
   return 'strategy';}
-function pokeLabel(s){if(!s||s==='\u2014')return s||'\u2014';return '<div style="line-height:1.15"><span title="'+stratDesc(s)+'">\ud83d\udd34 <b>'+pokeFor(s)+'</b></span><div style="font-size:8px;opacity:.55">'+s+' \u00b7 '+stratDesc(s)+'</div></div>';}
-function pokeInline(s){if(!s||s==='\u2014')return s||'\u2014';return '<span title="'+stratDesc(s)+'">\ud83d\udd34 <b>'+pokeFor(s)+'</b> <span style="opacity:.55;font-size:.85em">('+s+')</span></span>';}
+function pokeIdx(s){let h=0;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;}return h%POKE.length;}
+function critterSVG(i){const hue=(i*137.508)%360;const bob=1.6+(i%5)*0.5;const shape=i%4;const eye=2.4+(i%3)*0.7;
+  let body='';
+  if(shape===0)body='<ellipse cx="16" cy="18" rx="11" ry="9"/>';
+  else if(shape===1)body='<path d="M16 6 L27 16 L22 28 L10 28 L5 16 Z"/>';
+  else if(shape===2)body='<circle cx="16" cy="17" r="10"/>';
+  else body='<rect x="6" y="9" width="20" height="17" rx="7"/>';
+  const ears=(i%3===0)?'<circle cx="9" cy="8" r="3.4"/><circle cx="23" cy="8" r="3.4"/>':(i%3===1)?'<path d="M8 12 L5 3 L13 8 Z"/><path d="M24 12 L27 3 L19 8 Z"/>':'';
+  return '<svg class="spr-c" style="animation-duration:'+bob+'s" viewBox="0 0 32 32" width="22" height="22"><g fill="hsl('+hue+',72%,58%)" stroke="hsl('+hue+',60%,30%)" stroke-width="1.1">'+body+ears+'</g><circle cx="12" cy="16" r="'+eye+'" fill="#fff"/><circle cx="20" cy="16" r="'+eye+'" fill="#fff"/><circle class="spr-e" cx="12.7" cy="16.5" r="1.15" fill="#111"/><circle class="spr-e" cx="20.7" cy="16.5" r="1.15" fill="#111"/></svg>';}
+function sprChip(s){const i=pokeIdx(s);return '<span class="spr" style="vertical-align:-5px"><img src="assets/sprites/'+i+'.png" width="22" height="22" style="image-rendering:pixelated" onerror="this.outerHTML=critterSVG('+i+')"></span>';}
+function pokeLabel(s){if(!s||s==='\u2014')return s||'\u2014';return '<div style="line-height:1.15"><span title="'+stratDesc(s)+'">'+sprChip(s)+' <b>'+pokeFor(s)+'</b></span><div style="font-size:8px;opacity:.55">'+s+' \u00b7 '+stratDesc(s)+'</div></div>';}
+function pokeInline(s){if(!s||s==='\u2014')return s||'\u2014';return '<span title="'+stratDesc(s)+'">'+sprChip(s)+' <b>'+pokeFor(s)+'</b> <span style="opacity:.55;font-size:.85em">('+s+')</span></span>';}
 function renderArena(cv,gov){if(!cv)return;
   $('arenaBody').innerHTML=(cv.strategies||[]).map(r=>{const s=r.survivability||{};return `<tr><td>${pokeLabel(r.strategy)}</td><td>${r.n}</td><td><b>${s.score??0}</b></td><td class="${cl(r.total_return_pct)}">${sg(r.total_return_pct)}</td><td class="${cl(r.avg_return_pct)}">${sg(r.avg_return_pct)}</td><td>${f(r.win_pct,1)}</td><td>${f(r.sharpe_proxy)}</td><td class="neg">${f(r.max_drawdown_pct)}</td><td>${r.tier}</td></tr>`;}).join('');
   $('arenaNote').textContent=cv.verdict||'';
@@ -978,7 +997,7 @@ let PRICES=null,CSYM=null,CE=0,CM=0,CH=0;
 async function openChart(sym,entry,mark){CSYM=sym;CE=entry;CM=mark;CH=0;$('modal').style.display='block';
   $('modalTitle').innerHTML=icon(sym)+sym+' · SILMARIL view';
   $('modalThesis').textContent=`MR thesis: bought ~3% dip at $${(+entry).toFixed(4)}; target +${(EXIT.t*100).toFixed(0)}% ($${(entry*(1+EXIT.t)).toFixed(4)}); stop −${(EXIT.s*100).toFixed(0)}% ($${(entry*(1-EXIT.s)).toFixed(4)}); ~${Math.round(EXIT.h)}m timeout→market.`;
-  $('chartHost').textContent='loading price history (one-time)…';if(!PRICES)PRICES=await jget('data/price_samples.json');drawChart();}
+  $('chartHost').textContent='loading price history (one-time)…';if(!PRICES){PRICES=await jget('data/price_samples.json');try{const _M=await jget('data/metals_samples.json');if(_M&&_M.samples)Object.assign(PRICES.samples||{},_M.samples);}catch(e){}try{const _E=await jget('data/energy_samples.json');if(_E&&_E.samples)Object.assign(PRICES.samples||{},_E.samples);}catch(e){}}drawChart();}
 function drawChart(){const s=(PRICES&&PRICES.samples)?PRICES.samples[CSYM]:null;if(!s){$('chartHost').textContent='no price history for '+CSYM;return;}
   const now=Date.now();let rows=s.map(r=>[new Date(r[0]).getTime(),r[1]]).filter(r=>r[1]>0);if(CH>0)rows=rows.filter(r=>r[0]>=now-CH*3600000);
   if(rows.length<2){$('chartHost').textContent='not enough points in window';return;}

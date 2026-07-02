@@ -22,7 +22,7 @@
   function spanMs(tf) { var m=60000,H=36e5,D=864e5; return { "5m":5*m,"15m":15*m,"30m":30*m,"1h":H,"2h":2*H,"4h":4*H,"8h":8*H,"12h":12*H,"1D":D,"2D":2*D,"3D":3*D,"1W":7*D,"2W":14*D,"1M":30*D,"2M":60*D,"YTD":(Date.now()-new Date(new Date().getFullYear(),0,1).getTime()),"1Y":365*D,"MAX":1e15 }[tf] || 1e15; }
 
   function boot() {
-    return Promise.all([j("data/price_samples.json"), j("data/paper_sim_live.json"), j("data/PEAK_RHYTHM.json"), j("data/champion_crypto.json"), j("data/champion_stock.json"), j("data/CHART_OVERLAYS.json")])
+    return Promise.all([j("data/price_samples.json").then(async S=>{try{const M=await j("data/metals_samples.json");if(M&&M.samples)Object.assign((S&&S.samples)||{},M.samples);}catch(e){}try{const E=await j("data/energy_samples.json");if(E&&E.samples)Object.assign((S&&S.samples)||{},E.samples);}catch(e){}return S;}), j("data/paper_sim_live.json"), j("data/PEAK_RHYTHM.json"), j("data/champion_crypto.json"), j("data/champion_stock.json"), j("data/CHART_OVERLAYS.json")])
       .then(function (r) {
         var ps = r[0], live = r[1], rhy = r[2], cc = r[3], cs = r[4], ovf = r[5];
         if (ps && ps.samples) DATA = ps.samples;
