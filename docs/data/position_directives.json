@@ -1,6 +1,6 @@
 {
   "version": "5.1",
-  "generated_at": "2026-07-02T15:17:36.757160+00:00",
+  "generated_at": "2026-07-02T15:42:09.504100+00:00",
   "directives": [
     {
       "owner": "LEGACY",
@@ -17,17 +17,17 @@
       "action": "PROFIT_LOCK",
       "size_pct": 1.0,
       "trigger": "peak_gain\u22654% AND giveback\u22655%",
-      "rationale": "peaked 7.1% above entry, now back 10.1% from peak \u2014 lock",
+      "rationale": "peaked 7.1% above entry, now back 8.8% from peak \u2014 lock",
       "priority": 1
     },
     {
       "owner": "LEGACY",
       "ticker": "SPCX",
-      "action": "PROFIT_LOCK",
-      "size_pct": 1.0,
-      "trigger": "peak_gain\u22654% AND giveback\u22655%",
-      "rationale": "peaked 5.3% above entry, now back 5.0% from peak \u2014 lock",
-      "priority": 1
+      "action": "INTRADAY_EXHAUSTION",
+      "size_pct": 0.5,
+      "trigger": "extension\u22655% AND giveback\u22653% same session",
+      "rationale": "late-stage intraday extension \u2014 trim half",
+      "priority": 2
     },
     {
       "owner": "LEGACY",
@@ -93,7 +93,16 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (3.3%, momentum 0.59); add 20% size",
+      "rationale": "healthy winner (3.5%, momentum 0.60); add 20% size",
+      "priority": 5
+    },
+    {
+      "owner": "LEGACY",
+      "ticker": "IGV",
+      "action": "SCALE_IN",
+      "size_pct": 0.2,
+      "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
+      "rationale": "healthy winner (3.4%, momentum 0.57); add 20% size",
       "priority": 5
     },
     {
@@ -102,7 +111,7 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (5.7%, momentum 0.65); add 20% size",
+      "rationale": "healthy winner (5.8%, momentum 0.65); add 20% size",
       "priority": 5
     },
     {
@@ -111,7 +120,7 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (3.2%, momentum 0.60); add 20% size",
+      "rationale": "healthy winner (3.6%, momentum 0.61); add 20% size",
       "priority": 5
     },
     {
@@ -120,18 +129,19 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (10.1%, momentum 0.76); add 20% size",
+      "rationale": "healthy winner (10.7%, momentum 0.78); add 20% size",
       "priority": 5
     }
   ],
   "summary": {
-    "directives": 13,
+    "directives": 14,
     "by_action": {
-      "PROFIT_LOCK": 3,
+      "PROFIT_LOCK": 2,
+      "INTRADAY_EXHAUSTION": 1,
       "SCALE_OUT": 4,
       "TIGHTEN_STOP": 2,
-      "SCALE_IN": 4
+      "SCALE_IN": 5
     }
   },
-  "rationale": "13 directives issued \u2014 3 profit-locks \u00b7 4 scale-outs \u00b7 4 scale-ins"
+  "rationale": "14 directives issued \u2014 2 profit-locks \u00b7 4 scale-outs \u00b7 5 scale-ins"
 }
