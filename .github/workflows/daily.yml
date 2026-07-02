@@ -106,6 +106,12 @@ jobs:
           SEC_USER_AGENT_EMAIL:     ${{ secrets.SEC_USER_AGENT_EMAIL }}
           TWELVEDATA_API_KEY:       ${{ secrets.TWELVEDATA_API_KEY }}
         run: |
+          # 3.0 FAST/FULL split — the 10-min cadence runs a FAST cycle (ingest + trade + live views only);
+          # the heavy leaderboards/backtests/forensics run once at the top of the hour. Permanent fix for
+          # daytime cycles ballooning past 10 minutes: crypto's minute-sensitive trading is never stuck
+          # waiting behind a 1,600-symbol backtest again.
+          MIN=$(date -u +%M)
+          if [ "$MIN" -ge 15 ]; then export SILMARIL_FAST=1; echo "== FAST trade cycle =="; else export SILMARIL_ANALYTICS=1; echo "== FULL analytics cycle (top of hour) =="; fi
           python -m silmaril --live
 
       # ── Post-cycle analytics (read-only, additive) ──────────────────
