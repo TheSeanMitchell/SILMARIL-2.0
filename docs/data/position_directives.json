@@ -1,6 +1,6 @@
 {
   "version": "5.1",
-  "generated_at": "2026-07-02T13:22:31.220914+00:00",
+  "generated_at": "2026-07-02T13:46:52.957291+00:00",
   "directives": [
     {
       "owner": "LEGACY",
@@ -8,21 +8,40 @@
       "action": "PROFIT_LOCK",
       "size_pct": 1.0,
       "trigger": "peak_gain\u22654% AND giveback\u22655%",
-      "rationale": "peaked 5.1% above entry, now back 75.3% from peak \u2014 lock",
+      "rationale": "peaked 5.1% above entry, now back 75.0% from peak \u2014 lock",
+      "priority": 1
+    },
+    {
+      "owner": "LEGACY",
+      "ticker": "LCID",
+      "action": "PROFIT_LOCK",
+      "size_pct": 1.0,
+      "trigger": "peak_gain\u22654% AND giveback\u22655%",
+      "rationale": "peaked 7.1% above entry, now back 6.8% from peak \u2014 lock",
       "priority": 1
     },
     {
       "owner": "LEGACY",
       "ticker": "SPCX",
-      "action": "INTRADAY_EXHAUSTION",
-      "size_pct": 0.5,
-      "trigger": "extension\u22655% AND giveback\u22653% same session",
-      "rationale": "late-stage intraday extension \u2014 trim half",
-      "priority": 2
+      "action": "PROFIT_LOCK",
+      "size_pct": 1.0,
+      "trigger": "peak_gain\u22654% AND giveback\u22655%",
+      "rationale": "peaked 5.3% above entry, now back 5.3% from peak \u2014 lock",
+      "priority": 1
     },
     {
       "owner": "LEGACY",
-      "ticker": "LCID",
+      "ticker": "FICO",
+      "action": "SCALE_OUT",
+      "size_pct": 0.25,
+      "trigger": "unrealized_plpc\u22653%",
+      "rationale": "first target +3% reached; trim 25%",
+      "priority": 3,
+      "tag": "scale_out_3"
+    },
+    {
+      "owner": "LEGACY",
+      "ticker": "IGV",
       "action": "SCALE_OUT",
       "size_pct": 0.25,
       "trigger": "unrealized_plpc\u22653%",
@@ -42,7 +61,16 @@
     },
     {
       "owner": "LEGACY",
-      "ticker": "LCID",
+      "ticker": "FICO",
+      "action": "BREAK_EVEN_STOP",
+      "new_stop_pct": 0.0,
+      "trigger": "unrealized_plpc\u22652%",
+      "rationale": "move stop to entry \u2014 risk-free trade established",
+      "priority": 4
+    },
+    {
+      "owner": "LEGACY",
+      "ticker": "MSCI",
       "action": "TIGHTEN_STOP",
       "new_stop_pct": 0.025,
       "trigger": "unrealized_plpc\u22655%",
@@ -60,20 +88,29 @@
     },
     {
       "owner": "LEGACY",
-      "ticker": "LCID",
+      "ticker": "FICO",
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (6.2%, momentum 0.63); add 20% size",
+      "rationale": "healthy winner (3.6%, momentum 0.61); add 20% size",
       "priority": 5
     },
     {
       "owner": "LEGACY",
-      "ticker": "OMC",
+      "ticker": "IGV",
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (2.5%, momentum 0.57); add 20% size",
+      "rationale": "healthy winner (4.1%, momentum 0.62); add 20% size",
+      "priority": 5
+    },
+    {
+      "owner": "LEGACY",
+      "ticker": "MSCI",
+      "action": "SCALE_IN",
+      "size_pct": 0.2,
+      "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
+      "rationale": "healthy winner (5.9%, momentum 0.66); add 20% size",
       "priority": 5
     },
     {
@@ -82,19 +119,19 @@
       "action": "SCALE_IN",
       "size_pct": 0.2,
       "trigger": "unrealized_plpc\u22651.5% AND momentum\u22650.55 AND recommendation=HOLD",
-      "rationale": "healthy winner (10.5%, momentum 0.77); add 20% size",
+      "rationale": "healthy winner (12.3%, momentum 0.82); add 20% size",
       "priority": 5
     }
   ],
   "summary": {
-    "directives": 9,
+    "directives": 13,
     "by_action": {
-      "PROFIT_LOCK": 1,
-      "INTRADAY_EXHAUSTION": 1,
-      "SCALE_OUT": 2,
+      "PROFIT_LOCK": 3,
+      "SCALE_OUT": 3,
+      "BREAK_EVEN_STOP": 1,
       "TIGHTEN_STOP": 2,
-      "SCALE_IN": 3
+      "SCALE_IN": 4
     }
   },
-  "rationale": "9 directives issued \u2014 1 profit-locks \u00b7 2 scale-outs \u00b7 3 scale-ins"
+  "rationale": "13 directives issued \u2014 3 profit-locks \u00b7 3 scale-outs \u00b7 4 scale-ins"
 }
