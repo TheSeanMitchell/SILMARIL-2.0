@@ -56,6 +56,7 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -144,7 +145,7 @@ jobs:
           POLYGON_API_KEY:       ${{ secrets.POLYGON_API_KEY }}
         run: |
           MIN=$(date -u +%M)
-          if [ "$MIN" -lt 15 ]; then python -m silmaril.analytics.suite --output docs/data || true; else echo "skip heavy analytics (only top-of-hour)"; fi
+          echo "analytics suite runs in the deep-analytics workflow"
 
       - name: Generate social brag sheet (top-of-hour only)
         run: |

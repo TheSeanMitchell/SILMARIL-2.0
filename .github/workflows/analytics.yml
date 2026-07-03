@@ -25,6 +25,10 @@ jobs:
           SILMARIL_ANALYTICS: "1"
           SILMARIL_DEEP: "1"
         run: python -m silmaril --live
+      - name: full analytics suite
+        run: python -m silmaril.analytics.suite --output docs/data || true
+      - name: data diet
+        run: python scripts/prune_data.py || true
       - name: commit
         run: |
           git config user.name silmaril-bot && git config user.email bot@silmaril
