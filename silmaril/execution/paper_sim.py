@@ -560,6 +560,15 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
                                           # catalog. Champions still compete/rotate stops ABOVE this line.
     _rgmode = str((cat.get("regime_gate") or {}).get(book, "hard" if book in ("crypto", "stock") else "soft"))
     _regime = (globals().get("_LIVE_REGIMES") or {}).get(book)
+    # REGIME OVERRIDES — the experimentation surface the operator asked for: per-book, per-regime tuning of
+    # entry/target/stop and the soft-gate conviction bar, all from PARAM_CATALOG.json. Empty = zero change.
+    # Example: {"crypto": {"UPTREND": {"target": 0.05}, "SIDEWAYS": {"entry": 0.02, "target": 0.02}}}
+    _ovr = (((cat.get("regime_overrides") or {}).get(book) or {}).get(_regime or "") or {})
+    if _ovr:
+        entry = float(_ovr.get("entry", entry))
+        target = float(_ovr.get("target", target))
+        stop_ = max(float(_ovr.get("stop", stop_)), float(fmin or 0))   # floor_min still binds
+    _soft_cv = float(_ovr.get("soft_conviction", (cat.get("soft_conviction") or {}).get(book, 0.5)) if isinstance(cat.get("soft_conviction"), dict) or _ovr else 0.5)
     if _regime == "DOWNTREND" and _rgmode == "hard" and cands:
         # HARD GATE: red tape = zero new entries. Every refused candidate goes to REGIME_AB.json and is
         # scored later against reality — the running A/B proof of what obeying the gate saved (or cost).
@@ -577,7 +586,7 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
                         "why": "regime DOWNTREND + gate=hard → zero new entries (%d candidates logged to A/B)" % len(cands[:MAX_NAMES])})
         cands = []
     elif _regime == "DOWNTREND" and _rgmode == "soft":
-        cands = [c for c in cands if (c[3] or 0) >= 0.5]
+        cands = [c for c in cands if (c[3] or 0) >= _soft_cv]
     for sym, lp, h1, cv in cands[:MAX_NAMES]:
         if book == "stock":
             lt = _longterm_up(samples.get(sym) or [], int(cat.get("stock_longterm_min_days", 60)))
