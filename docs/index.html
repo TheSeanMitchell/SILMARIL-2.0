@@ -66,7 +66,7 @@
   .quad-sub{font-size:11px;opacity:.85}.quad-champ{font-size:10px;opacity:.7;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .quad-st{font-size:10px;opacity:.6;margin-top:2px}
   </style></head><body><div class="wrap">
-<div class="banner" style="position:relative;padding-right:46px"><h1 style="font-weight:900;letter-spacing:.5px" id="verHdr">SILMARIL&nbsp;2.6.1</h1><span class="dim" style="font-size:12px;font-weight:bold" id="clock">—</span><span class="dim" style="font-size:10px" id="ts">—</span><button class="themebtn" id="themeBtn" onclick="toggleTheme()" style="position:absolute;top:5px;right:5px;padding:1px 5px;font-size:10px;line-height:1.3">🌙</button></div>
+<div class="banner" style="position:relative;padding-right:46px"><h1 style="font-weight:900;letter-spacing:.5px" id="verHdr">SILMARIL&nbsp;3.0-RC5</h1><span class="dim" style="font-size:12px;font-weight:bold" id="clock">—</span><span class="dim" style="font-size:10px" id="ts">—</span><button class="themebtn" id="themeBtn" onclick="toggleTheme()" style="position:absolute;top:5px;right:5px;padding:1px 5px;font-size:10px;line-height:1.3">🌙</button></div>
 <div class="tabs">
   <button class="on" data-p="cmd">COMMAND</button><button data-p="arena">ARENA</button>
   <button data-p="forensics">FORENSICS</button><button data-p="authority">SILMARIL NEWS</button><button data-p="settings">SETTINGS</button>
@@ -85,6 +85,7 @@
     </div>
   </section>
   <section><div class="hd">Market Engines</div><div class="bd">
+    <div id="engStrip" style="font-size:11px;line-height:1.6;margin-bottom:6px"></div>
     <div class="quads" id="quadrants"></div>
     <div id="scanStatus" class="dim" style="font-size:11px;margin-top:8px;padding:7px;border:1px dashed var(--line)">scanning…</div>
     <div class="note">All four books are live and independent — own universe, own arena, own champion, own $10k (crypto 24/7 · stocks NYSE sessions · metals 24/5 · energy daily). Champions elected per book by forward survivability; the WIDE 280-grid sweeps 3×/day; quiet books still learn every cycle (fingerprints, rhythm, backtests) while waiting for a qualified setup.</div>
@@ -278,6 +279,12 @@
     <details style="margin-bottom:10px;border:1px dashed #d4af3766;border-radius:6px;padding:6px"><summary style="cursor:pointer;font-size:12px;color:#d4af37">\ud83e\udd5a experimental \u2014 BOT HANDOFF (plug a live trader into the Master output)</summary><div id="handoffBox" style="padding:8px">loading\u2026</div></details>
     <p>Theme: <button class="themebtn" onclick="toggleTheme()">toggle light / dark</button> (saved on this device)</p>
     <p class="dim">Deep / debug views:</p>
+    <div id="bnbCard" style="border:1px solid #d4af3766;border-radius:8px;padding:10px 12px;margin:8px 0;max-width:560px">
+      <div style="font-weight:900;color:#d4af37">\ud83d\udd0c Connect your Binance.US account here</div>
+      <div id="bnbWhy" class="dim" style="font-size:11px;margin:4px 0 8px">checking eligibility\u2026</div>
+      <button id="bnbBtn" disabled style="opacity:.35;cursor:not-allowed;font-size:12px;padding:6px 14px">Connect Binance.US \u2014 LOCKED</button>
+      <div class="dim" style="font-size:10px;margin-top:6px">Unlocks only when BOTH hold: no reset in 90 days AND every book + Master above $10k across 90 unbroken days of snapshots.</div>
+    </div>
     <p><a href="legacy_dashboard.html">Legacy dashboard</a> · <a href="strategy_leaderboard.html">Raw leaderboard</a> · <a href="lifecycle.html">Lifecycle/validation</a> · <a href="paper_sim.html">Paper sim detail</a></p>
     <p class="note">SILMARIL · validation phase · champion must survive 100 out-of-sample trades. $100–300/day is an unproven hope, never income.</p>
   </div></section>
@@ -329,7 +336,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderBrain(),'brain'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderEngStrip(),'estrip'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -633,7 +640,7 @@ function renderMarksHealth(){try{const mh=(typeof LIVE!=='undefined'&&LIVE&&LIVE
   const bad=/DEGRADED|STALLED/.test(mh.state||'');const quiet=/QUIET/.test(mh.state||'');
   el.style.display='block';
   el.style.color=bad?'var(--neg)':(quiet?'var(--dim)':'var(--pos)');
-  el.innerHTML='<b>ENGINE PULSE:</b> '+mh.state+' · '+mh.marked+' symbols marked · '+mh.entry_warm+' entry-warm · freshest sample '+(mh.newest_sample_age_min!=null?mh.newest_sample_age_min+' min old':'—')+(bad?' — positions and exits stay LIVE; only new entries pause. If this persists, GitHub Actions cadence has slowed.':'');
+  const _rg=(LIVE&&LIVE.regimes)||{};const _rgs=Object.entries(_rg).map(([b,r])=>b+':'+(r==='DOWNTREND'?'\ud83d\udd34':r==='UPTREND'?'\ud83d\udfe2':'\ud83d\udfe1')).join(' ');el.innerHTML='<b>ENGINE PULSE:</b> '+mh.state+(_rgs?(' \u00b7 <b>REGIMES</b> '+_rgs):'')+' · '+mh.marked+' symbols marked · '+mh.entry_warm+' entry-warm · freshest sample '+(mh.newest_sample_age_min!=null?mh.newest_sample_age_min+' min old':'—')+(bad?' — positions and exits stay LIVE; only new entries pause. If this persists, GitHub Actions cadence has slowed.':'');
 }catch(e){}}
 async function renderMasterDecisions(){try{const d=await jget('data/MASTER_ACCOUNT.json');const el=$('mDecBox');if(!el)return;const rows=(d&&d.decision_log_tail)||[];
   if(!rows.length){el.innerHTML='<div class=dim>no decisions yet this run — the ledger fills every cycle</div>';return;}
@@ -699,6 +706,33 @@ async function renderBrain(){const el=$('brainBox');if(!el)return;
     +'<div style="font-weight:800;margin:12px 0 4px">TUNABLE KNOBS — PARAM_CATALOG.json (edit → commit → next cycle runs it)</div><table style="font-size:11px"><tbody>'+knobs+'</tbody></table>'
     +'<div style="font-weight:800;margin:12px 0 4px">EXPERIMENTAL GATES — nothing unproven touches a decision</div><table style="font-size:11px"><tbody>'+gates+'</tbody></table>';
 }
+async function bnbEligibility(){try{const el=$('bnbWhy');const btn=$('bnbBtn');if(!el||!btn)return;const probs=[];
+  const w=await jget('data/WIPE_MARKER.json').catch(()=>null);
+  const days=w&&w.wiped_at?(Date.now()-new Date(w.wiped_at).getTime())/86400000:null;
+  if(days==null)probs.push('no wipe marker');else if(days<90)probs.push('last reset '+days.toFixed(1)+'d ago — needs \u226590d');
+  try{const txt=await fetch('data/snapshot_history.jsonl').then(r=>r.text());const lines=txt.trim()?txt.trim().split('\n'):[];
+    if(lines.length){const first=JSON.parse(lines[0]);const span=(Date.now()-new Date(first.t||first.ts).getTime())/86400000;
+      if(span<90)probs.push('profit history '+span.toFixed(1)+'d — needs 90d');}
+    else probs.push('no equity snapshots yet');}catch(e){probs.push('no equity snapshots yet');}
+  if(!probs.length){btn.disabled=false;btn.style.opacity='1';btn.style.cursor='pointer';btn.textContent='Connect Binance.US — ELIGIBLE';el.innerHTML='<span class=pos>Conditions met — the switch lives in PARAM_CATALOG.live_output.</span>';}
+  else el.innerHTML='LOCKED: '+probs.join(' \u00b7 ');
+}catch(e){}}
+async function renderEngStrip(){try{const el=$('engStrip');if(!el)return;
+  const cat=await jget('data/PARAM_CATALOG.json').catch(()=>({}));
+  const regs=(typeof LIVE!=='undefined'&&LIVE&&LIVE.regimes)||{};
+  const bks=['crypto','stock','metal','energy'];
+  const CH={};await Promise.all(bks.map(b=>jget('data/champion_'+b+'.json').then(v=>CH[b]=v).catch(()=>CH[b]=null)));
+  el.innerHTML=bks.map(b=>{const c=CH[b]||{};const lp=c.live_params||{};const fm=((cat.floor_min||{})[b]||0);
+    const floor=Math.max((lp.stop||0),fm)*100;const rg=regs[b]||'\u2014';
+    const rc=rg==='UPTREND'?'var(--pos)':rg==='DOWNTREND'?'var(--neg)':'#d4af37';
+    const gate=((cat.regime_gate||{})[b])||(b==='crypto'||b==='stock'?'hard':'soft');
+    const blocked=(rg==='DOWNTREND'&&gate==='hard');
+    return '<b>'+b.toUpperCase()+'</b> <span style="color:'+rc+'">'+(rg==='DOWNTREND'?'\ud83d\udd34':rg==='UPTREND'?'\ud83d\udfe2':'\ud83d\udfe1')+rg+'</span>'
+      +' \u2014 buys '+((lp.entry||0)*100).toFixed(0)+'% dip \u2192 +'+((lp.target||0)*100).toFixed(0)+'% \u00b7 floor '+floor.toFixed(0)+'%'
+      +' \u00b7 gate '+gate+(blocked?' <b style="color:var(--neg)">\u2192 NEW ENTRIES BLOCKED (A/B logging)</b>':'')
+      +' <span class=dim>('+(c.champion||'no champion yet')+')</span>';
+  }).join('<br>');
+}catch(e){}}
 var _mlogPage=0, _mlogData=null;
 function _mlogRender(){const d=_mlogData;if(!d||!d.trades){$('mlogBox').innerHTML='<div class=dim>no data</div>';return;}
   const ps=d.page_size||100, pages=Math.max(1,Math.ceil(d.trades.length/ps));

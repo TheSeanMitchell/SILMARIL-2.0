@@ -65,5 +65,18 @@
   "enabled": false,
   "source": "master",
   "_what": "the handoff switch: master|all_quadrants|crypto|stock|metal|energy. enabled stays false until YOU flip it; the engine emits LIVE_ORDERS_PREVIEW.json every cycle either way so the exact orders are visible long before real money."
+ },
+ "regime_gate": {
+  "crypto": "hard",
+  "stock": "hard",
+  "metal": "soft",
+  "energy": "soft",
+  "_what": "DOWNTREND behavior per book: hard = zero new entries (blocked candidates go to the REGIME_AB proof ledger) \u00b7 soft = only conviction>=0.5 dips \u00b7 off = ignore regime"
+ },
+ "regime_ab_horizon_min": 240,
+ "prune": {
+  "intraday_keep_per_symbol": 2000,
+  "ledger_cap": 3000,
+  "_what": "monthly data diet \u2014 dailies are never touched"
  }
 }

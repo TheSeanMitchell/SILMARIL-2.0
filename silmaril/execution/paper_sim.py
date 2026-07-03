@@ -558,6 +558,26 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
     if fmin:
         stop_ = max(stop_, float(fmin))   # DEEPEN-THE-FLOOR: per-book minimum heatshield depth from the
                                           # catalog. Champions still compete/rotate stops ABOVE this line.
+    _rgmode = str((cat.get("regime_gate") or {}).get(book, "hard" if book in ("crypto", "stock") else "soft"))
+    _regime = (globals().get("_LIVE_REGIMES") or {}).get(book)
+    if _regime == "DOWNTREND" and _rgmode == "hard" and cands:
+        # HARD GATE: red tape = zero new entries. Every refused candidate goes to REGIME_AB.json and is
+        # scored later against reality — the running A/B proof of what obeying the gate saved (or cost).
+        try:
+            abp = out / "REGIME_AB.json"
+            led = json.loads(abp.read_text()) if abp.exists() else []
+            for _sym, _lp, _h1, _cv in cands[:MAX_NAMES]:
+                led.append({"t": now.isoformat(), "book": book, "sym": _sym, "px_at_block": _lp,
+                            "move_at_block_pct": round(_h1 * 100, 2), "conviction": _cv,
+                            "regime": _regime, "outcome": None})
+            abp.write_text(json.dumps(led[-3000:], indent=1))
+        except Exception:
+            pass
+        actions.append({"act": "REGIME_BLOCK", "book": book,
+                        "why": "regime DOWNTREND + gate=hard → zero new entries (%d candidates logged to A/B)" % len(cands[:MAX_NAMES])})
+        cands = []
+    elif _regime == "DOWNTREND" and _rgmode == "soft":
+        cands = [c for c in cands if (c[3] or 0) >= 0.5]
     for sym, lp, h1, cv in cands[:MAX_NAMES]:
         if book == "stock":
             lt = _longterm_up(samples.get(sym) or [], int(cat.get("stock_longterm_min_days", 60)))
@@ -587,6 +607,11 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
             continue
         if pbook.buy(sym, budget, lp, cost, now.isoformat(),
                      target=target, stop=stop_, conviction=cv, expected=net_margin):
+            try:
+                pbook.positions[sym]["entry_regime"] = _regime
+                pbook.trades[-1]["entry_regime"] = _regime   # every trade knows the tape it was born into
+            except Exception:
+                pass
             actions.append({"act": "BUY", "sym": sym, "move_pct": round(h1 * 100, 2), "conviction": cv,
                             "expected_net_usd": round(budget * net_margin, 2)})
 
@@ -636,6 +661,18 @@ def live_step(out_dir) -> Dict[str, Any]:
     marks, _WARM_SYMS, marks_health = _marks_from_samples(samples)
     # 2.7 TRUE post-wipe quiet period (measured from wipe time): take no trades for the first window after a
     # reset, so the clean run starts from a genuinely quiet baseline even though price history is preserved.
+    # ===== 3.0 REGIME AWARENESS — refreshed EVERY cycle (rapid-fire), gates capital =====
+    # The operator's law: never fight a red tape. Each book gets a live regime read; on DOWNTREND a
+    # "hard"-gated book takes ZERO new entries (exits/floors still run), and every blocked candidate is
+    # logged to REGIME_AB.json and later SCORED against what price actually did — a running A/B proof of
+    # whether sitting out red regimes saves money (spoiler we intend to verify, not assume).
+    REGIMES = {}
+    try:
+        from .regime_classifier import build_regime_classifier as _brc
+        _rg = _brc(out) or {}
+        REGIMES = {bk: (v or {}).get("regime") for bk, v in (_rg.get("by_book") or {}).items()}
+    except Exception:
+        REGIMES = {}
     quiet_left = _post_wipe_quiet_left(out)
     if quiet_left > 0:
         marks = {}   # empty marks => no entries and no exits this cycle; the engine sits quiet by design
@@ -657,6 +694,7 @@ def live_step(out_dir) -> Dict[str, Any]:
     # per-book champions (2.5.1): every book trades its OWN arena champion —
     # crypto, stock, metal, energy are independent. champion_crypto = champion.json.
     results, champ_names = {}, {}
+    globals()["_LIVE_REGIMES"] = REGIMES
     try:
         from .market_calendar import equity_day_status
         eq_status, eq_reason = equity_day_status()
@@ -665,7 +703,12 @@ def live_step(out_dir) -> Dict[str, Any]:
     for bk in BOOKS:
         if bk != "crypto" and eq_status == "CLOSED":
             # market holiday/weekend: equity books hold state, take no actions, burn no work. Crypto runs 24/7.
-            results[bk] = {"skipped": True, "why": "market closed — " + eq_reason}
+            _pb = PaperBook.load(out / f"paper_book_{bk}.json")
+            results[bk] = {"skipped": True, "why": "market closed — " + eq_reason,
+                           "equity": _pb.equity({}), "realized_pnl": _pb.realized_pnl,
+                           "positions": [], "recent_trades": [], "actions": [],
+                           "universe": 0, "universe_seen": 0}
+            champ_names.setdefault(bk, "market closed")
             continue
         if bk == "crypto":
             params, name = champ_params, champ_name
@@ -684,16 +727,51 @@ def live_step(out_dir) -> Dict[str, Any]:
         bt = backtest_through_sim(out, crypto_only=True)
     except Exception:
         bt = {}
+    # score matured REGIME_AB entries: did the blocked trade dodge a loss or miss a win?
+    try:
+        _abp = out / "REGIME_AB.json"
+        if _abp.exists():
+            _led = json.loads(_abp.read_text())
+            _hz = float(_catalog(out).get("regime_ab_horizon_min", 240))
+            _ch = 0
+            for _e in _led:
+                if _e.get("outcome") is not None:
+                    continue
+                _m = marks.get(_e.get("sym"))
+                if not _m:
+                    continue
+                try:
+                    _age = (now - datetime.fromisoformat(_e["t"])).total_seconds() / 60.0
+                except Exception:
+                    continue
+                if _age >= _hz and _e.get("px_at_block"):
+                    _mv = _m[0] / _e["px_at_block"] - 1.0
+                    _e["move_after_pct"] = round(_mv * 100, 2)
+                    _e["outcome"] = "DODGED_LOSS" if _mv < 0 else "MISSED_WIN"
+                    _ch += 1
+            if _ch:
+                _abp.write_text(json.dumps(_led[-3000:], indent=1))
+            _done = [e for e in _led if e.get("outcome")]
+            _dl = [e for e in _done if e["outcome"] == "DODGED_LOSS"]
+            (out / "REGIME_AB_STATUS.json").write_text(json.dumps({
+                "generated_at": _now(), "blocked_total": len(_led), "scored": len(_done),
+                "dodged_losses": len(_dl), "missed_wins": len(_done) - len(_dl),
+                "gate_saved_pct_sum": round(-sum(e.get("move_after_pct", 0) for e in _dl), 2),
+                "gate_missed_pct_sum": round(sum(e.get("move_after_pct", 0) for e in _done if e["outcome"] == "MISSED_WIN"), 2),
+                "verdict": "the A/B proof of the regime gate: blocked trades scored %.0f min later" % _hz}, indent=1))
+    except Exception:
+        pass
     summary = {
         "generated_at": _now(),
         "marks_health": marks_health,
         "equity_market": {"status": eq_status, "why": eq_reason},
+        "regimes": REGIMES,
         "start_cash_each": START_CASH,
         "champion_strategy": champ_name,
-        "champion_crypto": champ_names["crypto"],
-        "champion_stock": champ_names["stock"],
-        "champion_metal": champ_names["metal"],
-        "champion_energy": champ_names["energy"],
+        "champion_crypto": champ_names.get("crypto", "—"),
+        "champion_stock": champ_names.get("stock", "market closed"),
+        "champion_metal": champ_names.get("metal", "market closed"),
+        "champion_energy": champ_names.get("energy", "market closed"),
         "champion_live_params": champ_params,
         "heatshield": {"active": HEATSHIELD, "floor_pct": round(HEATSHIELD_FLOOR * 100, 2),
                        "note": "no position stops out tighter than this floor — sits through heat for the bounce"},

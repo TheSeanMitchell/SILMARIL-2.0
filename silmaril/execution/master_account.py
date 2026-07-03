@@ -83,6 +83,17 @@ def build_master_account(out_dir) -> Dict[str, Any]:
             decision, reason = "REJECT", f"confidence {c}/100 — no positive net edge yet (still gathering)"
         quadrants[bk] = {**e, "decision": decision, "reason": reason}
 
+    # REGIME VETO — the Master never funds a book whose live tape is DOWNTREND, no matter the confidence.
+    try:
+        _live = _load(out, "paper_sim_live.json")
+        _regs = (_live or {}).get("regimes") or {}
+        for bk, q in quadrants.items():
+            q["regime"] = _regs.get(bk)
+            if _regs.get(bk) == "DOWNTREND" and q.get("decision") == "ACCEPT":
+                q["decision"] = "REJECT"
+                q["regime_veto"] = True
+    except Exception:
+        pass
     accepted = [b for b, q in quadrants.items() if q["decision"] == "ACCEPT"]
 
     # MASTER DECISION LEDGER — full transparency: one row per cycle, per-quadrant confidence vs the gate and
@@ -99,7 +110,8 @@ def build_master_account(out_dir) -> Dict[str, Any]:
                "gate": CONFIDENCE_GATE,
                "books": {bk: {"confidence": q.get("confidence"), "decision": q.get("decision"),
                               "survivability": round(q.get("survivability") or 0, 1),
-                              "trips": q.get("real_round_trips"), "win_pct": q.get("win_rate_pct")}
+                              "trips": q.get("real_round_trips"), "win_pct": q.get("win_rate_pct"),
+                              "regime": q.get("regime"), "regime_veto": q.get("regime_veto", False)}
                           for bk, q in quadrants.items()},
                "accepted": accepted}
         last = ledger[-1] if ledger else None
