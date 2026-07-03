@@ -1,0 +1,26 @@
+name: verify-install
+# One click answers "did the update actually land?" — every build marker checked, ✅/❌ in the log.
+on: { workflow_dispatch: {} }
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: marker audit
+        run: |
+          check(){ if grep -q "$2" "$1" 2>/dev/null; then echo "✅ $3"; else echo "❌ $3  (missing: $2 in $1)"; fi; }
+          check silmaril/execution/paper_sim.py "REGIME_AB" "regime hard-gate + A/B ledger"
+          check silmaril/execution/paper_sim.py "regime_overrides" "per-regime override knobs"
+          check silmaril/execution/paper_sim.py "entry_regime" "trades stamped with entry regime"
+          check silmaril/execution/master_account.py "regime_veto" "master regime veto"
+          check scripts/reset_internal_clean.py "derived view" "reset purges derived views"
+          check scripts/reset_internal_clean.py "KRAKEN_MIRROR" "reset purges kraken/threshold/sweeps"
+          check docs/index.html "renderEngStrip" "live params+regime strip"
+          check docs/index.html "critterSVG" "sprite/critter system"
+          check docs/index.html "bnbCard" "Binance 90-day lock card"
+          check docs/index.html "renderBrain" "System Brain page"
+          check docs/data/PARAM_CATALOG.json "regime_gate" "regime knobs in catalog"
+          check .github/workflows/analytics.yml "prune_data" "deep-analytics + data diet"
+          test -f scripts/prune_data.py && echo "✅ prune_data.py present" || echo "❌ prune_data.py missing"
+          T=$(grep -c "timeout-minutes" .github/workflows/daily.yml); [ "$T" = "1" ] && echo "✅ daily.yml single timeout" || echo "❌ daily.yml timeout count=$T"
