@@ -1,46 +1,71 @@
 {
-  "generated_at": "2026-07-04T02:09:22.627899+00:00",
-  "window_samples": 36,
+  "generated_at": "2026-07-04T02:52:45.587820+00:00",
+  "method": "intraday-only multi-timeframe (1h/6h/24h) + breadth",
+  "thresholds": {
+    "up_pct": 1.0,
+    "down_pct": -1.0
+  },
   "by_book": {
     "crypto": {
-      "regime": "DOWNTREND",
-      "dir": "down",
-      "median_slope_pct": -16.82,
-      "symbols": 1085,
-      "pct_up": 10,
-      "pct_down": 80,
-      "advice": "downtrend \u2192 favor the SAFE/accuracy bounce target; high targets rarely fill"
+      "regime": "SIDEWAYS",
+      "dir": "flat",
+      "slope_1h_pct": null,
+      "slope_6h_pct": -0.933,
+      "slope_24h_pct": 2.533,
+      "median_slope_pct": -0.933,
+      "breadth_up_pct": 5,
+      "breadth_down_pct": 48,
+      "avg_volatility_pct": 0.24,
+      "fresh_symbols": 91,
+      "shift_watch": "stable",
+      "why": "6h intraday median -0.93% . 1h +0.00% . breadth 5% up / 48% down",
+      "advice": "range -> classic mean-reversion; buy dips, take the base target"
     },
     "stock": {
       "regime": "SIDEWAYS",
       "dir": "flat",
+      "slope_1h_pct": null,
+      "slope_6h_pct": 0.0,
+      "slope_24h_pct": 0.0,
       "median_slope_pct": 0.0,
-      "symbols": 558,
-      "pct_up": 2,
-      "pct_down": 3,
-      "advice": "sideways \u2192 mean-reversion plays cleanest"
+      "breadth_up_pct": 0,
+      "breadth_down_pct": 0,
+      "avg_volatility_pct": 0.0,
+      "fresh_symbols": 526,
+      "shift_watch": "stable",
+      "why": "6h intraday median +0.00% . 1h +0.00% . breadth 0% up / 0% down",
+      "advice": "range -> classic mean-reversion; buy dips, take the base target"
     },
     "metal": {
       "regime": "SIDEWAYS",
       "dir": "flat",
+      "slope_1h_pct": null,
+      "slope_6h_pct": 0.0,
+      "slope_24h_pct": 0.0,
       "median_slope_pct": 0.0,
-      "symbols": 7,
-      "pct_up": 0,
-      "pct_down": 0,
-      "advice": "sideways \u2192 mean-reversion plays cleanest"
+      "breadth_up_pct": 0,
+      "breadth_down_pct": 0,
+      "avg_volatility_pct": 0.0,
+      "fresh_symbols": 7,
+      "shift_watch": "stable",
+      "why": "6h intraday median +0.00% . 1h +0.00% . breadth 0% up / 0% down",
+      "advice": "range -> classic mean-reversion; buy dips, take the base target"
     },
     "energy": {
       "regime": "SIDEWAYS",
       "dir": "flat",
+      "slope_1h_pct": null,
+      "slope_6h_pct": 0.0,
+      "slope_24h_pct": 0.0,
       "median_slope_pct": 0.0,
-      "symbols": 5,
-      "pct_up": 0,
-      "pct_down": 40,
-      "advice": "sideways \u2192 mean-reversion plays cleanest"
+      "breadth_up_pct": 0,
+      "breadth_down_pct": 0,
+      "avg_volatility_pct": 0.0,
+      "fresh_symbols": 3,
+      "shift_watch": "stable",
+      "why": "6h intraday median +0.00% . 1h +0.00% . breadth 0% up / 0% down",
+      "advice": "range -> classic mean-reversion; buy dips, take the base target"
     }
   },
-  "what": "Current trend regime (up/sideways/down) for each valuable class, every daily run.",
-  "why": "The held-stocks loss risk came from buying a high bounce target into a downtrend. Regime must be an explicit parameter so target aggression can match it.",
-  "action": "Surfaced in the parameter registry. Method-as-champion (which window classifies best) is DATA-GATED until accuracy history exists; the classification itself runs now.",
-  "note": "Per-book regime = median 6h trend across that book's fresh symbols."
+  "what": "Live regime per book from INTRADAY prints only (daily-backfill candles excluded - the bug that made green days read DOWNTREND). Headline = 6h trend; 1h = fast shift trigger; breadth = %% of names trending. Every number shown so the read is auditable."
 }
