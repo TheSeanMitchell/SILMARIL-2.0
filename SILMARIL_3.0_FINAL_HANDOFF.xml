@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<silmaril_3_0_final_handoff>
+
+  <preface>
+    This document is the honest, complete state of SILMARIL 3.0 as of RC8, written to hand to a final
+    coding agent. It lists exactly what is wired into the live 4-book paper-trading brain, what is NOT,
+    what is dead legacy code, and the prioritized fix list. No fluff. Every claim below was verified by
+    reading the actual repo (July 3 11:20 PM backup) + running the paper cycle, not from memory.
+
+    ARCHITECTURE IN ONE PARAGRAPH: Four independent $10k paper books (crypto/stock/metal/energy) run in
+    silmaril/execution/paper_sim.py::live_step. Each has its own universe, arena, champion, and regime.
+    A Master Account (silmaril/execution/master_account.py) is a high-confidence AGGREGATOR — it funds a
+    book only at confidence >= 90 AND regime not DOWNTREND. Champions are elected per book by forward
+    survivability. Everything is deterministic; no LLM in any signal path. The dashboard is docs/index.html
+    reading JSON files from docs/data/. GitHub Actions runs it: daily.yml every 10 min (FAST trade cycle),
+    analytics.yml 3x/day (heavy backtests + prune), backfill nightly.
+  </preface>
+
+  <what_is_wired_and_working confidence="verified">
+    <item file="paper_sim.py">4-book live trading: entry (conviction-ranked MR dips), exit (target or heatshield floor, NO timeouts), per-book champion params. WIRED.</item>
+    <item file="paper_sim.py">MIN_TAKEHOME floor sizing — no more $0.01 dust buys. WIRED + verified.</item>
+    <item file="paper_sim.py">Falling-knife veto (skip names down >=6%/6h with no bounce). WIRED, validated on WLD.</item>
+    <item file="paper_sim.py">Stock long-term law: never buy a name whose daily-candle trend is down, and never buy blind (&lt;20 daily candles = veto). WIRED.</item>
+    <item file="paper_sim.py">Regime hard-gate: DOWNTREND + gate=hard => zero new entries, blocked candidates logged to REGIME_AB.json for A/B scoring. WIRED + verified.</item>
+    <item file="paper_sim.py">Every trade stamped with entry_regime, wager_usd, conviction, target/stop at entry; realized_pct + pct_of_goal at exit. WIRED.</item>
+    <item file="regime_classifier.py">Regime read: INTRADAY-ONLY (daily-candle pollution bug FIXED in RC6), multi-timeframe 1h/6h/24h + breadth + movers(top-decile) + volatility. WIRED + verified. This was the biggest bug — it made green days read DOWNTREND.</item>
+    <item file="master_account.py">Confidence gate + regime veto + per-cycle decision ledger (MASTER_DECISIONS.json). WIRED + verified.</item>
+    <item file="market_calendar.py">NYSE holiday/half-day awareness; equity books idle when closed, crypto 24/7. WIRED.</item>
+    <item file="strategy_lab.py">280-strategy arena (drop/bounce/stop grid) driven by PARAM_CATALOG.json; compact grid hourly, full WIDE grid daily. WIRED.</item>
+    <item file="feature_gates.py">Experimental-signal gating (news/dr_strange/lifecycle/fingerprint/regime_conditioning/ipo/heatshield_autotune/stock_news/rotation) — all in OBSERVE, nothing touches decisions until evidence clears promotion rule. WIRED.</item>
+    <item file="news_trial.py">90-day news evidence ledger (tags headlines to universe, scores vs price). WIRED, observe-only.</item>
+    <item file="live_handoff.py">Binance.US output preview (LIVE_ORDERS_PREVIEW.json) — exact would-be order stream; enabled=false. WIRED.</item>
+    <item file="reset_internal_clean.py">Wipe purges books + Master + all derived views (session/trace/overlays/AB/kraken/threshold/sweeps). WIRED + verified.</item>
+    <item file="prune_data.py">Repo data-diet: trims intraday, caps ledgers, never touches dailies or snapshot proof. WIRED.</item>
+    <item file="index.html">UI panels wired to real engine: LIVE REGIME, DENIED THIS CYCLE, FIRST-TRADE READINESS, MASTER ACCEPT/REJECT LEDGER, WIRING AUDIT, engine strip, System Brain (knobs+gates+health), Binance lock card. WIRED (RC6/RC7).</item>
+    <item file="daily.yml + cli.py">FAST-CYCLE GUARD — heavy intelligence builders (news/IPO/catalyst/deal-journal/event) gated OFF the 10-min cycle to stop cron stacking. WIRED in RC7.</item>
+  </what_is_wired_and_working>
+
+  <dead_legacy_code priority="HIGH" note="operator asked to remove ~15 times">
+    <summary>
+      There is a SECOND, parallel trading engine in silmaril/portfolios/ — the original Alpaca multi-agent
+      system (agents named SCROOGE, MIDAS, CRYPTOBRO, Baron, Steadfast; $10k "career portfolios"; sgov
+      sweep caps; composite halts). It is NOT the 4-book paper sim. It still runs inside cli.py and wrote
+      ~13 JSON files that polluted the UI (the sgov/blocked_alpaca ACCEPT/REJECT counters the operator kept
+      seeing). RC8 deleted those files, swapped the crypto-quadrant ledger for the real master gate, and
+      neutralized the file writers. But the COMPUTE still runs (27 `from .portfolios` imports remain in
+      cli.py, lines ~1391-2440), wasting cron time and coupling risk.
+    </summary>
+    <task id="L1">Fully excise the silmaril/portfolios/ agent system from cli.py. The block runs roughly lines 1391-2440 (per-agent $10k portfolios, agent voting, agent risk, grade-weighting). It is interwoven with charts.json and benchmarking, so excise carefully: remove the agent-portfolio loop, save_portfolios, agent_risk, grade-weighting, and all `from .portfolios.*` imports that feed ONLY the agent system. KEEP: market_calendar, anything the 4-book sim imports. TEST after: `python -c "from silmaril.execution.paper_sim import live_step; live_step('docs/data')"` must still run clean.</task>
+    <task id="L2">Delete the silmaril/portfolios/ directory entirely once L1 is done and nothing imports it. Also delete silmaril/execution/alpaca_paper.py and any alpaca_*.py. Grep-verify: `grep -rn "portfolios\|alpaca\|sgov\|harvest" silmaril/ docs/index.html` returns nothing.</task>
+    <task id="L3">Delete remaining legacy files listed in DELETE_THESE_LEGACY_FILES.txt from the repo (GitHub web UI): decision_ledger.json, capital_flow.json, agent_portfolios.json, report_card.json, harvest_*.json, alpaca_*_state.json, wantgot.json, debug_stream.json, docs/data/archive/.</task>
+  </dead_legacy_code>
+
+  <systems_built_but_not_fully_wired_to_decisions priority="MEDIUM">
+    <note>These COMPUTE and DISPLAY but do not yet CHANGE trading behavior. That is BY DESIGN (observe-first),
+    but the operator wants each to eventually rotate in via the feature-gate promotion mechanism once it
+    proves edge on real forward data. None can be promoted until data accrues over the observation window.</note>
+    <item id="W1">Dr. Strange (trajectory/next-peak projection) — computes, gated observe, evidence ledger empty (needs forward data). Not validated.</item>
+    <item id="W2">Peak-rhythm / fingerprint — computed and DISPLAYED, ranks entries via conviction, but fingerprint-WEIGHTING of entries is gated observe (not yet influencing).</item>
+    <item id="W3">News ingestion — all-quadrant tagging works; influence gated until 60 scored headlines beat coin-flip p&lt;0.05. Historically failed; restarted clean.</item>
+    <item id="W4">Regime A/B proof (REGIME_AB_STATUS.json) — logs blocked trades, scores them vs reality. Only populates on DOWNTREND+hard-gate days. Verify it fires on the next red crypto day.</item>
+    <item id="W5">IPO/event watch — feature-gate slot exists (ipo_event_watch, observe) but there is NO live IPO data fetcher wired to the 4-book engine. If wanted, build a deterministic fetcher; otherwise remove the slot to avoid implying a capability that isn't there.</item>
+    <item id="W6">Time-of-day edge, heatshield autotune, lifecycle, regime_conditioning — all gated observe, evidence 0/N. Promotion is automatic once evidence clears; no action needed except letting data accrue.</item>
+  </systems_built_but_not_fully_wired_to_decisions>
+
+  <known_bugs_or_display_gaps priority="MEDIUM">
+    <bug id="B1">Market Engines strip printed "[object Object]" for buys/target/floor. RC7 added a cache-buster; if it persists after RC7/RC8 install + hard refresh, the champion_*.json.live_params fetch in renderEngStrip (index.html ~line 756) needs the same null-guard the strip already has for regime. Verify live_params.entry is a number, not nested.</bug>
+    <bug id="B2">Regime showed a lonely muted median (e.g. +0.795%) with no context, reading as "broken" when the market was green. RC7 added movers(top-decile) + breadth("68% up on day"). Confirm the regime PANEL and Brain row both show it after install.</bug>
+    <bug id="B3">LIVE-TRADING READINESS meter showed NaN%/gated. It reads reality_validation.production_readiness_score. Confirm the label clarifies it is readiness for the 90-DAY live-handoff bar (100 OOS trades), NOT readiness-since-reset. Operator was confused what it measures.</bug>
+    <bug id="B4">CAPITAL ROUTER EXPLAINED + EDGE CAPTURE panels: verify they read the NEW engine's files (CAPITAL_ROUTER_EXPLAINED.json is champion-weighted and live) and not any legacy remnant.</bug>
+    <bug id="B5">Champion/survivability shows "-/100" and "n=0" post-reset until trades accrue — this is correct but looks broken. Consider a "warming up — first trades pending" label instead of dashes.</bug>
+  </known_bugs_or_display_gaps>
+
+  <tab_by_tab_audit_checklist>
+    <instruction>The final agent should open each tab on the live site AFTER installing RC8 + reset, and confirm each renders from live data with no legacy remnants and no console errors.</instruction>
+    <tab name="COMMAND">Master card (gate reasons), Market Engines strip (per-book params+regime), LIVE REGIME panel (1h/6h/24h+movers), DENIED THIS CYCLE, FIRST-TRADE READINESS, MASTER ACCEPT/REJECT LEDGER, WIRING AUDIT, 4 quadrant cards, ACCOUNT side-by-side, CHAMPION, READINESS meter, LIVE POSITIONS (stop/target bars — verify bars render after fresh trades), RECENT TRADES.</tab>
+    <tab name="ARENA">Champion truth panel, per-book quadrant leaderboards (crypto/stock/metal/energy with sprite names), strategy survival leaderboard, promotion ladder. Verify edge% + win% are from the current run.</tab>
+    <tab name="FORENSICS">Scorecard (governance auto-updates from alignment), TODAY'S SESSION, session anatomy, crypto-side concentration, reality check, champion timeline, live-kraken spread (fee truth), daily journal, parameter/champion registry (the ROTATING table), daily take-home, fee scenario, threshold/drop/bounce sweeps, trade quality, kraken mirror, master log, decision trace, compounding, time-of-day, drop-threshold shadow-sim, edge capture. THIS TAB HAS THE MOST PANELS — verify each reads a live file and none show legacy sgov/alpaca data.</tab>
+    <tab name="SILMARIL NEWS">3x3 YouTube wall (autoplay + solo audio + fullscreen), masthead+edition, sector-columned clickable headlines with sentiment/ticker chips. Research only, never trades.</tab>
+    <tab name="SETTINGS / SYSTEM BRAIN">Health matrix (every subsystem light), tunable knobs table (PARAM_CATALOG.json), experimental gates (evidence counts), Binance lock card (greyed with unmet conditions), theme toggle, legacy debug links. Verify every knob shown maps to a real catalog key.</tab>
+    <tab name="TITLE/HEADER">Reads version from PROJECT_META.json (should say 3.0 or 3.0-RC*, operator saw stale 2.6.1 flash — confirm fixed).</tab>
+  </tab_by_tab_audit_checklist>
+
+  <prioritized_fix_list_for_last_prompt>
+    <fix rank="1" id="L1-L3">Excise legacy portfolios/ + alpaca entirely (tasks L1,L2,L3). This is the #1 operator request. Do it first; test the paper sim still runs.</fix>
+    <fix rank="2" id="B1-B5">Confirm/fix the 5 display gaps after install. Mostly verify-and-relabel, not deep code.</fix>
+    <fix rank="3" id="AUDIT">Walk every tab per the checklist; for any panel reading a dead file, either rewire to a live file or remove the panel. Guarantee zero legacy remnants.</fix>
+    <fix rank="4" id="W5">Decide IPO watch: build a real deterministic fetcher OR remove the gate slot. Do not leave a slot implying a capability that isn't wired.</fix>
+    <fix rank="5" id="LABELS">Add "warming up — first trades pending" labels wherever dashes/NaN/n=0 appear post-reset, so a fresh clean run never looks broken.</fix>
+    <fix rank="6" id="RUNTIME">Confirm cron run-time is under a few minutes on the FAST cycle after L1 excision (removing the agent compute should drop it further). If still ballooning, profile which build_* call in the hourly pass is slow and gate it to the deep workflow.</fix>
+    <fix rank="7" id="DOCS">Write ONE foundational README replacing all pre-3.0 markdown; archive the rest. Update PROJECT_META.json version to 3.0 only when the above are done.</fix>
+  </prioritized_fix_list_for_last_prompt>
+
+  <operational_guidance>
+    <reset_policy>Install RC8, reset ONCE (clears cached legacy ledger from quadrant pages), then let it run untouched. After the final agent's excision pass, reset once more for a truly clean 90-day baseline.</reset_policy>
+    <warmup>After reset, crypto arms in ~2h (24 intraday points at 10-min cadence). Stock/metal/energy only when their data feeds return (Monday for equities). The FIRST-TRADE READINESS panel shows the countdown per book.</warmup>
+    <honest_status>This is a legitimate research platform with a corrected regime engine, honest evidence gating, and a working crypto book. It is NOT yet a proven trading system — that requires the 90-day observation window with 100 OOS trades clearing the survivability gate. The $600-4500/month target remains an unproven hypothesis the data will confirm or deny. No code can shortcut that.</honest_status>
+  </operational_guidance>
+
+</silmaril_3_0_final_handoff>
