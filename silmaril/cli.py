@@ -1386,7 +1386,7 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
     # (see below, after risk filter) so we can pass relevant tickers.
 
     # ── Chart bundles for each debated ticker ───────────────────
-    write_charts_json(out / "charts.json", debate_dicts, ctx_lookup)
+    write_charts_json(out / "_legacy_charts_disabled.json", debate_dicts, ctx_lookup)
 
     # ── Per-agent $10K career portfolios ─────────────────────────
     # Includes the main voters PLUS Baron and Steadfast (specialists
@@ -1681,7 +1681,8 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
     # flows into the decision_ledger and onto the dashboard.
     try:
         from .portfolios.three_month_filter import filter_plans_by_trend as _trend_filter
-        from .portfolios.explainability import log_rejection as _log_rej
+        def _log_rej(*a, **k):
+            return None  # legacy decision_ledger.json (sgov/alpaca) writer disabled
         # Build a ticker→debate-dict map and use the contexts list (already
         # has price_history attached) as the per-ticker lookup.
         _debates_by_ticker = {d["ticker"].upper(): d for d in debate_dicts}

@@ -903,7 +903,7 @@ async function openQuadrant(bk){
   const book=await jget('data/paper_book_'+bk+'.json')||{};
   const conv=await jget('data/conviction_ranking.json')||{};
   const trace=await jget('data/DECISION_TRACE.json')||{};
-  const led=await jget('data/decision_ledger.json')||{};
+  const led=await jget('data/MASTER_DECISIONS.json').catch(()=>[]);  // clean 4-book gate ledger (legacy sgov/alpaca ledger removed)
   const L=LIVE||{}, b=L[bk]||{};
   const eq=b.equity!=null?b.equity:(book.cash!=null?(book.cash+ (book.realized_pnl||0)):10000);
   let H='<div style="font-size:18px;font-weight:900;color:'+COL+';letter-spacing:1px">'+NM+' — portfolio &amp; decision tree</div>';
@@ -940,9 +940,11 @@ async function openQuadrant(bk){
       H+='<tr><td style="color:'+COL+'">'+tk+'</td><td style="opacity:.85">'+rs+'</td><td class="'+(pl>=0?'pos':'neg')+'">$'+f(pl)+'</td></tr>';});
     H+='</table>';} else H+='<div class="dim" style="font-size:11px">no exits recorded yet</div>';
 
-  // ACCEPT / REJECT LEDGER
-  if(led.by_category){H+='<div style="font-weight:800;margin:14px 0 4px;border-bottom:1px solid #ffffff22">ACCEPT / REJECT LEDGER</div>';
-    H+='<div class="dim" style="font-size:11px">'+Object.entries(led.by_category).map(([k,v])=>k+': '+(typeof v==='object'?(v.count||Object.keys(v).length):v)).join(' · ')+'</div>';}
+  // MASTER GATE — real accept/reject for THIS book, every cycle (no legacy sgov/alpaca counters)
+  const mled=Array.isArray(led)?led:[];
+  if(mled.length){H+='<div style="font-weight:800;margin:14px 0 4px;border-bottom:1px solid #ffffff22">MASTER GATE — is this book funded?</div>';
+    H+='<table style="width:100%;font-size:10px"><tr style="opacity:.6"><td>cycle</td><td>confidence</td><td>gate</td><td>regime</td><td>verdict</td></tr>'+mled.slice(0,8).map(function(r){var q=(r.books||{})[bk]||{};var t=r.t?new Date(r.t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';var acc=q.decision==='ACCEPT';return '<tr><td class=dim>'+t+'</td><td class="'+(acc?'pos':'neg')+'">'+(q.confidence!=null?q.confidence:'—')+'</td><td>'+(r.gate||90)+'</td><td>'+(q.regime||'—')+(q.regime_veto?' ✕':'')+'</td><td class="'+(acc?'pos':'dim')+'">'+(acc?'FUNDED':'held')+'</td></tr>';}).join('')+'</table>';
+    H+='<div class="dim" style="font-size:10px;margin-top:3px">Master funds only at confidence ≥ gate AND regime not red. This book\'s own trading (above) runs independently in its $10k workshop.</div>';}
 
   // TRADE HISTORY
   const tr=(book.trades||[]).slice(-25).reverse();
