@@ -103,9 +103,17 @@ def build_regime_classifier(out_dir) -> Dict[str, Any]:
         up = sum(1 for x in base if x > UP)
         dn = sum(1 for x in base if x < DN)
         n = len(base)
+        # MOVERS context — the median can look flat while the top decile rips. Show both so a green day
+        # never reads as "broken": headline stays median (honest breadth), but movers_24h_pct surfaces the
+        # names the operator is actually eyeballing.
+        import statistics as _st
+        s24_sorted = sorted(s24) if s24 else []
+        movers = round(s24_sorted[int(len(s24_sorted) * 0.9)], 3) if len(s24_sorted) >= 3 else None
+        pct_up_24 = round(sum(1 for x in s24 if x > 0) / len(s24) * 100) if s24 else 0
         by_book[book] = {
             "regime": regime, "dir": d,
             "slope_1h_pct": m1, "slope_6h_pct": m6, "slope_24h_pct": m24,
+            "movers_24h_pct": movers, "breadth_up_24h_pct": pct_up_24,
             "median_slope_pct": head,
             "breadth_up_pct": round(up / n * 100) if n else 0,
             "breadth_down_pct": round(dn / n * 100) if n else 0,
@@ -113,7 +121,9 @@ def build_regime_classifier(out_dir) -> Dict[str, Any]:
             "fresh_symbols": fresh,
             "shift_watch": ("FAST 1h diverges from 6h - regime may be turning"
                             if (m1 is not None and m6 is not None and (m1 > UP) != (m6 > UP)) else "stable"),
-            "why": "6h intraday median %+.2f%% . 1h %+.2f%% . breadth %d%% up / %d%% down" % (
+            "why": "24h median %+.2f%% (top movers +%.1f%%) . %d%% of names up on the day . 6h %+.2f%% . 1h %+.2f%%" % (
+                (m24 if m24 is not None else 0.0), (movers if movers is not None else 0.0), pct_up_24,
+                (m6 if m6 is not None else 0.0), (m1 if m1 is not None else 0.0)) if False else "6h intraday median %+.2f%% . 1h %+.2f%% . breadth %d%% up / %d%% down" % (
                 (m6 if m6 is not None else 0.0), (m1 if m1 is not None else 0.0),
                 round(up / n * 100) if n else 0, round(dn / n * 100) if n else 0),
             "advice": _advice(regime),

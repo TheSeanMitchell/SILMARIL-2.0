@@ -88,6 +88,9 @@
     <div id="engStrip" style="font-size:11px;line-height:1.6;margin-bottom:6px"></div>
     <div id="regimePanel" style="margin:6px 0"></div>
     <div id="deniedPanel" style="margin:6px 0"></div>
+    <div id="warmupPanel" style="margin:6px 0"></div>
+    <div id="masterRejectPanel" style="margin:6px 0"></div>
+    <div id="wiringPanel" style="margin:6px 0"></div>
     <div class="quads" id="quadrants"></div>
     <div id="scanStatus" class="dim" style="font-size:11px;margin-top:8px;padding:7px;border:1px dashed var(--line)">scanning…</div>
     <div class="note">All four books are live and independent — own universe, own arena, own champion, own $10k (crypto 24/7 · stocks NYSE sessions · metals 24/5 · energy daily). Champions elected per book by forward survivability; the WIDE 280-grid sweeps 3×/day; quiet books still learn every cycle (fingerprints, rhythm, backtests) while waiting for a qualified setup.</div>
@@ -299,14 +302,14 @@
   <div id="chartHost" style="border:1px solid var(--line);padding:4px">loading…</div><div id="mStats" class="note"></div>
 </div></div>
 
-<script>
+<script>var CACHE_BUST=Date.now();
 const $=id=>document.getElementById(id);
 const f=(n,d=2)=>n==null?'—':(+n).toFixed(d);
 const sg=(n,d=2)=>n==null?'—':((n>=0?'+':'')+(+n).toFixed(d));
 const cl=n=>n==null?'dim':n>0?'pos':n<0?'neg':'dim';
 const EXIT={t:.03,s:.04,h:242};
 const icon=s=>{const b=s.replace('-USD','').toLowerCase();return `<img class="ico" src="https://assets.coincap.io/assets/icons/${b}@2x.png" onerror="this.style.display='none'"/>`;};
-async function jget(p){try{return await (await fetch(p+'?_='+Date.now())).json();}catch(e){return null;}}
+async function jget(p){try{return await (await fetch(p+'?_='+Date.now(+("?v="+CACHE_BUST)))).json();}catch(e){return null;}}
 // theme
 function applyTheme(t){document.documentElement.setAttribute('data-theme',t);$('themeBtn').textContent=t==='dark'?'☀ Light':'🌙 Dark';}
 function toggleTheme(){const t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';try{localStorage.setItem('silmaril-theme',t);}catch(e){}applyTheme(t);}
@@ -338,7 +341,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderEngStrip(),'estrip'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderEngStrip(),'estrip'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>renderWarmup(),'warm'); safe(()=>renderMasterReject(),'mrej'); safe(()=>renderWiring(),'wire'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -719,6 +722,55 @@ async function bnbEligibility(){try{const el=$('bnbWhy');const btn=$('bnbBtn');i
   if(!probs.length){btn.disabled=false;btn.style.opacity='1';btn.style.cursor='pointer';btn.textContent='Connect Binance.US — ELIGIBLE';el.innerHTML='<span class=pos>Conditions met — the switch lives in PARAM_CATALOG.live_output.</span>';}
   else el.innerHTML='LOCKED: '+probs.join(' \u00b7 ');
 }catch(e){}}
+async function renderWarmup(){try{const el=$('warmupPanel');if(!el)return;
+  const L=(typeof LIVE!=='undefined'&&LIVE)||{};const mh=L.marks_health||{};
+  const warm=mh.entry_warm||0;const need=24;  // strict warmup points
+  // first-trade readiness = warmup done AND a qualifying dip AND (for hard-gate books) regime not red
+  const regs=(L.regimes)||{};
+  const rows=['crypto','stock','metal','energy'].map(b=>{const r=regs[b]||'—';
+    const pos=((L[b]||{}).positions||[]).length;
+    let state,col;
+    if(pos>0){state='TRADING — '+pos+' open';col='pos';}
+    else if(r==='DOWNTREND'){state='HELD BACK — regime red (gate blocks new entries)';col='neg';}
+    else if(warm<need){state='WARMING UP — '+warm+'/'+need+' points of live context';col='dim';}
+    else{state='ARMED — waiting for a qualifying dip in '+r;col='#d4af37';}
+    return '<tr><td><b>'+b.toUpperCase()+'</b></td><td class="'+col+'" style="font-size:11px">'+state+'</td></tr>';}).join('');
+  el.innerHTML='<div class="hd" style="font-size:12px">\u23f3 FIRST-TRADE READINESS \u2014 why each book is or isn\u2019t trading right now</div>'
+    +'<div class="bd"><table style="font-size:11px"><tbody>'+rows+'</tbody></table></div>';
+}catch(e){}}
+async function renderMasterReject(){try{const el=$('masterRejectPanel');if(!el)return;
+  const d=await jget('data/MASTER_ACCOUNT.json').catch(()=>null);
+  const led=(d&&d.decision_log_tail)||[];
+  const bks=['crypto','stock','metal','energy'];
+  if(!led.length){el.innerHTML='<div class="hd" style="font-size:12px">\u2696\ufe0f MASTER ACCEPT / REJECT LEDGER</div><div class="bd"><div class=dim>no cycles logged yet \u2014 fills every run</div></div>';return;}
+  const head='<tr><th>cycle</th>'+bks.map(b=>'<th>'+b+'</th>').join('')+'<th>funded</th></tr>';
+  const rows=led.slice(0,8).map(r=>{const t=r.t?new Date(r.t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+    const cells=bks.map(b=>{const q=(r.books||{})[b]||{};const acc=q.decision==='ACCEPT';const veto=q.regime_veto;
+      const reason=acc?'\u2713':veto?'regime\u2715':(q.confidence!=null?q.confidence+'/'+(r.gate||90):'\u2715');
+      return '<td class="'+(acc?'pos':'dim')+'" style="font-size:10px">'+reason+'</td>';}).join('');
+    return '<tr><td class=dim style="font-size:10px">'+t+'</td>'+cells+'<td style="font-size:10px">'+((r.accepted||[]).join(',')||'<span class=dim>none</span>')+'</td></tr>';}).join('');
+  el.innerHTML='<div class="hd" style="font-size:12px">\u2696\ufe0f MASTER ACCEPT / REJECT LEDGER \u2014 confidence vs the 90 gate, every cycle</div>'
+    +'<div class="bd"><div class=dim style="font-size:10px;margin-bottom:3px">the Master funds a book ONLY at confidence \u2265 gate AND regime not red. \u2713 = funded \u00b7 number = confidence/gate \u00b7 regime\u2715 = blocked by red tape. This is separate from the four books\u2019 own trading.</div>'
+    +'<table style="font-size:11px"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table></div>';
+}catch(e){}}
+async function renderWiring(){try{const el=$('wiringPanel');if(!el)return;
+  // read each system's output file freshness → GREEN wired+fresh, YELLOW stale, GRAY not producing
+  const checks=[['Regime classifier','data/REGIME_CLASSIFIER.json',30],['Master gate/ledger','data/MASTER_ACCOUNT.json',30],
+    ['Decision trace','data/DECISION_TRACE.json',30],['Chart overlays','data/CHART_OVERLAYS.json',30],
+    ['Wide arena (drop/bounce)','data/strategy_leaderboard_wide_crypto.json',1560],['Hourly arena','data/strategy_leaderboard_crypto.json',120],
+    ['Peak rhythm','data/PEAK_RHYTHM.json',120],['Regime A/B proof','data/REGIME_AB_STATUS.json',1560],
+    ['Feature gates','data/FEATURE_GATES_STATUS.json',1560],['News trial','data/NEWS_TRIAL_STATUS.json',1560],
+    ['Handoff preview','data/LIVE_ORDERS_PREVIEW.json',30],['Fee/heatshield sweep','data/HEATSHIELD.json',1560]];
+  const now=Date.now();
+  const results=await Promise.all(checks.map(async ([nm,f,mins])=>{try{const d=await jget(f);const g=d&&(d.generated_at||d.wiped_at);
+    if(!g)return [nm,'\ud83d\udfe2','producing (no timestamp)'];const age=(now-new Date(g).getTime())/60000;
+    return [nm, age<=mins?'\ud83d\udfe2':'\ud83d\udfe1', age<60?Math.round(age)+'m old':(age/60).toFixed(1)+'h old'];
+  }catch(e){return [nm,'\u26aa','not producing yet'];}}));
+  const rows=results.map(([nm,dot,note])=>'<tr><td>'+dot+' '+nm+'</td><td class=dim style="font-size:10px">'+note+'</td></tr>').join('');
+  el.innerHTML='<div class="hd" style="font-size:12px">\ud83d\udd0c WIRING AUDIT \u2014 is every system actually producing fresh output?</div>'
+    +'<div class="bd"><div class=dim style="font-size:10px;margin-bottom:3px">\ud83d\udfe2 wired + fresh \u00b7 \ud83d\udfe1 wired but stale \u00b7 \u26aa not producing yet (needs trades/data). This is the "is it actually on?" check for every subsystem.</div>'
+    +'<table style="font-size:11px"><tbody>'+rows+'</tbody></table></div>';
+}catch(e){}}
 async function renderRegimePanel(){try{const d=await jget('data/REGIME_CLASSIFIER.json');const el=$('regimePanel');if(!el||!d||!d.by_book)return;
   const dot=r=>r==='UPTREND'?'\ud83d\udfe2':r==='DOWNTREND'?'\ud83d\udd34':r==='NO DATA'?'\u26aa':'\ud83d\udfe1';
   const sgn=v=>v==null?'\u2014':(v>=0?'+':'')+v+'%';
@@ -729,7 +781,8 @@ async function renderRegimePanel(){try{const d=await jget('data/REGIME_CLASSIFIE
       +'<td class="'+col(r.slope_1h_pct)+'">1h '+sgn(r.slope_1h_pct)+'</td>'
       +'<td class="'+col(r.slope_6h_pct)+'">6h '+sgn(r.slope_6h_pct)+'</td>'
       +'<td class="'+col(r.slope_24h_pct)+'">24h '+sgn(r.slope_24h_pct)+'</td>'
-      +'<td class=dim>'+(r.breadth_up_pct!=null?r.breadth_up_pct+'% up':'')+'</td>'
+      +'<td class="'+(r.movers_24h_pct>0?'pos':'dim')+'" style="font-size:10px">movers +'+(r.movers_24h_pct!=null?r.movers_24h_pct:'—')+'%</td>'
+      +'<td class=dim style="font-size:10px">'+(r.breadth_up_24h_pct!=null?r.breadth_up_24h_pct+'% up (day)':'')+'</td>'
       +'<td class=dim style="font-size:9px">'+(r.avg_volatility_pct!=null?'\u03c3 '+r.avg_volatility_pct+'%':'')+'</td>'
       +'<td class=dim style="font-size:9px">'+(r.advice||'')+'</td></tr>';}).join('');
   el.innerHTML='<div class="hd" style="font-size:12px">\ud83e\udde0 LIVE REGIME \u2014 intraday-only, multi-timeframe (updates every cycle)</div>'

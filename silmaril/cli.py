@@ -1500,74 +1500,80 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
     except Exception as e:
         log.warning("  Edge study skipped: %s", e)
 
-    # ── News & Event Intelligence (read-only, deterministic, NO LLM) ──
-    # Forward event calendar + ETF regime baskets + news momentum from the day's
-    # signals.json + catalysts.json. Display-only (Phase 1); wrapped so a failure
-    # here can never break the cycle.
-    try:
-        from .intelligence.news_intelligence import build_news_intelligence
-        _ni = build_news_intelligence(out)
-        log.info("  News intelligence: %d dated events (to +%dd), %d stock baskets, %d in news",
-                 _ni.get("event_calendar", {}).get("counts", {}).get("total_dated", 0),
-                 _ni.get("event_calendar", {}).get("counts", {}).get("furthest_days", 0),
-                 len(_ni.get("stocks", {}).get("baskets", [])),
-                 _ni.get("summary", {}).get("names_in_news", 0))
-    except Exception as e:
-        log.warning("  News intelligence skipped: %s", e)
+    # ===== 3.0 FAST-CYCLE GUARD — the permanent runtime fix =====
+    # The 10-minute trade cycle (SILMARIL_FAST) must stay light: ingest, trade, and the trust-critical live
+    # views only. These heavy deterministic intelligence builders (news, events, IPO, catalyst, deal journal,
+    # conviction, sentinel, edge-lab, etc.) run in the hourly top-of-hour pass and the 3x/day deep workflow.
+    # This is what stops the 15-20 min cron stacking the operator keeps hitting.
+    _FAST = bool(os.environ.get("SILMARIL_FAST"))
+    if not _FAST:
+        # ── News & Event Intelligence (read-only, deterministic, NO LLM) ──
+      # Forward event calendar + ETF regime baskets + news momentum from the day's
+      # signals.json + catalysts.json. Display-only (Phase 1); wrapped so a failure
+      # here can never break the cycle.
+      try:
+          from .intelligence.news_intelligence import build_news_intelligence
+          _ni = build_news_intelligence(out)
+          log.info("  News intelligence: %d dated events (to +%dd), %d stock baskets, %d in news",
+                   _ni.get("event_calendar", {}).get("counts", {}).get("total_dated", 0),
+                   _ni.get("event_calendar", {}).get("counts", {}).get("furthest_days", 0),
+                   len(_ni.get("stocks", {}).get("baskets", [])),
+                   _ni.get("summary", {}).get("names_in_news", 0))
+      except Exception as e:
+          log.warning("  News intelligence skipped: %s", e)
 
-    # ── Event Recorder (append-only, deterministic, REAL data) ──
-    # Captures market movement around tracked major events (SpaceX SPCX IPO) so
-    # the full arc can be analyzed later. Reads news_intelligence.json (above) +
-    # signals/benchmarking/alpaca state. Wrapped so a failure can't break the cycle.
-    try:
-        from .intelligence.event_recorder import record_event_snapshots
-        _er = record_event_snapshots(out)
-        for _ev in _er.get("events", []):
-            if _ev.get("recording"):
-                log.info("  Event recorder [%s]: T%+dd %s — %d snapshots captured",
-                         _ev.get("id"), _ev.get("days_until", 0), _ev.get("phase", ""),
-                         _ev.get("snapshot_count", 0))
-    except Exception as e:
-        log.warning("  Event recorder skipped: %s", e)
+      # ── Event Recorder (append-only, deterministic, REAL data) ──
+      # Captures market movement around tracked major events (SpaceX SPCX IPO) so
+      # the full arc can be analyzed later. Reads news_intelligence.json (above) +
+      # signals/benchmarking/alpaca state. Wrapped so a failure can't break the cycle.
+      try:
+          from .intelligence.event_recorder import record_event_snapshots
+          _er = record_event_snapshots(out)
+          for _ev in _er.get("events", []):
+              if _ev.get("recording"):
+                  log.info("  Event recorder [%s]: T%+dd %s — %d snapshots captured",
+                           _ev.get("id"), _ev.get("days_until", 0), _ev.get("phase", ""),
+                           _ev.get("snapshot_count", 0))
+      except Exception as e:
+          log.warning("  Event recorder skipped: %s", e)
 
-    # ── IPO Analysis & Learning (deterministic, REAL data) ──
-    # Turns the recorded time series into the coverage/market/rotation arcs +
-    # the playbook for the cockpit's IPO Watch. Wrapped so it can't break the cycle.
-    try:
-        from .intelligence.ipo_analysis import build_ipo_intelligence
-        _ipo = build_ipo_intelligence(out)
-        _ai = _ipo.get("active")
-        if _ai:
-            log.info("  IPO analysis: %s T%+dd %s — %d snapshots, coverage %s",
-                     _ai.get("company"), _ai.get("days_until", 0), _ai.get("phase", ""),
-                     _ai.get("snapshot_count", 0), _ai.get("arc", {}).get("coverage", {}).get("trend", "?"))
-    except Exception as e:
-        log.warning("  IPO analysis skipped: %s", e)
+      # ── IPO Analysis & Learning (deterministic, REAL data) ──
+      # Turns the recorded time series into the coverage/market/rotation arcs +
+      # the playbook for the cockpit's IPO Watch. Wrapped so it can't break the cycle.
+      try:
+          from .intelligence.ipo_analysis import build_ipo_intelligence
+          _ipo = build_ipo_intelligence(out)
+          _ai = _ipo.get("active")
+          if _ai:
+              log.info("  IPO analysis: %s T%+dd %s — %d snapshots, coverage %s",
+                       _ai.get("company"), _ai.get("days_until", 0), _ai.get("phase", ""),
+                       _ai.get("snapshot_count", 0), _ai.get("arc", {}).get("coverage", {}).get("trend", "?"))
+      except Exception as e:
+          log.warning("  IPO analysis skipped: %s", e)
 
-    # ── Catalyst Learning & Predictiveness (deterministic, REAL data) ──
-    # Forward gauntlet + clustering->volatility + IPO proximity + the
-    # ledger->outcome predictiveness loop. Wrapped so it can't break the cycle.
-    try:
-        from .catalysts.learning import build_catalyst_learning
-        _cl = build_catalyst_learning(out)
-        _clc = _cl.get("clustering", {})
-        log.info("  Catalyst learning: %d upcoming, elevated_ahead=%s, ledger=%d linked=%d",
-                 _cl.get("upcoming", {}).get("counts", {}).get("total", 0),
-                 _clc.get("elevated_ahead"), _cl.get("learning", {}).get("ledger_size", 0),
-                 _cl.get("learning", {}).get("linked_outcomes", 0))
-    except Exception as e:
-        log.warning("  Catalyst learning skipped: %s", e)
+      # ── Catalyst Learning & Predictiveness (deterministic, REAL data) ──
+      # Forward gauntlet + clustering->volatility + IPO proximity + the
+      # ledger->outcome predictiveness loop. Wrapped so it can't break the cycle.
+      try:
+          from .catalysts.learning import build_catalyst_learning
+          _cl = build_catalyst_learning(out)
+          _clc = _cl.get("clustering", {})
+          log.info("  Catalyst learning: %d upcoming, elevated_ahead=%s, ledger=%d linked=%d",
+                   _cl.get("upcoming", {}).get("counts", {}).get("total", 0),
+                   _clc.get("elevated_ahead"), _cl.get("learning", {}).get("ledger_size", 0),
+                   _cl.get("learning", {}).get("linked_outcomes", 0))
+      except Exception as e:
+          log.warning("  Catalyst learning skipped: %s", e)
 
-    # ── Deal Journal (read-only): news/catalyst/regime context per order, linked
-    # to realized outcomes (wins + losses). Observes the trade path; never alters it.
-    try:
-        from .intelligence.deal_journal import build_deal_journal
-        _dj = build_deal_journal(out)
-        log.info("  Deal journal: %d deals (%d live, %d linked)",
-                 _dj.get("deals_count", 0), _dj.get("live_count", 0), _dj.get("linked_count", 0))
-    except Exception as e:
-        log.warning("  Deal journal skipped: %s", e)
-
+      # ── Deal Journal (read-only): news/catalyst/regime context per order, linked
+      # to realized outcomes (wins + losses). Observes the trade path; never alters it.
+      try:
+          from .intelligence.deal_journal import build_deal_journal
+          _dj = build_deal_journal(out)
+          log.info("  Deal journal: %d deals (%d live, %d linked)",
+                   _dj.get("deals_count", 0), _dj.get("live_count", 0), _dj.get("linked_count", 0))
+      except Exception as e:
+          log.warning("  Deal journal skipped: %s", e)
     log.info("  Scored %d new predictions (total tracked: %d)",
              len(new_unique), len(all_outcomes))
     if scoring_summary.get("best_agent"):
