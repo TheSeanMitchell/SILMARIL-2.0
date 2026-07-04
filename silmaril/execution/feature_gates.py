@@ -32,6 +32,21 @@ DEFAULT_GATES = {
     "fingerprint_weighting": {"mode": "observe", "min_samples": 50,
                        "promote_rule": "fingerprint-ranked entries out-earn conviction-ranked entries",
                        "evidence_file": None},
+    "regime_conditioning": {"mode": "observe", "min_samples": 40,
+                       "promote_rule": "regime-conditioned entries beat unconditioned net-of-fees (REGIME_AB proof)",
+                       "evidence_file": "REGIME_AB.json"},
+    "style_switching": {"mode": "observe", "min_samples": 40,
+                       "promote_rule": "style-tagged entries (trend vs range) show a win-rate split worth acting on",
+                       "evidence_file": None},
+    "heatshield_autotune": {"mode": "observe", "min_samples": 60,
+                       "promote_rule": "whatif-optimal floor beats live floor on forward trades",
+                       "evidence_file": None},
+    "stock_news_ranking": {"mode": "observe", "min_samples": 60,
+                       "promote_rule": "news-ranked blue-chip entries beat trajectory-only entries",
+                       "evidence_file": "NEWS_TRIAL.json"},
+    "rotation_freshness": {"mode": "observe", "min_samples": 20,
+                       "promote_rule": "faster champion rotation beats sticky rotation on realized P&L",
+                       "evidence_file": None},
 }
 
 def build_feature_gates(out_dir) -> Dict[str, Any]:
@@ -40,7 +55,13 @@ def build_feature_gates(out_dir) -> Dict[str, Any]:
     try:
         cfg = json.loads(cfgp.read_text())
     except Exception:
-        cfg = dict(DEFAULT_GATES)
+        cfg = {}
+    # additive merge: new default gates appear automatically; operator edits are never overwritten
+    changed = False
+    for k, v in DEFAULT_GATES.items():
+        if k not in cfg:
+            cfg[k] = v; changed = True
+    if changed or not cfgp.exists():
         cfgp.write_text(json.dumps(cfg, indent=1))
     status = {}
     for name, g in cfg.items():

@@ -327,7 +327,7 @@ def _coerce_agent_record(raw_record: Dict) -> Dict:
     if "savings" not in clean:        clean["savings"]        = 0.0
     return clean
 
-def load_portfolios(path: Path) -> Dict[str, AgentPortfolio]:
+def _orig_load_portfolios(path: Path) -> Dict[str, AgentPortfolio]:
     if not path.exists(): return {}
     try: raw = json.loads(path.read_text())
     except Exception: return {}
@@ -378,3 +378,11 @@ def ensure_all_agents_have_portfolios(
         if name not in portfolios:
             portfolios[name] = AgentPortfolio(agent=name)
     return portfolios
+
+
+def load_portfolios(path):
+    """3.0: read-only shim — NEVER creates/writes agent_portfolios.json (dead Alpaca layer)."""
+    try:
+        return _orig_load_portfolios(path) if __import__("pathlib").Path(path).exists() else {}
+    except Exception:
+        return {}

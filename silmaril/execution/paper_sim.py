@@ -588,6 +588,8 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
     elif _regime == "DOWNTREND" and _rgmode == "soft":
         cands = [c for c in cands if (c[3] or 0) >= _soft_cv]
     for sym, lp, h1, cv in cands[:MAX_NAMES]:
+        _t6s = _trajectory_6h(samples.get(sym) or [])
+        _style = ("riding-strength" if (_t6s or 0) >= 0.02 else "deep-dip" if (h1 or 0) <= -0.04 else "range-play")
         if book == "stock":
             lt = _longterm_up(samples.get(sym) or [], int(cat.get("stock_longterm_min_days", 60)))
             if lt is False:
@@ -618,7 +620,9 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
                      target=target, stop=stop_, conviction=cv, expected=net_margin):
             try:
                 pbook.positions[sym]["entry_regime"] = _regime
-                pbook.trades[-1]["entry_regime"] = _regime   # every trade knows the tape it was born into
+                pbook.positions[sym]["style"] = _style
+                pbook.trades[-1]["entry_regime"] = _regime
+                pbook.trades[-1]["style"] = _style   # trend vs range: the per-symbol playstyle dataset   # every trade knows the tape it was born into
             except Exception:
                 pass
             actions.append({"act": "BUY", "sym": sym, "move_pct": round(h1 * 100, 2), "conviction": cv,
@@ -638,6 +642,8 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
                        "wager_usd": p.get("wager_usd"),
                        "target": p.get("target"), "stop": p.get("stop"),
                        "conviction": p.get("conviction"),
+                       "style": p.get("style"),
+                       "entry_regime": p.get("entry_regime"),
                        "exp_net_usd": (round(p.get("wager_usd") * p.get("expected_move"), 2)
                                         if p.get("wager_usd") and p.get("expected_move") else None),
                        "upl_pct": round((side_marks.get(s, (p["entry"], 0))[0] / p["entry"] - 1) * 100, 2)}

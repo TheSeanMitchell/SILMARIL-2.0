@@ -95,6 +95,12 @@ def build_master_account(out_dir) -> Dict[str, Any]:
     except Exception:
         pass
     accepted = [b for b, q in quadrants.items() if q["decision"] == "ACCEPT"]
+    # ALLOCATION PLAN — the operator's compounding law: more capital to winning, confident books.
+    # Confidence-proportional weights across ACCEPTED books (preview; the ledger records it every cycle
+    # so the sizing brain is auditable long before real money follows it).
+    _tot = sum(max(0.0, float(quadrants[b].get("confidence") or 0)) for b in accepted) or 1.0
+    allocation_plan = {b: (round(max(0.0, float(quadrants[b].get("confidence") or 0)) / _tot * 100) if b in accepted else 0)
+                       for b in quadrants}
 
     # MASTER DECISION LEDGER — full transparency: one row per cycle, per-quadrant confidence vs the gate and
     # the accept/reject verdict, so "how does the Master decide" is answerable from the dashboard, not faith.
@@ -260,6 +266,7 @@ def build_master_account(out_dir) -> Dict[str, Any]:
         "live_pct": live_pct,
         "live_trades_count": len(post),
         "live_trades_tail": display_tail,
+        "allocation_plan": allocation_plan,
         "live_status": live_status,
         "equity_net_spendable": round(equity, 2),
         "gross_to_spendable_chain": chain,

@@ -35,7 +35,9 @@ def main():
               "NEWS_TRIAL_STATUS.json", "LIVE_ORDERS_PREVIEW.json",
               "REGIME_AB.json", "REGIME_AB_STATUS.json", "KRAKEN_MIRROR.json", "KRAKEN_SPREAD.json",
               "THRESHOLD_CHAMPION.json", "THRESHOLD_SHADOW.json", "THRESHOLD_TAKEHOME.json",
-              "sweep_protection.json"):
+              "sweep_protection.json",
+              "decision_ledger.json", "agent_portfolios.json", "alpaca_paper_state.json",
+              "alpaca_h3_state.json", "alpaca_h5_state.json", "capital_flow.json"):
         fp = DATA / f
         if fp.exists():
             fp.unlink(); print(f"  deleted {f} (derived view — rebuilds clean)")

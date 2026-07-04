@@ -1814,6 +1814,9 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 from .portfolios.profit_protection import write_profit_at_risk as _write_par_pre
                 _positions_by_owner_pre: Dict[str, List[Dict[str, Any]]] = {}
                 for _aid in ("LEGACY", "HARVEST_3", "HARVEST_5"):
+                    if True:
+                        log.info("  legacy Alpaca broker poll DISABLED (3.0 — dead layer; Binance handoff is the future)")
+                        continue
                     _state_path = out / {"LEGACY": "alpaca_paper_state.json",
                                           "HARVEST_3": "alpaca_h3_state.json",
                                           "HARVEST_5": "alpaca_h5_state.json"}[_aid]
@@ -2160,7 +2163,15 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                         if _wf.exists():
                             _wg = json.loads(_wf.read_text()).get("generated_at")
                             _wstale = ((datetime.now(timezone.utc) - datetime.fromisoformat(_wg)).total_seconds() / 3600.0) >= 20
-                        if _deep and _wstale:
+                        _wide_age_h = 0.0
+                        try:
+                            if _wf.exists():
+                                _wide_age_h = (datetime.now(timezone.utc) - datetime.fromisoformat(json.loads(_wf.read_text()).get("generated_at"))).total_seconds() / 3600.0
+                        except Exception:
+                            _wide_age_h = 999.0
+                        # SELF-HEAL: deep workflow owns the WIDE sweep, but if it flakes (>24h stale) the
+                        # hourly pass rebuilds it — the red "50h old" light can never persist again.
+                        if (_deep and _wstale) or (_HOURLY and _wide_age_h > 24):
                             from .execution.strategy_lab import run_wide_arena as _rwa
                             _rw = _rwa(out)
                             log.info("  WIDE arena swept: %s", {k: (v or {}).get("strategy") for k, v in (_rw or {}).items()})
@@ -2483,7 +2494,7 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 "exception_type": type(e).__name__,
             }
             try:
-                _err_path = out / "alpaca_paper_state.json"
+                _err_path = out / "_legacy_alpaca_err_disabled.json"
                 _existing = {}
                 if _err_path.exists():
                     try: _existing = json.loads(_err_path.read_text())
