@@ -1,0 +1,37 @@
+SILMARIL 3.0 FINAL GOLD — OPS RUNBOOK (travels with the code)
+
+INSTALL ORDER (do exactly this):
+ 1. Drag-drop this ZIPs folders into the repo root (complete-file replacements, correct paths).
+ 2. Delete ONCE via web UI (they will NOT regenerate — writers are dead at source):
+      docs/data/decision_ledger.json · agent_portfolios.json · alpaca_paper_state.json
+ 3. Actions -> verify-install -> Run. Expect a wall of ✅ (any ❌ names the exact file that did not land).
+ 4. Actions -> reset_internal_clean -> Run  (books to $10k; prints the PRESERVED-FOREVER list).
+ 5. Actions -> backfill_universe -> Run. THEN CONFIRM equities landed:
+      Brain -> Movement V strip -> "Stock parity audit" must show symbols_with_history >= ~400
+      (if it says "insufficient — run backfill", the equities chunk failed — rerun before Monday).
+ 6. Resume the external 10-min pinger (cron-job.org -> daily.yml).
+
+CADENCE (all already wired):
+  daily.yml            every 10 min (external pinger) — FAST trade cycle + per-cycle collectors
+  top-of-hour cycle    gates · calibration · research-queue · self-heals (WIDE/HOLD >24h)
+  analytics.yml        3x/day (07:20 / 11:20 / 23:20 UTC) — WIDE arena, HOLD backtest, labs
+                       (baseline · ladder · scorecard · parity · complexity), prune
+  backfill_universe    nightly 08:10 UTC
+  weekly_backup        weekly · verify-install: manual, any time you doubt an install
+
+WHAT SURVIVES EVERY WIPE (long memory — never delete):
+  EVOLUTION_LEDGER.jsonl · RESEARCH_QUEUE.json · REGIME_COMBOS.jsonl ·
+  DAILY_BASELINE.json · knowledge_graph.json · ROTATION_HYPOTHESES.json
+  (+ price_samples / daily candles, as always)
+
+FIRST HOURS AFTER RESET (what healthy looks like):
+  - Crypto ARMS in ~2h (24 warm points). Stock/metal/energy arm when their sessions + data open.
+  - Funnel panel shows seen->warm->candidates->bought with every rejection named. Empty DENIED = provable truth.
+  - Integrity panel: "~400 non-canonical twins" is HOUSEKEEPING, not a fault (RADUSD vs RAD-USD —
+    the canonical name stays tradable; the engine never traded the twins). Serious faults show separately.
+  - Movement-V strip reads "insufficient" everywhere — CORRECT at harvest start (Law 1).
+  - Combos ledger writes one row per hour; regime letters (U/S/D) per book — the rotation pulse.
+
+WHAT NOT TO TOUCH DURING THE HARVEST:
+  No new signals · no threshold fiddling (parity/ladder are report-only advisors) ·
+  complexity ledger is report-only by your explicit deferral · let the evidence bars fill.

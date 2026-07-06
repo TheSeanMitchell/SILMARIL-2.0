@@ -34,7 +34,7 @@ def _ok_ts(t, cut):
 def _slope_window(rows, nowt, hours):
     cut = nowt.timestamp() - hours * 3600
     px = [p for t, p in rows if _ok_ts(t, cut)]
-    if len(px) < 4:
+    if len(px) < (3 if hours <= 1 else 4):
         return None
     q = max(2, len(px) // 4)
     a = sum(px[:q]) / q

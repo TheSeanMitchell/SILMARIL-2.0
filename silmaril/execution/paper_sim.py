@@ -587,6 +587,19 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
         cands = []
     elif _regime == "DOWNTREND" and _rgmode == "soft":
         cands = [c for c in cands if (c[3] or 0) >= _soft_cv]
+    try:
+        from .integrity import quarantined as _quar
+        _qset = _quar(out)
+    except Exception:
+        _qset = set()
+    if _qset:
+        _pre = len(cands)
+        cands = [c for c in cands if c[0] not in _qset]
+        if _pre != len(cands):
+            actions.append({"act": "SKIP", "sym": "%d name(s)" % (_pre - len(cands)),
+                            "why": "integrity quarantine — data stream failed Phase-1 checks"})
+    _dtrace = [{"sym": s_, "dip_pct": round(h_ * 100, 2), "conviction": c_, "fate": "candidate"}
+               for s_, l_, h_, c_ in cands[:8]]
     for sym, lp, h1, cv in cands[:MAX_NAMES]:
         _t6s = _trajectory_6h(samples.get(sym) or [])
         _style = ("riding-strength" if (_t6s or 0) >= 0.02 else "deep-dip" if (h1 or 0) <= -0.04 else "range-play")
@@ -630,7 +643,26 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
 
     pbook.save(out / f"paper_book_{book}.json")
     eq = pbook.equity(mk)
+    _rej = {}
+    for a_ in actions:
+        if a_.get("act") in ("SKIP", "REGIME_BLOCK"):
+            k_ = (a_.get("why") or "other").split(" \u2014")[0].split(" (")[0][:44]
+            _rej[k_] = _rej.get(k_, 0) + 1
+    _bought = sum(1 for a_ in actions if a_.get("act") == "BUY")
+    for d_ in (_dtrace if "_dtrace" in dir() else []):
+        pass
+    try:
+        for d_ in _dtrace:
+            if any(a_.get("act") == "BUY" and a_.get("sym") == d_["sym"] for a_ in actions):
+                d_["fate"] = "BOUGHT"
+    except Exception:
+        _dtrace = []
+    funnel = {"seen": len(side_marks),
+              "entry_warm": sum(1 for s_ in side_marks if s_ in _WARM_SYMS),
+              "candidates_after_gates": len(cands), "bought": _bought, "rejections": _rej}
     return {
+        "funnel": funnel,
+        "decision_trace_live": _dtrace,
         "equity": round(eq, 2),
         "cash": round(pbook.cash, 2),
         "realized_pnl": round(pbook.realized_pnl, 2),
@@ -720,6 +752,10 @@ def live_step(out_dir) -> Dict[str, Any]:
             # market holiday/weekend: equity books hold state, take no actions, burn no work. Crypto runs 24/7.
             _pb = PaperBook.load(out / f"paper_book_{bk}.json")
             results[bk] = {"skipped": True, "why": "market closed — " + eq_reason,
+                           "funnel": {"seen": sum(1 for s_ in marks if asset_class(s_) == bk),
+                                       "entry_warm": 0, "candidates_after_gates": 0, "bought": 0,
+                                       "rejections": {"market closed": 1}},
+                           "decision_trace_live": [],
                            "equity": _pb.equity({}), "realized_pnl": _pb.realized_pnl,
                            "positions": [], "recent_trades": [], "actions": [],
                            "universe": 0, "universe_seen": 0}

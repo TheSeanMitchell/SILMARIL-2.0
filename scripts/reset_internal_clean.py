@@ -37,7 +37,10 @@ def main():
               "THRESHOLD_CHAMPION.json", "THRESHOLD_SHADOW.json", "THRESHOLD_TAKEHOME.json",
               "sweep_protection.json",
               "decision_ledger.json", "agent_portfolios.json", "alpaca_paper_state.json",
-              "alpaca_h3_state.json", "alpaca_h5_state.json", "capital_flow.json"):
+              "alpaca_h3_state.json", "alpaca_h5_state.json", "capital_flow.json",
+              "CALIBRATION.json", "AGGRESSION_LADDER.json", "WEEKLY_SCORECARD.json",
+              "STOCK_PARITY_AUDIT.json", "INTEGRITY_QUARANTINE.json", "ECONOMIC_CLOCK.json",
+              "COMPLEXITY_LEDGER.json"):
         fp = DATA / f
         if fp.exists():
             fp.unlink(); print(f"  deleted {f} (derived view — rebuilds clean)")
@@ -51,6 +54,7 @@ def main():
     print("  wrote WIPE_MARKER.json (true post-wipe quiet period starts now)")
     # PRESERVED on purpose: price_samples.json (graphs + fingerprints), favicon caches, per-asset data.
     print("  PRESERVED: price_samples.json (graphs/fingerprints) + favicons — dashboard will NOT go blank")
+    print("PRESERVED FOREVER: EVOLUTION_LEDGER.jsonl · RESEARCH_QUEUE.json · REGIME_COMBOS.jsonl · DAILY_BASELINE.json · knowledge_graph.json · ROTATION_HYPOTHESES.json (long-memory, survives every wipe)")
     print("CLEAN. Books pristine at $10k; all graph/fingerprint/favicon history intact.")
 
 if __name__ == "__main__":

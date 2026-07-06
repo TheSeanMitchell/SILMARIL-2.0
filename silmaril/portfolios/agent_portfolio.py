@@ -351,6 +351,7 @@ def save_portfolios(
     portfolios: Dict[str, AgentPortfolio],
     prices: Optional[Dict[str, float]] = None,
 ) -> None:
+    return None  # ZOMBIE-KILLED (3.0 final) — agent_portfolios.json writer dead at source
     if prices:
         for p in portfolios.values():
             if p.current_position:

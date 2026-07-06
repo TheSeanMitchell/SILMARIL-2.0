@@ -2155,7 +2155,16 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                         except Exception:
                             _stale = True
                     _deep = bool(os.environ.get("SILMARIL_DEEP"))
-                    _dh = _dhold(out) if (_deep and _stale) else {}
+                    _dh_age_h = 999.0
+                    try:
+                        _dhf = out / "strategy_leaderboard_holds_crypto.json"
+                        if _dhf.exists():
+                            _dh_age_h = (datetime.now(timezone.utc) - datetime.fromisoformat(
+                                json.loads(_dhf.read_text()).get("generated_at"))).total_seconds() / 3600.0
+                    except Exception:
+                        pass
+                    # SELF-HEAL: HOLD backtest also refreshes hourly if the deep workflow flakes >24h
+                    _dh = _dhold(out) if ((_deep and _stale) or (_HOURLY and _dh_age_h > 24)) else {}
                     # 3.0 WIDE ARENA — full catalog grid, once daily (same staleness gate)
                     try:
                         _wf = out / "strategy_leaderboard_wide_crypto.json"
@@ -2177,6 +2186,19 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                             log.info("  WIDE arena swept: %s", {k: (v or {}).get("strategy") for k, v in (_rw or {}).items()})
                     except Exception as _rwe:
                         log.warning("wide arena skipped: %s", _rwe)
+                    if _deep:
+                        # 3.0 FINAL — deep-pass labs (report-only, evidence-building)
+                        for _nm, _imp in (("daily baseline", "daily_baseline.build_daily_baseline"),
+                                           ("aggression ladder", "aggression_ladder.build_aggression_ladder"),
+                                           ("weekly scorecard", "weekly_scorecard.build_weekly_scorecard"),
+                                           ("stock parity audit", "stock_parity_audit.build_stock_parity_audit"),
+                                           ("complexity ledger", "complexity_ledger.build_complexity_ledger")):
+                            try:
+                                _mod, _fn = _imp.split(".")
+                                getattr(__import__("silmaril.execution." + _mod, fromlist=[_fn]), _fn)(out)
+                                log.info("  %s ✔", _nm)
+                            except Exception as _de:
+                                log.warning("%s skipped: %s", _nm, _de)
                     if _dh:
                         log.info("  daily-HOLD (refreshed): energy=%s · stock=%s",
                                  (_dh.get("energy", {}).get("best_trusted") or {}).get("strategy"),
@@ -2360,6 +2382,13 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
             except Exception as _fge:
                 log.warning("feature gates/news trial skipped: %s", _fge)
             try:
+                # hourly meta-cognition: calibration + research-queue recheck (Movement V foundations)
+                from .execution.calibration import build_calibration as _cal
+                from .execution.research_queue import build_research_queue as _rq
+                _cal(out); _rq(out)
+            except Exception as _mve:
+                log.warning("movement-v collectors skipped: %s", _mve)
+            try:
                 # 2.5.4 timer/edge-capture simulation + consolidated chart overlays.
                 from .execution.timer_optimization import build_timer_optimization as _to
                 from .execution.chart_overlays import build_chart_overlays as _co
@@ -2406,6 +2435,24 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                             _co_fast(out)
                         except Exception as _cofe:
                             log.warning("fast overlays skipped: %s", _cofe)
+                        # 3.0 FINAL — per-cycle intelligence collectors (cheap, Law-abiding)
+                        try:
+                            from .execution.integrity import build_integrity as _bi
+                            _iq = _bi(out)
+                            if _iq.get("quarantined_symbols"):
+                                log.info("  integrity: %d quarantined", len(_iq["quarantined_symbols"]))
+                        except Exception as _ie:
+                            log.warning("integrity skipped: %s", _ie)
+                        try:
+                            from .execution.regime_combos import build_regime_combos as _rcx
+                            _rcx(out)
+                        except Exception:
+                            pass
+                        try:
+                            from .execution.economic_clock import build_economic_clock as _eck
+                            _eck(out)
+                        except Exception:
+                            pass
                         try:
                             from .execution.decision_trace import build_decision_trace as _dt_fast
                             _dt_fast(out)

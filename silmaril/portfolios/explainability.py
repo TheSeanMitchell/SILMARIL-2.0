@@ -129,6 +129,7 @@ def log_rejection(
     account_id: Optional[str] = None,
     detail: Optional[Dict[str, Any]] = None,
 ) -> Optional[Dict[str, Any]]:
+    return None  # ZOMBIE-KILLED (3.0 final) — legacy decision_ledger.json writer dead at source
     """Alias / convenience for the most common case: a buy was blocked."""
     return log_decision(
         data_dir, category=category, ticker=ticker, reason=reason,

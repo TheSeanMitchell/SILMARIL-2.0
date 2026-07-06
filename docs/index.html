@@ -24,6 +24,15 @@
   .tabs button:last-child{border-right:0}
   .tabs button.on{background:var(--hd);color:var(--hdfg)}
   .page{display:none}.page.on{display:block}
+.gold-shine{background:linear-gradient(100deg,#8a6d1f 0%,#d4af37 22%,#fff3b0 40%,#d4af37 58%,#8a6d1f 100%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:goldSweep 5.5s ease-in-out infinite;text-shadow:0 0 18px rgba(212,175,55,.18)}
+@keyframes goldSweep{0%,100%{background-position:0% 0}50%{background-position:100% 0}}
+@media (max-width:480px){
+  body{font-size:12px}
+  nav button{padding:6px 6px;font-size:10px}
+  table{display:block;overflow-x:auto;white-space:nowrap}
+  section .bd{padding:6px}
+  .quad-grid,.acct-grid{grid-template-columns:1fr !important}
+}
 .spr{display:inline-block}.spr-c{animation:sprBob 1.8s ease-in-out infinite}.spr-e{animation:sprBlink 4.2s step-end infinite}
 @keyframes sprBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
 @keyframes sprBlink{0%,92%,100%{opacity:1}94%,97%{opacity:0}}
@@ -66,7 +75,7 @@
   .quad-sub{font-size:11px;opacity:.85}.quad-champ{font-size:10px;opacity:.7;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .quad-st{font-size:10px;opacity:.6;margin-top:2px}
   </style></head><body><div class="wrap">
-<div class="banner" style="position:relative;padding-right:46px"><h1 style="font-weight:900;letter-spacing:.5px" id="verHdr">SILMARIL&nbsp;3.0-RC5</h1><span class="dim" style="font-size:12px;font-weight:bold" id="clock">—</span><span class="dim" style="font-size:10px" id="ts">—</span><button class="themebtn" id="themeBtn" onclick="toggleTheme()" style="position:absolute;top:5px;right:5px;padding:1px 5px;font-size:10px;line-height:1.3">🌙</button></div>
+<div class="banner" style="position:relative;padding-right:46px"><h1 style="font-weight:900;letter-spacing:.5px" id="verHdr" class="gold-shine">SILMARIL&nbsp;3.0</h1><span class="dim" style="font-size:12px;font-weight:bold" id="clock">—</span><span class="dim" style="font-size:10px" id="ts">—</span><button class="themebtn" id="themeBtn" onclick="toggleTheme()" style="position:absolute;top:5px;right:5px;padding:1px 5px;font-size:10px;line-height:1.3">🌙</button></div>
 <div class="tabs">
   <button class="on" data-p="cmd">COMMAND</button><button data-p="arena">ARENA</button>
   <button data-p="forensics">FORENSICS</button><button data-p="authority">SILMARIL NEWS</button><button data-p="settings">SETTINGS</button>
@@ -91,6 +100,8 @@
     <div id="warmupPanel" style="margin:6px 0"></div>
     <div id="masterRejectPanel" style="margin:6px 0"></div>
     <div id="wiringPanel" style="margin:6px 0"></div>
+    <div id="funnelPanel" style="margin:6px 0"></div>
+    <div id="quarPanel" style="margin:6px 0"></div>
     <div class="quads" id="quadrants"></div>
     <div id="scanStatus" class="dim" style="font-size:11px;margin-top:8px;padding:7px;border:1px dashed var(--line)">scanning…</div>
     <div class="note">All four books are live and independent — own universe, own arena, own champion, own $10k (crypto 24/7 · stocks NYSE sessions · metals 24/5 · energy daily). Champions elected per book by forward survivability; the WIDE 280-grid sweeps 3×/day; quiet books still learn every cycle (fingerprints, rhythm, backtests) while waiting for a qualified setup.</div>
@@ -279,6 +290,7 @@
   <section><div class="hd">🧠 SYSTEM BRAIN — every parameter, every gate, every critical function, one page</div><div class="bd">
     <div class="note"><b>What:</b> the single control room. Every tunable knob (edit <b>PARAM_CATALOG.json</b> — no code, ever), every experimental gate with its evidence count, every critical subsystem with a live 🟢🟡🔴 health light, and the current REGIME per quadrant. If it matters, it has a light here.</div>
     <div id="brainBox"><div class=dim>loading…</div></div>
+    <div id="mvBox" style="margin-top:8px"></div>
   </div></section>
   <section><div class="hd">SETTINGS &amp; LINKS</div><div class="bd">
     <details style="margin-bottom:10px;border:1px dashed #d4af3766;border-radius:6px;padding:6px"><summary style="cursor:pointer;font-size:12px;color:#d4af37">\ud83e\udd5a experimental \u2014 BOT HANDOFF (plug a live trader into the Master output)</summary><div id="handoffBox" style="padding:8px">loading\u2026</div></details>
@@ -341,7 +353,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderEngStrip(),'estrip'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>renderWarmup(),'warm'); safe(()=>renderMasterReject(),'mrej'); safe(()=>renderWiring(),'wire'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderEngStrip(),'estrip'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>renderWarmup(),'warm'); safe(()=>renderMasterReject(),'mrej'); safe(()=>renderWiring(),'wire'); safe(()=>renderFunnel(),'fun'); safe(()=>renderQuarantine(),'quar'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>renderMV(),'mv'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -371,7 +383,7 @@ async function renderRouter(){const d=await jget('data/CAPITAL_ROUTER_EXPLAINED.
 async function renderSector(){const d=await jget('data/SECTOR_RECOVERY.json');if(!d)return;if(d.status==='awaiting_sector_data'){$('sectorBox').innerHTML=`<div class="note">⏳ Ready & wired — awaiting sector cache. ${d.stock_trades_available} stock trades queued. ${d.action}</div>`;return;}const rows=Object.entries(d.by_sector||{}).map(([s,v])=>`<tr><td>${s}</td><td>${v.trades}</td><td class="${v.expectancy_pct>=0?'pos':'neg'}">${v.expectancy_pct>=0?'+':''}${v.expectancy_pct}%</td><td>${v.win_pct}%</td></tr>`).join('');$('sectorBox').innerHTML=`<table><thead><tr><th>sector</th><th>trades</th><th>expectancy</th><th>win%</th></tr></thead><tbody>${rows}</tbody></table><div class="note">best: <b>${d.best_sector||'—'}</b> · worst: <b>${d.worst_sector||'—'}</b></div>`;}
 async function renderChampTruth(){const g=await jget('data/CHAMPION_GOVERNANCE.json');if(!g){$('champTruthBox').innerHTML='<div class=dim>no governance data</div>';return;}
   const dc=g.declared_champion||{},ms=g.most_survivable||{},pt=g.promotion_thresholds||{},pl=g.promotion_ladder||{};
-  const aligned=g.aligned;const ci=(dc.expectancy_ci95_pct||[]);
+  const leaderN=(sl&&sl.n)||0;const aligned=g.aligned;const ci=(dc.expectancy_ci95_pct||[]);
   const tierOrder=['Sandbox','Incubation','Candidate','Production','Production-Verified'];
   const need={Sandbox:10,Incubation:25,Candidate:50,Production:100};
   const tier=dc.tier||'Sandbox';const nextNeed=need[tier]||100;const n=dc.trade_count||0;
@@ -578,7 +590,7 @@ async function renderMaster(){const d=await jget('data/MASTER_ACCOUNT.json');if(
   const br=d.daily_briefing||{};
   const recs=Object.entries(d.quadrant_recommendations||{}).map(([b,r])=>`<tr><td>${b}</td><td style="color:${r.signal==='BUY'?'#39d353':r.signal==='WAIT'?'#d4af37':'#888'}"><b>${r.signal}</b></td><td class=dim>conf ${r.confidence_pct}%</td></tr>`).join('');
   if(!d){const rl=$('readyLab');if(rl)rl.textContent='accumulating — 0 verified forward trades (fills as the champion closes real trades)';const rf=$('readyFill');if(rf)rf.style.width='2%';return;}
-  const rv=d.reality_validation||{}; const sc=rv.production_readiness_score||0;
+  const rv=d.reality_validation||{}; let sc=rv.production_readiness_score; sc=(sc!=null&&isFinite(sc))?sc:0;
   const exch=(d.exchange_comparison||[]).map(e=>`<tr style="${e.best_for_us?'color:#39d353':''}"><td>${e.venue}${e.best_for_us?' ★':''}</td><td class=dim>${e.maker_pct}% / ${e.taker_pct}%</td><td class=dim style="font-size:10px">${e.note}</td></tr>`).join('');
   $('masterBox').innerHTML=`<div style="font-size:20px;color:${g};font-weight:bold;margin-bottom:2px">$${(d.live_equity||10000).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div><div class=dim style="margin-bottom:6px">live equity · the starts-now account · ${(d.live_pct||0)>=0?'+':''}${d.live_pct||0}% · champion ${d.champion||'—'} · net-spendable on proven edge $${(d.equity_net_spendable||0).toLocaleString()}</div>
     <div style="font-weight:bold;font-size:11px;margin:4px 0 2px;color:${g}">GROSS → SPENDABLE CASH</div><table style="font-size:11px"><tbody>${chain}<tr style="border-top:1px solid ${g}"><td><b>NET SPENDABLE CASH</b></td><td class="${d.net_spendable_cash>=0?'pos':'neg'}"><b>${d.net_spendable_cash>=0?'+':''}$${d.net_spendable_cash}</b></td></tr></tbody></table>
@@ -681,6 +693,20 @@ function buildYtWall(){const w=$('ytWall');if(!w||w.dataset.built)return;w.datas
     h+='<div class="yttile"><div class="ytttl">'+f.t+'</div><iframe id="ytf'+i+'" src="'+src+'" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>'
       +'<div class="ytbar">🔊 <input id="yts'+i+'" type="range" min="0" max="100" value="0" oninput="ytVol('+i+',this.value)"></div></div>';});
   w.innerHTML=h;}
+async function renderMV(){try{const el=$('mvBox');if(!el)return;
+  const [cal,rq,ck,bl,al,ws,sp,cx]=await Promise.all(['CALIBRATION','RESEARCH_QUEUE','ECONOMIC_CLOCK','DAILY_BASELINE','AGGRESSION_LADDER','WEEKLY_SCORECARD','STOCK_PARITY_AUDIT','COMPLEXITY_LEDGER'].map(f=>jget('data/'+f+'.json').catch(()=>null)));
+  let H='<div style="font-weight:800;margin:8px 0 4px">🧬 MOVEMENT V — self-calibration & meta-cognition (observe; earns trust on evidence)</div><table style="font-size:11px"><tbody>';
+  const row=(n,v)=>H+='<tr><td style="white-space:nowrap">'+n+'</td><td class=dim style="font-size:10px">'+v+'</td></tr>';
+  if(cal){const c=cal.books||{};row('Self-calibration',Object.entries(c).map(([b,v])=>b+': '+(v.status||v.verdict+' (gap '+v.gap_pct+'%, n='+v.n+')')).join(' · '));}
+  if(rq){const aw=rq.filter(h=>/AWAKE/.test(h.state||''));row('Research queue',rq.length+' hypotheses sleeping on evidence'+(aw.length?(' · <b class=pos>'+aw.length+' AWAKE</b>'):''));}
+  if(ck)row('Economic clock',(ck.sessions?Object.entries(ck.sessions).map(([k,v])=>k+': '+v).join(' · '):'')+((ck.context_flags||[]).length?' · flags: '+ck.context_flags.join(','):''));
+  if(bl&&bl.length!==undefined)row('Daily baseline',(bl.length||0)+' day(s) archived (survives wipes)');
+  if(al)row('Aggression ladder',Object.entries(al.books||{}).map(([b,v])=>b+': '+(v.status?('n='+v.n+' insufficient'):('n='+v.n+' · 50% deploy → '+(v.ladder&&v.ladder[4]?v.ladder[4].total_pct+'% / DD '+v.ladder[4].max_dd_pct+'%':'—')))).join(' · '));
+  if(ws)row('Weekly scorecard',(ws.length||0)+' week(s) on record');
+  if(sp)row('Stock parity audit',sp.status||('rec: '+String(sp.recommendation||'').slice(0,120)+'…'));
+  if(cx)row('Complexity ledger',(cx.rows||[]).length+' subsystems · '+cx.mode);
+  H+='</tbody></table>';el.innerHTML=H;
+}catch(e){}}
 async function renderBrain(){const el=$('brainBox');if(!el)return;
   const files={cat:'data/PARAM_CATALOG.json',gates:'data/FEATURE_GATES_STATUS.json',reg:'data/REGIME_CLASSIFIER.json',ma:'data/MASTER_ACCOUNT.json',lop:'data/LIVE_ORDERS_PREVIEW.json',lbc:'data/strategy_leaderboard_crypto.json',wide:'data/strategy_leaderboard_wide_crypto.json',holds:'data/strategy_leaderboard_holds_crypto.json',trace:'data/DECISION_TRACE.json',news:'data/NEWS_TRIAL_STATUS.json',wipe:'data/WIPE_MARKER.json',pr:'data/PEAK_RHYTHM.json',ov:'data/CHART_OVERLAYS.json'};
   const D={};await Promise.all(Object.entries(files).map(([k,u])=>jget(u).then(v=>D[k]=v).catch(()=>D[k]=null)));
@@ -752,6 +778,25 @@ async function renderMasterReject(){try{const el=$('masterRejectPanel');if(!el)r
   el.innerHTML='<div class="hd" style="font-size:12px">\u2696\ufe0f MASTER ACCEPT / REJECT LEDGER \u2014 confidence vs the 90 gate, every cycle</div>'
     +'<div class="bd"><div class=dim style="font-size:10px;margin-bottom:3px">the Master funds a book ONLY at confidence \u2265 gate AND regime not red. \u2713 = funded \u00b7 number = confidence/gate \u00b7 regime\u2715 = blocked by red tape. This is separate from the four books\u2019 own trading.</div>'
     +'<table style="font-size:11px"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table></div>';
+}catch(e){}}
+async function renderFunnel(){try{const el=$('funnelPanel');if(!el)return;const L=(typeof LIVE!=='undefined'&&LIVE)||{};
+  const rows=['crypto','stock','metal','energy'].map(b=>{const f=((L[b]||{}).funnel)||null;
+    if(!f)return '<tr><td><b>'+b.toUpperCase()+'</b></td><td class=dim>—</td></tr>';
+    const rej=Object.entries(f.rejections||{}).map(([k,n])=>k+(n>1?' ×'+n:'')).join(' · ');
+    return '<tr><td><b>'+b.toUpperCase()+'</b></td><td style="font-size:10px">seen '+f.seen+' → warm '+f.entry_warm+' → candidates '+f.candidates_after_gates+' → <b class="'+(f.bought?'pos':'dim')+'">bought '+f.bought+'</b>'+(rej?'<div class=dim>blocked: '+rej+'</div>':'')+'</td></tr>';}).join('');
+  el.innerHTML='<div class="hd" style="font-size:12px">🔬 UNIVERSE FUNNEL — scanned → warm → candidates → bought, with every rejection named</div><div class="bd"><table style="font-size:11px"><tbody>'+rows+'</tbody></table></div>';
+}catch(e){}}
+async function renderQuarantine(){try{const el=$('quarPanel');if(!el)return;const d=await jget('data/INTEGRITY_QUARANTINE.json').catch(()=>null);
+  if(!d){el.innerHTML='';return;}
+  const ents=d.entries||[];const hard=ents.filter(e=>e.quarantine);const twins=hard.filter(e=>e.check==='duplicate_symbol');
+  const serious=hard.length-twins.length;const adv=ents.filter(e=>!e.quarantine).length;
+  const list=hard.filter(e=>e.check!=='duplicate_symbol').slice(-6).map(e=>'<div class=dim style="font-size:10px">'+e.sym+' — '+e.check+' ('+e.detail+')</div>').join('');
+  let msg;
+  if(!hard.length){msg='<span class=pos>0 quarantined — every symbol passed the Phase-1 checks this cycle ✔</span>';}
+  else{msg=(serious?('<b class=neg>'+serious+' serious quarantine(s)</b> — bad price data, excluded from entries + learning.'+list):'<span class=pos>0 serious data faults ✔</span>')
+      +(twins.length?('<div class=dim style="font-size:10px;margin-top:3px">'+twins.length+' non-canonical twins (e.g. RADUSD vs RAD-USD) auto-quarantined — the canonical name stays fully tradable; the engine never traded these keys. Housekeeping, not a fault.</div>'):'');}
+  if(adv)msg+='<div class=dim style="font-size:10px">'+adv+' advisory note(s) (frozen-then-jump ghosts — already excluded by the freshness filter)</div>';
+  el.innerHTML='<div class="hd" style="font-size:12px">🧪 DATA INTEGRITY — Law 2: integrity before learning</div><div class="bd">'+msg+'</div>';
 }catch(e){}}
 async function renderWiring(){try{const el=$('wiringPanel');if(!el)return;
   // read each system's output file freshness → GREEN wired+fresh, YELLOW stale, GRAY not producing
@@ -944,6 +989,9 @@ async function openQuadrant(bk){
     H+='</table>';} else H+='<div class="dim" style="font-size:11px">no exits recorded yet</div>';
 
   // MASTER GATE — real accept/reject for THIS book, every cycle (no legacy sgov/alpaca counters)
+  const dtr=(B.decision_trace_live||[]);
+  if(dtr.length){H+='<div style="font-weight:800;margin:12px 0 3px;border-bottom:1px solid #ffffff22">LIVE DECISION TRACE — this cycle\'s ranked shortlist</div>';
+    H+='<table style="font-size:10px"><tr style="opacity:.6"><td>sym</td><td>dip</td><td>conviction</td><td>fate</td></tr>'+dtr.map(d=>'<tr><td>'+d.sym+'</td><td>'+d.dip_pct+'%</td><td>'+(d.conviction!=null?d.conviction:'—')+'</td><td class="'+(d.fate==='BOUGHT'?'pos':'dim')+'">'+d.fate+'</td></tr>').join('')+'</table>';}
   const mled=Array.isArray(led)?led:[];
   if(mled.length){H+='<div style="font-weight:800;margin:14px 0 4px;border-bottom:1px solid #ffffff22">MASTER GATE — is this book funded?</div>';
     H+='<table style="width:100%;font-size:10px"><tr style="opacity:.6"><td>cycle</td><td>confidence</td><td>gate</td><td>regime</td><td>verdict</td></tr>'+mled.slice(0,8).map(function(r){var q=(r.books||{})[bk]||{};var t=r.t?new Date(r.t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';var acc=q.decision==='ACCEPT';return '<tr><td class=dim>'+t+'</td><td class="'+(acc?'pos':'neg')+'">'+(q.confidence!=null?q.confidence:'—')+'</td><td>'+(r.gate||90)+'</td><td>'+(q.regime||'—')+(q.regime_veto?' ✕':'')+'</td><td class="'+(acc?'pos':'dim')+'">'+(acc?'FUNDED':'held')+'</td></tr>';}).join('')+'</table>';
