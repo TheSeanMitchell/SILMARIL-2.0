@@ -34,11 +34,21 @@ def _params(name: str) -> Optional[Dict[str, Any]]:
 
 def build_champion_split(out_dir) -> Dict[str, Any]:
     out = Path(out_dir)
+
+    def _live_n(bk: str) -> int:
+        """Closed live paper trades for THIS book — the number that gates champion rotation."""
+        try:
+            trs = json.loads((out / f"paper_book_{bk}.json").read_text()).get("trades", [])
+            return sum(1 for t in trs if t.get("side") == "SELL" and t.get("realized_pct") is not None)
+        except Exception:
+            return 0
+
     # CRYPTO: mirror the forward-survivability champion (champion.json)
     cj = _load(out, "champion.json")
     cry_name = cj.get("champion")
     crypto = {"generated_at": _now(), "book": "crypto", "champion": cry_name,
               "live_params": _params(cry_name) if cry_name else None,
+              "live_trades": _live_n("crypto"),
               "source": "forward survivability (champion.py)",
               "reason": cj.get("reason", "")}
     try: write_json_atomic(out / "champion_crypto.json", crypto)
@@ -61,6 +71,7 @@ def build_champion_split(out_dir) -> Dict[str, Any]:
             chosen, why = cand, f"{bk} arena switch: {cand} {cand_net:+.2f}%/trade"
         payload = {"generated_at": _now(), "book": bk, "champion": chosen,
                    "live_params": _params(chosen) if chosen else None,
+                   "live_trades": _live_n(bk),
                    "source": f"independent {bk} arena (backtest hypothesis, not forward-proven)",
                    "reason": why,
                    "honest_note": ("Backtest-selected hypothesis; the live book validates it. "
