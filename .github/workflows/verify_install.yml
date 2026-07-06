@@ -6,31 +6,34 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: full marker audit — every RC, every zombie
+      - name: SILMARIL 3.0 — full marker audit
         run: |
           c(){ if grep -q "$2" "$1" 2>/dev/null; then echo "✅ $3"; else echo "❌ $3"; fi; }
-          z(){ if grep -q "$2" "$1" 2>/dev/null; then echo "❌ ZOMBIE ALIVE: $3"; else echo "✅ zombie dead: $3"; fi; }
-          echo "── engine ──"
-          c silmaril/execution/regime_classifier.py "movers_24h_pct" "regime movers/breadth context"
-          c silmaril/execution/paper_sim.py "REGIME_AB" "regime hard-gate + A/B"
-          c silmaril/execution/paper_sim.py "\"style\"" "per-symbol style tags (trend vs range)"
-          c silmaril/execution/master_account.py "allocation_plan" "master allocation intelligence"
-          c silmaril/execution/feature_gates.py "additive merge" "gate additive-merge"
-          c silmaril/execution/feature_gates.py "style_switching" "9-gate roster"
-          c silmaril/cli.py "SELF-HEAL" "wide-arena self-heal"
-          c silmaril/cli.py "FAST-CYCLE GUARD" "runtime fast-cycle guard"
-          echo "── zombies (must all be dead) ──"
-          c silmaril/portfolios/explainability.py "ZOMBIE-KILLED" "decision_ledger writer killed"
-          c silmaril/portfolios/agent_portfolio.py "ZOMBIE-KILLED" "agent_portfolios writer killed"
-          c silmaril/cli.py "broker poll DISABLED" "legacy Alpaca broker poll disabled"
-          for f in decision_ledger.json agent_portfolios.json alpaca_paper_state.json capital_flow.json; do
-            [ -f "docs/data/$f" ] && echo "❌ zombie FILE present: $f (delete via web UI once — it will not return)" || echo "✅ no $f"
-          done
-          echo "── UI ──"
-          c docs/index.html "R0.regime" "strip regime object fix (no more [object Object])"
-          c docs/index.html "LIVE-HANDOFF READINESS" "readiness honest title"
-          c docs/index.html "ALLOCATION PLAN" "master modal allocation"
-          c docs/index.html "renderWiring" "wiring audit panel"
-          echo "── gate count ──"
-          python3 -c "import json;print('✅ gates code =',sum(1 for _ in __import__('re').finditer(r'\"mode\": \"observe\"',open('silmaril/execution/feature_gates.py').read())))"
+          echo "── 3.0 gold ──"
+          python3 -c "import json;v=json.load(open('docs/data/PROJECT_META.json'))['version'];print(('✅' if v=='3.0' else '❌')+' version = '+v)"
+          c docs/index.html "gold-shine" "gold shining header"
+          echo "── Movement I (integrity/funnel) ──"
+          c silmaril/execution/integrity.py "frozen_then_jump" "data integrity layer"
+          c silmaril/execution/paper_sim.py "integrity quarantine" "engine consults quarantine"
+          c silmaril/execution/paper_sim.py '"funnel": funnel' "universe funnel in payload"
+          c docs/index.html "renderFunnel" "funnel panel"
+          c docs/index.html "renderQuarantine" "quarantine panel"
+          echo "── P-list ──"
+          for f in daily_baseline aggression_ladder weekly_scorecard stock_parity_audit; do
+            c silmaril/execution/$f.py "def build" "$f (P-item)"; done
+          c silmaril/execution/paper_sim.py "decision_trace_live" "P3 live decision trace"
+          echo "── Movement III/IV/V foundations ──"
+          for f in evolution_ledger research_queue calibration economic_clock regime_combos complexity_ledger; do
+            c silmaril/execution/$f.py "def " "$f"; done
+          test -f docs/data/knowledge_graph.json && echo "✅ knowledge graph seed" || echo "❌ knowledge graph seed"
+          test -f docs/data/ROTATION_HYPOTHESES.json && echo "✅ rotation hypotheses seed" || echo "❌ rotation hypotheses seed"
+          echo "── zombies (must be dead) ──"
+          c silmaril/portfolios/explainability.py "ZOMBIE-KILLED" "decision_ledger writer dead"
+          c silmaril/portfolios/agent_portfolio.py "ZOMBIE-KILLED" "agent_portfolios writer dead"
+          c silmaril/cli.py "broker poll DISABLED" "legacy Alpaca poll dead"
+          for f in decision_ledger.json agent_portfolios.json alpaca_paper_state.json; do
+            [ -f "docs/data/$f" ] && echo "❌ zombie file present: $f (delete once via web UI)" || echo "✅ no $f"; done
+          echo "── self-heals & guards ──"
+          c silmaril/cli.py "_dh_age_h" "HOLD-backtest self-heal"
+          c docs/index.html "isFinite(sc)" "readiness NaN guard"
           T=$(grep -c "timeout-minutes" .github/workflows/daily.yml); [ "$T" = "1" ] && echo "✅ daily single timeout" || echo "❌ daily timeout count=$T"
