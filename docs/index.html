@@ -402,6 +402,10 @@ async function renderChampTruth(){const g=await jget('data/CHAMPION_GOVERNANCE.j
     <div style="padding:8px;border:1px solid var(--line,#333);border-radius:6px;margin-bottom:10px" class="${aligned?'pos':'neg'}">
       ${aligned?'🟢 ALIGNED — the champion IS the most survivable strategy. We are trading the best one.':'🟡 NOT ALIGNED — champion differs from survivability leader. '+(g.selection_reason||'')}
     </div>
+    <div style="padding:8px;border:1px solid var(--line,#333);border-radius:6px;margin-bottom:10px;background:rgba(212,175,55,.06)">
+      <div class="dim" style="font-size:11px">🔄 <b>ROTATION STATUS</b> — how the champion changes</div>
+      <div style="font-size:12px;margin-top:3px">Live closed paper trades so far: <b class="${n>0?'pos':'dim'}">${n||0}</b>. The arena leaderboards below are <b>backtests</b> (ranked on price history — they survive wipes by design and refresh hourly). The <b>champion rotates from live forward trades</b>: a challenger must beat the incumbent's survivability by <b>15 points</b> with <b>≥5 live closed trades</b>. ${n<5?'Right now every strategy has too few live trades → <b>champion holds</b>. Once crypto arms (~2h post-wipe) and trades accrue, election runs <b>every hour</b>.':'Election runs <b>hourly</b> on forward survivability.'}</div>
+    </div>
     <div class="dim" style="margin-bottom:4px">PROMOTION STATUS · tier <b>${tier}</b> · ${blocking.length?'BLOCKED:':'ready to advance'}</div>
     ${blocking.length?'<ul style="margin:4px 0 10px 18px;font-size:12px">'+blocking.map(b=>`<li>${b}</li>`).join('')+'</ul>':'<div class="pos" style="font-size:12px;margin-bottom:10px">no blockers — will promote on next evaluation</div>'}
     <div class="dim" style="margin-bottom:4px">TIER LADDER (trades needed): Sandbox→Incubation ${pt['Sandbox->Incubation']||10} · →Candidate ${pt['Incubation->Candidate']||25} · →Production ${pt['Candidate->Production']||50} · →Verified ${pt['Production-Verified']||100}</div>
@@ -1097,15 +1101,17 @@ function renderArena(cv,gov){if(!cv)return;
 }
 async function renderQuadrantArena(){const quads=['crypto','stock','metal','energy'];let html='';
   for(const q of quads){const lb=await jget('data/strategy_leaderboard_'+q+'.json'),champ=await jget('data/champion_'+q+'.json');
-    if(!lb)continue;const bt=lb.best_trusted||{},rows=(lb.leaderboard||[]).slice(0,8);
-    const champRow=rows.find(r=>r.strategy===champ.champion)||{};
+    if(!lb)continue;const bt=lb.best_trusted||{},allRows=(lb.leaderboard||[]),rows=allRows.slice(0,25);
+    const champRow=allRows.find(r=>r.strategy===champ.champion)||{};
+    const liveTrades=(champ.live_trades!=null)?champ.live_trades:0;
     html+=`<div class="dim" style="margin:8px 0;padding:8px;border-left:3px solid ${['#a855f7','#2f74ff','#b9bcc4','#22b07d'][quads.indexOf(q)]}">
-      <b>${q.toUpperCase()}</b> · <span style="color:${['#a855f7','#2f74ff','#b9bcc4','#22b07d'][quads.indexOf(q)]}">${champ.champion?pokeInline(champ.champion):'—'}</span> (champion) · edge ${bt.mean_net_pct||0}%/trade over ${bt.trades||0}<br>
+      <b>${q.toUpperCase()}</b> · <span style="color:${['#a855f7','#2f74ff','#b9bcc4','#22b07d'][quads.indexOf(q)]}">${champ.champion?pokeInline(champ.champion):'—'}</span> (champion) · backtest edge ${bt.mean_net_pct||0}%/trade over ${bt.trades||0} · <b>${allRows.length} strategies competing</b><br>
       <span style="font-size:10px">${champ.reason||''}</span><br>
-      <table style="font-size:11px;margin-top:4px"><thead><tr><th>strategy</th><th>trades</th><th>edge</th><th>win%</th></tr></thead><tbody>
-      ${rows.map(r=>`<tr style="${r.strategy===champ.champion?'font-weight:bold;background:rgba(255,255,255,.05)':''}">`+
-        `<td>${pokeLabel(r.strategy)}</td><td>${r.trades}</td><td class="${r.mean_net_pct>=0?'pos':'neg'}">${r.mean_net_pct||0}%</td><td>${r.win_pct||0}%</td></tr>`).join('')}
-      </tbody></table></div>`;}
+      <div style="font-size:10px;margin:3px 0;padding:3px 6px;background:rgba(212,175,55,.08);border-radius:3px">📊 These are <b>backtest hypotheses</b> ranked on price history (survives wipes by design). The champion rotates from <b>live paper trades</b>: <b class="${liveTrades>0?'pos':'dim'}">${liveTrades} live closed trade${liveTrades===1?'':'s'}</b> so far ${liveTrades<5?'→ champion holds until ≥5 live trades prove a challenger (elects hourly thereafter)':'→ electing hourly on forward survivability'}.</div>
+      <div style="max-height:320px;overflow-y:auto"><table style="font-size:11px;margin-top:4px"><thead><tr><th>#</th><th>strategy</th><th>trades</th><th>bt edge</th><th>win%</th></tr></thead><tbody>
+      ${rows.map((r,i)=>`<tr style="${r.strategy===champ.champion?'font-weight:bold;background:rgba(255,255,255,.05)':''}">`+
+        `<td class=dim>${i+1}</td><td>${pokeLabel(r.strategy)}</td><td>${r.trades}</td><td class="${r.mean_net_pct>=0?'pos':'neg'}">${r.mean_net_pct||0}%</td><td>${r.win_pct||0}%</td></tr>`).join('')}
+      </tbody></table></div>${allRows.length>25?`<div class=dim style="font-size:10px;margin-top:2px">showing top 25 of ${allRows.length} — full population competes every hourly cycle</div>`:''}</div>`;}
     $('quadrantArena').innerHTML=html;}
 async function renderForensics(){
   try{const rg=await jget('data/REGIME_ANALYSIS.json');if(rg&&rg.books){let html='';for(const bk of ['crypto','stock']){const b=rg.books[bk]||{},cr=b.current_regime||{};

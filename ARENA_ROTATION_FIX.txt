@@ -1,0 +1,38 @@
+SILMARIL 3.0 — ARENA & CHAMPION ROTATION FIX (drop-in, 2 files)
+
+WHAT THIS FIXES (your exact questions):
+
+Q: "The leaderboards did not reset — same champions on top, will they ever rotate?"
+A: Two different systems that the UI never distinguished:
+   - ARENA LEADERBOARD = a BACKTEST over price history. Those 38-478 "trades" are how each
+     strategy WOULD HAVE done on real historical prices. It SURVIVES WIPES on purpose (price
+     history survives wipes). It is a hypothesis generator, not live results. Refreshes hourly.
+   - CHAMPION ELECTION = reads your LIVE paper-book trades (currently 0 after the wipe). No live
+     trades -> survivability unproven -> incumbent holds. THIS is what rotates.
+
+Q: "When will it reset champion trades?"
+A: They reset the moment you wipe (they are already 0 in this backup). The BACKTEST numbers
+   don't reset because they aren't live trades — they're history-based hypotheses.
+
+Q: "When will it rotate more than 5 strategies?"
+A: It already backtests the FULL population (72 crypto strategies) every hourly cycle — the UI was
+   just capping the DISPLAY at 8. FIXED: now shows the full ranked field (top 25 visible + scroll,
+   with "N strategies competing" and the total). Nothing was ever only-5; you just couldn't see it.
+
+Q: "How often will the champion rotate per quadrant?"
+A: HOURLY, once live trades exist. Precisely: every hourly cycle the engine re-scores forward
+   survivability from live paper trades; a challenger becomes champion when it beats the incumbent
+   by >=15 survivability points AND has >=5 live closed trades (anti-flip-flop hysteresis — slow on
+   purpose so you trade real edge, not noise). Until crypto arms (~2h post-wipe) and trades accrue,
+   the champion correctly HOLDS.
+
+CHANGES:
+ 1. docs/index.html — arena now shows full population (top 25 + scroll), labels the board as
+    BACKTEST, and shows a live-trades rotation-status banner in BOTH the Champion Truth Panel and
+    each quadrant so the backtest-vs-live split is never mysterious again.
+ 2. silmaril/execution/champion.py — emits live_trades count + rotation_policy so the UI can show
+    real rotation progress.
+
+INSTALL: drag-drop both files (replace), commit. No wipe needed — this is display + one JSON field.
+The arena will look identical in DATA (backtests are correct) but now EXPLAINS itself and shows the
+whole field. After your next wipe+arm, live_trades climbs and the champion elects hourly.
