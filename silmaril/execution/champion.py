@@ -127,14 +127,11 @@ def update_champion(out_dir) -> Dict[str, Any]:
         promotions.append({"to": champ, "at": _now(), "why": reason})
     champ_row = by_name.get(champ, {})
 
-    # LIVE-TRADE COUNT — the number that actually gates rotation. The arena leaderboard above is a
-    # BACKTEST (survives wipes, ranks on price history); the champion only rotates once real forward
-    # paper trades accrue and a challenger clears the survivability margin. Surface both so the split
-    # is never mysterious again.
+    # LIVE-TRADE COUNT — the number that actually gates rotation. The arena leaderboards are BACKTESTS
+    # (survive wipes, rank on price history); the champion rotates only from live forward paper trades.
     _live_n = 0
     try:
         _cvj = json.loads((out / "champion_validation.json").read_text())
-        _elig = [r for r in _cvj.get("strategies", []) if (r.get("n") or 0) >= 1]
         _live_n = sum(r.get("n", 0) for r in _cvj.get("strategies", []))
     except Exception:
         pass
@@ -146,9 +143,9 @@ def update_champion(out_dir) -> Dict[str, Any]:
         "live_params": live_params,
         "reason": reason,
         "live_trades": _live_n,
-        "rotation_policy": ("champion rotates hourly on forward survivability once a challenger beats "
-                            "the incumbent by %d points with >=%d live closed trades; holds otherwise "
-                            "(anti-flip-flop, slow on purpose)" % (SURV_MARGIN, CHAMPION_MIN_TRADES)),
+        "rotation_policy": ("rotates hourly on forward survivability once a challenger beats the incumbent "
+                            "by %d pts with >=%d live closed trades; holds otherwise (anti-flip-flop)"
+                            % (SURV_MARGIN, CHAMPION_MIN_TRADES)),
         "champion_backtest": {k: champ_row.get(k) for k in
                               ("trades", "win_pct", "mean_net_pct", "total_pct")},
         "current_window_leader": leader_name,

@@ -96,7 +96,10 @@ def _make_strategies(wide: bool = False) -> Dict[str, Dict[str, Any]]:
     return s
 
 
-STRATEGIES = _make_strategies()
+STRATEGIES = _make_strategies(wide=True)   # FULL catalog grid (316) — backtest is ~6s/4books, so the
+# hourly arena now competes the ENTIRE population, not a compact sample. The old cron balloons were the
+# heavy news/IPO builders (now gated off the fast cycle), never this grid. Nothing is withheld: every
+# nicknamed strategy competes every hour, per book, on its own universe.
 
 
 # ── 2.7 PER-BOOK STRATEGY SEPARATION: each quadrant evolves its own playbook ──
@@ -327,9 +330,9 @@ def run_wide_arena(out_dir):
         ranked = sorted(rows, key=lambda r: (r["trades"] >= min_tr, r["mean_net_pct"]), reverse=True)
         winners = [r for r in ranked if r["trades"] >= min_tr and r["mean_net_pct"] > 0]
         payload = {"generated_at": _now(), "book": book, "universe_size": len(uni),
-                   "grid_size": len(wide), "min_trades_for_trust": min_tr,
-                   "leaderboard": ranked[:120], "best_trusted": winners[0] if winners else None,
-                   "what": "FULL catalog grid swept daily — the drop/bounce possibility space on real data"}
+                   "grid_size": len(wide), "competed": len(rows), "min_trades_for_trust": min_tr,
+                   "leaderboard": ranked, "best_trusted": winners[0] if winners else None,
+                   "what": "FULL catalog grid swept daily — the drop/bounce possibility space on real data; every strategy that competed is listed (grid_size), ranked by trusted mean edge"}
         try:
             write_json_atomic(out / f"strategy_leaderboard_wide_{book}.json", payload)
         except Exception:

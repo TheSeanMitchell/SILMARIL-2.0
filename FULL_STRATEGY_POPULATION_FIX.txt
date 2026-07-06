@@ -1,0 +1,42 @@
+SILMARIL 3.0 — FULL STRATEGY POPULATION FIX (arena shows all 316)
+
+YOUR QUESTION: "The arena is supposed to have ~250 strategies. Are we getting the full
+250 or did something get lost?"
+
+ANSWER: Nothing was lost — the population is actually 316 (bigger than the ~250 you
+remembered). But it was being SAMPLED and TRUNCATED in three places, so you only ever
+saw a slice. All three are now fixed.
+
+WHAT WAS HAPPENING (verified by counting the actual code):
+  - The strategy grid builder makes TWO sizes:
+      compact = 72 strategies (a coarse MR sample: 4 drops x 3 targets x 3 stops + full
+                MOM/PERSIST/HOLD/patient families)
+      wide    = 316 strategies (full catalog: 8 drops x 7 targets x 5 stops = 280 MR
+                + 12 MOM + 4 PERSIST + 18 HOLD + 2 patient)
+  - The HOURLY arena (what the UI shows) used the 72-compact grid — to stay fast.
+  - The DAILY wide arena bred all 316 but WROTE ONLY THE TOP 120 to its file (ranked[:120]).
+  - So: 316 always competed for best-trusted/champion, but the DISPLAY showed 72 (hourly)
+    or 120 (wide). The ~250 you remembered = the wide MR grid (now 280 MR / 316 total).
+
+THE FIX (3 changes, all verified):
+  1. strategy_lab.py — the module-level STRATEGIES now uses the FULL 316-grid. Timing test
+     proved backtesting all 316 across all 4 books takes ~6-17s, well within the hourly
+     budget. (The old July-1 cron balloons were the news/IPO builders — already gated off
+     the fast cycle — NEVER this grid.) So the hourly arena now competes ALL 316 per book.
+  2. strategy_lab.py — the wide arena no longer truncates to [:120]; it writes the full
+     ranked field and adds a `competed`/`grid_size` count (316).
+  3. index.html — the Arena tab now shows the full ranked field (top 25 visible + scroll),
+     displays "316 strategies competing", labels the board as BACKTEST, and shows the
+     live-trades rotation banner. champion.py emits live_trades so rotation progress shows.
+
+CADENCE SAFETY: the heavy arena runs at most once per ~45 min (committed timestamp gate);
+the 10-minute trade cycle is untouched. No stacking risk. Verified.
+
+INSTALL: drag-drop the 3 files (replace), commit. No wipe needed — this is grid size +
+display + one JSON field. After the next hourly cycle, every quadrant board shows all 316
+nicknamed strategies competing, per book, on its own universe.
+
+FILES:
+  silmaril/execution/strategy_lab.py   (full grid + no truncation)
+  silmaril/execution/champion.py       (emits live_trades + rotation_policy)
+  docs/index.html                      (shows full field + backtest/rotation labels)
