@@ -20,18 +20,18 @@
   "market_session_open": false,
   "policy_applied": {
     "version": "4.0",
-    "market_mode": "ATTACK",
-    "winner_engine": "default",
-    "halt_opens": false,
-    "effective_trail_pct": 0.0255,
-    "effective_min_conv": 0.4,
+    "market_mode": "PRESERVATION",
+    "winner_engine": "market_state",
+    "halt_opens": true,
+    "effective_trail_pct": 0.045,
+    "effective_min_conv": 0.75,
     "elite_tickers": [],
     "force_close_targets": [],
     "blocked_count": 0,
     "vulnerable_count": 0,
     "position_directives_count": 0,
     "forced_rotations_count": 0,
-    "orch_objective": "ROTATE_TO_LEADERS",
+    "orch_objective": "DEFENSE_HARDENING",
     "deployment_floor_objective": "DEPLOY_IDLE_CAPITAL",
     "max_sweep_today": 0.0,
     "hard_stop_halt": false,
@@ -46,12 +46,12 @@
     "primary_symbol": null,
     "primary_qty": 0.0,
     "primary_market_value": 0.0,
-    "checked_at": "2026-07-06T00:09:26.468845+00:00"
+    "checked_at": "2026-07-06T00:39:54.783051+00:00"
   },
   "positions_snapshot": [],
   "last_cycle_summary": {
-    "time": "2026-07-06T00:09:26.696651+00:00",
-    "timestamp": "2026-07-06T00:09:26.696669+00:00",
+    "time": "2026-07-06T00:39:55.097861+00:00",
+    "timestamp": "2026-07-06T00:39:55.097874+00:00",
     "closed": 0,
     "opened": 0,
     "open_after": 0,
@@ -65,32 +65,38 @@
     "sgov_sweep_cap_detail": null,
     "directives_consumed": 0,
     "rotations_executed": 0,
-    "composite_halt": false,
+    "composite_halt": true,
     "session": "after-hours",
     "is_extended": true
   },
   "bleed_exits_this_cycle": [],
   "cycle_intents": {
-    "at": "2026-07-06T00:09:26.696687+00:00",
+    "at": "2026-07-06T00:39:55.097896+00:00",
     "session": "after-hours",
     "session_open": false,
-    "composite_halt": false,
-    "halt_reason": null,
+    "composite_halt": true,
+    "halt_reason": "Halt: market_state: market_state=PRESERVATION: in danger window (overnight_thin)",
     "plans_offered": 0,
     "buy_intents": [],
-    "decisions_this_cycle": []
+    "decisions_this_cycle": [
+      {
+        "ticker": "*",
+        "category": "blocked_composite_halt",
+        "reason": "Halt: market_state: market_state=PRESERVATION: in danger window (overnight_thin)"
+      }
+    ]
   },
-  "last_run": "2026-07-06T00:09:26.696709+00:00",
+  "last_run": "2026-07-06T00:39:55.097919+00:00",
   "label": "3% Disciplined Harvester",
   "min_harvest_gain_pct": 0.03,
   "configured": true,
   "reason": "Live \u2014 configured; last run 2026-07-04T07:23:20",
   "sweep_protection": {
     "version": "4.0",
-    "checked_at": "2026-07-06T00:09:52.712381+00:00",
-    "market_mode": "ATTACK",
+    "checked_at": "2026-07-06T00:40:53.868087+00:00",
+    "market_mode": "PRESERVATION",
     "force_sweep_floor_resolved": 10500.0,
-    "stale_close_age_days": 5,
+    "stale_close_age_days": 3,
     "instant_sweeps": [],
     "stale_closes": [],
     "news_boosts": [],
@@ -101,7 +107,7 @@
     },
     "evening_shield": {
       "triggered": false,
-      "reason": ""
+      "reason": "danger window overnight_thin \u2014 no positive unrealized on non-spared book; skip"
     },
     "danger_carve_outs": {
       "elite": [],
