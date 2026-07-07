@@ -65,7 +65,12 @@ def _quadrant_edge(out: Path, book: str) -> Dict[str, Any]:
     confidence = _confidence(surv, win, trips, net)
     proven = confidence >= CONFIDENCE_GATE
     return {"net_realized_usd": net, "real_round_trips": trips, "win_rate_pct": win,
-            "survivability": surv, "confidence": confidence, "gate": CONFIDENCE_GATE, "proven": proven}
+            "survivability": surv, "confidence": confidence, "gate": CONFIDENCE_GATE, "proven": proven,
+            "confidence_parts": {"survivability": surv, "win_pct": win, "closed_trades": trips,
+                                  "net_after_fees": net,
+                                  "_what": "the REAL inputs to the confidence formula — no mystery. "
+                                           "Multi-factor scoring (trend/liquidity/fingerprint/...) is a "
+                                           "4.0 build; it earns components only as each signal proves out."}}
 
 def build_master_account(out_dir) -> Dict[str, Any]:
     out = Path(out_dir)
@@ -115,6 +120,7 @@ def build_master_account(out_dir) -> Dict[str, Any]:
         row = {"t": _now(),
                "gate": CONFIDENCE_GATE,
                "books": {bk: {"confidence": q.get("confidence"), "decision": q.get("decision"),
+                              "confidence_parts": q.get("confidence_parts"),
                               "survivability": round(q.get("survivability") or 0, 1),
                               "trips": q.get("real_round_trips"), "win_pct": q.get("win_rate_pct"),
                               "regime": q.get("regime"), "regime_veto": q.get("regime_veto", False)}

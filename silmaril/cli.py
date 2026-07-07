@@ -2386,6 +2386,9 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 from .execution.calibration import build_calibration as _cal
                 from .execution.research_queue import build_research_queue as _rq
                 _cal(out); _rq(out)
+                from .execution.regime_accuracy import build_regime_accuracy as _ra
+                from .execution.trade_quality import build_trade_quality as _tq
+                _ra(out); _tq(out)
             except Exception as _mve:
                 log.warning("movement-v collectors skipped: %s", _mve)
             try:
@@ -2443,6 +2446,38 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                                 log.info("  integrity: %d quarantined", len(_iq["quarantined_symbols"]))
                         except Exception as _ie:
                             log.warning("integrity skipped: %s", _ie)
+                        # CADENCE WATCHDOG + GATES-INFLUENCE stamp — every cycle, full transparency
+                        try:
+                            _lpp = out / "paper_sim_live.json"
+                            _lpj = json.loads(_lpp.read_text())
+                            try:
+                                _md = json.loads((out / "MASTER_DECISIONS.json").read_text())
+                                _tsx = []
+                                for _r in _md[-10:]:
+                                    try:
+                                        _tsx.append(datetime.fromisoformat(_r["t"]))
+                                    except Exception:
+                                        pass
+                                if len(_tsx) >= 3:
+                                    _g = sorted((_tsx[i] - _tsx[i - 1]).total_seconds() / 60
+                                                for i in range(1, len(_tsx)))
+                                    _lpj.setdefault("marks_health", {})["observed_cadence_min"] = \
+                                        round(_g[len(_g) // 2], 1)
+                            except Exception:
+                                pass
+                            try:
+                                _fg = json.loads((out / "FEATURE_GATES_STATUS.json").read_text()).get("gates", {})
+                                _act = [k for k, v in _fg.items()
+                                        if str(v.get("mode", "observe")).lower() != "observe"]
+                                _lpj["gates_influence"] = {
+                                    "active": len(_act), "active_gates": _act,
+                                    "note": ("no experimental gate influences trading — all observe, weight 0"
+                                             if not _act else "ACTIVE gates are influencing decisions")}
+                            except Exception:
+                                pass
+                            _lpp.write_text(json.dumps(_lpj))
+                        except Exception as _cwe:
+                            log.warning("cadence/gates stamp skipped: %s", _cwe)
                         try:
                             from .execution.regime_combos import build_regime_combos as _rcx
                             _rcx(out)

@@ -71,7 +71,8 @@
   "stock": "hard",
   "metal": "soft",
   "energy": "soft",
-  "_what": "DOWNTREND behavior per book: hard = zero new entries (blocked candidates go to the REGIME_AB proof ledger) \u00b7 soft = only conviction>=0.5 dips \u00b7 off = ignore regime"
+  "_what": "DOWNTREND behavior per book: hard = zero new entries (blocked candidates go to the REGIME_AB proof ledger) \u00b7 soft = only conviction>=0.5 dips \u00b7 off = ignore regime",
+  "aggressive": "soft"
  },
  "regime_ab_horizon_min": 240,
  "prune": {
@@ -80,9 +81,23 @@
   "_what": "monthly data diet \u2014 dailies are never touched"
  },
  "regime_overrides": {
-  "_what": "per-book, per-regime live tuning: {\"crypto\":{\"UPTREND\":{\"target\":0.05},\"SIDEWAYS\":{\"entry\":0.02,\"target\":0.02},\"DOWNTREND\":{\"soft_conviction\":0.7}}}. Keys: entry/target/stop (fractions) + soft_conviction. Empty = champion params untouched. floor_min always binds.",
-  "crypto": {},
-  "stock": {},
+  "_what": "per-book per-regime live tuning. CRYPTO SIDEWAYS/UPTREND now carry the JUNE-30 AGGRESSION PROFILE (2% dip entries \u2014 the setting behind the 33/35-win day) reintroduced as knobs, judged by the forward record; the fee-honest engine auto-vetoes any trade that cannot clear round-trip costs.",
+  "crypto": {
+   "SIDEWAYS": {
+    "entry": 0.02,
+    "target": 0.02
+   },
+   "UPTREND": {
+    "target": 0.05,
+    "entry": 0.02
+   }
+  },
+  "stock": {
+   "SIDEWAYS": {
+    "entry": 0.015,
+    "target": 0.02
+   }
+  },
   "metal": {},
   "energy": {}
  },
@@ -108,5 +123,18 @@
   0.3,
   0.4,
   0.5
- ]
+ ],
+ "warmup": {
+  "min_points": 8,
+  "min_span_h": 1.5,
+  "_what": "pre-entry live-context gate, cadence-proof. June-30 ran 5-min cadence; at degraded 50-66m gaps a fixed high point-count starves entries forever \u2014 span is the real safety."
+ },
+ "aggressive_book": {
+  "enabled": true,
+  "name": "GEKKO",
+  "entry": 0.02,
+  "target": 0.02,
+  "stop": 0.06,
+  "_what": "GEKKO \u2014 the aggressive probe book ('greed, for lack of a better word'). 5th independent $10k paper book on the crypto universe: SAME rails (integrity quarantine, knife veto, heatshield floor, fee-honesty), LOWER thresholds. NEVER funded/mirrored by the Master, excluded from champion governance. Chases low-hanging fruit AND manufactures the forward evidence (trade-quality, calibration, fee reality) the governed books need."
+ }
 }

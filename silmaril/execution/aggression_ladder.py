@@ -15,7 +15,7 @@ def build_aggression_ladder(out_dir):
     except Exception:
         fr = [0.10, 0.20, 0.30, 0.40, 0.50]
     res = {}
-    for bk in ("crypto", "stock", "metal", "energy"):
+    for bk in ("crypto", "stock", "metal", "energy", "aggressive"):
         try:
             trs = [t["realized_pct"] / 100.0 for t in
                    json.loads((out / f"paper_book_{bk}.json").read_text()).get("trades", [])

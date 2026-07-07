@@ -102,6 +102,7 @@
     <div id="wiringPanel" style="margin:6px 0"></div>
     <div id="funnelPanel" style="margin:6px 0"></div>
     <div id="quarPanel" style="margin:6px 0"></div>
+    <div id="gekkoNote" style="margin:6px 0"></div>
     <div class="quads" id="quadrants"></div>
     <div id="scanStatus" class="dim" style="font-size:11px;margin-top:8px;padding:7px;border:1px dashed var(--line)">scanning…</div>
     <div class="note">All four books are live and independent — own universe, own arena, own champion, own $10k (crypto 24/7 · stocks NYSE sessions · metals 24/5 · energy daily). Champions elected per book by forward survivability; the WIDE 280-grid sweeps 3×/day; quiet books still learn every cycle (fingerprints, rhythm, backtests) while waiting for a qualified setup.</div>
@@ -128,6 +129,8 @@
     <table><thead><tr><th>Sym</th><th>Entry → Now</th><th>uPL%</th><th>Hold</th><th>◄ stop ·· target ►</th></tr></thead><tbody id="posMetal"></tbody></table>
     <div class="dim" style="font-size:11px;margin-top:8px">◆ ENERGY</div>
     <table><thead><tr><th>Sym</th><th>Entry → Now</th><th>uPL%</th><th>Hold</th><th>◄ stop ·· target ►</th></tr></thead><tbody id="posEnergy"></tbody></table>
+    <div class="dim" style="font-size:11px;margin-top:10px;color:#e0b341">🦎 GEKKO — aggressive probe (crypto 24/7 · same rails, lower thresholds · NEVER Master-funded)</div>
+    <table><thead><tr><th>Sym</th><th>Entry → Now</th><th>uPL%</th><th>Hold</th><th>◄ stop ·· target ►</th></tr></thead><tbody id="posAggressive"></tbody></table>
   </div></section>
   <section><div class="hd">🧾 RECENT TRADES — all books (hover/tap any symbol for its chart)</div><div class="bd">
     <div class="dim" style="font-size:11px">◆ CRYPTO</div>
@@ -138,6 +141,8 @@
     <table><thead><tr><th>Trade</th><th>Px</th><th>P&L</th><th>When</th></tr></thead><tbody id="trMetal"></tbody></table>
     <div class="dim" style="font-size:11px;margin-top:8px">◆ ENERGY</div>
     <table><thead><tr><th>Trade</th><th>Px</th><th>P&L</th><th>When</th></tr></thead><tbody id="trEnergy"></tbody></table>
+    <div class="dim" style="font-size:11px;margin-top:8px;color:#e0b341">🦎 GEKKO (aggressive probe)</div>
+    <table><thead><tr><th>Trade</th><th>Px</th><th>P&L</th><th>When</th></tr></thead><tbody id="trAggressive"></tbody></table>
   </div></section>
 </div>
 
@@ -352,8 +357,8 @@ async function load(){
   const safe=(fn,name)=>{try{fn();}catch(e){console.error(name,e);}};
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
-  safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderEngStrip(),'estrip'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>renderWarmup(),'warm'); safe(()=>renderMasterReject(),'mrej'); safe(()=>renderWiring(),'wire'); safe(()=>renderFunnel(),'fun'); safe(()=>renderQuarantine(),'quar'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>renderMV(),'mv'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
+  safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderPos('aggressive',$('posAggressive')),'posG'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderEngStrip(),'estrip'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>renderWarmup(),'warm'); safe(()=>renderMasterReject(),'mrej'); safe(()=>renderWiring(),'wire'); safe(()=>renderFunnel(),'fun'); safe(()=>renderQuarantine(),'quar'); safe(()=>renderGekkoNote(),'gekko'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>renderMV(),'mv'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -436,6 +441,7 @@ async function renderTrades(){const L=await jget('data/paper_sim_live.json');if(
       else{cell=dol+(pct!=null?' <span style="font-size:8px;opacity:.7">('+pct+')</span>':'');}
       return '<tr><td><span style="font-size:9px;opacity:.7">'+x.side+'</span> <span class="tick" data-sym="'+x.sym+'">'+x.sym+'</span>'+(x.wager_usd!=null?'<div style="font-size:8px;opacity:.55">$'+Math.round(x.wager_usd).toLocaleString()+' wagered</div>':'')+'</td><td>$'+x.price+'</td><td class="'+c+'">'+cell+(why?'<div style="font-size:8px;opacity:.6">'+why+'</div>':'')+'</td><td style="font-size:9px;opacity:.6;white-space:nowrap">'+when+'</td></tr>';}).join('');}
   if($('trCrypto'))$('trCrypto').innerHTML=rows('crypto');
+  if($('trAggressive'))$('trAggressive').innerHTML=rows('aggressive');
   if($('trStock'))$('trStock').innerHTML=rows('stock');
   if($('trMetal'))$('trMetal').innerHTML=rows('metal');
   if($('trEnergy'))$('trEnergy').innerHTML=rows('energy');
@@ -657,7 +663,7 @@ function renderMarksHealth(){try{const mh=(typeof LIVE!=='undefined'&&LIVE&&LIVE
   const bad=/DEGRADED|STALLED/.test(mh.state||'');const quiet=/QUIET/.test(mh.state||'');
   el.style.display='block';
   el.style.color=bad?'var(--neg)':(quiet?'var(--dim)':'var(--pos)');
-  const _rg=(LIVE&&LIVE.regimes)||{};const _rgs=Object.entries(_rg).map(([b,r])=>b+':'+(r==='DOWNTREND'?'\ud83d\udd34':r==='UPTREND'?'\ud83d\udfe2':'\ud83d\udfe1')).join(' ');el.innerHTML='<b>ENGINE PULSE:</b> '+mh.state+(_rgs?(' \u00b7 <b>REGIMES</b> '+_rgs):'')+' · '+mh.marked+' symbols marked · '+mh.entry_warm+' entry-warm · freshest sample '+(mh.newest_sample_age_min!=null?mh.newest_sample_age_min+' min old':'—')+(bad?' — positions and exits stay LIVE; only new entries pause. If this persists, GitHub Actions cadence has slowed.':'');
+  const _rg=(LIVE&&LIVE.regimes)||{};const _rgs=Object.entries(_rg).map(([b,r])=>b+':'+(r==='DOWNTREND'?'\ud83d\udd34':r==='UPTREND'?'\ud83d\udfe2':'\ud83d\udfe1')).join(' ');el.innerHTML='<b>ENGINE PULSE:</b> '+mh.state+(_rgs?(' \u00b7 <b>REGIMES</b> '+_rgs):'')+' · '+mh.marked+' symbols marked · '+mh.entry_warm+' entry-warm · freshest sample '+(mh.newest_sample_age_min!=null?mh.newest_sample_age_min+' min old':'—')+(mh.observed_cadence_min!=null?' · cadence '+mh.observed_cadence_min+'m'+(mh.observed_cadence_min>20?' ⚠ expect ≤15m (fallback cron armed — also fix the external pinger)':' ✔'):'')+((LIVE&&LIVE.gates_influence)?' · gates: '+LIVE.gates_influence.note:'')+(bad?' — positions and exits stay LIVE; only new entries pause. If this persists, GitHub Actions cadence has slowed.':'');
 }catch(e){}}
 async function renderMasterDecisions(){try{const d=await jget('data/MASTER_ACCOUNT.json');const el=$('mDecBox');if(!el)return;const rows=(d&&d.decision_log_tail)||[];
   if(!rows.length){el.innerHTML='<div class=dim>no decisions yet this run — the ledger fills every cycle</div>';return;}
@@ -694,9 +700,11 @@ function buildYtWall(){const w=$('ytWall');if(!w||w.dataset.built)return;w.datas
       +'<div class="ytbar">🔊 <input id="yts'+i+'" type="range" min="0" max="100" value="0" oninput="ytVol('+i+',this.value)"></div></div>';});
   w.innerHTML=h;}
 async function renderMV(){try{const el=$('mvBox');if(!el)return;
-  const [cal,rq,ck,bl,al,ws,sp,cx]=await Promise.all(['CALIBRATION','RESEARCH_QUEUE','ECONOMIC_CLOCK','DAILY_BASELINE','AGGRESSION_LADDER','WEEKLY_SCORECARD','STOCK_PARITY_AUDIT','COMPLEXITY_LEDGER'].map(f=>jget('data/'+f+'.json').catch(()=>null)));
+  const [cal,rq,ck,bl,al,ws,sp,cx,ra,tqx]=await Promise.all(['CALIBRATION','RESEARCH_QUEUE','ECONOMIC_CLOCK','DAILY_BASELINE','AGGRESSION_LADDER','WEEKLY_SCORECARD','STOCK_PARITY_AUDIT','COMPLEXITY_LEDGER','REGIME_ACCURACY','TRADE_QUALITY'].map(f=>jget('data/'+f+'.json').catch(()=>null)));
   let H='<div style="font-weight:800;margin:8px 0 4px">🧬 MOVEMENT V — self-calibration & meta-cognition (observe; earns trust on evidence)</div><table style="font-size:11px"><tbody>';
   const row=(n,v)=>H+='<tr><td style="white-space:nowrap">'+n+'</td><td class=dim style="font-size:10px">'+v+'</td></tr>';
+  if(ra){const rb=ra.books||{};row('Regime accuracy','classifier EARNS trust: '+Object.entries(rb).map(([b,v])=>b+': '+(v.accuracy_pct!=null?v.accuracy_pct+'% ('+v.graded+' graded)':'insufficient')).join(' · '));}
+  if(tqx){const tb=tqx.books||{};row('Trade quality',Object.entries(tb).map(([b,v])=>b+': '+(v.status?('n='+v.n):('capture '+v.avg_capture_pct+'% · entry +'+v.avg_entry_above_low_pct+'% off low · n='+v.n))).join(' · '));}
   if(cal){const c=cal.books||{};row('Self-calibration',Object.entries(c).map(([b,v])=>b+': '+(v.status||v.verdict+' (gap '+v.gap_pct+'%, n='+v.n+')')).join(' · '));}
   if(rq){const aw=rq.filter(h=>/AWAKE/.test(h.state||''));row('Research queue',rq.length+' hypotheses sleeping on evidence'+(aw.length?(' · <b class=pos>'+aw.length+' AWAKE</b>'):''));}
   if(ck)row('Economic clock',(ck.sessions?Object.entries(ck.sessions).map(([k,v])=>k+': '+v).join(' · '):'')+((ck.context_flags||[]).length?' · flags: '+ck.context_flags.join(','):''));
@@ -758,7 +766,7 @@ async function renderWarmup(){try{const el=$('warmupPanel');if(!el)return;
     let state,col;
     if(pos>0){state='TRADING — '+pos+' open';col='pos';}
     else if(r==='DOWNTREND'){state='HELD BACK — regime red (gate blocks new entries)';col='neg';}
-    else if(warm<need){state='WARMING UP — '+warm+'/'+need+' points of live context';col='dim';}
+    else if(warm<need){const _mr=(LIVE&&LIVE.marks_health&&LIVE.marks_health.warm_rule)||('need '+need+' pts');state='WARMING UP — '+warm+' pts of live context · rule: '+_mr;col='dim';}
     else{state='ARMED — waiting for a qualifying dip in '+r;col='#d4af37';}
     return '<tr><td><b>'+b.toUpperCase()+'</b></td><td class="'+col+'" style="font-size:11px">'+state+'</td></tr>';}).join('');
   el.innerHTML='<div class="hd" style="font-size:12px">\u23f3 FIRST-TRADE READINESS \u2014 why each book is or isn\u2019t trading right now</div>'
@@ -780,11 +788,17 @@ async function renderMasterReject(){try{const el=$('masterRejectPanel');if(!el)r
     +'<table style="font-size:11px"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table></div>';
 }catch(e){}}
 async function renderFunnel(){try{const el=$('funnelPanel');if(!el)return;const L=(typeof LIVE!=='undefined'&&LIVE)||{};
-  const rows=['crypto','stock','metal','energy'].map(b=>{const f=((L[b]||{}).funnel)||null;
-    if(!f)return '<tr><td><b>'+b.toUpperCase()+'</b></td><td class=dim>—</td></tr>';
+  const rows=['crypto','stock','metal','energy','aggressive'].map(b=>{const f=((L[b]||{}).funnel)||null;const _lbl=(b==='aggressive'?'🦎 GEKKO':b.toUpperCase());
+    if(!f)return '<tr><td><b>'+_lbl+'</b></td><td class=dim>—</td></tr>';
     const rej=Object.entries(f.rejections||{}).map(([k,n])=>k+(n>1?' ×'+n:'')).join(' · ');
-    return '<tr><td><b>'+b.toUpperCase()+'</b></td><td style="font-size:10px">seen '+f.seen+' → warm '+f.entry_warm+' → candidates '+f.candidates_after_gates+' → <b class="'+(f.bought?'pos':'dim')+'">bought '+f.bought+'</b>'+(rej?'<div class=dim>blocked: '+rej+'</div>':'')+'</td></tr>';}).join('');
+    return '<tr><td><b>'+_lbl+'</b></td><td style="font-size:10px">seen '+f.seen+' → warm '+f.entry_warm+' → candidates '+f.candidates_after_gates+' → <b class="'+(f.bought?'pos':'dim')+'">bought '+f.bought+'</b>'+(rej?'<div class=dim>blocked: '+rej+'</div>':'')+'</td></tr>';}).join('');
   el.innerHTML='<div class="hd" style="font-size:12px">🔬 UNIVERSE FUNNEL — scanned → warm → candidates → bought, with every rejection named</div><div class="bd"><table style="font-size:11px"><tbody>'+rows+'</tbody></table></div>';
+}catch(e){}}
+async function renderGekkoNote(){try{const el=$('gekkoNote');if(!el)return;const c=await jget('data/PARAM_CATALOG.json').catch(()=>null);if(!c)return;
+  const g=c.aggressive_book||{};const ov=((c.regime_overrides||{}).crypto)||{};const sw=ov.SIDEWAYS||{};
+  el.innerHTML='<div class="hd" style="font-size:12px">🦎 GEKKO + JUNE-30 PROFILE — aggression, governed</div><div class="bd" style="font-size:11px">'
+   +'<b style="color:#e0b341">GEKKO</b> ('+(g.name||'GEKKO')+') runs a 5th independent $10k book on the crypto universe at <b>'+((g.entry||0.02)*100)+'% dip → +'+((g.target||0.02)*100)+'%</b> — same rails (integrity quarantine · knife veto · heatshield floor · fee-honesty), <b>never Master-funded</b>, excluded from champion governance. It chases the low-hanging fruit AND manufactures execution evidence for the governed books.'
+   +'<div class=dim style="margin-top:3px">June-30 profile live on the main crypto book via regime_overrides: SIDEWAYS buys '+((sw.entry||0.03)*100)+'% dips → +'+((sw.target||0.03)*100)+'% (the setting behind the 33/35-win day). The fee-honest engine auto-vetoes anything that can\'t clear round-trip costs.</div></div>';
 }catch(e){}}
 async function renderQuarantine(){try{const el=$('quarPanel');if(!el)return;const d=await jget('data/INTEGRITY_QUARANTINE.json').catch(()=>null);
   if(!d){el.innerHTML='';return;}

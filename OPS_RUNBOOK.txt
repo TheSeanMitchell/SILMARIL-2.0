@@ -1,37 +1,49 @@
-SILMARIL 3.0 FINAL GOLD — OPS RUNBOOK (travels with the code)
+SILMARIL 4.0 — UNFREEZE + GEKKO FINAL · OPS RUNBOOK v3
 
-INSTALL ORDER (do exactly this):
- 1. Drag-drop this ZIPs folders into the repo root (complete-file replacements, correct paths).
- 2. Delete ONCE via web UI (they will NOT regenerate — writers are dead at source):
-      docs/data/decision_ledger.json · agent_portfolios.json · alpaca_paper_state.json
- 3. Actions -> verify-install -> Run. Expect a wall of ✅ (any ❌ names the exact file that did not land).
- 4. Actions -> reset_internal_clean -> Run  (books to $10k; prints the PRESERVED-FOREVER list).
- 5. Actions -> backfill_universe -> Run. THEN CONFIRM equities landed:
-      Brain -> Movement V strip -> "Stock parity audit" must show symbols_with_history >= ~400
-      (if it says "insufficient — run backfill", the equities chunk failed — rerun before Monday).
- 6. Resume the external 10-min pinger (cron-job.org -> daily.yml).
+WHAT WAS BROKEN (root cause, proven):
+  Cycles were running at ~50-66 MINUTE gaps (pinger degraded), not 10. The warmup gate could
+  never fill → 0 entry-warm → 0 candidates → 0/90 master → champion frozen. NOT parameter
+  overload. Everything downstream of cadence starved. June-30's 33/35-win day ran at 5-MIN
+  cadence with 2% entries — density + aggression, both now reintroduced as governed knobs.
 
-CADENCE (all already wired):
-  daily.yml            every 10 min (external pinger) — FAST trade cycle + per-cycle collectors
-  top-of-hour cycle    gates · calibration · research-queue · self-heals (WIDE/HOLD >24h)
-  analytics.yml        3x/day (07:20 / 11:20 / 23:20 UTC) — WIDE arena, HOLD backtest, labs
-                       (baseline · ladder · scorecard · parity · complexity), prune
-  backfill_universe    nightly 08:10 UTC
-  weekly_backup        weekly · verify-install: manual, any time you doubt an install
+INSTALL (drag-drop, complete-file replacements):
+  silmaril/execution/paper_sim.py        (warm knob · GEKKO book · funnel payload)
+  silmaril/execution/master_account.py   (confidence decomposed — Notes #6)
+  silmaril/cli.py                        (hourly RA+TQ · cadence watchdog · gates stamp)
+  silmaril/execution/regime_accuracy.py  (NEW — classifier graded 24h later, Notes #1)
+  silmaril/execution/trade_quality.py    (NEW — execution report cards, Notes #11)
+  silmaril/execution/calibration.py, weekly_scorecard.py, aggression_ladder.py (GEKKO included)
+  scripts/reset_internal_clean.py        (GEKKO wiped on reset; long-memory preserved)
+  .github/workflows/daily.yml            (in-repo */10 FALLBACK schedule — never starve again)
+  docs/data/PARAM_CATALOG.json           (warmup knob · June-30 profile · GEKKO config)
+  docs/index.html                        (GEKKO surfaces · dynamic warm rule · cadence pulse ·
+                                           gates-influence · Regime-Accuracy + Trade-Quality rows)
 
-WHAT SURVIVES EVERY WIPE (long memory — never delete):
-  EVOLUTION_LEDGER.jsonl · RESEARCH_QUEUE.json · REGIME_COMBOS.jsonl ·
-  DAILY_BASELINE.json · knowledge_graph.json · ROTATION_HYPOTHESES.json
-  (+ price_samples / daily candles, as always)
+GO-LIVE SEQUENCE (the last one before the harvest):
+  1. Install the ZIP. Commit.
+  2. FIX THE PINGER: set cron-job.org back to every 10 minutes (it degraded to ~hourly). The new
+     in-repo fallback schedule fires regardless, but the pinger at */10 is the crisp heartbeat.
+  3. Actions → verify-install (expect the ✅ wall).
+  4. Actions → reset_internal_clean (final wipe — books + GEKKO pristine; EVOLUTION/COMBOS/
+     QUEUE/BASELINE/graph/hypotheses preserved forever, printed in the log).
+  5. Actions → backfill_universe. Confirm stock dailies via Brain → Stock parity audit
+     (symbols_with_history should be ~400+; rerun if "insufficient").
+  6. Actions → daily (one manual fire) then let the cadence run. Actions → deep-analytics once
+     to seed baseline/ladder/scorecard/wide-316.
 
-FIRST HOURS AFTER RESET (what healthy looks like):
-  - Crypto ARMS in ~2h (24 warm points). Stock/metal/energy arm when their sessions + data open.
-  - Funnel panel shows seen->warm->candidates->bought with every rejection named. Empty DENIED = provable truth.
-  - Integrity panel: "~400 non-canonical twins" is HOUSEKEEPING, not a fault (RADUSD vs RAD-USD —
-    the canonical name stays tradable; the engine never traded the twins). Serious faults show separately.
-  - Movement-V strip reads "insufficient" everywhere — CORRECT at harvest start (Law 1).
-  - Combos ledger writes one row per hour; regime letters (U/S/D) per book — the rotation pulse.
+WHAT HEALTHY LOOKS LIKE (first hours):
+  - ENGINE PULSE shows "cadence ~10-15m ✔" and gates: "no experimental gate influences trading".
+  - Warmup fills in ~90 min (8 pts & 1.5h span — knob: PARAM_CATALOG.warmup).
+  - Crypto book hunts 2% dips in SIDEWAYS/UPTREND (June-30 profile, regime_overrides).
+  - 🦎 GEKKO opens positions fast (2%→2%, soft regime gate) — its trades feed Trade-Quality and
+    Calibration immediately. It is NEVER Master-funded; watch it like a scout, not a general.
+  - Movement V strip: Regime accuracy "insufficient" (grades 24h later) → percentages by tomorrow.
+  - Master ledger rows now show confidence_parts — the gate is no longer a black box.
 
-WHAT NOT TO TOUCH DURING THE HARVEST:
-  No new signals · no threshold fiddling (parity/ladder are report-only advisors) ·
-  complexity ledger is report-only by your explicit deferral · let the evidence bars fill.
+KNOBS YOU OWN (edit → commit → next cycle):
+  warmup.min_points / min_span_h · regime_overrides (per book per regime — the June-30 dials)
+  aggressive_book.{enabled,name,entry,target,stop} — throttle or rename GEKKO any time.
+
+DO NOT: add signals, chase the ladder mid-harvest, or trust any backtest rank without forward
+trades. Let GEKKO be greedy; let the four books be governed; let the verification layer grade
+everything. That division of labor IS the edge-hunting machine.

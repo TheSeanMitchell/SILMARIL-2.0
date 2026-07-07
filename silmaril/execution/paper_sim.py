@@ -48,6 +48,9 @@ MAX_NAMES = 10
 # kills the dust-position bug (no more $0.01 buys from leftover cash). Tunable per book: raise toward 5.00
 # for fewer/bigger/more-concentrated positions, lower toward 1.00 for more trade frequency.
 _WARM_SYMS = set()          # symbols cleared for NEW ENTRIES (strict warmup); exits never need this
+_WARM_KNOB = {"min_points": 8, "min_span_h": 1.5}   # refreshed from PARAM_CATALOG.warmup each cycle;
+# the ~2h-of-context principle made CADENCE-PROOF: June-30 ran 5-min cadence (24 pts = 2h); at a
+# degraded ~50-60 min cadence any fixed high count starves entries forever. SPAN is the real safety.
 
 def _catalog(out_dir=None):
     """PARAM_CATALOG.json = the ONE file that tunes the engine. Every value can be changed by editing that
@@ -266,8 +269,8 @@ def _marks_from_samples(samples: Dict[str, List]):
     from datetime import datetime as _dt, timezone as _tz
     RECENT_WINDOW_S = 6 * 3600
     FRESH_MAX_AGE_S = 90 * 60          # a mark is only trusted if the last print is <= 90 min old
-    WARMUP_MIN_POINTS = 12          # >=12 points AND >=2h span = the same ~2h-of-context principle, but it
-    WARMUP_MIN_SPAN_S = 2 * 3600    # no longer assumes a 5-min cadence (24 pts bricked entries at ~20 min/pt)
+    WARMUP_MIN_POINTS = int(_WARM_KNOB.get("min_points", 8))
+    WARMUP_MIN_SPAN_S = int(float(_WARM_KNOB.get("min_span_h", 1.5)) * 3600)
     out, warm = {}, set()
     newest_age = None
     try:
@@ -320,6 +323,8 @@ def _marks_from_samples(samples: Dict[str, List]):
             except Exception:
                 pass
     health = {"marked": len(out), "entry_warm": len(warm),
+              "warm_rule": ">=%d pts & >=%.1fh span (last 6h) — knob: PARAM_CATALOG.warmup"
+                            % (WARMUP_MIN_POINTS, WARMUP_MIN_SPAN_S / 3600.0),
               "newest_sample_age_min": round(newest_age / 60.0, 1) if newest_age is not None else None,
               "state": ("OK" if warm else ("DEGRADED — marks live, entries paused (warmup starved; cron cadence slow?)"
                                             if out else "STALLED — no fresh prices at all (ingestion down?)"))}
@@ -467,7 +472,8 @@ def conviction_score(prices, cur_move):
 
 
 def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
-    crypto = (book == "crypto")
+    uc = "crypto" if book == "aggressive" else book   # GEKKO trades the crypto universe under its own book
+    crypto = (uc == "crypto")
     # Default config when a book has NO elected champion yet. Commodities (metal/energy) start on a HOLD
     # default — buy a pullback, ride to a big target, wide stop on the commodity floor — so they actually
     # PARTICIPATE and generate real trades instead of sitting idle. This is a starting config, NOT an
@@ -483,7 +489,7 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
     entry, target, stop_, max_hold = p["entry"], p["target"], p["stop"], p["max_hold_min"]
     pbook = PaperBook.load(out / f"paper_book_{book}.json")
     now = datetime.now(timezone.utc)
-    side_marks = {s: v for s, v in marks.items() if asset_class(s) == book}
+    side_marks = {s: v for s, v in marks.items() if asset_class(s) == uc}
     actions = []
 
     def px_of(sym):
@@ -551,15 +557,20 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
         cands = sorted(scored, key=lambda x: (x[3] if x[3] is not None else 0.0), reverse=True)
     mk = {s: v[0] for s, v in side_marks.items()}
     cat = _catalog(out)
+    try:
+        _WARM_KNOB.update({k: v for k, v in (cat.get("warmup") or {}).items()
+                           if k in ("min_points", "min_span_h")})
+    except Exception:
+        pass
     min_take = float(((cat.get("min_takehome_usd") or {}).get(book,
                MIN_TAKEHOME.get(book, MIN_TAKEHOME_DEFAULT))))   # book-specific post-fee $ floor (GOLDEN RULE)
     knife = float(cat.get("knife_veto_6h", -0.06))   # skip free-falling names (<= this over 6h); 0 disables
-    fmin = ((cat.get("floor_min") or {}).get(book))
+    fmin = ((cat.get("floor_min") or {}).get(book, (cat.get("floor_min") or {}).get(uc)))
     if fmin:
         stop_ = max(stop_, float(fmin))   # DEEPEN-THE-FLOOR: per-book minimum heatshield depth from the
                                           # catalog. Champions still compete/rotate stops ABOVE this line.
-    _rgmode = str((cat.get("regime_gate") or {}).get(book, "hard" if book in ("crypto", "stock") else "soft"))
-    _regime = (globals().get("_LIVE_REGIMES") or {}).get(book)
+    _rgmode = str((cat.get("regime_gate") or {}).get(book, "hard" if uc in ("crypto", "stock") else "soft"))
+    _regime = (globals().get("_LIVE_REGIMES") or {}).get(uc)
     # REGIME OVERRIDES — the experimentation surface the operator asked for: per-book, per-regime tuning of
     # entry/target/stop and the soft-gate conviction bar, all from PARAM_CATALOG.json. Empty = zero change.
     # Example: {"crypto": {"UPTREND": {"target": 0.05}, "SIDEWAYS": {"entry": 0.02, "target": 0.02}}}
@@ -771,6 +782,24 @@ def live_step(out_dir) -> Dict[str, Any]:
                 params, name = None, None
         results[bk] = _run_side(out, marks, samples, bk, params)
         champ_names[bk] = name
+    # ── GEKKO — the aggressive probe (5th book): same rails (integrity quarantine, knife veto,
+    #    heatshield floor, fee-honesty), LOWER thresholds, crypto 24/7. NEVER funded or mirrored by
+    #    the Master; excluded from champion aggregation. Purpose: chase the low-hanging fruit AND
+    #    manufacture forward evidence (trade-quality, calibration, fee-reality) at June-30-style
+    #    aggression while the four governed books stay untouched.
+    try:
+        _gk = (_catalog(out).get("aggressive_book") or {})
+        if _gk.get("enabled", True):
+            _gp = {"dir": "mr",
+                   "entry": float(_gk.get("entry", 0.02)),
+                   "target": float(_gk.get("target", 0.02)),
+                   "stop": float(_gk.get("stop", 0.06)),
+                   "max_hold_min": float(_gk.get("max_hold_min", 5280.0))}
+            results["aggressive"] = _run_side(out, marks, samples, "aggressive", _gp)
+            results["aggressive"]["display_name"] = _gk.get("name", "GEKKO")
+            champ_names["aggressive"] = _gk.get("name", "GEKKO") + " (fixed aggressive profile)"
+    except Exception as _ge:
+        results["aggressive"] = {"error": str(_ge)}
     crypto, stock = results["crypto"], results["stock"]
     # 3-day backtest proof so the cockpit shows the engine works even when the
     # live tape is quiet and no setup is firing this exact cycle
@@ -839,6 +868,7 @@ def live_step(out_dir) -> Dict[str, Any]:
                    "per_name_frac": PER_NAME_FRAC, "min_freshness": MIN_FRESHNESS,
                    "min_cost": MIN_COST},
         "crypto": crypto, "stock": stock,
+        "aggressive": results.get("aggressive"),
         "metal": results["metal"], "energy": results["energy"],
         "combined_equity": round(sum(results[b]["equity"] for b in BOOKS), 2),
         "combined_realized_pnl": round(sum(results[b]["realized_pnl"] for b in BOOKS), 2),

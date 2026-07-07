@@ -37,7 +37,7 @@ def main():
               "THRESHOLD_CHAMPION.json", "THRESHOLD_SHADOW.json", "THRESHOLD_TAKEHOME.json",
               "sweep_protection.json",
               "decision_ledger.json", "agent_portfolios.json", "alpaca_paper_state.json",
-              "alpaca_h3_state.json", "alpaca_h5_state.json", "capital_flow.json",
+              "alpaca_h3_state.json", "alpaca_h5_state.json", "capital_flow.json", "paper_book_aggressive.json",
               "CALIBRATION.json", "AGGRESSION_LADDER.json", "WEEKLY_SCORECARD.json",
               "STOCK_PARITY_AUDIT.json", "INTEGRITY_QUARANTINE.json", "ECONOMIC_CLOCK.json",
               "COMPLEXITY_LEDGER.json"):

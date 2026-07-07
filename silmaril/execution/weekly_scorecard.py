@@ -16,7 +16,7 @@ def build_weekly_scorecard(out_dir):
     except Exception:
         led = []
     row = {"week": wk, "t": now.isoformat(), "books": {}}
-    for bk in ("crypto", "stock", "metal", "energy"):
+    for bk in ("crypto", "stock", "metal", "energy", "aggressive"):
         try:
             trs = json.loads((out / f"paper_book_{bk}.json").read_text()).get("trades", [])
         except Exception:

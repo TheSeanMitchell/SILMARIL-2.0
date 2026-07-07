@@ -11,7 +11,7 @@ from pathlib import Path
 def build_calibration(out_dir):
     out = Path(out_dir)
     books = {}
-    for bk in ("crypto", "stock", "metal", "energy"):
+    for bk in ("crypto", "stock", "metal", "energy", "aggressive"):
         try:
             trs = json.loads((out / f"paper_book_{bk}.json").read_text()).get("trades", [])
         except Exception:
