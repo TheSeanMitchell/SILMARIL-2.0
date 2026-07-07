@@ -5,6 +5,10 @@ on:
       confirm:
         description: 'Type WIPE to confirm a clean $10k reset of all internal books'
         required: true
+concurrency:
+  group: silmaril-state
+  cancel-in-progress: false
+
 jobs:
   reset:
     if: ${{ github.event.inputs.confirm == 'WIPE' }}

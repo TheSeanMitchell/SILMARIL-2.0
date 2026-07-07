@@ -117,8 +117,11 @@ jobs:
           # the heavy leaderboards/backtests/forensics run once at the top of the hour. Permanent fix for
           # daytime cycles ballooning past 10 minutes: crypto's minute-sensitive trading is never stuck
           # waiting behind a 1,600-symbol backtest again.
-          MIN=$(date -u +%M)
-          if [ "$MIN" -ge 5 ]; then export SILMARIL_FAST=1; echo "== FAST trade cycle =="; else export SILMARIL_ANALYTICS=1; echo "== FULL analytics cycle (top of hour) =="; fi
+          # 5.0 LANE SPLIT (operator directive): the pulse is ALWAYS the fast trade
+          # cycle — nothing heavy ever rides the 10-minute lane again. The hourly
+          # heavy pass lives in hourly.yml (cron :07); WIDE/deep stays in
+          # analytics.yml (3x/day). This is the long-requested workflow split.
+          export SILMARIL_FAST=1; echo "== FAST trade cycle (pulse lane) =="
           python -m silmaril --live
 
       # ── Post-cycle analytics (read-only, additive) ──────────────────
@@ -132,31 +135,11 @@ jobs:
       # HEAVY analytics now run ONCE PER HOUR (top-of-hour tick), not every 15 min.
       # They summarise data that barely moves intra-hour, so this is free time back
       # on 3 of every 4 session runs. The trade cycle above always runs.
-      - name: Sanitize price history (drop corrupt feed ticks)
-        run: |
-          MIN=$(date -u +%M)
-          if [ "$MIN" -lt 15 ]; then python scripts/sanitize_history.py || true; else echo "skip sanitize (only top-of-hour)"; fi
-
       - name: Canonicalize price-history keys (FUTURE-PROOF — graphs never break again)
         run: python scripts/remap_keys.py || true
 
       - name: HEATSHIELD what-if (tight stop vs -5% floor on real data)
         run: python -c "from silmaril.execution.paper_sim import heatshield_whatif; heatshield_whatif('docs/data')" || true
-
-      - name: Post-cycle analytics suite (top-of-hour only)
-        if: always()
-        env:
-          FMP_API_KEY:           ${{ secrets.FMP_API_KEY }}
-          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
-          POLYGON_API_KEY:       ${{ secrets.POLYGON_API_KEY }}
-        run: |
-          MIN=$(date -u +%M)
-          echo "analytics suite runs in the deep-analytics workflow"
-
-      - name: Generate social brag sheet (top-of-hour only)
-        run: |
-          MIN=$(date -u +%M)
-          if [ "$MIN" -lt 15 ]; then python scripts/brag_sheet.py || true; else echo "skip brag sheet (only top-of-hour)"; fi
 
       - name: Verify learning state preserved
         run: |

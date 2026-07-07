@@ -3,6 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       confirm: { description: 'Type CLEAN to confirm', required: true }
+concurrency:
+  group: silmaril-state
+  cancel-in-progress: false
+
 jobs:
   cleanup:
     if: ${{ github.event.inputs.confirm == 'CLEAN' }}
