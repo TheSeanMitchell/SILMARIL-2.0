@@ -46,69 +46,48 @@ def _append(out: Path, fname: str, prices: Dict[str, float]):
     return len(prices)
 
 def fetch_metals() -> Dict[str, float]:
-    out = {}
-    # PRIMARY: OpenExchangeRates (you already have OPENEXCHANGERATES_APP_ID) — its
-    # rates include precious metals as currencies; USD/oz = 1 / (metal-per-USD).
-    oxr = os.environ.get("OPENEXCHANGERATES_APP_ID")
-    if oxr:
-        try:
-            j = _get(f"https://openexchangerates.org/api/latest.json?app_id={oxr}&symbols=" + ",".join(METALS))
-            rates = j.get("rates", {}) or {}
-            for m in METALS:
-                r = rates.get(m)
-                if r: out[m] = (1.0 / r) if r < 1 else r
-        except Exception:
-            pass
-    # fallback: metalpriceapi
-    key = os.environ.get("METALPRICE_API_KEY")
-    if key:
-        for m in [x for x in METALS if x not in out]:
-            try:
-                j = _get("https://api.metalpriceapi.com/v1/latest?" +
-                         urllib.parse.urlencode({"api_key": key, "base": "USD", "currencies": m}))
-                r = (j.get("rates", {}) or {}).get(m)
-                if r: out[m] = (1.0 / r) if r < 1 else r
-            except Exception:
-                pass
-    return out
+    # 5.0: delegated to the resilient, budget-guarded waterfall
+    # (yfinance -> Stooq -> metalpriceapi -> Twelve Data -> OpenExchangeRates).
+    # OXR is now a budget-capped LAST resort, not the primary — this is the fix for
+    # the quota burn. Kept here for backward compatibility; run_feed uses the meta form.
+    try:
+        from .price_sources import fetch_metals_resilient
+        prices, _ = fetch_metals_resilient(os.environ.get("SILMARIL_OUT", "docs/data"))
+        return prices
+    except Exception:
+        return {}
 
 def fetch_energy() -> Dict[str, float]:
-    out = {}
-    # PRIMARY: Alpha Vantage commodities (you already have ALPHA_VANTAGE_API_KEY).
-    av = os.environ.get("ALPHA_VANTAGE_API_KEY")
-    if av:
-        for label, fn in (("WTI", "WTI"), ("BRENT", "BRENT"), ("NATGAS", "NATURAL_GAS")):
-            try:
-                j = _get(f"https://www.alphavantage.co/query?function={fn}&interval=daily&apikey={av}")
-                data = j.get("data") or []
-                for row in data:
-                    v = row.get("value")
-                    if v not in (None, ".", ""):
-                        out[label] = float(v); break
-            except Exception:
-                pass
-    # fallback: Twelve Data
-    tdk = os.environ.get("TWELVEDATA_API_KEY")
-    if tdk:
-        for label, sym in [(k, v) for k, v in ENERGY.items() if k not in out]:
-            try:
-                j = _get(f"https://api.twelvedata.com/price?symbol={urllib.parse.quote(sym)}&apikey={tdk}")
-                p = float(j.get("price")) if j.get("price") else None
-                if p: out[label] = p
-            except Exception:
-                pass
-    return out
+    # 5.0: delegated to the resilient waterfall (yfinance -> Stooq -> Twelve Data ->
+    # Alpha Vantage). AV is now budget-capped, not hammered every cycle.
+    try:
+        from .price_sources import fetch_energy_resilient
+        prices, _ = fetch_energy_resilient(os.environ.get("SILMARIL_OUT", "docs/data"))
+        return prices
+    except Exception:
+        return {}
 
 def run_feed(out_dir) -> Dict[str, Any]:
     out = Path(out_dir)
-    metals = fetch_metals(); energy = fetch_energy()
+    os.environ.setdefault("SILMARIL_OUT", str(out))
+    try:
+        from .price_sources import fetch_metals_resilient, fetch_energy_resilient
+        metals, m_meta = fetch_metals_resilient(out)
+        energy, e_meta = fetch_energy_resilient(out)
+    except Exception:
+        metals, energy = fetch_metals(), fetch_energy()
+        m_meta = e_meta = {}
     nm = _append(out, "metals_samples.json", metals)
     ne = _append(out, "energy_samples.json", energy)
     status = {"generated_at": _now_iso(), "metals_fetched": nm, "energy_fetched": ne,
               "metals": metals, "energy": energy,
-              "note": ("No synthetic data. If counts are 0, set METALPRICE_API_KEY and/or "
-                       "TWELVEDATA_API_KEY in the workflow env — then metal/energy books fill "
-                       "and get their own arenas/champions automatically.")}
+              "metals_provenance": (m_meta or {}).get("provenance", {}),
+              "energy_provenance": (e_meta or {}).get("provenance", {}),
+              "budget_remaining": (m_meta or {}).get("budget_remaining", {}),
+              "note": ("5.0 resilient sourcing: keyless yfinance/Stooq tried first every "
+                       "cycle, so scarce keys are spared; OpenExchangeRates + Alpha Vantage "
+                       "are budget-capped last resorts (see SOURCE_BUDGET.json). No synthetic "
+                       "data — a symbol with no real quote holds its last sample.")}
     try: (out / "metals_energy_feed_status.json").write_text(json.dumps(status, indent=2))
     except Exception: pass
     return status

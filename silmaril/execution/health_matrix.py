@@ -82,7 +82,7 @@ def build_health_matrix(out_dir) -> Dict[str, Any]:
         "Crypto price": ["COINGECKO_API_KEY", "FREECRYPTOAPI_API_KEY", "BIRDEYE_API_KEY"],
         "Stock price": ["FINNHUB_API_KEY", "ALPHA_VANTAGE_API_KEY", "TWELVEDATA_API_KEY", "FMP_API_KEY", "POLYGON_API_KEY", "TIINGO_API_KEY"],
         "News": ["NEWSAPI_KEY", "MARKETAUX_API_KEY", "FINNHUB_API_KEY"],
-        "Metals": ["OPENEXCHANGERATES_APP_ID"],
+        "Metals": ["OPENEXCHANGERATES_APP_ID", "METALPRICE_API_KEY", "TWELVEDATA_API_KEY"],
         "Energy": ["ALPHA_VANTAGE_API_KEY", "EIA_API_KEY", "TWELVEDATA_API_KEY"],
         "Macro/Fundamentals": ["FMP_API_KEY", "FRED_API_KEY", "SEC_USER_AGENT_EMAIL"],
         "Broker (Alpaca)": ["ALPACA_API_KEY", "ALPACA_API_KEY_H3", "ALPACA_API_KEY_H5"],

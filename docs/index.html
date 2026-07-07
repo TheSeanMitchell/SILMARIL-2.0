@@ -814,6 +814,11 @@ async function renderFive(){const el=$('fiveStrip');if(!el)return;
   if(ro){const t=(ro.priorities||[])[0];rows.push('<b>RESEARCH OS</b> '+(ro.summary||'\u2014')+(t?' \u00b7 <span class="dim">highest-value next: '+t.id+' \u2014 '+String(t.question).slice(0,64)+'\u2026</span>':''));
     const uu=ro.unknown_unknowns||{};if(uu.least_tested_market){rows.push('<b>UNKNOWN-UNKNOWNS</b> least-tested market: '+uu.least_tested_market+' \u00b7 stalest belief: '+((uu.stalest_belief_days!=null)?uu.stalest_belief_days:'\u2014')+'d \u00b7 biggest evidence gap: '+((uu.biggest_gap_debt!=null)?uu.biggest_gap_debt:'\u2014')+' obs');}}
   const rk=((cat||{}).champion_rotation)||{};rows.push('<b>ROTATION KNOBS</b> \u2265'+((rk.min_trades!=null)?rk.min_trades:5)+' live trades \u00b7 '+((rk.switch_margin!=null)?rk.switch_margin:15)+'-pt margin <span class="dim">\u2014 live-tunable (PARAM_CATALOG.champion_rotation); election every cycle, all books</span>');
+  const fb=await jget('data/SOURCE_BUDGET.json'),ms=await jget('data/metals_energy_feed_status.json');
+  if(ms||fb){const mp=(ms||{}).metals_provenance||{},ep=(ms||{}).energy_provenance||{};
+    const provStr=o=>{const v=Object.values(o||{});if(!v.length)return 'holding last';const c={};v.forEach(s=>c[s]=(c[s]||0)+1);return Object.keys(c).map(k=>k+'\u00d7'+c[k]).join(', ');};
+    const rem=((ms||{}).budget_remaining)||{};const remStr=['openexchangerates','alpha_vantage'].filter(k=>rem[k]!=null).map(k=>k.replace('openexchangerates','OXR').replace('alpha_vantage','AV')+' '+rem[k]+' left today').join(' \u00b7 ');
+    rows.push('<b>FEED SOURCES</b> metals: '+provStr(mp)+' \u00b7 energy: '+provStr(ep)+(remStr?' <span class="dim">(scarce-key budget: '+remStr+')</span>':'')+' <span class="dim">\u2014 keyless-first waterfall; OXR/AV capped, never drained</span>');}
   el.innerHTML=rows.map(r=>'<div style="margin:3px 0">'+r+'</div>').join('');}
 async function renderGekkoNote(){try{const el=$('gekkoNote');if(!el)return;const c=await jget('data/PARAM_CATALOG.json').catch(()=>null);if(!c)return;
   const g=c.aggressive_book||{};const ov=((c.regime_overrides||{}).crypto)||{};const sw=ov.SIDEWAYS||{};
