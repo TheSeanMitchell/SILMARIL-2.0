@@ -85,6 +85,19 @@ def update_champion(out_dir) -> Dict[str, Any]:
     elig = {k: v for k, v in surv.items() if v["n"] >= CHAMPION_MIN_TRADES}
     surv_leader = max(elig, key=lambda k: elig[k]["score"], default=None)
 
+    # ── 5.0 ROTATION KNOBS — the anti-flip-flop gates are now LIVE-TUNABLE ──
+    # PARAM_CATALOG.champion_rotation {min_trades, switch_margin}. Defaults preserve
+    # 2.18 behavior EXACTLY; lower them to accelerate rotation as forward evidence
+    # lands (Research-OS Q002 grades whether faster actually pays). The election
+    # already runs every cycle — speed is now a dial, not a code edit.
+    try:
+        _rk = (json.loads((out / "PARAM_CATALOG.json").read_text())
+               .get("champion_rotation") or {})
+    except Exception:
+        _rk = {}
+    _min_tr = int(_rk.get("min_trades", CHAMPION_MIN_TRADES) or CHAMPION_MIN_TRADES)
+    _margin = float(_rk.get("switch_margin", SURV_MARGIN) or SURV_MARGIN)
+
     champ = st.get("champion")
     reason = "champion holds"
     promoted = False
@@ -100,7 +113,7 @@ def update_champion(out_dir) -> Dict[str, Any]:
         # that pinned a survivability-22 champion under a survivability-81 challenger).
         # Survivability already penalises thin samples via its confidence interval, so a
         # challenger that clears the margin with >= CHAMPION_MIN_TRADES has earned it.
-        if chal["score"] >= inc["score"] + SURV_MARGIN and chal["n"] >= CHAMPION_MIN_TRADES:
+        if chal["score"] >= inc["score"] + _margin and chal["n"] >= _min_tr:
             champ = surv_leader
             reason = (f"promoted on survivability: {surv_leader} {chal['score']:.0f} "
                       f"> {st.get('champion')} {inc['score']:.0f} (n={chal['n']}, evidence-driven)")
@@ -108,10 +121,10 @@ def update_champion(out_dir) -> Dict[str, Any]:
         else:
             gap = chal["score"] - inc["score"]
             reason = (f"holds: leader {surv_leader} ({chal['score']:.0f}) beats {champ} "
-                      f"({inc['score']:.0f}) by {gap:.0f} but n={chal['n']} < {CHAMPION_MIN_TRADES} min"
-                      if chal["n"] < CHAMPION_MIN_TRADES else
+                      f"({inc['score']:.0f}) by {gap:.0f} but n={chal['n']} < {_min_tr} min"
+                      if chal["n"] < _min_tr else
                       f"holds: {surv_leader} ({chal['score']:.0f}) vs {champ} ({inc['score']:.0f}) "
-                      f"under {SURV_MARGIN}-pt switch margin")
+                      f"under {_margin:.0f}-pt switch margin")
 
     cfg = dict(STRATEGIES.get(champ, {}))
     # express params the way the sim consumes them
@@ -143,9 +156,14 @@ def update_champion(out_dir) -> Dict[str, Any]:
         "live_params": live_params,
         "reason": reason,
         "live_trades": _live_n,
-        "rotation_policy": ("rotates hourly on forward survivability once a challenger beats the incumbent "
+        # EVIDENCE PROVENANCE (5.0 Law 9): after a wipe the incumbent may hold with
+        # zero forward evidence — allowed, but it must be LABELED, never implied.
+        "evidence_basis": ("forward-survivability" if (champ and champ in elig)
+                           else "provisional — no qualifying forward evidence (cold start / post-wipe)"),
+        "provisional": bool(champ) and champ not in elig,
+        "rotation_policy": ("rotates every cycle on forward survivability once a challenger beats the incumbent "
                             "by %d pts with >=%d live closed trades; holds otherwise (anti-flip-flop)"
-                            % (SURV_MARGIN, CHAMPION_MIN_TRADES)),
+                            % (int(_margin), _min_tr)),
         "champion_backtest": {k: champ_row.get(k) for k in
                               ("trades", "win_pct", "mean_net_pct", "total_pct")},
         "current_window_leader": leader_name,
@@ -154,6 +172,8 @@ def update_champion(out_dir) -> Dict[str, Any]:
         "challengers_on_deck": [r["strategy"] for r in board[:5] if r["strategy"] != champ],
         "promotions": promotions[-20:],
         "gate": {"history_window": HISTORY_WINDOW, "promote_margin": PROMOTE_MARGIN,
+                 "champion_min_trades": _min_tr, "switch_margin": _margin,
+                 "rotation_knobs": "PARAM_CATALOG.champion_rotation (live-tunable)",
                  "min_trades": MIN_TRADES},
         "note": ("Champion changes only when a challenger dominates recent windows "
                  "by a margin — slow on purpose, to trade real edge not noise."),

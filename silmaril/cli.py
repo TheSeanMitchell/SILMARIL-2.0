@@ -3423,6 +3423,48 @@ Reply in 3-5 bullets, no preamble.
         leaderboard.append((name, equity))
     leaderboard.sort(key=lambda r: r[1], reverse=True)
 
+    # ===== SILMARIL 5.0 — PHASE-A SPINE (nulls · census · utilization · conductor · research-os · contracts) =====
+    # Runs in BOTH fast and full cycles (each piece is cheap; census self-gates hourly by store age).
+    # Every module is individually wrapped so a failure can NEVER break the trade run; writes atomic.
+    try:
+        from .execution.bench_books import build_bench_books as _bb50
+        _bbr = _bb50(out)
+        log.info("  bench nulls: %s", (_bbr or {}).get("summary", ""))
+    except Exception as _e50:
+        log.warning("bench_books skipped: %s", _e50)
+    try:
+        from .execution.census import build_census as _cen50
+        _cr = _cen50(out)
+        if _cr:
+            log.info("  census: %s", _cr.get("summary", ""))
+    except Exception as _e50:
+        log.warning("census skipped: %s", _e50)
+    try:
+        from .execution.utilization import build_utilization as _ut50
+        _ur = _ut50(out)
+        log.info("  utilization: %s", (_ur or {}).get("today_line", ""))
+    except Exception as _e50:
+        log.warning("utilization skipped: %s", _e50)
+    try:
+        from .execution.conductor_log import log_conductor as _cl50
+        _clr = _cl50(out)
+        log.info("  conductor C0: %s decisions logged (gate %s)",
+                 (_clr or {}).get("decisions_logged"), (_clr or {}).get("c1_gate"))
+    except Exception as _e50:
+        log.warning("conductor skipped: %s", _e50)
+    try:
+        from .execution.research_os import build_research_os as _ros50
+        _rr = _ros50(out)
+        log.info("  research OS: %s", (_rr or {}).get("summary", ""))
+    except Exception as _e50:
+        log.warning("research_os skipped: %s", _e50)
+    try:
+        from .execution.store_contracts import validate_stores as _vs50
+        _vr = _vs50(out)
+        log.info("  store contracts: %s", (_vr or {}).get("verdict", ""))
+    except Exception as _e50:
+        log.warning("store_contracts skipped: %s", _e50)
+
     log.info("✦ SILMARIL run complete")
     log.info("  %d debates resolved", len(debate_dicts))
     log.info("  %d trade plans (kept after risk filter; %d rejected)",

@@ -40,7 +40,9 @@ def main():
               "alpaca_h3_state.json", "alpaca_h5_state.json", "capital_flow.json", "paper_book_aggressive.json",
               "CALIBRATION.json", "AGGRESSION_LADDER.json", "WEEKLY_SCORECARD.json",
               "STOCK_PARITY_AUDIT.json", "INTEGRITY_QUARANTINE.json", "ECONOMIC_CLOCK.json",
-              "COMPLEXITY_LEDGER.json"):
+              "COMPLEXITY_LEDGER.json",
+              "BENCH_BOOKS.json", "STORE_CONTRACTS.json", "UNIVERSE_CENSUS.json",
+              "CHAMPION_UTILIZATION.json"):
         fp = DATA / f
         if fp.exists():
             fp.unlink(); print(f"  deleted {f} (derived view — rebuilds clean)")
@@ -54,7 +56,7 @@ def main():
     print("  wrote WIPE_MARKER.json (true post-wipe quiet period starts now)")
     # PRESERVED on purpose: price_samples.json (graphs + fingerprints), favicon caches, per-asset data.
     print("  PRESERVED: price_samples.json (graphs/fingerprints) + favicons — dashboard will NOT go blank")
-    print("PRESERVED FOREVER: EVOLUTION_LEDGER.jsonl · RESEARCH_QUEUE.json · REGIME_COMBOS.jsonl · DAILY_BASELINE.json · knowledge_graph.json · ROTATION_HYPOTHESES.json (long-memory, survives every wipe)")
+    print("PRESERVED FOREVER: EVOLUTION_LEDGER.jsonl · RESEARCH_QUEUE.json · REGIME_COMBOS.jsonl · DAILY_BASELINE.json · knowledge_graph.json · ROTATION_HYPOTHESES.json · RESEARCH_OS.json · CONDUCTOR_LEDGER.jsonl · CONDUCTOR_STATE.json · CENSUS_ROSTER.json (long-memory, survives every wipe)")
     print("CLEAN. Books pristine at $10k; all graph/fingerprint/favicon history intact.")
 
 if __name__ == "__main__":

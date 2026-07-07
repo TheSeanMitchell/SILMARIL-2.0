@@ -88,10 +88,13 @@ def _survivability(full: Dict, h1: Dict, h2: Dict) -> Dict[str, Any]:
                        "fails out-of-sample")}
 
 def _tier(surv: Dict, n: int) -> str:
+    # Canonical ladder (doctrine + dashboard): Sandbox -> Incubation(10 trades) ->
+    # Candidate(25) -> Production(50). Production-Verified (100) is flagged on the
+    # row itself so no UI consumer of the four tier names breaks.
     s = surv.get("score", 0)
-    if s >= 70 and n >= 30 and surv.get("oos_consistent"): return "Production"
-    if s >= 55 and n >= 15: return "Candidate"
-    if s >= 40 and n >= 8: return "Incubation"
+    if s >= 70 and n >= 50 and surv.get("oos_consistent"): return "Production"
+    if s >= 55 and n >= 25: return "Candidate"
+    if s >= 40 and n >= 10: return "Incubation"
     return "Sandbox"
 
 def build_champion_validation(out_dir) -> Dict[str, Any]:
@@ -110,7 +113,9 @@ def build_champion_validation(out_dir) -> Dict[str, Any]:
         surv = _survivability(full, h1, h2)
         tier = _tier(surv, full["n"])
         rows.append({"strategy": strat, **full, "survivability": surv,
-                     "tier": tier, "tier_capital_usd": TIER_CAPITAL[tier]})
+                     "tier": tier, "tier_capital_usd": TIER_CAPITAL[tier],
+                     "production_verified": bool(full["n"] >= 100 and surv.get("score", 0) >= 70
+                                                 and surv.get("oos_consistent"))})
     rows.sort(key=lambda r: (r["survivability"]["score"], r["sharpe_proxy"]), reverse=True)
     champ = rows[0]["strategy"] if rows else None
     try: declared = json.loads((out / "champion.json").read_text())
