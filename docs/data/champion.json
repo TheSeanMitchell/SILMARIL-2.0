@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-07T21:13:36.072743+00:00",
+  "generated_at": "2026-07-07T21:55:47.360292+00:00",
   "champion": "MR_patient_d3",
   "champion_config": {
     "dir": "mr",
@@ -17,21 +17,22 @@
   },
   "reason": "champion holds",
   "live_trades": 0,
-  "rotation_policy": "rotates hourly on forward survivability once a challenger beats the incumbent by 15 pts with >=5 live closed trades; holds otherwise (anti-flip-flop)",
+  "evidence_basis": "provisional \u2014 no qualifying forward evidence (cold start / post-wipe)",
+  "provisional": true,
+  "rotation_policy": "rotates every cycle on forward survivability once a challenger beats the incumbent by 15 pts with >=5 live closed trades; holds otherwise (anti-flip-flop)",
   "champion_backtest": {
     "trades": 127,
-    "win_pct": 81.1,
-    "mean_net_pct": 1.937,
-    "total_pct": 246.0
+    "win_pct": 80.3,
+    "mean_net_pct": 1.754,
+    "total_pct": 222.7
   },
-  "current_window_leader": "HOLD_d2_t12",
+  "current_window_leader": "HOLD_u1_t12",
   "leader_history": [
     "HOLD_d2_t12",
     "HOLD_d2_t12",
     "HOLD_d2_t12",
     "HOLD_d2_t12",
     "HOLD_d2_t12",
-    "HOLD_d2_t12",
     "HOLD_u2_t12",
     "HOLD_u2_t12",
     "HOLD_u2_t12",
@@ -45,17 +46,18 @@
     "HOLD_u1_t12",
     "HOLD_u1_t12",
     "HOLD_d2_t12",
-    "HOLD_d2_t12"
+    "HOLD_d2_t12",
+    "HOLD_u1_t12"
   ],
   "leader_frequency": {
-    "HOLD_d2_t12": 10,
+    "HOLD_d2_t12": 9,
     "HOLD_u2_t12": 6,
-    "HOLD_u1_t12": 4
+    "HOLD_u1_t12": 5
   },
   "challengers_on_deck": [
+    "HOLD_u1_t12",
     "HOLD_d2_t12",
     "HOLD_u1_t10",
-    "HOLD_u1_t12",
     "HOLD_u2_t12",
     "HOLD_u2_t10"
   ],
@@ -109,6 +111,9 @@
   "gate": {
     "history_window": 20,
     "promote_margin": 3,
+    "champion_min_trades": 5,
+    "switch_margin": 15.0,
+    "rotation_knobs": "PARAM_CATALOG.champion_rotation (live-tunable)",
     "min_trades": 30
   },
   "note": "Champion changes only when a challenger dominates recent windows by a margin \u2014 slow on purpose, to trade real edge not noise."
