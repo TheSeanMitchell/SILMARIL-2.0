@@ -6,34 +6,45 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: SILMARIL 3.0 — full marker audit
+      - name: SILMARIL FINAL — full marker audit (one click, whole truth)
         run: |
-          c(){ if grep -q "$2" "$1" 2>/dev/null; then echo "✅ $3"; else echo "❌ $3"; fi; }
-          echo "── 3.0 gold ──"
-          python3 -c "import json;v=json.load(open('docs/data/PROJECT_META.json'))['version'];print(('✅' if v=='3.0' else '❌')+' version = '+v)"
-          c docs/index.html "gold-shine" "gold shining header"
-          echo "── Movement I (integrity/funnel) ──"
+          c(){ if grep -q "$2" "$1" 2>/dev/null; then echo "OK  $3"; else echo "XX  $3"; fi; }
+          echo "== version =="
+          python3 -c "import json;v=json.load(open('docs/data/PROJECT_META.json'))['version'];print(('OK ' if v=='3.0' else 'XX ')+'version='+v)"
+          c docs/index.html "gold-shine" "gold header"
+          echo "== UNFREEZE (cadence-proof warmup + watchdog) =="
+          c silmaril/execution/paper_sim.py "_WARM_KNOB" "warmup knob-driven"
+          c silmaril/execution/paper_sim.py "warm_rule" "health carries warm rule"
+          c silmaril/cli.py "observed_cadence_min" "cadence watchdog"
+          c .github/workflows/daily.yml "FALLBACK CADENCE" "in-repo */10 fallback schedule"
+          python3 -c "import json;w=json.load(open('docs/data/PARAM_CATALOG.json')).get('warmup',{});print(('OK ' if w.get('min_points')==8 else 'XX ')+'warmup knob 8pts/1.5h')"
+          echo "== GEKKO (aggressive probe, Master-isolated) =="
+          c silmaril/execution/paper_sim.py "GEKKO" "gekko book in engine"
+          c silmaril/execution/paper_sim.py "\"aggressive\": results.get" "gekko in payload"
+          python3 -c "import json;g=json.load(open('docs/data/PARAM_CATALOG.json')).get('aggressive_book',{});print(('OK ' if g.get('name')=='GEKKO' else 'XX ')+'gekko config knobs')"
+          c docs/index.html "posAggressive" "gekko positions table"
+          c docs/index.html "renderGekkoNote" "gekko doctrine banner"
+          c scripts/reset_internal_clean.py "paper_book_aggressive.json" "reset wipes gekko"
+          echo "== JUNE-30 PROFILE (governed aggression) =="
+          python3 -c "import json;o=json.load(open('docs/data/PARAM_CATALOG.json')).get('regime_overrides',{}).get('crypto',{}).get('SIDEWAYS',{});print(('OK ' if o.get('entry')==0.02 else 'XX ')+'crypto SIDEWAYS 2%/2% profile')"
+          echo "== MOVEMENT I — VERIFICATION live =="
+          c silmaril/execution/regime_accuracy.py "build_regime_accuracy" "regime accuracy audit"
+          c silmaril/execution/trade_quality.py "build_trade_quality" "trade quality engine"
+          c silmaril/cli.py "_ra(out); _tq(out)" "RA+TQ wired hourly"
+          c silmaril/execution/master_account.py "confidence_parts" "master confidence decomposed"
+          c silmaril/cli.py "gates_influence" "gates-influence stamp"
+          c docs/index.html "Regime accuracy" "RA row on dashboard"
+          echo "== 3.0 GOLD core intact =="
           c silmaril/execution/integrity.py "frozen_then_jump" "data integrity layer"
-          c silmaril/execution/paper_sim.py "integrity quarantine" "engine consults quarantine"
-          c silmaril/execution/paper_sim.py '"funnel": funnel' "universe funnel in payload"
-          c docs/index.html "renderFunnel" "funnel panel"
-          c docs/index.html "renderQuarantine" "quarantine panel"
-          echo "── P-list ──"
-          for f in daily_baseline aggression_ladder weekly_scorecard stock_parity_audit; do
-            c silmaril/execution/$f.py "def build" "$f (P-item)"; done
-          c silmaril/execution/paper_sim.py "decision_trace_live" "P3 live decision trace"
-          echo "── Movement III/IV/V foundations ──"
-          for f in evolution_ledger research_queue calibration economic_clock regime_combos complexity_ledger; do
-            c silmaril/execution/$f.py "def " "$f"; done
-          test -f docs/data/knowledge_graph.json && echo "✅ knowledge graph seed" || echo "❌ knowledge graph seed"
-          test -f docs/data/ROTATION_HYPOTHESES.json && echo "✅ rotation hypotheses seed" || echo "❌ rotation hypotheses seed"
-          echo "── zombies (must be dead) ──"
+          c silmaril/execution/paper_sim.py "decision_trace_live" "live decision trace"
+          c docs/index.html "renderFunnel" "universe funnel"
+          c silmaril/execution/evolution_ledger.py "def record" "evolution ledger"
+          c silmaril/execution/regime_combos.py "build_regime_combos" "regime-combo pulse"
+          c silmaril/execution/champion.py "live_trades" "champion emits live_trades"
+          c silmaril/execution/champion_split.py "live_trades" "per-book live_trades"
           c silmaril/portfolios/explainability.py "ZOMBIE-KILLED" "decision_ledger writer dead"
           c silmaril/portfolios/agent_portfolio.py "ZOMBIE-KILLED" "agent_portfolios writer dead"
-          c silmaril/cli.py "broker poll DISABLED" "legacy Alpaca poll dead"
           for f in decision_ledger.json agent_portfolios.json alpaca_paper_state.json; do
-            [ -f "docs/data/$f" ] && echo "❌ zombie file present: $f (delete once via web UI)" || echo "✅ no $f"; done
-          echo "── self-heals & guards ──"
-          c silmaril/cli.py "_dh_age_h" "HOLD-backtest self-heal"
-          c docs/index.html "isFinite(sc)" "readiness NaN guard"
-          T=$(grep -c "timeout-minutes" .github/workflows/daily.yml); [ "$T" = "1" ] && echo "✅ daily single timeout" || echo "❌ daily timeout count=$T"
+            [ -f "docs/data/$f" ] && echo "XX  zombie file present: $f (delete once via web UI)" || echo "OK  no $f"; done
+          T=$(grep -c "timeout-minutes" .github/workflows/daily.yml); [ "$T" = "1" ] && echo "OK  daily single timeout" || echo "XX  daily timeout count=$T"
+          echo "== done — every XX names the exact file that did not land =="

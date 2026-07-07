@@ -37,6 +37,13 @@ on:
   # workflow" button or an external cron runner hitting the workflow_dispatch
   # API. Removing the cron triggers stops GitHub's own scheduler from firing
   # runs on top of the external trigger (a source of the run stacking).
+  schedule:
+    - cron: "*/10 * * * *"   # FALLBACK CADENCE — the external pinger stays primary. GitHub cron is
+                             # best-effort (can slip 15-30m under load) which is still vastly better
+                             # than the ~50-66m gaps observed when the pinger degrades. run_lock's
+                             # 30-min stale reclaim + the shared concurrency queue make any overlap
+                             # with the pinger harmless. The harvest must never again depend on one
+                             # external service being configured correctly.
   workflow_dispatch:
     inputs:
       reason:
