@@ -518,8 +518,13 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
             return False
         if crypto:
             return is_tradeable(pp)        # crypto: keep the 80% freshness bar too
-        # STOCKS: additionally require the live regular session.
-        return _market_open_stock(now)
+        if book == "stock":
+            return _market_open_stock(now)   # STOCKS: additionally require the live regular session.
+        # 5.0 FIX: metal/energy are commodities (~24/5), NOT US-equity-hours instruments. The
+        # old fall-through applied the stock-session gate to them, which (with the override-
+        # ordering bug) kept the metal/energy books idle. Gate on live-data freshness only:
+        # fresh prints => tradeable; stale => the name won't be warm/marked anyway.
+        return is_tradeable(pp)
 
     # EXITS — target / stop / timeout (same for either direction once we're long)
     for sym in list(pbook.positions.keys()):
@@ -541,6 +546,23 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
             pnl = pbook.sell(sym, cur, now.isoformat())
             actions.append({"act": "SELL", "sym": sym, "why": f"{why} {chg*100:+.1f}%",
                             "pnl": round(pnl, 2)})
+
+    # 5.0 STOCK/BOOK PARTICIPATION FIX — resolve the per-book/per-regime override BEFORE
+    # candidate selection. Previously the override applied AFTER cands were built, so a lowered
+    # entry could never widen the funnel (the root cause of the idle stock/metal books). The
+    # override may now also set `dir`, so a book can run a mean-reversion participation profile
+    # sized to its own market even when its elected champion is a slow HOLD/momentum strategy.
+    # Empty override => byte-for-byte identical behavior to before.
+    _cat0 = _catalog(out)
+    _rg0 = (globals().get("_LIVE_REGIMES") or {}).get(uc)
+    _fmin0 = ((_cat0.get("floor_min") or {}).get(book, (_cat0.get("floor_min") or {}).get(uc)))
+    _ovr0 = (((_cat0.get("regime_overrides") or {}).get(book) or {}).get(_rg0 or "") or {})
+    if _ovr0:
+        direction = str(_ovr0.get("dir", direction))
+        entry = float(_ovr0.get("entry", entry))
+        target = float(_ovr0.get("target", target))
+        stop_ = max(float(_ovr0.get("stop", stop_)), float(_fmin0 or 0))
+        max_hold = float(_ovr0.get("max_hold_min", max_hold))
 
     # ENTRIES — momentum buys strength; mean-reversion ranks eligible dips by CONVICTION (dip depth +
     # bounce reliability) so the names that historically RECOVER get funded first. target/stop unchanged.

@@ -107,7 +107,7 @@
     <div id="scanStatus" class="dim" style="font-size:11px;margin-top:8px;padding:7px;border:1px dashed var(--line)">scanning…</div>
     <div class="note">All four books are live and independent — own universe, own arena, own champion, own $10k (crypto 24/7 · stocks NYSE sessions · metals 24/5 · energy daily). Champions elected per book by forward survivability; the WIDE 280-grid sweeps 3×/day; quiet books still learn every cycle (fingerprints, rhythm, backtests) while waiting for a qualified setup.</div>
   </div></section>
-  <section><div class="hd">🧭 SILMARIL 5.0 — PHASE-A SPINE (nulls · census · contracts · utilization · conductor · research OS)</div><div class="bd">
+  <section><div class="hd">🧭 SILMARIL 5.0 — PHASE-A SPINE (nulls · census · contracts · invariants · utilization · conductor · research OS)</div><div class="bd">
     <div id="fiveStrip" class="dim" style="font-size:11px">loading…</div>
   </div></section>
   <section><div class="hd">ACCOUNT &middot; both books side by side</div><div class="bd">
@@ -798,7 +798,7 @@ async function renderFunnel(){try{const el=$('funnelPanel');if(!el)return;const 
   el.innerHTML='<div class="hd" style="font-size:12px">🔬 UNIVERSE FUNNEL — scanned → warm → candidates → bought, with every rejection named</div><div class="bd"><table style="font-size:11px"><tbody>'+rows+'</tbody></table></div>';
 }catch(e){}}
 async function renderFive(){const el=$('fiveStrip');if(!el)return;
-  const bn=await jget('data/BENCH_BOOKS.json'),cs=await jget('data/UNIVERSE_CENSUS.json'),sc=await jget('data/STORE_CONTRACTS.json'),ut=await jget('data/CHAMPION_UTILIZATION.json'),cd=await jget('data/CONDUCTOR_STATE.json'),ro=await jget('data/RESEARCH_OS.json'),cat=await jget('data/PARAM_CATALOG.json');
+  const bn=await jget('data/BENCH_BOOKS.json'),cs=await jget('data/UNIVERSE_CENSUS.json'),sc=await jget('data/STORE_CONTRACTS.json'),iv=await jget('data/INVARIANTS.json'),ut=await jget('data/CHAMPION_UTILIZATION.json'),cd=await jget('data/CONDUCTOR_STATE.json'),ro=await jget('data/RESEARCH_OS.json'),cat=await jget('data/PARAM_CATALOG.json');
   const L=LIVE||{};const rows=[];
   if(bn&&bn.books){const B=bn.books;const g=k=>((B[k]||{}).return_pct);
     rows.push('<b>NULLS</b> '+['BENCH_CASH','BENCH_SPY','BENCH_HODL','BENCH_EQW'].map(k=>{const bb=B[k]||{};const r=bb.return_pct;const c=r>0?'pos':(r<0?'neg':'');const stt=String(bb.status||'');return k.replace('BENCH_','')+' <span class="'+c+'">'+(r!=null?sg(r)+'%':'\u2014')+'</span>'+(stt.indexOf('holding')===0||stt==='accruing'?'':' <span class="dim">('+stt+')</span>');}).join(' \u00b7 '));
@@ -809,6 +809,7 @@ async function renderFive(){const el=$('fiveStrip');if(!el)return;
   if(cs&&cs.quadrants){const qq=cs.quadrants;rows.push('<b>CENSUS</b> '+Object.keys(qq).map(q=>{const v=qq[q]||{};return q+' '+(v.listed||0)+' listed / <span class="'+((v.pct_fresh||0)>=50?'pos':'')+'">'+(v.pct_fresh||0)+'% fresh</span>';}).join(' \u00b7 ')+' \u00b7 new\u226414d: <b>'+(((cs.new_listings||{}).count)||0)+'</b>');}
   else rows.push('<b>CENSUS</b> <span class="dim">pending (hourly)</span>');
   if(sc){rows.push('<b>CONTRACTS</b> <span class="'+(sc.all_green?'pos':((sc.reds||[]).length?'neg':''))+'">'+(sc.verdict||'\u2014')+'</span>');}
+  if(iv){const rd=(iv.reds||[]);rows.push('<b>INVARIANTS</b> <span class="'+(iv.all_green?'pos':(rd.length?'neg':''))+'">'+(iv.verdict||'\u2014')+'</span> <span class="dim">green '+(iv.green_streak||0)+'/'+(iv.dod_target||30)+(iv.dod_met?' \u2713':'')+'</span>'+(rd.length?' <span class="neg">\u2014 '+rd[0]+'</span>':''));}
   if(ut&&ut.summary_today){rows.push('<b>UTILIZATION</b> '+ut.summary_today+' <span class="dim">['+(ut.legend||'')+']</span>');}
   if(cd){rows.push('<b>CONDUCTOR C0</b> '+((cd.decisions_logged!=null)?cd.decisions_logged:0)+'/'+((cd.c1_gate!=null)?cd.c1_gate:300)+' decisions logged \u00b7 <span class="dim">'+(cd.rung||'')+'</span>');}
   if(ro){const t=(ro.priorities||[])[0];rows.push('<b>RESEARCH OS</b> '+(ro.summary||'\u2014')+(t?' \u00b7 <span class="dim">highest-value next: '+t.id+' \u2014 '+String(t.question).slice(0,64)+'\u2026</span>':''));

@@ -81,25 +81,53 @@
   "_what": "monthly data diet \u2014 dailies are never touched"
  },
  "regime_overrides": {
-  "_what": "per-book per-regime live tuning. CRYPTO SIDEWAYS/UPTREND now carry the JUNE-30 AGGRESSION PROFILE (2% dip entries \u2014 the setting behind the 33/35-win day) reintroduced as knobs, judged by the forward record; the fee-honest engine auto-vetoes any trade that cannot clear round-trip costs.",
+  "_what": "per-book per-regime LIVE tuning + participation profiles (5.0). Each non-crypto book now runs a MEAN-REVERSION profile (dir=mr) sized to its market's real intraday range so it actually generates closed-trade data at native scale \u2014 the system's one proven edge (MR), not the slow HOLD/momentum champions that never fire intraday. Stops are floored by floor_min (sit-through-heat), so most trades close on target or hold; realized losses stay rare. CRYPTO keeps the JUNE-30 profile. Every override is judged by the forward record; Research-OS Q003 grades whether stock-tuned thresholds woke the book. dir/entry/target/stop/max_hold_min are all settable here.",
   "crypto": {
    "SIDEWAYS": {
     "entry": 0.02,
     "target": 0.02
    },
    "UPTREND": {
-    "target": 0.05,
-    "entry": 0.02
+    "entry": 0.02,
+    "target": 0.05
    }
   },
   "stock": {
    "SIDEWAYS": {
-    "entry": 0.015,
-    "target": 0.02
+    "dir": "mr",
+    "entry": 0.007,
+    "target": 0.012
+   },
+   "UPTREND": {
+    "dir": "mr",
+    "entry": 0.007,
+    "target": 0.014
    }
   },
-  "metal": {},
-  "energy": {}
+  "metal": {
+   "SIDEWAYS": {
+    "dir": "mr",
+    "entry": 0.004,
+    "target": 0.008
+   },
+   "UPTREND": {
+    "dir": "mr",
+    "entry": 0.004,
+    "target": 0.009
+   }
+  },
+  "energy": {
+   "SIDEWAYS": {
+    "dir": "mr",
+    "entry": 0.007,
+    "target": 0.013
+   },
+   "UPTREND": {
+    "dir": "mr",
+    "entry": 0.007,
+    "target": 0.014
+   }
+  }
  },
  "soft_conviction": {
   "crypto": 0.5,
@@ -132,12 +160,12 @@
  "bench_books": {
   "enabled": true,
   "cash_apy": 0.04,
-  "_what": "5.0 NULL LAYER (Law 10) — four strategy-free $10k baseline books: CASH accrues this APY knob (risk-free hurdle); SPY buy&hold; HODL 50/50 BTC-ETH; EQW equal-weight fresh-crypto basket frozen at creation. Marks from REAL feed samples only; excluded from Master + championship like GEKKO; auto-re-baselines after any WIPE_MARKER. Every governed book is judged as delta-vs-null, never raw P&L alone."
+  "_what": "5.0 NULL LAYER (Law 10) \u2014 four strategy-free $10k baseline books: CASH accrues this APY knob (risk-free hurdle); SPY buy&hold; HODL 50/50 BTC-ETH; EQW equal-weight fresh-crypto basket frozen at creation. Marks from REAL feed samples only; excluded from Master + championship like GEKKO; auto-re-baselines after any WIPE_MARKER. Every governed book is judged as delta-vs-null, never raw P&L alone."
  },
  "champion_rotation": {
   "min_trades": 5,
   "switch_margin": 15,
-  "_what": "5.0 — the anti-flip-flop rotation gates, now LIVE-TUNABLE (edit → commit → next cycle). min_trades = forward closed trades a challenger needs; switch_margin = survivability points it must lead by. Defaults preserve 2.18 behavior exactly; lower BOTH to rotate faster as forward evidence lands — the rotation_freshness OBSERVE gate + Research-OS Q002 grade whether faster actually pays. Election runs every cycle, all books."
+  "_what": "5.0 \u2014 the anti-flip-flop rotation gates, now LIVE-TUNABLE (edit \u2192 commit \u2192 next cycle). min_trades = forward closed trades a challenger needs; switch_margin = survivability points it must lead by. Defaults preserve 2.18 behavior exactly; lower BOTH to rotate faster as forward evidence lands \u2014 the rotation_freshness OBSERVE gate + Research-OS Q002 grade whether faster actually pays. Election runs every cycle, all books."
  },
  "_broker_policy": "Alpaca is PRICING-ONLY going forward (operator directive 2026-07-07): no new feature may depend on it for execution; existing paper-account reads remain for continuity until replaced.",
  "aggressive_book": {

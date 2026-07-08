@@ -3464,6 +3464,14 @@ Reply in 3-5 bullets, no preamble.
         log.info("  store contracts: %s", (_vr or {}).get("verdict", ""))
     except Exception as _e50:
         log.warning("store_contracts skipped: %s", _e50)
+    try:
+        from .execution.invariants import check_invariants as _iv50
+        _ivr = _iv50(out)
+        log.info("  invariants: %s (green streak %s/%s)",
+                 (_ivr or {}).get("verdict", ""), (_ivr or {}).get("green_streak"),
+                 (_ivr or {}).get("dod_target"))
+    except Exception as _e50:
+        log.warning("invariants skipped: %s", _e50)
 
     log.info("✦ SILMARIL run complete")
     log.info("  %d debates resolved", len(debate_dicts))
