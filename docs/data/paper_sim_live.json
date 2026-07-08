@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-07-08T05:24:20.546422+00:00",
+  "generated_at": "2026-07-08T06:09:42.347913+00:00",
   "marks_health": {
     "marked": 632,
     "entry_warm": 632,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.3,
-    "state": "OK"
+    "newest_sample_age_min": 1.0,
+    "state": "QUIET after wipe \u2014 82 min left (by design)"
   },
   "equity_market": {
     "status": "OPEN",
@@ -37,23 +37,28 @@
   },
   "timeout_exit": false,
   "post_wipe_quiet": {
-    "active": false,
-    "minutes_left": 0.0,
+    "active": true,
+    "minutes_left": 82.6,
     "note": "engine intentionally quiet after a wipe \u2014 no trades until the window elapses, so the clean run starts from a known baseline"
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-08T05:24:19.792958+00:00",
+    "generated_at": "2026-07-08T06:09:41.664422+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
     "window": 60,
-    "excluded_count": 1,
+    "excluded_count": 2,
     "excluded": [
       {
         "sym": "MOG-USD",
         "snapbacks": 12,
         "max_move_pct": 10.0
+      },
+      {
+        "sym": "MKR-USD",
+        "snapbacks": 1,
+        "max_move_pct": 7.5
       }
     ],
     "what": "names whose recent feed shows a >=6% move immediately reversed by >=50% (a stale round-trip) \u2014 a real market does not do that; these are bad-data feeds, excluded from trading so they cannot book fake P&L. A real move that HOLDS is not flagged."
@@ -70,234 +75,8 @@
   },
   "crypto": {
     "funnel": {
-      "seen": 90,
-      "entry_warm": 90,
-      "candidates_after_gates": 0,
-      "bought": 0,
-      "rejections": {
-        "regime DOWNTREND + gate=hard \u2192 zero new entr": 1
-      }
-    },
-    "decision_trace_live": [],
-    "equity": 9981.32,
-    "cash": 3017.25,
-    "realized_pnl": 0.0,
-    "return_pct": -0.19,
-    "open_positions": 7,
-    "positions": [
-      {
-        "sym": "NEAR-USD",
-        "qty": 517.9705,
-        "entry": 1.930612,
-        "mark": 1.922,
-        "t": "2026-07-08T02:05:28.837474+00:00",
-        "wager_usd": 1000.0,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.4348,
-        "style": "range-play",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 14.17,
-        "upl_pct": -0.45
-      },
-      {
-        "sym": "JTO-USD",
-        "qty": 1370.7878,
-        "entry": 0.729295,
-        "mark": 0.7202,
-        "t": "2026-07-08T02:05:28.837474+00:00",
-        "wager_usd": 999.71,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.3373,
-        "style": "range-play",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 9.26,
-        "upl_pct": -1.25
-      },
-      {
-        "sym": "WLD-USD",
-        "qty": 2660.2052,
-        "entry": 0.374914,
-        "mark": 0.374,
-        "t": "2026-07-08T02:27:23.403863+00:00",
-        "wager_usd": 997.35,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.4428,
-        "style": "range-play",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 11.86,
-        "upl_pct": -0.24
-      },
-      {
-        "sym": "ENA-USD",
-        "qty": 13365.7533,
-        "entry": 0.074589,
-        "mark": 0.0746,
-        "t": "2026-07-08T02:27:23.403863+00:00",
-        "wager_usd": 996.94,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.4068,
-        "style": "range-play",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 12.17,
-        "upl_pct": 0.01
-      },
-      {
-        "sym": "DASH-USD",
-        "qty": 28.8982,
-        "entry": 34.485082,
-        "mark": 34.25,
-        "t": "2026-07-08T02:27:23.403863+00:00",
-        "wager_usd": 996.56,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.3813,
-        "style": "range-play",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 12.09,
-        "upl_pct": -0.68
-      },
-      {
-        "sym": "AVAX-USD",
-        "qty": 155.6631,
-        "entry": 6.399509,
-        "mark": 6.42,
-        "t": "2026-07-08T02:27:23.403863+00:00",
-        "wager_usd": 996.17,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.3378,
-        "style": "deep-dip",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 16.96,
-        "upl_pct": 0.32
-      },
-      {
-        "sym": "SEI-USD",
-        "qty": 21221.2872,
-        "entry": 0.046935,
-        "mark": 0.04713,
-        "t": "2026-07-08T02:27:23.403863+00:00",
-        "wager_usd": 996.02,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.252,
-        "style": "range-play",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 15.46,
-        "upl_pct": 0.42
-      }
-    ],
-    "recent_trades": [
-      {
-        "side": "BUY",
-        "sym": "SEI-USD",
-        "qty": 21221.287213,
-        "price": 0.046935,
-        "t": "2026-07-08T02:27:23.403863+00:00",
-        "wager_usd": 996.02,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 1.552,
-        "conviction": 0.252,
-        "entry_regime": "SIDEWAYS",
-        "style": "range-play"
-      },
-      {
-        "side": "BUY",
-        "sym": "AVAX-USD",
-        "qty": 155.663096,
-        "price": 6.399509,
-        "t": "2026-07-08T02:27:23.403863+00:00",
-        "wager_usd": 996.17,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 1.702,
-        "conviction": 0.3378,
-        "entry_regime": "SIDEWAYS",
-        "style": "deep-dip"
-      },
-      {
-        "side": "BUY",
-        "sym": "DASH-USD",
-        "qty": 28.898226,
-        "price": 34.485082,
-        "t": "2026-07-08T02:27:23.403863+00:00",
-        "wager_usd": 996.56,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 1.213,
-        "conviction": 0.3813,
-        "entry_regime": "SIDEWAYS",
-        "style": "range-play"
-      },
-      {
-        "side": "BUY",
-        "sym": "ENA-USD",
-        "qty": 13365.753304,
-        "price": 0.074589,
-        "t": "2026-07-08T02:27:23.403863+00:00",
-        "wager_usd": 996.94,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 1.221,
-        "conviction": 0.4068,
-        "entry_regime": "SIDEWAYS",
-        "style": "range-play"
-      },
-      {
-        "side": "BUY",
-        "sym": "WLD-USD",
-        "qty": 2660.205206,
-        "price": 0.374914,
-        "t": "2026-07-08T02:27:23.403863+00:00",
-        "wager_usd": 997.35,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 1.189,
-        "conviction": 0.4428,
-        "entry_regime": "SIDEWAYS",
-        "style": "range-play"
-      },
-      {
-        "side": "BUY",
-        "sym": "JTO-USD",
-        "qty": 1370.787784,
-        "price": 0.729295,
-        "t": "2026-07-08T02:05:28.837474+00:00",
-        "wager_usd": 999.71,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 0.926,
-        "conviction": 0.3373,
-        "entry_regime": "SIDEWAYS",
-        "style": "range-play"
-      },
-      {
-        "side": "BUY",
-        "sym": "NEAR-USD",
-        "qty": 517.970465,
-        "price": 1.930612,
-        "t": "2026-07-08T02:05:28.837474+00:00",
-        "wager_usd": 1000.0,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 1.417,
-        "conviction": 0.4348,
-        "entry_regime": "SIDEWAYS",
-        "style": "range-play"
-      }
-    ],
-    "tradeable_universe": 63,
-    "universe_seen": 90
-  },
-  "stock": {
-    "funnel": {
-      "seen": 524,
-      "entry_warm": 524,
+      "seen": 0,
+      "entry_warm": 0,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {}
@@ -311,333 +90,51 @@
     "positions": [],
     "recent_trades": [],
     "tradeable_universe": 0,
-    "universe_seen": 524
+    "universe_seen": 0
+  },
+  "stock": {
+    "funnel": {
+      "seen": 0,
+      "entry_warm": 0,
+      "candidates_after_gates": 0,
+      "bought": 0,
+      "rejections": {}
+    },
+    "decision_trace_live": [],
+    "equity": 10000.0,
+    "cash": 10000.0,
+    "realized_pnl": 0.0,
+    "return_pct": 0.0,
+    "open_positions": 0,
+    "positions": [],
+    "recent_trades": [],
+    "tradeable_universe": 0,
+    "universe_seen": 0
   },
   "aggressive": {
     "funnel": {
-      "seen": 90,
-      "entry_warm": 90,
-      "candidates_after_gates": 1,
+      "seen": 0,
+      "entry_warm": 0,
+      "candidates_after_gates": 0,
       "bought": 0,
-      "rejections": {
-        "falling knife": 1
-      }
+      "rejections": {}
     },
-    "decision_trace_live": [
-      {
-        "sym": "MKR-USD",
-        "dip_pct": -7.44,
-        "conviction": 0.625,
-        "fate": "candidate"
-      }
-    ],
-    "equity": 9938.46,
-    "cash": 50.61,
+    "decision_trace_live": [],
+    "equity": 10000.0,
+    "cash": 10000.0,
     "realized_pnl": 0.0,
-    "return_pct": -0.62,
-    "open_positions": 10,
-    "positions": [
-      {
-        "sym": "NEAR-USD",
-        "qty": 517.9705,
-        "entry": 1.930612,
-        "mark": 1.922,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 1000.0,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.4348,
-        "style": "range-play",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 14.17,
-        "upl_pct": -0.45
-      },
-      {
-        "sym": "WLD-USD",
-        "qty": 2648.6014,
-        "entry": 0.377448,
-        "mark": 0.374,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 999.71,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.4223,
-        "style": "range-play",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 12.29,
-        "upl_pct": -0.91
-      },
-      {
-        "sym": "FIL-USD",
-        "qty": 1306.3784,
-        "entry": 0.764959,
-        "mark": 0.767,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 999.33,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.3691,
-        "style": "range-play",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 14.86,
-        "upl_pct": 0.27
-      },
-      {
-        "sym": "SUSHI-USD",
-        "qty": 6276.0374,
-        "entry": 0.159188,
-        "mark": 0.1583,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 999.07,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.3665,
-        "style": "range-play",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 13.84,
-        "upl_pct": -0.56
-      },
-      {
-        "sym": "ENA-USD",
-        "qty": 13265.1657,
-        "entry": 0.075292,
-        "mark": 0.0746,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 998.76,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.3415,
-        "style": "range-play",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 12.19,
-        "upl_pct": -0.92
-      },
-      {
-        "sym": "JTO-USD",
-        "qty": 1368.9596,
-        "entry": 0.729295,
-        "mark": 0.7202,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 998.38,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.3373,
-        "style": "range-play",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 9.24,
-        "upl_pct": -1.25
-      },
-      {
-        "sym": "DASH-USD",
-        "qty": 28.5514,
-        "entry": 34.948964,
-        "mark": 34.25,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 997.84,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.3372,
-        "style": "range-play",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 12.57,
-        "upl_pct": -2.0
-      },
-      {
-        "sym": "ROSE-USD",
-        "qty": 175000.3072,
-        "entry": 0.0057,
-        "mark": 0.00575,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 997.47,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.3251,
-        "style": "range-play",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 16.5,
-        "upl_pct": 0.88
-      },
-      {
-        "sym": "AVAX-USD",
-        "qty": 153.2031,
-        "entry": 6.509672,
-        "mark": 6.42,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 997.3,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.2124,
-        "style": "range-play",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 16.98,
-        "upl_pct": -1.38
-      },
-      {
-        "sym": "MANA-USD",
-        "qty": 14183.2229,
-        "entry": 0.067793,
-        "mark": 0.0679,
-        "t": "2026-07-08T02:27:23.433986+00:00",
-        "wager_usd": 961.53,
-        "target": 0.02,
-        "stop": 0.06,
-        "conviction": 0.4544,
-        "style": "range-play",
-        "entry_regime": "SIDEWAYS",
-        "exp_net_usd": 13.73,
-        "upl_pct": 0.16
-      }
-    ],
-    "recent_trades": [
-      {
-        "side": "BUY",
-        "sym": "MANA-USD",
-        "qty": 14183.222913,
-        "price": 0.067793,
-        "t": "2026-07-08T02:27:23.433986+00:00",
-        "wager_usd": 961.53,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 1.428,
-        "conviction": 0.4544,
-        "entry_regime": "SIDEWAYS",
-        "style": "range-play"
-      },
-      {
-        "side": "BUY",
-        "sym": "AVAX-USD",
-        "qty": 153.203137,
-        "price": 6.509672,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 997.3,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 1.702,
-        "conviction": 0.2124,
-        "entry_regime": "SIDEWAYS",
-        "style": "range-play"
-      },
-      {
-        "side": "BUY",
-        "sym": "ROSE-USD",
-        "qty": 175000.307241,
-        "price": 0.0057,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 997.47,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 1.654,
-        "conviction": 0.3251,
-        "entry_regime": "SIDEWAYS",
-        "style": "range-play"
-      },
-      {
-        "side": "BUY",
-        "sym": "DASH-USD",
-        "qty": 28.551425,
-        "price": 34.948964,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 997.84,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 1.259,
-        "conviction": 0.3372,
-        "entry_regime": "SIDEWAYS",
-        "style": "range-play"
-      },
-      {
-        "side": "BUY",
-        "sym": "JTO-USD",
-        "qty": 1368.959551,
-        "price": 0.729295,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 998.38,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 0.926,
-        "conviction": 0.3373,
-        "entry_regime": "SIDEWAYS",
-        "style": "range-play"
-      },
-      {
-        "side": "BUY",
-        "sym": "ENA-USD",
-        "qty": 13265.16565,
-        "price": 0.075292,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 998.76,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 1.221,
-        "conviction": 0.3415,
-        "entry_regime": "SIDEWAYS",
-        "style": "range-play"
-      },
-      {
-        "side": "BUY",
-        "sym": "SUSHI-USD",
-        "qty": 6276.037374,
-        "price": 0.159188,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 999.07,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 1.385,
-        "conviction": 0.3665,
-        "entry_regime": "SIDEWAYS",
-        "style": "range-play"
-      },
-      {
-        "side": "BUY",
-        "sym": "FIL-USD",
-        "qty": 1306.378403,
-        "price": 0.764959,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 999.33,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 1.487,
-        "conviction": 0.3691,
-        "entry_regime": "SIDEWAYS",
-        "style": "range-play"
-      },
-      {
-        "side": "BUY",
-        "sym": "WLD-USD",
-        "qty": 2648.601359,
-        "price": 0.377448,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 999.71,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 1.23,
-        "conviction": 0.4223,
-        "entry_regime": "SIDEWAYS",
-        "style": "range-play"
-      },
-      {
-        "side": "BUY",
-        "sym": "NEAR-USD",
-        "qty": 517.970465,
-        "price": 1.930612,
-        "t": "2026-07-08T02:05:28.865792+00:00",
-        "wager_usd": 1000.0,
-        "target_pct": 2.0,
-        "stop_pct": 6.0,
-        "expected_move_pct": 1.417,
-        "conviction": 0.4348,
-        "entry_regime": "SIDEWAYS",
-        "style": "range-play"
-      }
-    ],
-    "tradeable_universe": 63,
-    "universe_seen": 90,
+    "return_pct": 0.0,
+    "open_positions": 0,
+    "positions": [],
+    "recent_trades": [],
+    "tradeable_universe": 0,
+    "universe_seen": 0,
     "display_name": "GEKKO"
   },
   "metal": {
     "funnel": {
-      "seen": 12,
-      "entry_warm": 12,
+      "seen": 0,
+      "entry_warm": 0,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {}
@@ -651,12 +148,12 @@
     "positions": [],
     "recent_trades": [],
     "tradeable_universe": 0,
-    "universe_seen": 12
+    "universe_seen": 0
   },
   "energy": {
     "funnel": {
-      "seen": 6,
-      "entry_warm": 6,
+      "seen": 0,
+      "entry_warm": 0,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {}
@@ -670,23 +167,23 @@
     "positions": [],
     "recent_trades": [],
     "tradeable_universe": 0,
-    "universe_seen": 6
+    "universe_seen": 0
   },
-  "combined_equity": 39981.32,
+  "combined_equity": 40000.0,
   "combined_realized_pnl": 0.0,
   "backtest_3day_crypto": {
     "universe_total": 1665,
-    "tradeable": 63,
-    "ghosts_excluded": 1602,
-    "trades": 320,
-    "win_rate_pct": 76.2,
-    "mean_net_pct": 0.557,
+    "tradeable": 62,
+    "ghosts_excluded": 1603,
+    "trades": 299,
+    "win_rate_pct": 74.6,
+    "mean_net_pct": 0.172,
     "exits": {
-      "TAKE": 248,
+      "TAKE": 227,
       "STOP": 72,
       "TIMEOUT": 0
     },
-    "equity_after": 11922.62
+    "equity_after": 10506.68
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy). Ghosts excluded; fees = max(0.2%, 2x noise floor). Metal/energy stay empty until their data feed is wired (metals_samples.json / energy_samples.json)."
 }
