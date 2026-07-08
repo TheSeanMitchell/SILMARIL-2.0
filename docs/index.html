@@ -438,11 +438,13 @@ async function renderTrades(){const L=await jget('data/paper_sim_live.json');if(
       // so a winning trade never reads as a flat "$0.00" again.
       var dol=(pnl==null?'\u2014':(pnl>=0?'+$':'-$')+Math.abs(pnl).toFixed(2));
       var pct=(ret!=null?((ret>=0?'+':'')+ret+'%'):null);
+      var champ=(x.side==='SELL')?((x.champion_entry||x.champion||'')+((x.champion_changed&&x.champion_exit)?(' \u2192 '+x.champion_exit):'')):(x.champion||'');
+      var champLine=champ?'<div style="font-size:8px;opacity:.6">\u25a4 '+champ+'</div>':'';
       var cell;
       if(pnl==null){cell='\u2014';}
       else if((Math.abs(pnl)<0.005)&&pct!=null){cell=pct+' <span style="font-size:8px;opacity:.55">(&lt;$0.01)</span>';}
       else{cell=dol+(pct!=null?' <span style="font-size:8px;opacity:.7">('+pct+')</span>':'');}
-      return '<tr><td><span style="font-size:9px;opacity:.7">'+x.side+'</span> <span class="tick" data-sym="'+x.sym+'">'+x.sym+'</span>'+(x.wager_usd!=null?'<div style="font-size:8px;opacity:.55">$'+Math.round(x.wager_usd).toLocaleString()+' wagered</div>':'')+'</td><td>$'+x.price+'</td><td class="'+c+'">'+cell+(why?'<div style="font-size:8px;opacity:.6">'+why+'</div>':'')+'</td><td style="font-size:9px;opacity:.6;white-space:nowrap">'+when+'</td></tr>';}).join('');}
+      return '<tr><td><span style="font-size:9px;opacity:.7">'+x.side+'</span> <span class="tick" data-sym="'+x.sym+'">'+x.sym+'</span>'+(x.wager_usd!=null?'<div style="font-size:8px;opacity:.55">$'+Math.round(x.wager_usd).toLocaleString()+' wagered</div>':'')+champLine+'</td><td>$'+x.price+'</td><td class="'+c+'">'+cell+(why?'<div style="font-size:8px;opacity:.6">'+why+'</div>':'')+'</td><td style="font-size:9px;opacity:.6;white-space:nowrap">'+when+'</td></tr>';}).join('');}
   if($('trCrypto'))$('trCrypto').innerHTML=rows('crypto');
   if($('trAggressive'))$('trAggressive').innerHTML=rows('aggressive');
   if($('trStock'))$('trStock').innerHTML=rows('stock');

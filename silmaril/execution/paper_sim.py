@@ -73,9 +73,19 @@ def _longterm_up(samples_rows, min_days=60):
     backfill), 20+ closes = judge the trend over whatever span exists."""
     try:
         closes = [p for t, p in samples_rows if p and p > 0 and "T00:00:00" in t]
-        if len(closes) < 20:
-            return False          # blind = no buy. Backfill fills history; the book resumes with eyes open.
-        return closes[-1] >= closes[0]
+        if len(closes) >= 20:
+            recent = closes[-min_days:] if len(closes) > min_days else closes
+            return recent[-1] >= recent[0] * 0.98   # up or only mildly off over the daily window
+        # 5.0: no daily backfill yet -> DON'T blind-block. Judge the name's OWN intraday trajectory
+        # over available history so a name up/flat over the last ~1-2 days can still trade (operator:
+        # use the valuable's own multi-timeframe trajectory). A sustained intraday downtrend still
+        # fails; genuinely no history still refuses. This is what unfreezes the stock book.
+        intra = [p for t, p in samples_rows if p and p > 0 and "T00:00:00" not in t]
+        if len(intra) >= 24:
+            w = intra[-288:]                          # up to ~2 days of 10-min bars
+            mean = sum(w) / len(w)
+            return (w[-1] >= w[0] * 0.99) or (w[-1] >= mean * 0.985)
+        return False                                  # truly no usable history -> never buy blind
     except Exception:
         return False
 
@@ -471,7 +481,7 @@ def conviction_score(prices, cur_move):
     return round(0.5 * depth + 0.5 * rel, 4), {"depth": round(depth, 3), "bounce_reliability": round(rel, 3)}
 
 
-def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
+def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dict[str, Any]:
     uc = "crypto" if book == "aggressive" else book   # GEKKO trades the crypto universe under its own book
     crypto = (uc == "crypto")
     # Default config when a book has NO elected champion yet. Commodities (metal/energy) start on a HOLD
@@ -526,7 +536,16 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
         # fresh prints => tradeable; stale => the name won't be warm/marked anyway.
         return is_tradeable(pp)
 
-    # EXITS — target / stop / timeout (same for either direction once we're long)
+    # EXITS — THE SELL FIX: manage each position by the target/stop it was ENTERED with
+    # (pos["target"]/pos["stop"]) — never the current cycle's champion values. The old code compared
+    # against the live champion target, so a position bought at a 2% target never sold when it hit 2%
+    # if the champion's target had since moved to 3% (MR_patient_d3): the LDO/ENJ/ETHFI "hit target,
+    # never sold, rode back to the stop" bug. A resting LIMIT-SELL at the position's own target also
+    # fills the instant price TOUCHES it (a real order type), so a target hit BETWEEN cycles is
+    # captured instead of missed. Fees applied by sell(); nothing synthetic. Each close is labeled
+    # with the champion that entered AND the champion that exited (mid-lifecycle rotation is visible).
+    _exit_pol = (_catalog(out).get("exit_policy") or {})
+    _limit_ok = bool(_exit_pol.get("limit_sell_at_target", True))
     for sym in list(pbook.positions.keys()):
         if asset_class(sym) != book:
             continue
@@ -538,13 +557,34 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
             hold = (now - datetime.fromisoformat(pos["t"])).total_seconds() / 60.0
         except Exception:
             hold = 0.0
+        p_target = float(pos.get("target", target))     # the position's OWN goal, not the cycle champion's
+        p_stop = float(pos.get("stop", stop_))
         hs_floor = COMMODITY_FLOOR if book in ("metal", "energy") else HEATSHIELD_FLOOR
-        eff_stop = max(stop_, hs_floor) if HEATSHIELD else stop_
-        why = ("STOP" if chg <= -eff_stop else "TAKE" if chg >= target
-               else ("TIMEOUT" if (TIMEOUT_EXIT and hold >= max_hold) else None))
+        eff_stop = max(p_stop, hs_floor) if HEATSHIELD else p_stop
+        hw_pct = (pos.get("mfe", cur) / pos["entry"] - 1) if pos["entry"] > 0 else 0.0
+        if chg >= p_target:
+            why, fill = "TAKE", cur
+        elif _limit_ok and hw_pct >= p_target and cur > pos["entry"]:
+            why, fill = "TAKE_LIMIT", pos["entry"] * (1.0 + p_target)   # limit fill at the target price
+        elif chg <= -eff_stop:
+            why, fill = "STOP", cur
+        elif TIMEOUT_EXIT and hold >= max_hold:
+            why, fill = "TIMEOUT", cur
+        else:
+            why, fill = None, cur
         if why:
-            pnl = pbook.sell(sym, cur, now.isoformat())
-            actions.append({"act": "SELL", "sym": sym, "why": f"{why} {chg*100:+.1f}%",
+            _champ_entry = pos.get("champion_entry")
+            _rzpct = (fill / pos["entry"] - 1) * 100 if pos["entry"] > 0 else 0.0
+            pnl = pbook.sell(sym, fill, now.isoformat())
+            try:
+                tr = pbook.trades[-1]
+                tr["exit_reason"] = why
+                tr["champion_entry"] = _champ_entry
+                tr["champion_exit"] = champion
+                tr["champion_changed"] = bool(_champ_entry and champion and _champ_entry != champion)
+            except Exception:
+                pass
+            actions.append({"act": "SELL", "sym": sym, "why": f"{why} {_rzpct:+.1f}%",
                             "pnl": round(pnl, 2)})
 
     # 5.0 STOCK/BOOK PARTICIPATION FIX — resolve the per-book/per-regime override BEFORE
@@ -667,8 +707,10 @@ def _run_side(out, marks, samples, book: str, params=None) -> Dict[str, Any]:
             try:
                 pbook.positions[sym]["entry_regime"] = _regime
                 pbook.positions[sym]["style"] = _style
+                pbook.positions[sym]["champion_entry"] = champion
                 pbook.trades[-1]["entry_regime"] = _regime
-                pbook.trades[-1]["style"] = _style   # trend vs range: the per-symbol playstyle dataset   # every trade knows the tape it was born into
+                pbook.trades[-1]["style"] = _style   # trend vs range: the per-symbol playstyle dataset
+                pbook.trades[-1]["champion"] = champion   # which strategy made THIS trade (per-trade label)
             except Exception:
                 pass
             actions.append({"act": "BUY", "sym": sym, "move_pct": round(h1 * 100, 2), "conviction": cv,
@@ -802,7 +844,7 @@ def live_step(out_dir) -> Dict[str, Any]:
                 params, name = sc.get("live_params"), sc.get("champion")
             except Exception:
                 params, name = None, None
-        results[bk] = _run_side(out, marks, samples, bk, params)
+        results[bk] = _run_side(out, marks, samples, bk, params, champion=name)
         champ_names[bk] = name
     # ── GEKKO — the aggressive probe (5th book): same rails (integrity quarantine, knife veto,
     #    heatshield floor, fee-honesty), LOWER thresholds, crypto 24/7. NEVER funded or mirrored by
@@ -817,7 +859,7 @@ def live_step(out_dir) -> Dict[str, Any]:
                    "target": float(_gk.get("target", 0.02)),
                    "stop": float(_gk.get("stop", 0.06)),
                    "max_hold_min": float(_gk.get("max_hold_min", 5280.0))}
-            results["aggressive"] = _run_side(out, marks, samples, "aggressive", _gp)
+            results["aggressive"] = _run_side(out, marks, samples, "aggressive", _gp, champion=_gk.get("name", "GEKKO"))
             results["aggressive"]["display_name"] = _gk.get("name", "GEKKO")
             champ_names["aggressive"] = _gk.get("name", "GEKKO") + " (fixed aggressive profile)"
     except Exception as _ge:
