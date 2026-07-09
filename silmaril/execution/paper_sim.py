@@ -604,12 +604,34 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         stop_ = max(float(_ovr0.get("stop", stop_)), float(_fmin0 or 0))
         max_hold = float(_ovr0.get("max_hold_min", max_hold))
 
-    # ENTRIES — momentum buys strength; mean-reversion ranks eligible dips by CONVICTION (dip depth +
-    # bounce reliability) so the names that historically RECOVER get funded first. target/stop unchanged.
+    # ENTRIES. Momentum buys strength. Mean-reversion now fits a CUSTOM strategy to EACH valuable from
+    # its own chart (fingerprint): a name is a candidate only when it has dipped to ~its OWN typical
+    # buyable level, and it carries its own realistic target/stop into the buy. This is the system
+    # reading each graph like a professional trader instead of one blanket threshold for the whole book.
+    _fits = {}   # sym -> fitted strategy (target/stop/trend/reliability), consumed by the buy loop
+    _fpcfg = (_cat0.get("fingerprint_strategy") or {})
+    _fp_on = bool(_fpcfg.get("enabled", True))
     if direction == "mom":
         cands = sorted([(s, lp, h1, None) for s, (lp, h1) in side_marks.items()
                         if h1 >= entry and s not in pbook.positions and fresh_ok(s) and s in _WARM_SYMS],
                        key=lambda x: x[2], reverse=True)
+    elif _fp_on:
+        from .fingerprint import fingerprint as _fpf, fit_strategy as _fitf
+        _bh = int(_fpcfg.get("bounce_h", 144)); _rz = float(_fpcfg.get("realism", 0.66))
+        _minrel = float(_fpcfg.get("min_reliability", 0.3)); _mindip = float(_fpcfg.get("min_dip", 0.002))
+        scored = []
+        for s, (lp, h1) in side_marks.items():
+            if h1 < -_mindip and s not in pbook.positions and fresh_ok(s) and s in _WARM_SYMS:
+                _pp = px_of(s)
+                _fp = _fpf(_pp, samples.get(s), bounce_h=_bh)
+                _ft = _fitf(_fp, round_trip_cost(_pp), _fmin0, realism=_rz, min_reliability=_minrel)
+                if _ft and h1 <= -_ft["entry"]:          # dipped to ITS OWN typical buyable level
+                    _cv, _ = conviction_score(_pp, h1)
+                    _rank = (_cv or 0.0) + (0.30 if _ft.get("strong_up") else 0.0) \
+                            + 0.30 * (_ft.get("bounce_reliability") or 0.0)
+                    scored.append((s, lp, h1, _cv))
+                    _fits[s] = dict(_ft, _rank=_rank)
+        cands = sorted(scored, key=lambda x: _fits.get(x[0], {}).get("_rank", (x[3] or 0.0)), reverse=True)
     else:
         scored = []
         for s, (lp, h1) in side_marks.items():
@@ -643,12 +665,17 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         stop_ = max(float(_ovr.get("stop", stop_)), float(fmin or 0))   # floor_min still binds
     _soft_cv = float(_ovr.get("soft_conviction", (cat.get("soft_conviction") or {}).get(book, 0.5)) if isinstance(cat.get("soft_conviction"), dict) or _ovr else 0.5)
     if _regime == "DOWNTREND" and _rgmode == "hard" and cands:
-        # HARD GATE: red tape = zero new entries. Every refused candidate goes to REGIME_AB.json and is
-        # scored later against reality — the running A/B proof of what obeying the gate saved (or cost).
+        # HARD GATE: red tape = zero new entries — EXCEPT names whose own fingerprint shows a strong
+        # multi-timeframe uptrend (operator: a valuable clearly trajecting up over 1d/3d/1w should be
+        # playable even in a red book regime). Those play through; everything else is blocked and logged
+        # to the REGIME_AB proof ledger so we still measure what obeying the gate saved or cost.
+        _tov = bool(_fpcfg.get("trend_override", True))
+        _through = [c for c in cands if _tov and _fits.get(c[0], {}).get("strong_up")]
+        _blocked = [c for c in cands if c not in _through]
         try:
             abp = out / "REGIME_AB.json"
             led = json.loads(abp.read_text()) if abp.exists() else []
-            for _sym, _lp, _h1, _cv in cands[:MAX_NAMES]:
+            for _sym, _lp, _h1, _cv in _blocked[:MAX_NAMES]:
                 led.append({"t": now.isoformat(), "book": book, "sym": _sym, "px_at_block": _lp,
                             "move_at_block_pct": round(_h1 * 100, 2), "conviction": _cv,
                             "regime": _regime, "outcome": None})
@@ -656,8 +683,8 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         except Exception:
             pass
         actions.append({"act": "REGIME_BLOCK", "book": book,
-                        "why": "regime DOWNTREND + gate=hard → zero new entries (%d candidates logged to A/B)" % len(cands[:MAX_NAMES])})
-        cands = []
+                        "why": "regime DOWNTREND + gate=hard → %d blocked (logged to A/B), %d strong-uptrend name(s) played through" % (len(_blocked[:MAX_NAMES]), len(_through))})
+        cands = _through
     elif _regime == "DOWNTREND" and _rgmode == "soft":
         cands = [c for c in cands if (c[3] or 0) >= _soft_cv]
     try:
@@ -689,7 +716,10 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                                 "why": "falling knife — %.1f%% over 6h, no bounce (veto at %.0f%%)" % (t6 * 100, knife * 100)})
                 continue
         cost = round_trip_cost(px_of(sym))
-        net_margin = target - cost              # fraction of the position kept if the target hits, after fees
+        _ft = _fits.get(sym)                    # this valuable's OWN fitted strategy (fingerprint), if any
+        _use_target = float(_ft["target"]) if _ft else target
+        _use_stop = max(float(_ft["stop"]), float(fmin or 0)) if _ft else stop_
+        net_margin = _use_target - cost         # fraction of the position kept if the target hits, after fees
         # GOLDEN RULE: a close must net >= min_take AFTER fees or we don't take the trade. This also kills
         # the dust bug: when cash is too low to clear the floor we SKIP instead of buying pennies.
         if net_margin <= 0:
@@ -703,7 +733,7 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                             "why": "cannot clear $%.2f net (need $%.0f, cash $%.0f)" % (min_take, min_take / net_margin, cap)})
             continue
         if pbook.buy(sym, budget, lp, cost, now.isoformat(),
-                     target=target, stop=stop_, conviction=cv, expected=net_margin):
+                     target=_use_target, stop=_use_stop, conviction=cv, expected=net_margin):
             try:
                 pbook.positions[sym]["entry_regime"] = _regime
                 pbook.positions[sym]["style"] = _style
@@ -711,6 +741,16 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                 pbook.trades[-1]["entry_regime"] = _regime
                 pbook.trades[-1]["style"] = _style   # trend vs range: the per-symbol playstyle dataset
                 pbook.trades[-1]["champion"] = champion   # which strategy made THIS trade (per-trade label)
+                if _ft:
+                    pbook.positions[sym]["fit"] = {"entry": _ft.get("entry"), "target": _use_target,
+                                                   "stop": _use_stop, "typical_dip": _ft.get("typical_dip"),
+                                                   "typical_bounce": _ft.get("typical_bounce"),
+                                                   "reliability": _ft.get("bounce_reliability"),
+                                                   "trend": _ft.get("trend"), "strong_up": _ft.get("strong_up")}
+                    pbook.trades[-1]["fit"] = ("fp dip~%.2f%%\u2192tgt %.2f%% stop %.1f%% %s%s"
+                        % ((_ft.get("typical_dip") or 0)*100, _use_target*100, _use_stop*100,
+                           _ft.get("trend") or "?", " reliable" if (_ft.get("bounce_reliability") or 0)>=0.6 else ""))
+                    pbook.trades[-1]["fit_target_pct"] = round(_use_target*100, 3)
             except Exception:
                 pass
             actions.append({"act": "BUY", "sym": sym, "move_pct": round(h1 * 100, 2), "conviction": cv,
@@ -941,6 +981,22 @@ def live_step(out_dir) -> Dict[str, Any]:
                  "Ghosts excluded; fees = max(0.2%, 2x noise floor). Metal/energy stay "
                  "empty until their data feed is wired (metals_samples.json / energy_samples.json)."),
     }
+    # 5.0 FINGERPRINTS: publish the per-valuable identities + fitted realistic strategies driving live
+    # entries, so the dashboard shows HOW the engine reads each graph. Bounded scan to stay cheap.
+    try:
+        from .fingerprint import build_fingerprints as _bfp
+        _sp = {}; _cnt = 0
+        for _s, _rows in samples.items():
+            if _cnt >= 500:
+                break
+            _pp = [p for _t, p in _rows if p and p > 0]
+            if len(_pp) >= 30:
+                _sp[_s] = _pp; _cnt += 1
+        _fmap = (_catalog(out).get("floor_min") or {})
+        _floor = {_s: _fmap.get(asset_class(_s), 0.06) for _s in _sp}
+        _bfp(out, _sp, rows_by_sym={s: samples.get(s) for s in _sp}, floor_by_sym=_floor, limit=80)
+    except Exception:
+        pass
     try:
         (out / "paper_sim_live.json").write_text(json.dumps(summary, indent=2))
     except Exception:

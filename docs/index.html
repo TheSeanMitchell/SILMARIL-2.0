@@ -800,7 +800,7 @@ async function renderFunnel(){try{const el=$('funnelPanel');if(!el)return;const 
   el.innerHTML='<div class="hd" style="font-size:12px">🔬 UNIVERSE FUNNEL — scanned → warm → candidates → bought, with every rejection named</div><div class="bd"><table style="font-size:11px"><tbody>'+rows+'</tbody></table></div>';
 }catch(e){}}
 async function renderFive(){const el=$('fiveStrip');if(!el)return;
-  const bn=await jget('data/BENCH_BOOKS.json'),cs=await jget('data/UNIVERSE_CENSUS.json'),sc=await jget('data/STORE_CONTRACTS.json'),iv=await jget('data/INVARIANTS.json'),ut=await jget('data/CHAMPION_UTILIZATION.json'),cd=await jget('data/CONDUCTOR_STATE.json'),ro=await jget('data/RESEARCH_OS.json'),cat=await jget('data/PARAM_CATALOG.json');
+  const bn=await jget('data/BENCH_BOOKS.json'),cs=await jget('data/UNIVERSE_CENSUS.json'),sc=await jget('data/STORE_CONTRACTS.json'),iv=await jget('data/INVARIANTS.json'),ut=await jget('data/CHAMPION_UTILIZATION.json'),cd=await jget('data/CONDUCTOR_STATE.json'),ro=await jget('data/RESEARCH_OS.json'),fpr=await jget('data/FINGERPRINTS.json'),cat=await jget('data/PARAM_CATALOG.json');
   const L=LIVE||{};const rows=[];
   if(bn&&bn.books){const B=bn.books;const g=k=>((B[k]||{}).return_pct);
     rows.push('<b>NULLS</b> '+['BENCH_CASH','BENCH_SPY','BENCH_HODL','BENCH_EQW'].map(k=>{const bb=B[k]||{};const r=bb.return_pct;const c=r>0?'pos':(r<0?'neg':'');const stt=String(bb.status||'');return k.replace('BENCH_','')+' <span class="'+c+'">'+(r!=null?sg(r)+'%':'\u2014')+'</span>'+(stt.indexOf('holding')===0||stt==='accruing'?'':' <span class="dim">('+stt+')</span>');}).join(' \u00b7 '));
@@ -812,6 +812,9 @@ async function renderFive(){const el=$('fiveStrip');if(!el)return;
   else rows.push('<b>CENSUS</b> <span class="dim">pending (hourly)</span>');
   if(sc){rows.push('<b>CONTRACTS</b> <span class="'+(sc.all_green?'pos':((sc.reds||[]).length?'neg':''))+'">'+(sc.verdict||'\u2014')+'</span>');}
   if(iv){const rd=(iv.reds||[]);rows.push('<b>INVARIANTS</b> <span class="'+(iv.all_green?'pos':(rd.length?'neg':''))+'">'+(iv.verdict||'\u2014')+'</span> <span class="dim">green '+(iv.green_streak||0)+'/'+(iv.dod_target||30)+(iv.dod_met?' \u2713':'')+'</span>'+(rd.length?' <span class="neg">\u2014 '+rd[0]+'</span>':''));}
+  if(fpr&&fpr.cards){const cc=fpr.cards.filter(function(c){return c.fittable;}).slice(0,6);
+    rows.push('<b>FINGERPRINTS</b> '+(fpr.fittable||0)+'/'+(fpr.tracked||0)+' valuables have a fee-clearing custom fit <span class="dim">— each trades its OWN chart, not a blanket threshold</span>');
+    if(cc.length){rows.push('<div style="font-size:10px;opacity:.85;margin:2px 0 2px 10px;line-height:1.5">'+cc.map(function(c){var f=c.fit||{};return '<span class="tick" data-sym="'+c.sym+'">'+c.sym+'</span> dips ~'+((f.typical_dip||0)*100).toFixed(1)+'% \u2192 aims '+((f.target||0)*100).toFixed(1)+'% <span class="dim">(of ~'+((f.typical_bounce||0)*100).toFixed(1)+'% bounce, stop '+((f.stop||0)*100).toFixed(0)+'%'+(f.strong_up?', STRONG-UP':'')+')</span>';}).join('<br>')+'</div>');}}
   if(ut&&ut.summary_today){rows.push('<b>UTILIZATION</b> '+ut.summary_today+' <span class="dim">['+(ut.legend||'')+']</span>');}
   if(cd){rows.push('<b>CONDUCTOR C0</b> '+((cd.decisions_logged!=null)?cd.decisions_logged:0)+'/'+((cd.c1_gate!=null)?cd.c1_gate:300)+' decisions logged \u00b7 <span class="dim">'+(cd.rung||'')+'</span>');}
   if(ro){const t=(ro.priorities||[])[0];rows.push('<b>RESEARCH OS</b> '+(ro.summary||'\u2014')+(t?' \u00b7 <span class="dim">highest-value next: '+t.id+' \u2014 '+String(t.question).slice(0,64)+'\u2026</span>':''));

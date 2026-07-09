@@ -179,5 +179,14 @@
  "exit_policy": {
   "limit_sell_at_target": true,
   "_what": "SELL policy. limit_sell_at_target=true models a resting LIMIT-SELL at each position's own target: it fills the instant price touches the target (a real order type), so a target hit between 10-min cycles is captured, not missed. Exits always use the position's stored target/stop, never the current champion's \u2014 a champion rotation never strands an open position with a moved goal. Set false for market-order-only exits."
+ },
+ "fingerprint_strategy": {
+  "enabled": true,
+  "realism": 0.66,
+  "min_reliability": 0.3,
+  "bounce_h": 144,
+  "min_dip": 0.002,
+  "trend_override": true,
+  "_what": "Per-valuable strategy fitter (5.0). Each mean-reversion candidate is judged by ITS OWN chart: it must have dipped to ~its typical buyable level, it must not be in a genuine multi-day downtrend, and it must reliably recover (min_reliability). Its target is a realistic fraction (realism) of its OWN typical bounce, floored to clear fees \u2014 that is what lifts close-rate and win-rate. bounce_h=144 (~1 day) captures slow-market recoveries. trend_override=true lets a name in a strong multi-timeframe uptrend trade through a red book regime. Set enabled=false to revert to the blanket per-book profile."
  }
 }
