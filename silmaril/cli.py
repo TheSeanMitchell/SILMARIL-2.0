@@ -1781,7 +1781,18 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                                   "Set _broker_policy.execution_enabled=true in "
                                   "PARAM_CATALOG.json to re-arm.")
         log.info("  broker bridge: SKIPPED — _broker_policy.execution_enabled=false (pricing-only doctrine)")
-    if _HAS_ALPACA and _broker_exec:
+    if True:  # ── 2026-07-10 PM RESCUE ─────────────────────────────────────────
+        # This condition was `if _HAS_ALPACA:` for months and briefly
+        # `if _HAS_ALPACA and _broker_exec:` (the 07-10 AM final-audit gate).
+        # That gate was a REGRESSION — my error: this block is not just the
+        # broker bridge; it spans 818 lines and the INTERNAL 4-BOOK PAPER SIM,
+        # champion updates, and split leaderboards live INSIDE it. Gating it
+        # off with execution_enabled:false switched off the entire trading
+        # core in every lane (books froze at 11:12Z on 07-10 while the tail
+        # analytics and spine kept stamping — the exact "everything broken"
+        # signature). The region now ALWAYS runs; the one true broker call
+        # (run_all_harvest_accounts, below) is gated at its call site instead.
+        # Never gate this block again — gate call sites.
         try:
             # Adapt plan dicts to what alpaca_paper expects
             alpaca_plans = []
@@ -2010,24 +2021,32 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                     set_active_out_dir(out)
                 except Exception:
                     pass
-                multi_account_results = run_all_harvest_accounts(
-                    plans=alpaca_plans,
-                    out_dir=out,
-                    all_debate_signals={
-                        d["ticker"]: (d.get("consensus") or {}).get("signal", "HOLD")
-                        for d in debate_dicts
-                    },
-                    # ALPHA 1.0 fix: the H5 Wordsmith book needs the FULL
-                    # debate rows (per-agent verdicts) to find FABLEBOY_5
-                    # convictions. The {ticker: signal} dict above only
-                    # carries consensus strings — feeding it to the
-                    # wordsmith filter left H5 silently starved.
-                    debate_dicts=debate_dicts,
-                    policy=_policy,
-                    plans_by_account=_alloc_by_account,
-                    contexts_by_ticker=_contexts_lookup,
-                    sector_lookup=_sector_lookup,
-                )
+                if _HAS_ALPACA and _broker_exec:
+                    multi_account_results = run_all_harvest_accounts(
+                        plans=alpaca_plans,
+                        out_dir=out,
+                        all_debate_signals={
+                            d["ticker"]: (d.get("consensus") or {}).get("signal", "HOLD")
+                            for d in debate_dicts
+                        },
+                        # ALPHA 1.0 fix: the H5 Wordsmith book needs the FULL
+                        # debate rows (per-agent verdicts) to find FABLEBOY_5
+                        # convictions. The {ticker: signal} dict above only
+                        # carries consensus strings — feeding it to the
+                        # wordsmith filter left H5 silently starved.
+                        debate_dicts=debate_dicts,
+                        policy=_policy,
+                        plans_by_account=_alloc_by_account,
+                        contexts_by_ticker=_contexts_lookup,
+                        sector_lookup=_sector_lookup,
+                    )
+                else:
+                    # broker execution disabled (operator directive 2026-07-07:
+                    # Alpaca is pricing-only). The internal 4-book sim below is
+                    # completely independent of this and always runs.
+                    multi_account_results = {}
+                    alpaca_state["reason"] = ("broker execution DISABLED by _broker_policy "
+                                              "(pricing-only doctrine); internal books unaffected")
             except Exception as _orch_e:
                 log.warning("multi-account orchestrator failed: %s", _orch_e)
                 multi_account_results = {}
@@ -2599,7 +2618,7 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 _err_path.write_text(json.dumps(_existing, indent=2, default=str))
             except Exception:
                 pass
-    else:
+    if not _HAS_ALPACA:
         alpaca_state["reason"] = "alpaca_paper module not importable (_HAS_ALPACA=False)"
 
     # ── ALPHA 3.1: post-cycle protection sidecar ────────────────

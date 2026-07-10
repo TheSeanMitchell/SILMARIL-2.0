@@ -54,8 +54,21 @@ def build_champion_split(out_dir) -> Dict[str, Any]:
     try: write_json_atomic(out / "champion_crypto.json", crypto)
     except Exception: pass
 
-    # NON-CRYPTO BOOKS: each takes its own independent arena winner, sticky.
+    # NON-CRYPTO BOOKS: forward survivability governs the moment THIS book has a
+    # qualifying forward row (2026-07-10 — the "re-governed on forward
+    # survivability once trades accumulate" promise, delivered). Until then the
+    # book keeps its independent arena winner as the sticky backtest hypothesis.
     from .paper_sim import BOOKS as _BOOKS
+    try:
+        _cvrows = json.loads((out / "champion_validation.json").read_text()).get("strategies", [])
+    except Exception:
+        _cvrows = []
+    try:
+        _rk = (json.loads((out / "PARAM_CATALOG.json").read_text()).get("champion_rotation") or {})
+    except Exception:
+        _rk = {}
+    _min_tr = int(_rk.get("min_trades", 5) or 5)
+    _margin = float(_rk.get("switch_margin", 15) or 15)
     results = {"crypto": crypto}
     for bk in [b for b in _BOOKS if b != "crypto"]:
         lb = _load(out, f"strategy_leaderboard_{bk}.json")
@@ -64,17 +77,34 @@ def build_champion_split(out_dir) -> Dict[str, Any]:
         cand, cand_net = bt.get("strategy"), bt.get("mean_net_pct")
         board = {r["strategy"]: r for r in lb.get("leaderboard", [])}
         inc_net = (board.get(prev_name) or {}).get("mean_net_pct")
-        chosen, why = prev_name, f"{bk} champion holds"
-        if prev_name is None and cand:
+        chosen, why, src = prev_name, f"{bk} champion holds", f"independent {bk} arena (backtest hypothesis, not forward-proven)"
+        _fw = sorted((r for r in _cvrows if r.get("book") == bk and r.get("strategy") in STRATEGIES),
+                     key=lambda r: (r.get("survivability") or {}).get("score", 0), reverse=True)
+        _fl = _fw[0] if _fw else None
+        if _fl and _fl.get("n", 0) >= _min_tr:
+            src = f"forward survivability ({bk} book, n={_fl['n']})"
+            _fl_s = (_fl.get("survivability") or {}).get("score", 0)
+            _inc_row = next((r for r in _fw if r.get("strategy") == prev_name), None)
+            _inc_s = (_inc_row.get("survivability") or {}).get("score", 0) if _inc_row else 0
+            if prev_name is None or _fl["strategy"] == prev_name:
+                chosen, why = _fl["strategy"], f"{bk} forward-survivability leader holds ({_fl_s:.0f}, n={_fl['n']})"
+            elif _fl_s >= _inc_s + _margin:
+                chosen, why = _fl["strategy"], (f"{bk} promoted on forward survivability: {_fl['strategy']} "
+                                                f"{_fl_s:.0f} > {prev_name} {_inc_s:.0f} (n={_fl['n']})")
+            else:
+                chosen, why = prev_name, (f"{bk} holds: {_fl['strategy']} ({_fl_s:.0f}) vs {prev_name} "
+                                          f"({_inc_s:.0f}) under {_margin:.0f}-pt margin")
+        elif prev_name is None and cand:
             chosen, why = cand, f"initial {bk} champion: {cand} ({cand_net:+.2f}%/trade backtest)" if cand_net is not None else f"initial {bk} champion: {cand}"
         elif cand and cand != prev_name and cand_net is not None and (inc_net is None or cand_net >= inc_net + STOCK_SWITCH_MARGIN):
             chosen, why = cand, f"{bk} arena switch: {cand} {cand_net:+.2f}%/trade"
         payload = {"generated_at": _now(), "book": bk, "champion": chosen,
                    "live_params": _params(chosen) if chosen else None,
                    "live_trades": _live_n(bk),
-                   "source": f"independent {bk} arena (backtest hypothesis, not forward-proven)",
+                   "source": src,
                    "reason": why,
-                   "honest_note": ("Backtest-selected hypothesis; the live book validates it. "
+                   "honest_note": ("Forward-survivability governed once this book has qualifying live trades; "
+                                   "backtest hypothesis until then. "
                                    "Empty until this book has a data feed.")}
         try: write_json_atomic(out / f"champion_{bk}.json", payload)
         except Exception: pass

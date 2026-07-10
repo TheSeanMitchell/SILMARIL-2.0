@@ -1221,8 +1221,17 @@ async function renderAuthority(){const a=await jget('data/authority_events.json'
 let PRICES=null,CSYM=null,CE=0,CM=0,CH=0;
 async function openChart(sym,entry,mark){CSYM=sym;CE=entry;CM=mark;CH=0;$('modal').style.display='block';
   $('modalTitle').innerHTML=icon(sym)+sym+' · SILMARIL view';
-  $('modalThesis').textContent=`MR thesis: bought ~3% dip at $${(+entry).toFixed(4)}; target +${(EXIT.t*100).toFixed(0)}% ($${(entry*(1+EXIT.t)).toFixed(4)}); stop −${(EXIT.s*100).toFixed(0)}% ($${(entry*(1-EXIT.s)).toFixed(4)}); ~${Math.round(EXIT.h)}m timeout→market.`;
-  $('chartHost').textContent='loading price history (one-time)…';if(!PRICES){PRICES=await jget('data/price_samples.json');try{const _M=await jget('data/metals_samples.json');if(_M&&_M.samples)Object.assign(PRICES.samples||{},_M.samples);}catch(e){}try{const _E=await jget('data/energy_samples.json');if(_E&&_E.samples)Object.assign(PRICES.samples||{},_E.samples);}catch(e){}}drawChart();}
+  // 2026-07-10: use the OPEN POSITION's own fitted target/stop when one exists —
+  // the modal previously drew the CHAMPION's lines (e.g. +3%) even when the
+  // position was entered with its own fitted goal (e.g. +5.5%), which is exactly
+  // how "it hit its target and isn't selling" false alarms were born.
+  let P=null;for(const bk of ['crypto','stock','metal','energy','aggressive']){const ps=(((LIVE||{})[bk])||{}).positions||[];const f=ps.find(p=>p.sym===sym);if(f){P=f;break;}}
+  window._CT=(P&&P.target!=null)?P.target:EXIT.t;window._CS=(P&&P.stop!=null)?P.stop:EXIT.s;
+  const _hold=(P&&P.max_hold_min!=null)?P.max_hold_min:EXIT.h;
+  $('modalThesis').textContent=(P
+    ?`this position: bought at $${(+entry).toFixed(4)} (${P.style||'MR'}, born in ${P.entry_regime||'?'}); ITS OWN target +${(window._CT*100).toFixed(2)}% ($${(entry*(1+window._CT)).toFixed(4)}); stop −${(window._CS*100).toFixed(1)}% ($${(entry*(1-window._CS)).toFixed(4)}); exits on target/stop only (timeouts off).`
+    :`MR thesis: bought ~3% dip at $${(+entry).toFixed(4)}; target +${(window._CT*100).toFixed(0)}% ($${(entry*(1+window._CT)).toFixed(4)}); stop −${(window._CS*100).toFixed(0)}% ($${(entry*(1-window._CS)).toFixed(4)}); ~${Math.round(_hold)}m timeout→market.`);
+  $('chartHost').textContent='loading price history (one-time)…';if(!PRICES){PRICES=await jget('data/price_samples.json');try{const _M=await jget('data/metals_samples.json');if(_M&&_M.samples)Object.assign(PRICES.samples||{},_M.samples);}catch(e){}try{const _E=await jget('data/energy_samples.json');if(_E&&_E.samples)Object.assign(PRICES.samples||{},_E.samples);}catch(e){}try{const _X=await jget('data/ccxt_samples.json');if(_X&&_X.samples)Object.assign(PRICES.samples||{},_X.samples);}catch(e){}}drawChart();}
 function drawChart(){const s=(PRICES&&PRICES.samples)?PRICES.samples[CSYM]:null;if(!s){$('chartHost').textContent='no price history for '+CSYM;return;}
   const now=Date.now();let rows=s.map(r=>[new Date(r[0]).getTime(),r[1]]).filter(r=>r[1]>0);if(CH>0)rows=rows.filter(r=>r[0]>=now-CH*3600000);
   if(rows.length<2){$('chartHost').textContent='not enough points in window';return;}

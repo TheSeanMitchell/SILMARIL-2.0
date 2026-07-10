@@ -147,6 +147,44 @@ CONTRACTS: List[Dict[str, str]] = [
 
 
 def _age_min(p: Path) -> Optional[float]:
+    """Age in minutes — from CONTENT timestamps, never file mtime.
+
+    2026-07-10 PM: `git checkout` sets every file's mtime to job-start time, so
+    an mtime-based age reads ~0 in every GitHub lane — the freshness layer
+    shipped this morning was blind in production (the census self-gate had the
+    same disease and never ran in Actions at all). We now read the newest
+    timestamp the store itself declares (generated_at / finished_at /
+    started_at / as_of, or the last row's t/date for append ledgers), falling
+    back to mtime only when the content carries no timestamp.
+    """
+    try:
+        d = json.loads(p.read_text())
+        cands: List[str] = []
+        if isinstance(d, dict):
+            for k in ("generated_at", "finished_at", "started_at", "as_of", "t"):
+                v = d.get(k)
+                if isinstance(v, str) and len(v) >= 10:
+                    cands.append(v)
+        elif isinstance(d, list) and d and isinstance(d[-1], dict):
+            for k in ("t", "generated_at", "date"):
+                v = d[-1].get(k)
+                if isinstance(v, str) and len(v) >= 10:
+                    cands.append(v)
+        best = None
+        for v in cands:
+            try:
+                ts = datetime.fromisoformat(v.replace("Z", "+00:00"))
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                if best is None or ts > best:
+                    best = ts
+            except Exception:
+                continue
+        if best is not None:
+            now = datetime.now(timezone.utc)
+            return max(0.0, (now - best).total_seconds() / 60.0)
+    except Exception:
+        pass
     try:
         return (_now().timestamp() - p.stat().st_mtime) / 60.0
     except Exception:

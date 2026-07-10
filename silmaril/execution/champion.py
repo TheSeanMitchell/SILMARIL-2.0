@@ -76,6 +76,12 @@ def update_champion(out_dir) -> Dict[str, Any]:
     try:
         cvj = json.loads((out / "champion_validation.json").read_text())
         for r in cvj.get("strategies", []):
+            # 2026-07-10: rows now carry {book, strategy}. This election governs
+            # the crypto engine (champion.json live_params), so only crypto-book
+            # forward evidence counts. Rows without a book field (pre-fix stores)
+            # pass through so an old file can't blank the election.
+            if (r.get("book") or "crypto") != "crypto":
+                continue
             nm = r["strategy"]
             if nm in AGG_BOOKS or nm not in STRATEGIES:
                 continue

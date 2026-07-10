@@ -170,7 +170,7 @@
  "_broker_policy": {
   "execution_enabled": false,
   "pricing_ok": true,
-  "_what": "Alpaca is PRICING-ONLY (operator directive 2026-07-07). execution_enabled gates the entire 3-account paper bridge in cli.py \u2014 flip to true + commit to re-arm, no code. Made a REAL knob in the 2026-07-10 final audit (it was prose before; nothing read it)."
+  "_what": "Alpaca is PRICING-ONLY (operator directive 2026-07-07). Gates ONLY the run_all_harvest_accounts broker call in cli.py \u2014 the internal 4-book sim is independent and always runs. Flip true + commit to re-arm."
  },
  "aggressive_book": {
   "enabled": true,
@@ -192,5 +192,9 @@
   "min_dip": 0.002,
   "trend_override": true,
   "_what": "Per-valuable strategy fitter (5.0). Each mean-reversion candidate is judged by ITS OWN chart: it must have dipped to ~its typical buyable level, it must not be in a genuine multi-day downtrend, and it must reliably recover (min_reliability). Its target is a realistic fraction (realism) of its OWN typical bounce, floored to clear fees \u2014 that is what lifts close-rate and win-rate. bounce_h=144 (~1 day) captures slow-market recoveries. trend_override=true lets a name in a strong multi-timeframe uptrend trade through a red book regime. Set enabled=false to revert to the blanket per-book profile."
+ },
+ "reentry_cooldown": {
+  "after_stop_min": 240,
+  "_what": "LDO lesson (2026-07-10): a name that just hit its STOP is barred from re-entry for this many minutes, every book incl. GEKKO. 0 disables."
  }
 }

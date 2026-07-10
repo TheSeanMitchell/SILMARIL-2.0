@@ -61,7 +61,22 @@ def build_census(out_dir) -> Optional[Dict[str, Any]]:
     out = Path(out_dir)
     tgt = out / STORE
     if tgt.exists():
-        age_min = (_now().timestamp() - tgt.stat().st_mtime) / 60.0
+        # 2026-07-10: gate on the store's OWN generated_at, not file mtime —
+        # git checkout resets every mtime to job start, so the mtime gate read
+        # "fresh" on every Actions run and the census NEVER executed in any
+        # lane (the live store was 35h stale while the gate said skip).
+        age_min = None
+        try:
+            g = json.loads(tgt.read_text()).get("generated_at")
+            if g:
+                ts = datetime.fromisoformat(str(g).replace("Z", "+00:00"))
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                age_min = (_now() - ts).total_seconds() / 60.0
+        except Exception:
+            age_min = None
+        if age_min is None:
+            age_min = (_now().timestamp() - tgt.stat().st_mtime) / 60.0
         if age_min < SELF_GATE_MIN:
             return None  # fresh enough — skip the heavy parse this cycle
 

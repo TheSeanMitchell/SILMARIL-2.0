@@ -547,10 +547,37 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
     _exit_pol = (_catalog(out).get("exit_policy") or {})
     _limit_ok = bool(_exit_pol.get("limit_sell_at_target", True))
     for sym in list(pbook.positions.keys()):
-        if asset_class(sym) != book:
+        # 5.0 TRADING-CORE FIX (2026-07-10): filter by the book's UNIVERSE class
+        # (`uc`), not the book label. GEKKO's book is "aggressive" but its symbols
+        # are crypto-class, so `!= book` skipped EVERY GEKKO position here — the
+        # book bought all day and could never sell (proven: 11 buys, 0 sells,
+        # six positions sitting above their own targets on 07-10).
+        if asset_class(sym) != uc:
             continue
         pos = pbook.positions[sym]
-        cur = side_marks.get(sym, (pos["entry"], 0))[0]
+        # STALE-PRICE SAFETY (same fix pass): if a held name drops out of this
+        # cycle's fresh marks, the old code silently marked it at ENTRY (chg=0),
+        # so with timeouts removed it could neither TAKE nor STOP — a zombie.
+        # Now: mark from the last REAL intraday print in the samples store
+        # (never synthetic), but only allow an exit FILL when that print is
+        # fresh (≤45 min). Stale names stay honestly marked, flagged, and armed.
+        _fresh_px = sym in side_marks
+        if _fresh_px:
+            cur = side_marks[sym][0]
+            pos.pop("stale_price_min", None)
+        else:
+            cur, _age_m = pos["entry"], None
+            for _ts, _pp2 in reversed(samples.get(sym, [])):
+                if _pp2 and _pp2 > 0 and "T00:00:00" not in str(_ts):
+                    cur = _pp2
+                    try:
+                        _age_m = (now - datetime.fromisoformat(str(_ts))).total_seconds() / 60.0
+                    except Exception:
+                        _age_m = None
+                    break
+            _fresh_px = (_age_m is not None and _age_m <= 45.0)
+            if not _fresh_px:
+                pos["stale_price_min"] = round(_age_m, 1) if _age_m is not None else -1
         pbook.mark(sym, cur)                       # 2.7: update high-water so left-on-table is real
         chg = cur / pos["entry"] - 1 if pos["entry"] > 0 else 0
         try:
@@ -572,6 +599,10 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
             why, fill = "TIMEOUT", cur
         else:
             why, fill = None, cur
+        if why and not _fresh_px:
+            # exit condition met on a STALE print — do not fill on fiction; the
+            # position stays armed and fills the moment a fresh print arrives.
+            why = None
         if why:
             _champ_entry = pos.get("champion_entry")
             _rzpct = (fill / pos["entry"] - 1) * 100 if pos["entry"] > 0 else 0.0
@@ -615,7 +646,12 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         cands = sorted([(s, lp, h1, None) for s, (lp, h1) in side_marks.items()
                         if h1 >= entry and s not in pbook.positions and fresh_ok(s) and s in _WARM_SYMS],
                        key=lambda x: x[2], reverse=True)
-    elif _fp_on:
+    elif _fp_on and book != "aggressive":
+        # (aggressive/GEKKO excluded from fingerprint fitting as of 2026-07-10:
+        # fitted per-name targets had silently overwritten its fixed 2%→2%/6%
+        # knob profile, making it a near-clone of the crypto book instead of the
+        # control probe the doctrine defines. GEKKO now takes the plain-threshold
+        # path below with its own aggressive_book knob params, untouched.)
         from .fingerprint import fingerprint as _fpf, fit_strategy as _fitf
         _bh = int(_fpcfg.get("bounce_h", 144)); _rz = float(_fpcfg.get("realism", 0.66))
         _minrel = float(_fpcfg.get("min_reliability", 0.3)); _mindip = float(_fpcfg.get("min_dip", 0.002))
@@ -698,6 +734,31 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         if _pre != len(cands):
             actions.append({"act": "SKIP", "sym": "%d name(s)" % (_pre - len(cands)),
                             "why": "integrity quarantine — data stream failed Phase-1 checks"})
+    # POST-STOP RE-ENTRY COOLDOWN (2026-07-10, from the LDO-USD autopsy): the book
+    # stopped out of LDO at 18:51 (-7.1%) and re-bought the same falling name at
+    # 19:15. A name that just hit its stop is disqualified for a cooling-off
+    # window. Knob: PARAM_CATALOG.reentry_cooldown {"after_stop_min": 240};
+    # set 0 to disable. Applies to every book including GEKKO.
+    try:
+        _cd_min = float(((cat.get("reentry_cooldown") or {}).get("after_stop_min", 240)) or 0)
+    except Exception:
+        _cd_min = 240.0
+    if _cd_min > 0 and cands:
+        _cool = set()
+        for _tr in reversed(pbook.trades[-400:]):
+            if _tr.get("side") == "SELL" and _tr.get("exit_reason") == "STOP":
+                try:
+                    _ag = (now - datetime.fromisoformat(str(_tr.get("t")))).total_seconds() / 60.0
+                except Exception:
+                    continue
+                if _ag <= _cd_min:
+                    _cool.add(_tr.get("sym"))
+        if _cool:
+            _pre2 = len(cands)
+            cands = [c for c in cands if c[0] not in _cool]
+            if _pre2 != len(cands):
+                actions.append({"act": "SKIP", "sym": ", ".join(sorted(_cool))[:60],
+                                "why": f"post-STOP cooldown — re-entry blocked {int(_cd_min)}m after a stop-out"})
     _dtrace = [{"sym": s_, "dip_pct": round(h_ * 100, 2), "conviction": c_, "fate": "candidate"}
                for s_, l_, h_, c_ in cands[:8]]
     for sym, lp, h1, cv in cands[:MAX_NAMES]:

@@ -100,24 +100,44 @@ def _tier(surv: Dict, n: int) -> str:
 def build_champion_validation(out_dir) -> Dict[str, Any]:
     out = Path(out_dir)
     rows = []
+    # 5.0 TRADING-CORE FIX (2026-07-10): rows were previously grouped by BOOK
+    # (the file stem), so "strategies" contained "crypto"/"stock"/"metal" — and
+    # champion.py's election filters rows to real strategy names, so it graded
+    # an EMPTY dict every cycle: the champion could never rotate, Forensics
+    # showed survivability 0, and the truth panel starved. Every closed trade
+    # carries the strategy that ENTERED it (`champion_entry`); that is the
+    # grouping the whole governance chain was designed around. Rows now carry
+    # {book, strategy}; aggregate/aggressive books stay excluded from candidacy
+    # downstream exactly as before.
     for bp in out.glob("paper_book_*.json"):
-        strat = bp.stem.replace("paper_book_", "")
-        try: trades = json.loads(bp.read_text()).get("trades", [])
-        except Exception: continue
-        closed = _closed_returns(trades)
-        rets = [c["ret"] for c in closed]
-        if not rets: continue
-        full = _stats(rets)
-        half = len(rets) // 2
-        h1, h2 = _stats(rets[:half]), _stats(rets[half:])
-        surv = _survivability(full, h1, h2)
-        tier = _tier(surv, full["n"])
-        rows.append({"strategy": strat, **full, "survivability": surv,
-                     "tier": tier, "tier_capital_usd": TIER_CAPITAL[tier],
-                     "production_verified": bool(full["n"] >= 100 and surv.get("score", 0) >= 70
-                                                 and surv.get("oos_consistent"))})
+        book = bp.stem.replace("paper_book_", "")
+        try:
+            trades = json.loads(bp.read_text()).get("trades", [])
+        except Exception:
+            continue
+        by_strat: Dict[str, List[float]] = {}
+        for tr in trades:
+            if tr.get("side") != "SELL" or tr.get("realized_pct") is None:
+                continue
+            nm = tr.get("champion_entry") or tr.get("champion") or tr.get("strategy")
+            if not nm:
+                continue
+            by_strat.setdefault(str(nm), []).append(float(tr["realized_pct"]) / 100.0)
+        for strat, rets in by_strat.items():
+            if not rets:
+                continue
+            full = _stats(rets)
+            half = len(rets) // 2
+            h1, h2 = _stats(rets[:half]), _stats(rets[half:])
+            surv = _survivability(full, h1, h2)
+            tier = _tier(surv, full["n"])
+            rows.append({"book": book, "strategy": strat, **full, "survivability": surv,
+                         "tier": tier, "tier_capital_usd": TIER_CAPITAL[tier],
+                         "production_verified": bool(full["n"] >= 100 and surv.get("score", 0) >= 70
+                                                     and surv.get("oos_consistent"))})
     rows.sort(key=lambda r: (r["survivability"]["score"], r["sharpe_proxy"]), reverse=True)
-    champ = rows[0]["strategy"] if rows else None
+    _cry = [r for r in rows if r.get("book") == "crypto"]
+    champ = (_cry[0]["strategy"] if _cry else (rows[0]["strategy"] if rows else None))
     try: declared = json.loads((out / "champion.json").read_text())
     except Exception: declared = {}
     declared_champ = declared.get("champion") if isinstance(declared, dict) else None
@@ -125,7 +145,9 @@ def build_champion_validation(out_dir) -> Dict[str, Any]:
                "most_survivable": champ,
                "declared_champion": declared_champ,
                "champion_is_most_survivable": (champ == declared_champ) if declared_champ else None,
-               "promotion_ladder": {t: [r["strategy"] for r in rows if r["tier"] == t]
+               "promotion_ladder": {t: [(r["strategy"] if r.get("book") == "crypto"
+                                         else f"{r['strategy']} [{r.get('book','?')}]")
+                                        for r in rows if r["tier"] == t]
                                     for t in ["Production", "Candidate", "Incubation", "Sandbox"]},
                "strategies": rows,
                "verdict": (f"Most survivable: {champ}. " +
