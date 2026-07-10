@@ -1,0 +1,32 @@
+name: Cleanup 5.0 Final (one-time)
+# Removes what the 2026-07-10 final audit proved dead: attics the root cli.py +
+# root execution/ + root learning/ (reversible), deletes 8 orphaned data items
+# (~25 MB, incl. the 21 MB _legacy_charts_disabled.json). Confirm-gated exactly
+# like Cleanup Clutter. Full ledger printed in the run log.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm: { description: 'Type CLEAN to confirm', required: true }
+concurrency:
+  group: silmaril-state
+  cancel-in-progress: false
+jobs:
+  cleanup:
+    if: ${{ github.event.inputs.confirm == 'CLEAN' }}
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/cleanup_5_0_final.py
+      - name: commit
+        run: |
+          git config user.name 'silmaril-bot'
+          git config user.email 'silmaril-bot@users.noreply.github.com'
+          git add -A
+          if git diff --staged --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -m "🧹 5.0 final cleanup: attic dead code, delete orphaned data"
+          for i in 1 2 3; do
+            git push && break || true
+            git fetch --depth=1 origin main && git rebase -X theirs origin/main || git rebase --abort || true
+            sleep 4
+          done

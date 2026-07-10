@@ -169,6 +169,6 @@ jobs:
           for i in 1 2 3; do
             git push && break || true
             echo "push attempt $i failed; fetching tip + rebasing"
-            git fetch --depth=1 origin main && git rebase origin/main || git rebase --abort || true
+            git fetch --depth=1 origin main && git rebase -X theirs origin/main || git rebase -X theirs --abort || true
             sleep 4
           done
