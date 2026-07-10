@@ -167,7 +167,11 @@
   "switch_margin": 15,
   "_what": "5.0 \u2014 the anti-flip-flop rotation gates, now LIVE-TUNABLE (edit \u2192 commit \u2192 next cycle). min_trades = forward closed trades a challenger needs; switch_margin = survivability points it must lead by. Defaults preserve 2.18 behavior exactly; lower BOTH to rotate faster as forward evidence lands \u2014 the rotation_freshness OBSERVE gate + Research-OS Q002 grade whether faster actually pays. Election runs every cycle, all books."
  },
- "_broker_policy": "Alpaca is PRICING-ONLY going forward (operator directive 2026-07-07): no new feature may depend on it for execution; existing paper-account reads remain for continuity until replaced.",
+ "_broker_policy": {
+  "execution_enabled": false,
+  "pricing_ok": true,
+  "_what": "Alpaca is PRICING-ONLY (operator directive 2026-07-07). execution_enabled gates the entire 3-account paper bridge in cli.py \u2014 flip to true + commit to re-arm, no code. Made a REAL knob in the 2026-07-10 final audit (it was prose before; nothing read it)."
+ },
  "aggressive_book": {
   "enabled": true,
   "name": "GEKKO",

@@ -1,9 +1,11 @@
-Delete these dead Alpaca/legacy files from docs/data/ in your repo (they are no longer written and
-only pollute the repo + UI). Safe to delete via GitHub web UI:
+SUPERSEDED (2026-07-10 final audit): don't delete these by hand anymore.
 
-  decision_ledger.json   capital_flow.json      agent_portfolios.json
-  report_card.json       harvest_truth.json     harvest_accounts.json
-  alpaca_paper_state.json  alpaca_h3_state.json   alpaca_h5_state.json
-  wantgot.json           debug_stream.json      docs/data/archive/  (whole folder)
+Run the one-click workflow instead:
+  Actions → "Cleanup 5.0 Final (one-time)" → Run workflow → type CLEAN
 
-The internal 4-book paper sim never reads or writes these. This ZIP stops them regenerating.
+It attics the dead root code (cli.py, execution/, learning/ — reversible from
+attic/) and deletes every orphaned data file the audit verified nothing writes
+or reads (~25 MB, including the 21 MB _legacy_charts_disabled.json). The full
+ledger of what it did prints in the run log. The earlier hand-list in this file
+was partially wrong — three of its entries were still being written 3x/day by
+the analytics suite; the audit doc has the details.

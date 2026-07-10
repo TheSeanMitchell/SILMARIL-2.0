@@ -1762,7 +1762,26 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
         "errors": [],
     }
     multi_account_results: Dict[str, Dict[str, Any]] = {}
-    if _HAS_ALPACA:
+    # ---- 5.0 FINAL AUDIT (2026-07-10): PARAM_CATALOG._broker_policy is now a
+    # REAL gate, not prose. Operator directive 2026-07-07: Alpaca is pricing-only;
+    # no execution. Default (knob missing / legacy string form) = DISABLED.
+    # Flip execution_enabled:true in the catalog to re-arm — edit → commit →
+    # next cycle, no code. This also removes three broker round-trips from
+    # every 10-minute pulse.
+    _broker_exec = False
+    try:
+        _bp = json.loads((out / "PARAM_CATALOG.json").read_text()).get("_broker_policy")
+        if isinstance(_bp, dict):
+            _broker_exec = bool(_bp.get("execution_enabled", False))
+    except Exception:
+        _broker_exec = False
+    if _HAS_ALPACA and not _broker_exec:
+        alpaca_state["reason"] = ("broker execution DISABLED by _broker_policy "
+                                  "(operator directive: Alpaca is pricing-only). "
+                                  "Set _broker_policy.execution_enabled=true in "
+                                  "PARAM_CATALOG.json to re-arm.")
+        log.info("  broker bridge: SKIPPED — _broker_policy.execution_enabled=false (pricing-only doctrine)")
+    if _HAS_ALPACA and _broker_exec:
         try:
             # Adapt plan dicts to what alpaca_paper expects
             alpaca_plans = []
@@ -2186,19 +2205,9 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                             log.info("  WIDE arena swept: %s", {k: (v or {}).get("strategy") for k, v in (_rw or {}).items()})
                     except Exception as _rwe:
                         log.warning("wide arena skipped: %s", _rwe)
-                    if _deep:
-                        # 3.0 FINAL — deep-pass labs (report-only, evidence-building)
-                        for _nm, _imp in (("daily baseline", "daily_baseline.build_daily_baseline"),
-                                           ("aggression ladder", "aggression_ladder.build_aggression_ladder"),
-                                           ("weekly scorecard", "weekly_scorecard.build_weekly_scorecard"),
-                                           ("stock parity audit", "stock_parity_audit.build_stock_parity_audit"),
-                                           ("complexity ledger", "complexity_ledger.build_complexity_ledger")):
-                            try:
-                                _mod, _fn = _imp.split(".")
-                                getattr(__import__("silmaril.execution." + _mod, fromlist=[_fn]), _fn)(out)
-                                log.info("  %s ✔", _nm)
-                            except Exception as _de:
-                                log.warning("%s skipped: %s", _nm, _de)
+                    # 5.0 FINAL AUDIT: the five evidence labs moved to the
+                    # every-cycle spine (end of run) — they starved for a week
+                    # here when this lane died 2026-07-03. Single ownership.
                     if _dh:
                         log.info("  daily-HOLD (refreshed): energy=%s · stock=%s",
                                  (_dh.get("energy", {}).get("best_trusted") or {}).get("strategy"),
@@ -3472,6 +3481,26 @@ Reply in 3-5 bullets, no preamble.
                  (_ivr or {}).get("dod_target"))
     except Exception as _e50:
         log.warning("invariants skipped: %s", _e50)
+    # ---- 5.0 FINAL AUDIT (2026-07-10): the five evidence labs now live in the
+    # spine. They previously ran ONLY in the deep-analytics lane, nested inside
+    # a fragile try — when that lane died on 2026-07-03 (an unfailure-tolerated
+    # step skipped everything after it, including commit), all five starved
+    # silently for a week. Measured cost on real July-9 data: ~0.3s combined.
+    # daily_baseline self-gates once per date; weekly_scorecard upserts its ISO
+    # week; the other three are cheap idempotent snapshots. Each individually
+    # wrapped; their stores are schema+freshness registered in store_contracts,
+    # so this class of starvation is now structurally impossible AND visible.
+    for _nm50, _imp50 in (("daily baseline", "daily_baseline.build_daily_baseline"),
+                          ("aggression ladder", "aggression_ladder.build_aggression_ladder"),
+                          ("weekly scorecard", "weekly_scorecard.build_weekly_scorecard"),
+                          ("stock parity audit", "stock_parity_audit.build_stock_parity_audit"),
+                          ("complexity ledger", "complexity_ledger.build_complexity_ledger")):
+        try:
+            _m50, _f50 = _imp50.split(".")
+            getattr(__import__("silmaril.execution." + _m50, fromlist=[_f50]), _f50)(out)
+            log.info("  %s ✔ (spine)", _nm50)
+        except Exception as _le50:
+            log.warning("%s skipped: %s", _nm50, _le50)
 
     log.info("✦ SILMARIL run complete")
     log.info("  %d debates resolved", len(debate_dicts))

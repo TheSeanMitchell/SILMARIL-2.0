@@ -541,3 +541,34 @@ unproven hope and is priced here at exactly zero. What 5.0 guarantees is the sam
 did, extended to every door we might ever open: **wherever this machine looks next, the
 record it brings back can be believed** — and it will always know, to the dollar, whether
 looking was better than sitting still.
+
+---
+
+# FINAL AUDIT ADDENDUM — 2026-07-10 (the completion pass)
+
+The 5.0 Master Directive's closing order — *verify every system landed, is wired, is fed, and
+works* — was executed against the July-9 11:45 PM full backup. Full record with verification
+transcripts: `AUDIT_2026_07_10_FINAL.md`. The short version:
+
+**Phase-A spine: VERIFIED COMPLETE.** All seven modules run clean on real data; contracts and
+invariants ALL GREEN; dashboard 63/63 fetches resolved; click-through, PROVISIONAL badge, GEKKO
+card, hold→max_hold_min contract — all confirmed live.
+
+**Two real bugs found, root-caused, fixed:**
+1. *The deep-analytics lane died silently 2026-07-03* (an unfailure-tolerated step skipped
+   everything after it, including commit), starving all five evidence labs for a week — the
+   wired-but-starved pattern at the workflow layer. Fixed four ways: labs moved into the
+   every-cycle spine; the lane rebuilt unkillable (pinned 3.11, every step tolerated); a
+   heartbeat store freshness-monitored by contracts; and a new FRESHNESS layer in
+   `store_contracts` that turns *any* store that stops being written into a named RED.
+2. *`_broker_policy` was prose* — the retired Alpaca bridge still executed in every pulse. Now
+   a real gate, default off, re-armable by knob.
+
+**New law earned by this pass (Law 17 — LANES):** *a lane is not alive because its cron exists;
+it is alive because its heartbeat is fresh.* Every scheduled lane must stamp a
+freshness-monitored store, and no lane's main step may be capable of silently cancelling its
+own commit. The July-3 death is the proof case.
+
+Dead code atticked, orphaned data deleted (one-click workflow), pushes race-proofed across all
+lanes. Phase-A is closed; the harvest runs unattended. Phases B+ (new rooms, Conductor rungs,
+Research-OS v2) proceed exactly as written above — on evidence, never enthusiasm.

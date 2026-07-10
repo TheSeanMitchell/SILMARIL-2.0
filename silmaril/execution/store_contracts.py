@@ -79,6 +79,36 @@ SCHEMAS: Dict[str, List[str]] = {
     "CHAMPION_UTILIZATION.json": ["generated_at", "last.crypto"],
     "CONDUCTOR_STATE.json": ["decisions_logged"],
     "RESEARCH_OS.json": ["generated_at", "questions[]", "priorities[]"],
+    # ---- 5.0 FINAL AUDIT (2026-07-10): the five evidence labs + the deep-lane
+    # heartbeat. These starved silently for a week (the deep workflow died on
+    # 2026-07-03 and, because its main step wasn't failure-tolerated, every
+    # following step — including commit — was skipped). Registering them here
+    # means a dead lane or a starved lab flips a named RED light within a day
+    # instead of vanishing. DAILY_BASELINE / WEEKLY_SCORECARD are append
+    # ledgers (list roots); "[]" asserts list shape, empty-is-honest.
+    "DAILY_BASELINE.json": ["[]"],
+    "WEEKLY_SCORECARD.json": ["[]"],
+    "AGGRESSION_LADDER.json": ["generated_at", "books"],
+    "STOCK_PARITY_AUDIT.json": ["generated_at", "recommendation"],
+    "COMPLEXITY_LEDGER.json": ["generated_at", "rows"],
+    "deep_heartbeat.json": ["started_at"],
+}
+
+# ---- FRESHNESS: store file -> max age in hours before an EXISTING, shape-valid
+# store goes RED anyway. Shape checks catch mismatches; this catches the other
+# silent killer — a store that stopped being written. Only stores with a hard
+# cadence promise belong here (spine-owned = every cycle; heartbeat = 3x/day
+# deep lane, so 30h tolerates one missed slot + cron slippage; weekly = 8d).
+FRESHNESS_MAX_AGE_H: Dict[str, float] = {
+    "DAILY_BASELINE.json": 30.0,
+    "AGGRESSION_LADDER.json": 6.0,
+    "STOCK_PARITY_AUDIT.json": 6.0,
+    "COMPLEXITY_LEDGER.json": 6.0,
+    "WEEKLY_SCORECARD.json": 192.0,
+    "deep_heartbeat.json": 30.0,
+    "BENCH_BOOKS.json": 6.0,
+    "CHAMPION_UTILIZATION.json": 6.0,
+    "RESEARCH_OS.json": 6.0,
 }
 
 # ---- CONTRACTS: (producer store, field path, consumer) ------------------------
@@ -105,6 +135,14 @@ CONTRACTS: List[Dict[str, str]] = [
      "consumer": "dashboard 5.0 strip (Law 16)"},
     {"producer": "RESEARCH_OS.json", "path": "priorities[]",
      "consumer": "dashboard research row (meta-research prioritization)"},
+    {"producer": "DAILY_BASELINE.json", "path": "[]",
+     "consumer": "market-memory analogs + every future cross-market study (P11)"},
+    {"producer": "AGGRESSION_LADDER.json", "path": "books",
+     "consumer": "deployment-fraction decision (P12 evidence)"},
+    {"producer": "STOCK_PARITY_AUDIT.json", "path": "recommendation",
+     "consumer": "stock-book threshold retune (P6 evidence)"},
+    {"producer": "deep_heartbeat.json", "path": "started_at",
+     "consumer": "lane-death detector (deep analytics 3x/day)"},
 ]
 
 
@@ -142,6 +180,15 @@ def validate_stores(out_dir) -> Dict[str, Any]:
         if missing:
             checks.append({"store": store, "state": "RED",
                            "note": "missing: " + ", ".join(missing)})
+            reds.append(store)
+            continue
+        # ---- freshness (5.0 final audit): a valid store that stopped being
+        # written is the same lie as a starved field — surface it by name.
+        cap_h = FRESHNESS_MAX_AGE_H.get(store)
+        age = _age_min(p)
+        if cap_h is not None and age is not None and age > cap_h * 60.0:
+            checks.append({"store": store, "state": "RED",
+                           "note": f"STALE: last write {age/60.0:.1f}h ago (cap {cap_h:.0f}h) — its producing lane is dead"})
             reds.append(store)
         else:
             checks.append({"store": store, "state": "GREEN", "note": "ok"})
