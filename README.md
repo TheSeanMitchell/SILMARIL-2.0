@@ -1,116 +1,95 @@
-# SILMARIL — Alpha 0.001
+# SILMARIL 5.1 — deterministic paper-trading research platform
+### The root orientation document. Read this file and `DOCS_5_1/` before touching anything; together they replace every legacy directive/audit/install doc (all moved to `attic/docs_pre_5_1/`).
 
-**A multi-agent research system built to find a real, durable edge in US stocks.**
+**What this is:** a multi-book internal paper simulation (crypto · stock · metal · energy · GEKKO
+probe + 4 benchmark nulls + one WATCHING Master account) that hunts for a real, fee-surviving
+trading edge and refuses to lie about whether it has found one. Deterministic, explainable,
+evidence-governed. **What it is not:** income. The $100–300/day figure is an unproven hope priced
+at zero. **Live-money unlock (untouchable):** 100 out-of-sample trades surviving the gate across
+90 unbroken days.
 
-SILMARIL runs a roster of trading agents over US equities, executes their
-consensus on Alpaca paper accounts, scores every call against clean price data,
-and uses those scores to reweight the agents over time. The goal is singular:
-**discover whether a repeatable stock edge exists here — and prove it with money,
-not with a story.**
+**Prime doctrine:** Evidence Growth ≥ Feature Growth · realized P&L is the only score ·
+every claim Verified/Rejected forward · no synthetic data (test vectors excepted) ·
+nothing unproven touches a decision (experimental gates) · every book judged Δ-vs-null ·
+root-cause before fix · every squashed bug becomes a permanent tripwire (`scripts/selftest_5_1.py`).
 
-> Alpha 0.001 is a deliberate rebirth. After a long build that accreted crypto
-> compounders, token traders, and prediction-market bots, the project is
-> re-founded around one mission: **stocks, real trades, honest results.**
-> Everything that can't place a real US-equity order is out of scope.
+## TABLE OF CONTENTS
+| Doc | What it answers |
+|---|---|
+| `README.md` (this file) | identity, doctrine, and the tab-by-tab UI↔engine checklist |
+| `DOCS_5_1/01_ARCHITECTURE.md` | layers, lanes, books, stores — the machine's shape |
+| `DOCS_5_1/02_PHILOSOPHY.md` | the Laws (1–16 condensed), gates, nulls, honesty rules |
+| `DOCS_5_1/03_ENGINE_PIPELINE.md` | one cycle, step by step, module by module |
+| `DOCS_5_1/04_UI_REFERENCE.md` | every panel → renderer function → store |
+| `DOCS_5_1/05_WIRING_MAP.md` | producer→consumer table for every store |
+| `DOCS_5_1/06_FEATURE_INVENTORY.md` | every feature: COMPLETE / OBSERVE-GATED / RETIRED |
+| `DOCS_5_1/07_REGRESSION_PROTECTION.md` | incident → permanent tripwire mapping |
+| `DOCS_5_1/08_DATA_ROADMAP.md` | feeds, keys, cron-token guidance, expansion order |
+| `DOCS_5_1/09_OPTIMIZATION_ROADMAP.md` | evidence-gated next steps (nothing by date) |
+| `DOCS_5_1/10_PRODUCTION_CHECKLIST.md` | the road to live money, prerequisite by prerequisite |
+| `NOTES_5_1_LEDGER.md` | every 5.1 operator note → what was done about it |
+| `INSTALL_5_1.md` | drag-and-drop install order + first-cycle expectations |
 
----
+## THE TAB-BY-TAB CHECKLIST — UI element ↔ engine source (audit 2026-07-11; all lanes live)
 
-## What it is
+### ① COMMAND
+| UI element | Engine source (store ← writer, lane) | Status |
+|---|---|---|
+| ★ MASTER ACCOUNT (golden, top) | `MASTER_ACCOUNT.json` ← cli master gate, every cycle | WATCHING by design — trades only after the live-money bar; the cost-stack table is a production REHEARSAL of the proven book's gross |
+| Five account buttons + LIVE POSITIONS | `paper_sim_live.json` ← `paper_sim.live_step`, every cycle | 5.1: reordered directly beneath Master (boot JS, graceful no-op); rows now show **net now vs net @ target** + ⚑ AT TARGET only when price ≥ target price |
+| LIVE REGIME (⚡ shift watch) | `REGIME_CLASSIFIER.json` ← regime engine, every cycle | per-book; per-VALUABLE 10-min shift detector is Queued (see 09) |
+| DENIED THIS CYCLE | `paper_sim_live.json.funnel.rejections` | empty = no vetoes fired that cycle (working, not broken) |
+| FIRST-TRADE READINESS / MASTER ACCEPT-REJECT | `MASTER_ACCOUNT.json.decision_log_tail` | fills as gate evaluates |
+| WIRING AUDIT | `STORE_CONTRACTS.json` ← `store_contracts`, every cycle | content-timestamp freshness (checkout-proof) |
+| UNIVERSE FUNNEL | `paper_sim_live.json.funnel` | "seen" = names with FRESH ticks; census names every exclusion; ccxt waterfall (5.1) grows it |
+| SILMARIL 5.1 — SPINE panel | census/contracts/invariants/utilization/conductor/research-OS/bench stores | UTILIZATION `dep n/m` = **cycles**, labeled so in 5.1 |
+| FINGERPRINTS coverage | `FINGERPRINTS.json` ← fingerprint engine, hourly | grows as feed breadth grows |
+| PROJECT HEALTH / FALLBACK DEPTH | `api_health.json` ← analytics suite **+ 5.1 `health_lights` (keyed lanes)** | key-group zeros fixed: depth computed where the keys actually live |
+| Quick log | `DAILY_JOURNAL.json` ← journal writer, cycle | honest by construction |
 
-- **Agents** (`silmaril/agents/`) — each reads an `AssetContext` (price, technicals,
-  news sentiment, regime) and emits a `Verdict` (BUY/SELL/HOLD + conviction).
-- **Debate + consensus** (`silmaril/senate/`) — agent verdicts are arbitrated into
-  a per-ticker consensus.
-- **Plans + risk** (`silmaril/portfolios/`, `silmaril/execution/`) — consensus
-  becomes trade plans, filtered by risk and trend, then executed on Alpaca.
-- **Scoring + learning** (`silmaril/scoring/`, `silmaril/learning/`) — every prior
-  call is scored against fresh prices; Thompson sampling reweights each agent's
-  conviction by its learned per-regime win rate; a kill-switch freezes chronic
-  losers.
-- **The cockpit** (`docs/cockpit.html` + `docs/silmaril-truth.js`) — the read-only
-  truth surface. One honest view of system health, anomalies, and accounts.
+### ② ARENA
+| UI element | Engine source | Status |
+|---|---|---|
+| CHAMPION TRUTH PANEL | `CHAMPION_GOVERNANCE.json` + `champion_validation.json` | 5.1 adds **CHALLENGER WATCH**: incumbent vs top challenger, gap vs switch-margin, replacement proximity per book |
+| QUADRANT LEADERBOARDS | `strategy_leaderboard_{book}.json` + `champion_{book}.json` | backtest labeled **hypothesis**; 5.1 adds live **forward: surv · n** chip; election runs every cycle on forward survivability (rescue fix) |
+| STRATEGY SURVIVAL LEADERBOARD | `champion_validation.json.strategies` → `#arenaBody` | populated post-rescue (rows are strategies, never books); 5.1 adds book chip |
+| PROMOTION LADDER | governance ladder, validation fallback (5.1) | Sandbox→Incubation(10)→Candidate(25)→Production(50)→Verified(100) |
 
-Runs on a schedule via GitHub Actions; publishes to GitHub Pages.
+### ③ FORENSICS
+| UI element | Engine source | Status |
+|---|---|---|
+| PROJECT SCORECARD | `SCORECARD.json` ← `scorecard.py` **(5.1 full rewrite)** | 7 categories, each a printed FORMULA on a named store — auditable, never flattery |
+| TODAY'S SESSION (black box) | `SESSION_TODAY.json` ← `session_reconstruction`, cycle | alive post-rescue; resets midnight Vegas; all books |
+| SESSION ANATOMY | `SESSION_ANATOMY.json` ← `session_anatomy`, cycle | alive post-rescue |
+| REALITY CHECK | `REALITY_CHECK.json` | live-fee survival of the proven book |
+| DAILY TAKE-HOME | realized per-day minus documented fees | dollars scale with WAGER (a $1.62 win on a $48 wager is +3.7%, not a $1000 risk — rows print the wager) |
+| EDGE CAPTURE | `edge_capture_engine.json` **(5.1 sane universe)** | canonical + fresh ≤24h + one-listing-per-base + \|move\|≤50% — the TON +23824% ghost era is over; emits `pursuable_missed` |
+| CRYPTO EDGE CONCENTRATION | `CRYPTO_CONCENTRATION.json` | twin-safe since canonical-key law |
+| CHAMPION TIMELINE | `CHAMPION_TIMELINE.json` | rotation is live post-rescue; timeline moves when evidence does |
+| PARAMETER-CHAMPION REGISTRY | `PARAMETER_REGISTRY.json` | **decision-driving** (fingerprint fits feed entries/exits), not decoration |
+| HEATSHIELD | `HEATSHIELD.json` ← paper_sim | **5.1: ACTIONABLE** — floor resolver applies the measured winner when n≥60 (knob `heatshield_autotune`, clamped, reversible); gate shows WEIGHTED only while genuinely applied |
 
----
+### ④ SILMARIL NEWS
+| UI element | Engine source | Status |
+|---|---|---|
+| Video wall | `YT_FEEDS` in index.html | dead Schwab stream replaced (5.1) with a stable 24/7 broadcaster |
+| Headlines + tags | authority/news stores ← feedparser lane | 5.1: anchors link the **direct article URL** when the store carries it |
+| Influence on trading | `NEWS_TRIAL_STATUS.json` + gates board | OBSERVE until the 90-day trial proves hit-rate > coin-flip — research only, never trades |
 
-## Current honest state (2026-06-05)
+### ⑤ SETTINGS / SYSTEM BRAIN
+| UI element | Engine source | Status |
+|---|---|---|
+| HEALTH MATRIX | live payload + per-store ages | Peak rhythm now **all industries** (5.1, bounded per class) |
+| TUNABLE KNOBS | `PARAM_CATALOG.json` (edit → commit → next cycle) | 5.1 adds `heatshield_autotune`; `reentry_cooldown`, `_broker_policy` from rescue |
+| EXPERIMENTAL GATES | `FEATURE_GATES_STATUS.json` ← **5.1 `gate_evidence`** | evidence counts are REAL tallies from named stores; the eternal 0/60 era is over |
+| MOVEMENT V | RA/TQ/CALIBRATION/RESEARCH_QUEUE/ECONOMIC_CLOCK + five labs | writers alive post-rescue; rows fill as evidence accrues ("insufficient" is honesty, not breakage) |
+| CONDUCTOR | `CONDUCTOR_STATE.json` + **`CONDUCTOR_C1.json` (5.1)** | C0 logging → C1 shadow scoring live (gate 300); C2/C3 evidence-locked (see 02/09) |
 
-This section is kept truthful on purpose. See `SILMARIL_BOOTSTRAP_ALPHA_0.001.xml`
-for the full machine-readable state.
-
-**Working:**
-- Scoring is **~99% clean** (was ~89% stale) — the data is finally trustworthy.
-- Execution is fixed — extended-hours limit orders fill (the sub-penny 422 bug is gone).
-- The learn→trade loop has real teeth: agent votes are scaled by learned per-regime
-  win rates, and chronic losers get frozen.
-
-**Not there yet — the honest part:**
-- Over the last month the system is **−1.71% vs SPY** (behind buy-and-hold). One
-  week ahead (+0.42%). No agent has yet proven a durable edge on clean data.
-- Win-rate ≠ profit: some agents are "right" often but lose money. Scoring is being
-  moved to reward realized P&L.
-- Much of the analytics (sector rotation, conviction ranking, capital efficiency,
-  narratives) is computed and displayed but **does not yet change a trade** — it's
-  being wired in or cut.
-- The "breed new agents" senate only proposes offspring; it never instantiates
-  them. Being redirected toward evolving the parameters of existing agents.
-
-**Out of scope (Alpha 0.001):** crypto, micro-cap tokens, prediction markets /
-sports betting. The former synthetic compounders are disabled.
-
----
-
-## Accounts
-
-Three Alpaca **paper** accounts, each baselined at $10,000: `LEGACY` (Silmaril),
-`HARVEST_3`, `HARVEST_5`. No real money is ever used.
-
----
-
-## Running it
-
-The system runs itself on GitHub Actions cron. To run a cycle manually:
-
-```
-python -m silmaril --live     # full pipeline: ingest → agents → plans → execute → score
-python -m silmaril --demo     # offline demo with seeded data, no live API calls
-```
-
-Outputs land in `docs/data/*.json` and render on the cockpit / dashboard.
-
-### Data sources
-
-All free-tier or key-authenticated; **no new signups are required**. Keys are
-supplied as GitHub Actions secrets. Prices use yfinance plus a keyed fresh-quote
-overlay (FMP / Tiingo / Twelve Data / Finnhub); macro via FRED; news via Google
-News RSS. (Marketaux, NewsAPI, Polygon, and Alpha Vantage keys are present but not
-yet wired — see the roadmap.)
-
----
-
-## Operating rules (non-negotiable)
-
-1. **Read a file before you change it.** Every major regression traced to editing
-   blind. No exceptions.
-2. **Complete-file replacements only** — drag-and-drop, GitHub web-UI ready.
-3. **Classify every change** — Track A (safe/additive/reversible), B (behavioral),
-   C (future).
-4. **Honesty over flattery.** "No edge yet" is a valid result. Nothing synthetic on
-   the site.
-5. **Optimize for realized money, not win-rate.**
-
----
-
-## Roadmap (stock-edge first)
-
-1. Reward profit, not just correctness, in scoring.
-2. Wire Marketaux entity sentiment + article summaries into decisions; then measure
-   whether sentiment actually predicts outcomes.
-3. Give teeth to advisory analytics that prove out — or remove them.
-4. Make agent "evolution" real via parameter mutation of existing agents.
-5. Unify the roster, put the SPY benchmark on the cockpit, retire dead surfaces.
-
----
-
-*Not financial advice. Paper-trading research project.*
+## OPERATIONS IN ONE PARAGRAPH
+Lanes: PULSE (external cron + `*/10` fallback → daily.yml, the trade cycle) · HOURLY (`:07`, heavy pass)
+· ANALYTICS (3×/day deep, heartbeat-stamped) · WEEKLY (backup/scorecard) · SELFTEST (Mon, regression
+battery). All state-writers share the `silmaril-state` concurrency group; pushes rebase `-X theirs`
+with retries. Every store write is atomic; freshness is judged by CONTENT timestamps because git
+checkout resets mtimes. If any lane dies, `STORE_CONTRACTS.json` goes RED and names it within a day.
+Cron token: use a **fine-grained PAT with no expiration** (repo-scoped, Actions:write) so the
+external pinger never lapses — full steps in `DOCS_5_1/08`.

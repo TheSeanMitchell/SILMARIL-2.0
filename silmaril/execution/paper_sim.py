@@ -387,7 +387,7 @@ class PaperBook:
         pos = self.positions.get(sym)
         if not pos or price <= 0:
             return 0.0
-        eff = price * (1 - pos["cost"] / 2.0)
+        eff = price * (1 - pos.get("cost", MIN_COST) / 2.0)
         proceeds = pos["qty"] * eff
         pnl = proceeds - pos["qty"] * pos["entry"]
         self.cash += proceeds
@@ -587,6 +587,28 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         p_target = float(pos.get("target", target))     # the position's OWN goal, not the cycle champion's
         p_stop = float(pos.get("stop", stop_))
         hs_floor = COMMODITY_FLOOR if book in ("metal", "energy") else HEATSHIELD_FLOOR
+        # 5.1 HEATSHIELD AUTOTUNE — the operator's "make learned improvements
+        # actionable," done the gated way: when the knob is 'auto' AND the
+        # measured comparison (HEATSHIELD.json: shield vs tight over ≥evidence_min
+        # forward trades) shows the shield floor netting more, the resolver uses
+        # the MEASURED winner's floor, clamped to knob bounds. 'off' = legacy
+        # constant. Reversible in one knob edit; the choice is stamped into the
+        # HEATSHIELD store so the gates board can show WEIGHTED honestly.
+        try:
+            _hk = (cat.get("heatshield_autotune") or {})
+            if str(_hk.get("mode", "auto")).lower() == "auto" and book in ("crypto",):
+                _hsj = json.loads((out / "HEATSHIELD.json").read_text())
+                _n = int((_hsj.get("heatshield") or {}).get("trades") or 0)
+                _dl = float(_hsj.get("delta_total_pct") or 0.0)
+                if _n >= int(_hk.get("evidence_min", 60)) and _dl != 0.0:
+                    _win = (_hsj.get("heatshield_floor_pct") if _dl > 0
+                            else _hsj.get("tight_stop_pct"))
+                    if _win:
+                        _lo = float(_hk.get("clamp_min", 0.04))
+                        _hi = float(_hk.get("clamp_max", 0.10))
+                        hs_floor = min(max(float(_win) / 100.0, _lo), _hi)
+        except Exception:
+            pass
         eff_stop = max(p_stop, hs_floor) if HEATSHIELD else p_stop
         hw_pct = (pos.get("mfe", cur) / pos["entry"] - 1) if pos["entry"] > 0 else 0.0
         if chg >= p_target:
@@ -1145,7 +1167,16 @@ def heatshield_whatif(out_dir) -> Dict[str, Any]:
 
     tight = run(STOP); shield = run(HEATSHIELD_FLOOR)
     delta = round(shield["total_return_pct"] - tight["total_return_pct"], 2)
+    # 5.1: report whether the floor resolver is actually APPLYING the measured winner
+    try:
+        _hk2 = (_catalog(out).get("heatshield_autotune") or {})
+        _auto_on = str(_hk2.get("mode", "auto")).lower() == "auto"
+        _auto_applied = bool(_auto_on and shield.get("trades", 0) >= int(_hk2.get("evidence_min", 60)) and delta != 0.0)
+    except Exception:
+        _auto_applied = False
     res = {
+        "autotune_applied": _auto_applied,
+        "autotune_chosen_floor_pct": (round(HEATSHIELD_FLOOR*100,2) if delta > 0 else round(STOP*100,2)) if _auto_applied else None,
         "generated_at": _dt.now(_tz.utc).isoformat(),
         "tight_stop_pct": round(STOP * 100, 2),
         "heatshield_floor_pct": round(HEATSHIELD_FLOOR * 100, 2),

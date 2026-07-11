@@ -228,8 +228,34 @@ INVARIANTS: List[Tuple[str, str, Callable[[Path], Tuple[str, str]]]] = [
     ("INV7", "GEKKO isolated from Master", _inv_gekko_isolated),
     ("INV8", "realized P&L accounting identity", _inv_realized_identity),
     ("INV9", "no equity runaway", _inv_no_runaway),
+    ("INV10", "market-hours guard (no weekend stock entries)", lambda out: _rule_market_hours(out)),
 ]
 
+
+
+def _rule_market_hours(out):
+    """5.1 — the recurring market-hours regression gets a standing tripwire:
+    no STOCK BUY may carry a weekend timestamp (UTC Sat/Sun). Crypto/metal
+    trade 24/7 and are exempt; energy pits vary, so stock is the hard rule."""
+    import json as _json
+    from datetime import datetime as _dt
+    try:
+        d = _json.loads((out / "paper_book_stock.json").read_text())
+    except Exception:
+        return "PENDING", "market-hours: no stock book yet"
+    bad = []
+    for t in (d.get("trades") or [])[-200:]:
+        if t.get("side") != "BUY":
+            continue
+        try:
+            wd = _dt.fromisoformat(str(t.get("t")).replace("Z", "+00:00")).weekday()
+        except Exception:
+            continue
+        if wd >= 5:
+            bad.append(f"{t.get('sym')}@{str(t.get('t'))[:16]}")
+    if bad:
+        return "FAIL", "market-hours VIOLATION — stock BUY on weekend: " + ", ".join(bad[:4])
+    return "OK", "market-hours: no weekend stock entries (last 200 trades)"
 
 def check_invariants(out_dir) -> Dict[str, Any]:
     out = Path(out_dir)

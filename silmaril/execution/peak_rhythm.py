@@ -80,7 +80,21 @@ def build_peak_rhythm(out_dir, focus: List[str] = None) -> Dict[str, Any]:
                 if isinstance(p, dict) and p.get("sym"): focus_syms.add(p["sym"])
     except Exception:
         pass
-    for m in ("BTC-USD", "ETH-USD", "SOL-USD", "XAU-USD", "XAG-USD"):
+    # 5.1: rhythm for EVERY industry, not a gold/major shortlist. Track the
+    # deepest-history names per class (bounded so the store stays light).
+    from .paper_sim import load_all_samples as _las, asset_class as _ac
+    _smp = _las(out)
+    _by = {}
+    for _s, _arr in _smp.items():
+        if "-" not in _s:
+            continue
+        _by.setdefault(_ac(_s), []).append((_s, len(_arr)))
+    _caps = {"crypto": 40, "stock": 40, "metal": 12, "energy": 12}
+    _watch = []
+    for _cls, _lst in _by.items():
+        _lst.sort(key=lambda x: x[1], reverse=True)
+        _watch += [s0 for s0, _ in _lst[:_caps.get(_cls, 10)]]
+    for m in _watch:
         if m in samples: focus_syms.add(m)
     if len(focus_syms) < 8:
         ranked = sorted(samples.items(), key=lambda kv: len(kv[1]), reverse=True)

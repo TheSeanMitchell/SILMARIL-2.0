@@ -26,8 +26,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
-EXCHANGE = "binance"      # or "coinbase"
+EXCHANGE = "binanceus"    # 5.1: binance.com geo-blocks US GitHub runners (HTTP 451) — the
+                          # lane has been silently erroring forever. Waterfall below.
+EXCHANGES = ["binanceus", "kraken", "coinbase"]  # first that answers wins
 QUOTE = "USDT"
+QUOTES = ("USDT", "USD")  # 5.1: binanceus/kraken/coinbase quote in USD; accept both
 TOP_N = 600               # 2.6.1: full liquid coverage
                           # junk the freshness filter rejects; raise further only if runtime holds.
 TIMEFRAME = "5m"
@@ -39,8 +42,30 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def refresh(out_dir, top_n: int = TOP_N, exchange: str = EXCHANGE) -> Dict[str, Any]:
+def refresh(out_dir, top_n: int = TOP_N, exchange: str = None) -> Dict[str, Any]:
+    """5.1: try each exchange in EXCHANGES until one answers. binance.com has
+    been geo-blocking US GitHub runners (HTTP 451) since forever — this lane
+    silently produced nothing while the crypto universe sat capped at the
+    non-ccxt feeds' ~90 names. Attempts are recorded in the store either way."""
     out = Path(out_dir)
+    if exchange:
+        return _refresh_one(out, top_n, exchange)
+    errors = []
+    for exch in EXCHANGES:
+        r = _refresh_one(out, top_n, exch)
+        if r.get("ok"):
+            r["tried"] = errors + [f"{exch}: OK"]
+            return r
+        errors.append(f"{exch}: {str(r.get('error'))[:80]}")
+    try:  # leave an honest trail even on total failure
+        (out / "ccxt_samples.json").write_text(json.dumps(
+            {"ok": False, "errors": errors, "samples": {}}, indent=1))
+    except Exception:
+        pass
+    return {"ok": False, "error": " | ".join(errors)[:200]}
+
+
+def _refresh_one(out, top_n: int, exchange: str) -> Dict[str, Any]:
     path = out / "ccxt_samples.json"
     try:
         import ccxt
@@ -55,7 +80,7 @@ def refresh(out_dir, top_n: int = TOP_N, exchange: str = EXCHANGE) -> Dict[str, 
         ranked = []
         for sym, t in tickers.items():
             try:
-                if not sym.endswith("/" + QUOTE):
+                if not any(sym.endswith("/" + q) for q in QUOTES):
                     continue
                 base = sym.split("/")[0]
                 if base in STABLES:

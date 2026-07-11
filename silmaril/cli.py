@@ -3520,6 +3520,16 @@ Reply in 3-5 bullets, no preamble.
             log.info("  %s ✔ (spine)", _nm50)
         except Exception as _le50:
             log.warning("%s skipped: %s", _nm50, _le50)
+    # ---- 5.1 SPINE ADDITIONS (each wrapped; none can break a trade run) ----
+    for _nm51, _imp51 in (("health lights (key-group depth)", "health_lights.build_health_lights"),
+                          ("gate evidence tally", "gate_evidence.build_gate_evidence"),
+                          ("conductor C1 shadow scoring", "conductor_c1.build_conductor_c1")):
+        try:
+            _m51, _f51 = _imp51.split(".")
+            _r51 = getattr(__import__("silmaril.execution." + _m51, fromlist=[_f51]), _f51)(out)
+            log.info("  %s ✔ %s", _nm51, (_r51 or {}).get("summary", ""))
+        except Exception as _le51:
+            log.warning("%s skipped: %s", _nm51, _le51)
 
     log.info("✦ SILMARIL run complete")
     log.info("  %d debates resolved", len(debate_dicts))

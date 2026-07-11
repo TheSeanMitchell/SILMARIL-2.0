@@ -64,7 +64,8 @@ def _captured_by_ticker(out: Path) -> Dict[str, float]:
             if t.get("side") == "SELL" and t.get("pnl") is not None:
                 sym = t.get("sym", "")
                 # express pnl as a rough % of a 10% book slice ($1000 base)
-                cap[sym] = cap.get(sym, 0.0) + (t["pnl"] / 1000.0)
+                _w = t.get("wager_usd") or 1000.0
+                cap[sym] = cap.get(sym, 0.0) + (t["pnl"] / max(float(_w), 1.0))
     return cap
 
 
@@ -75,13 +76,44 @@ def build_edge_capture(out_dir) -> Dict[str, Any]:
 
     rows = []
     tot_avail, tot_capt = 0.0, 0.0
+    _seen_base = set()
     for tk, raw in samples.items():
+        # ---- 5.1 SANITY (the "0.05% captured / TON +23824%" fix): the old board
+        # graded us against ghosts. A meaningful denominator is names the RULES
+        # could actually trade:
+        #   · canonical keys only (quarantined twins like RAVEUSD carried the
+        #     same move twice)
+        #   · fresh feed (a real print in the last 24h — stale ghosts spike on
+        #     backfill artifacts)
+        #   · integrity-sane moves (|move| ≤ 50%/day; beyond that is either a
+        #     data artifact or something the integrity ceiling would refuse)
+        #   · one listing per base asset (MOODENGUSDT + MOODENG-USD deduped)
+        if "-" not in tk:
+            continue
+        base = tk.split("-")[0].replace("USDT", "")
+        if base in _seen_base:
+            continue
+        try:
+            _last_t = str(raw[-1][0])
+            if "T00:00:00" in _last_t:
+                _real = [t for t, p in raw if "T00:00:00" not in str(t) and p]
+                _last_t = str(_real[-1]) if _real else ""
+            _age_h = (datetime.now(timezone.utc)
+                      - datetime.fromisoformat(_last_t.replace("Z", "+00:00")).astimezone(timezone.utc)
+                      ).total_seconds() / 3600.0 if _last_t else 999
+        except Exception:
+            _age_h = 999
+        if _age_h > 24:
+            continue
         px = [p for _, p in raw if p and p > 0]
         if len(px) < 20 or not is_tradeable(px):
             continue
         avail = _available_move(px)
         if avail < 0.02:                       # ignore names that never moved
             continue
+        if avail > 0.50:                       # integrity-suspect spike, not edge
+            continue
+        _seen_base.add(base)
         capt = max(0.0, captured.get(tk, 0.0))
         cap_pct = round(min(capt / avail, 1.0) * 100, 1) if avail > 0 else 0.0
         rows.append({"ticker": tk, "asset": "crypto" if _is_crypto(tk) else "stock",
@@ -104,6 +136,9 @@ def build_edge_capture(out_dir) -> Dict[str, Any]:
         "names_with_real_moves": len(rows),
         "names_traded": len(traded),
         "biggest_misses": misses,
+        "pursuable_missed": [r for r in misses if r["available_move_pct"] <= 25][:10],
+        "universe_definition": ("canonical + fresh(≤24h) + one-listing-per-base + |move|≤50%/day — "
+                                 "the denominator is what the rules COULD trade, not every ghost in the store"),
         "top_available_moves": rows[:25],
         "headline": (f"Captured {portfolio_capture}% of the available edge across "
                      f"{len(rows)} moving names ({len(traded)} traded)"),
