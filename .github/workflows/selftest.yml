@@ -1,0 +1,19 @@
+name: selftest (regression battery)
+# 5.1 — every historical bug is a permanent tripwire. Read-only; no state writes;
+# runs weekly and on demand. A red run here means an old ghost is trying to return.
+on:
+  schedule:
+    - cron: "45 3 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11', cache: 'pip' }
+      - run: pip install -r requirements.txt
+      - run: python scripts/selftest_5_1.py
