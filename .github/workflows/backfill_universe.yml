@@ -9,6 +9,7 @@ concurrency:
 
 jobs:
   backfill:
+    if: ${{ github.event_name != 'schedule' || vars.EXTERNAL_CRON_ONLY != 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions: { contents: write }

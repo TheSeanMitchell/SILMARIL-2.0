@@ -10,7 +10,7 @@ jobs:
         run: |
           c(){ if grep -q "$2" "$1" 2>/dev/null; then echo "OK  $3"; else echo "XX  $3"; fi; }
           echo "== version =="
-          python3 -c "import json;v=json.load(open('docs/data/PROJECT_META.json'))['version'];print(('OK ' if v=='3.0' else 'XX ')+'version='+v)"
+          python3 -c "import json;v=json.load(open('docs/data/PROJECT_META.json'))['version'];print(('OK ' if v=='5.1' else 'XX ')+'version='+v)"
           c docs/index.html "gold-shine" "gold header"
           echo "== UNFREEZE (cadence-proof warmup + watchdog) =="
           c silmaril/execution/paper_sim.py "_WARM_KNOB" "warmup knob-driven"
@@ -47,4 +47,15 @@ jobs:
           for f in decision_ledger.json agent_portfolios.json alpaca_paper_state.json; do
             [ -f "docs/data/$f" ] && echo "XX  zombie file present: $f (delete once via web UI)" || echo "OK  no $f"; done
           T=$(grep -c "timeout-minutes" .github/workflows/daily.yml); [ "$T" = "1" ] && echo "OK  daily single timeout" || echo "XX  daily timeout count=$T"
+          echo "== 5.1B FINALITY markers =="
+          c silmaril/execution/health_lights.py "key_groups" "health lights (fallback depth, keyed lanes)"
+          c silmaril/execution/gate_evidence.py "build_gate_evidence" "gate evidence tallies"
+          c silmaril/execution/conductor_c1.py "matched-subset" "conductor C1 shadow scorer"
+          c silmaril/execution/mtf_regime.py "fast_red" "multi-timeframe regime ladder"
+          c silmaril/execution/conductor_report_card.py "kill_criterion" "conductor report card (A/B honesty)"
+          c silmaril/execution/paper_sim.py "REGIME_FLIP_HARVEST" "regime-flip harvest exit"
+          c silmaril/execution/paper_sim.py "FEE_CLEAR_TIME" "stale-capital fee-clear exit"
+          c silmaril/execution/paper_sim.py "conviction_sizing" "conviction-scaled wagers"
+          c scripts/selftest_5_1.py "core-never-hostage" "regression battery present"
+          python3 -c "import json;k=json.load(open('docs/data/PARAM_CATALOG.json'));print(('OK ' if all(x in k for x in ('regime_exit','stale_capital','conviction_sizing','regime_throttle','heatshield_autotune')) else 'XX ')+'5.1B knobs present')"
           echo "== done — every XX names the exact file that did not land =="
