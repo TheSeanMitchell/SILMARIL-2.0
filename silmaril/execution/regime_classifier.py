@@ -34,7 +34,7 @@ def _ok_ts(t, cut):
 def _slope_window(rows, nowt, hours):
     cut = nowt.timestamp() - hours * 3600
     px = [p for t, p in rows if _ok_ts(t, cut)]
-    if len(px) < (3 if hours <= 1 else 4):
+    if len(px) < (2 if hours < 1 else 3 if hours <= 1 else 4):
         return None
     q = max(2, len(px) // 4)
     a = sum(px[:q]) / q
@@ -76,12 +76,14 @@ def build_regime_classifier(out_dir) -> Dict[str, Any]:
     by_book: Dict[str, Any] = {}
     for book in ("crypto", "stock", "metal", "energy"):
         rows_by_sym = {s: _intraday(r) for s, r in samples.items() if asset_class(s) == book}
-        s1, s6, s24, vols, fresh = [], [], [], [], 0
+        s12m, s15m, s30m, s1, s6, s24, vols, fresh = [], [], [], [], [], [], [], 0
         for s, r in rows_by_sym.items():
             if len(r) < 4:
                 continue
             fresh += 1
-            for arr, hrs in ((s1, 1), (s6, 6), (s24, 24)):
+            # FAST BAND (5.1 final): 12m/15m/30m = the pulse-cadence eyes the operator asked for —
+            # more snapshots, catch a regime turning WITHIN the hour instead of after it.
+            for arr, hrs in ((s12m, 0.2), (s15m, 0.25), (s30m, 0.5), (s1, 1), (s6, 6), (s24, 24)):
                 v = _slope_window(r, nowt, hrs)
                 if v is not None:
                     arr.append(v)
@@ -94,6 +96,9 @@ def build_regime_classifier(out_dir) -> Dict[str, Any]:
                              "median_slope_pct": None,
                              "why": "no fresh intraday prints yet - warming up", "advice": _advice("NO DATA")}
             continue
+        m12 = round(median(s12m), 3) if s12m else None
+        m15 = round(median(s15m), 3) if s15m else None
+        m30 = round(median(s30m), 3) if s30m else None
         m1 = round(median(s1), 3) if s1 else None
         m6 = round(median(s6), 3) if s6 else None
         m24 = round(median(s24), 3) if s24 else None
@@ -110,16 +115,26 @@ def build_regime_classifier(out_dir) -> Dict[str, Any]:
         s24_sorted = sorted(s24) if s24 else []
         movers = round(s24_sorted[int(len(s24_sorted) * 0.9)], 3) if len(s24_sorted) >= 3 else None
         pct_up_24 = round(sum(1 for x in s24 if x > 0) / len(s24) * 100) if s24 else 0
+        # FAST SHIFT: the fast band (12m/15m/30m) all red while the 6h is still green =
+        # a turn happening RIGHT NOW, before the slow read admits it. This is the early
+        # warning that lets the engine harvest/throttle ahead of a slide.
+        _fastvals = [x for x in (m12, m15, m30) if x is not None]
+        _fast_red = bool(_fastvals) and all(x < DN for x in _fastvals)
+        _fast_green = bool(_fastvals) and all(x > UP for x in _fastvals)
         by_book[book] = {
             "regime": regime, "dir": d,
+            "slope_12m_pct": m12, "slope_15m_pct": m15, "slope_30m_pct": m30,
             "slope_1h_pct": m1, "slope_6h_pct": m6, "slope_24h_pct": m24,
+            "fast_band_red": _fast_red, "fast_band_green": _fast_green,
             "movers_24h_pct": movers, "breadth_up_24h_pct": pct_up_24,
             "median_slope_pct": head,
             "breadth_up_pct": round(up / n * 100) if n else 0,
             "breadth_down_pct": round(dn / n * 100) if n else 0,
             "avg_volatility_pct": round(median(vols), 3) if vols else None,
             "fresh_symbols": fresh,
-            "shift_watch": ("FAST 1h diverges from 6h - regime may be turning"
+            "shift_watch": ("\u26a1 FAST SHIFT DOWN - 12/15/30m all red, ahead of the 6h read"
+                            if _fast_red else "\u26a1 FAST SHIFT UP - 12/15/30m all green"
+                            if _fast_green else "FAST 1h diverges from 6h - may be turning"
                             if (m1 is not None and m6 is not None and (m1 > UP) != (m6 > UP)) else "stable"),
             "why": "24h median %+.2f%% (top movers +%.1f%%) . %d%% of names up on the day . 6h %+.2f%% . 1h %+.2f%%" % (
                 (m24 if m24 is not None else 0.0), (movers if movers is not None else 0.0), pct_up_24,
@@ -128,10 +143,10 @@ def build_regime_classifier(out_dir) -> Dict[str, Any]:
                 round(up / n * 100) if n else 0, round(dn / n * 100) if n else 0),
             "advice": _advice(regime),
         }
-    payload = {"generated_at": _now(), "method": "intraday-only multi-timeframe (1h/6h/24h) + breadth",
+    payload = {"generated_at": _now(), "method": "intraday-only multi-timeframe — FAST BAND 12m/15m/30m + 1h/6h/24h + breadth",
                "thresholds": {"up_pct": UP, "down_pct": DN}, "by_book": by_book,
                "what": ("Live regime per book from INTRADAY prints only (daily-backfill candles excluded - the "
-                        "bug that made green days read DOWNTREND). Headline = 6h trend; 1h = fast shift trigger; "
+                        "bug that made green days read DOWNTREND). Headline = 6h trend; 12m/15m/30m fast band = same-cadence early-shift eyes; "
                         "breadth = %% of names trending. Every number shown so the read is auditable.")}
     try:
         write_json_atomic(out / "REGIME_CLASSIFIER.json", payload)

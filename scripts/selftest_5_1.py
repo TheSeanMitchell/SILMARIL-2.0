@@ -205,7 +205,9 @@ def t8_takehome_veto_present():
 #    must assert 5.1. ---------------------------------------------------------
 def t9_version_pin():
     ix = (ROOT / "docs/index.html").read_text()
-    ok_h1 = "SILMARIL&nbsp;5.1" in ix and "SILMARIL&nbsp;5.0" not in ix
+    # 5.1 FINAL header: brand constant "SILMARIL" + separate verNum "5.1"; no 5.0 anywhere
+    ok_h1 = ('id="verHdr"' in ix and ">SILMARIL<" in ix
+             and '<span id="verNum">5.1</span>' in ix and "5.0" not in ix.split("<script")[0])
     ok_no_override = "h.innerHTML='SILMARIL&nbsp;'+m.version" not in ix
     meta = json.loads((ROOT / "docs/data/PROJECT_META.json").read_text())
     vi = (ROOT / ".github/workflows/verify_install.yml").read_text()
@@ -296,12 +298,59 @@ def t14_conviction_clamps():
           "clamp or base-twin stamp missing")
 
 
+# ── T15 · CONFIDENCE ENGINE uses peak rhythm (the "use everything" directive) ──
+def t15_confidence_uses_rhythm():
+    src = (ROOT / "silmaril/execution/confidence_engine.py").read_text()
+    ok = ("PEAK_RHYTHM.json" in src and "rhythm_regularity" in src
+          and "rhythm_phase" in src and "rhythm_tradeability" in src)
+    # and paper_sim must consume it for sizing
+    ps = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    wired = "CONFIDENCE_ENGINE.json" in ps and "_ce_map" in ps
+    check("T15 confidence engine fuses peak rhythm AND feeds sizing", ok and wired,
+          f"engine_ok={ok} sizing_wired={wired}")
+
+
+# ── T16 · 15-MINUTE REGIME fast band present in the live classifier ──
+def t16_fast_band_regime():
+    src = (ROOT / "silmaril/execution/regime_classifier.py").read_text()
+    ok = ("slope_12m_pct" in src and "slope_15m_pct" in src and "slope_30m_pct" in src
+          and "fast_band_red" in src)
+    check("T16 live regime has the 12m/15m/30m fast band", ok,
+          "fast band slopes missing from regime_classifier")
+
+
+# ── T17 · STRATEGY LAB has four distinct sleeves with different caps ──
+def t17_strategy_lab_sleeves():
+    from silmaril.execution.strategy_lab_abcd import SLEEVES
+    caps = {k: v["cap"] for k, v in SLEEVES.items()}
+    ok = (set(SLEEVES) == {"A", "B", "C", "D"} and caps["A"] == 10 and caps["B"] == 5
+          and caps["D"] <= 3 and SLEEVES["C"]["recycle_h"] and SLEEVES["D"]["conf_gate"] > 0)
+    check("T17 strategy lab: 4 sleeves, distinct discipline (A=10 control, D=sniper≤3 conf-gated)", ok,
+          f"caps={caps}")
+
+
+# ── T18 · UI STRUCTURE: six-tab routing, every section categorized, nothing orphaned ──
+def t18_ui_six_tabs():
+    ix = (ROOT / "docs/index.html").read_text()
+    import re
+    tabs = re.findall(r'data-p="(\w+)"', ix)
+    has_six = all(t in tabs for t in ("cmd", "strategy", "markets", "forensics", "health", "settings"))
+    secs = ix.count("<section")
+    tagged = len(re.findall(r'<section data-cat="', ix))
+    orphan = len(re.findall(r'<section(?! data-cat)', ix))
+    check("T18 six-tab UI: all sections categorized, zero orphans",
+          has_six and tagged == secs and orphan == 0,
+          f"six_tabs={has_six} sections={secs} tagged={tagged} orphans={orphan}")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
               t7_market_hours_rule, t8_takehome_veto_present,
               t9_version_pin, t10_scorecard_contract, t11_mtf_votes,
-              t12_regime_harvest, t13_fee_clear_time, t14_conviction_clamps):
+              t12_regime_harvest, t13_fee_clear_time, t14_conviction_clamps,
+              t15_confidence_uses_rhythm, t16_fast_band_regime,
+              t17_strategy_lab_sleeves, t18_ui_six_tabs):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

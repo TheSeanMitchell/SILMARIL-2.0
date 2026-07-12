@@ -14,8 +14,6 @@
 .master-eq{font-size:44px;font-weight:bold;line-height:1.1;background:linear-gradient(110deg,#bfa14a,#fff8dc,#e8e8e8,#fff3c4,#bfa14a);background-size:220% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#d4af37;animation:goldSh 4.5s linear infinite}
 @keyframes goldSh{0%{background-position:0% 50%}100%{background-position:220% 50%}}
 
-  :root[data-theme="light"]{--bg:#fff;--fg:#000;--line:#000;--soft:#f4f4f4;--pos:#008000;--neg:#c00000;--hd:#000;--hdfg:#fff;--accent:#0000cc}
-  :root[data-theme="dark"]{--bg:#0b0b0c;--fg:#e9e9ea;--line:#555;--soft:#161617;--pos:#39d353;--neg:#ff6b66;--hd:#e9e9ea;--hdfg:#0b0b0c;--accent:#6ea8ff}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font:600 14px/1.5 "Courier New",Courier,monospace;-webkit-text-size-adjust:100%}
   .wrap{max-width:1000px;margin:auto;padding:0 10px 70px}
@@ -30,6 +28,102 @@
   .tabs button:last-child{border-right:0}
   .tabs button.on{background:var(--hd);color:var(--hdfg)}
   .page{display:none}.page.on{display:block}
+
+  /* ═══════════════ 5.1 FINAL — PROFESSIONAL DESIGN SYSTEM ═══════════════ */
+  :root[data-theme="dark"]{
+    --bg:#0a0a0b; --panel:#111114; --panel2:#16161a; --fg:#e8e8ea;
+    --muted:#9a9aa2; --line:#26262c; --line2:#33333b;
+    --gold:#d4af37; --gold2:#f3d98b; --pos:#3fd970; --neg:#ff6b66; --accent:#7aa8ff;
+    --hd:#e8e8ea; --hdfg:#0a0a0b; --soft:#16161a;
+    --shadow:0 2px 14px rgba(0,0,0,.5);
+  }
+  :root[data-theme="light"]{
+    --bg:#f4f5f7; --panel:#ffffff; --panel2:#fafbfc; --fg:#1a1c20;
+    --muted:#5c6470; --line:#dfe3e8; --line2:#c8cdd4;
+    --gold:#9a7a1e; --gold2:#b8912e; --pos:#0a8f3c; --neg:#c0261f; --accent:#2456c8;
+    --hd:#1a1c20; --hdfg:#ffffff; --soft:#eef0f3;
+    --shadow:0 1px 8px rgba(60,66,80,.10);
+  }
+  body{background:var(--bg);color:var(--fg);font:400 13.5px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;letter-spacing:.1px}
+  .wrap{max-width:1180px;margin:auto;padding:0 16px 80px}
+  b,strong{font-weight:700}
+  .dim,.muted{color:var(--muted);opacity:1}
+  .pos{color:var(--pos);font-weight:700}.neg{color:var(--neg);font-weight:700}
+
+  /* ── header ── */
+  #topbar{position:sticky;top:0;z-index:1000;background:linear-gradient(180deg,var(--bg),var(--bg) 70%,transparent);padding-top:10px;margin-bottom:14px}
+  #brandrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:10px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+  #brand{display:flex;align-items:baseline;gap:8px;font-weight:800;letter-spacing:2px}
+  #verHdr{font-size:22px;font-weight:900;letter-spacing:3px;background:linear-gradient(100deg,var(--gold),var(--gold2),var(--gold));background-size:220% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:goldSh 5s linear infinite}
+  #verNum{font-size:13px;color:var(--gold);font-weight:700;opacity:.85}
+  #buildStamp{font-size:9px;color:var(--muted)}
+  #clocks{text-align:center;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;font-family:"SF Mono",ui-monospace,Menlo,monospace}
+  #ctrls{display:flex;align-items:center;justify-content:flex-end;gap:10px}
+  #fsCtl{display:flex;gap:3px}
+  #fsCtl button{font:700 12px/1 ui-monospace,monospace;background:var(--panel2);color:var(--fg);border:1px solid var(--line2);border-radius:6px;padding:5px 9px;cursor:pointer;transition:.15s}
+  #fsCtl button:hover{border-color:var(--gold);color:var(--gold)}
+  .themebtn{border:1px solid var(--line2);background:var(--panel2);color:var(--fg);border-radius:6px;cursor:pointer;padding:5px 10px;font-size:14px;line-height:1;transition:.15s}
+  .themebtn:hover{border-color:var(--gold)}
+  @media(max-width:720px){#brandrow{grid-template-columns:1fr auto;gap:8px}#clocks{grid-column:1/-1;order:3;text-align:left;font-size:11px}}
+
+  /* ── tabs ── */
+  #mainTabs{display:flex;gap:4px;margin:12px 0 0;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+  #mainTabs button{flex:0 0 auto;white-space:nowrap;border:1px solid var(--line);background:var(--panel);color:var(--muted);font:700 12px/1 -apple-system,"Segoe UI",sans-serif;letter-spacing:1.2px;padding:11px 18px;border-radius:9px;cursor:pointer;transition:.15s}
+  #mainTabs button:hover{color:var(--fg);border-color:var(--line2)}
+  #mainTabs button.on{background:var(--gold);color:#0a0a0b;border-color:var(--gold);box-shadow:0 2px 12px rgba(212,175,55,.3)}
+  :root[data-theme="light"] #mainTabs button.on{color:#fff;background:var(--gold)}
+  .tabIcon{font-size:11px;opacity:.9}
+  #tabGuide{margin:10px 2px 0;font-size:11.5px;color:var(--muted);font-style:italic;letter-spacing:.2px;min-height:16px}
+
+  /* ── panels ── */
+  #content{display:block}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:14px 0;box-shadow:var(--shadow);overflow:hidden}
+  section>.hd{background:transparent;color:var(--fg);font:700 12.5px/1.3 -apple-system,"Segoe UI",sans-serif;letter-spacing:.6px;padding:13px 16px 11px;border-bottom:1px solid var(--line);text-transform:uppercase;display:flex;align-items:center;gap:7px}
+  section>.bd{padding:14px 16px}
+  .hd .dim{font-weight:400;text-transform:none;letter-spacing:0}
+
+  /* ── tables ── */
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{text-align:left;font-weight:700;color:var(--muted);font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;padding:7px 10px;border-bottom:1px solid var(--line2);white-space:nowrap}
+  td{padding:7px 10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:0}
+  tbody tr{transition:background .1s}
+  tbody tr:hover{background:var(--panel2)}
+
+  /* ── stat cards / grids ── */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+  .stat .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+  .stat .val{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+  .stat .note{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.4}
+
+  /* ── meters ── */
+  .met{position:relative;background:var(--panel2);border:1px solid var(--line);border-radius:8px;overflow:hidden;height:26px}
+  .met .fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--gold),var(--gold2));opacity:.9}
+  .met .lab{position:relative;z-index:1;padding:4px 10px;font-size:11px;font-weight:700;line-height:18px;mix-blend-mode:difference;color:#fff}
+
+  /* ── buttons/inputs ── */
+  button{font-family:inherit}
+  .bd button{border:1px solid var(--line2);background:var(--panel2);color:var(--fg);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:12px;transition:.15s}
+  .bd button:hover{border-color:var(--gold)}
+  input[type=range]{accent-color:var(--gold)}
+
+  /* ── master card refinement ── */
+  .master-card{border-radius:14px;padding:22px}
+  .master-eq{font-size:46px}
+
+  /* ── video wall grid ── */
+  #ytWall{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  #ytWall .yttile{background:var(--panel2);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  #ytWall .yttile iframe{width:100%;aspect-ratio:16/9;display:block;border:0}
+  .ytttl{font-size:11px;font-weight:700;padding:7px 10px;color:var(--fg)}
+  .ytbar{padding:6px 10px;display:flex;align-items:center;gap:6px}
+  @media(max-width:900px){#ytWall{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:640px){#ytWall{grid-template-columns:1fr}}
+
+  /* ── live chart polish ── */
+  canvas{max-width:100%}
+  #alerts:empty{display:none}
 .gold-shine{background:linear-gradient(100deg,#8a6d1f 0%,#d4af37 22%,#fff3b0 40%,#d4af37 58%,#8a6d1f 100%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:goldSweep 5.5s ease-in-out infinite;text-shadow:0 0 18px rgba(212,175,55,.18)}
 @keyframes goldSweep{0%,100%{background-position:0% 0}50%{background-position:100% 0}}
 @media (max-width:480px){
@@ -81,16 +175,25 @@
   .quad-sub{font-size:11px;opacity:.85}.quad-champ{font-size:10px;opacity:.7;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .quad-st{font-size:10px;opacity:.6;margin-top:2px}
   </style></head><body><div class="wrap">
-<div class="banner" style="position:relative;padding-right:46px"><h1 style="font-weight:900;letter-spacing:.5px" id="verHdr" class="gold-shine">SILMARIL&nbsp;5.1</h1><span id="buildStamp" class="dim" style="font-size:9px;margin-left:6px"></span><span class="dim" style="font-size:12px;font-weight:bold" id="clock">—</span><span class="dim" style="font-size:10px" id="ts">—</span><button class="themebtn" id="themeBtn" onclick="toggleTheme()" style="position:absolute;top:5px;right:5px;padding:1px 5px;font-size:10px;line-height:1.3">🌙</button></div>
-<div class="tabs">
-  <button class="on" data-p="cmd">COMMAND</button><button data-p="arena">ARENA</button>
-  <button data-p="forensics">FORENSICS</button><button data-p="authority">SILMARIL NEWS</button><button data-p="settings">SETTINGS</button>
-</div>
+<header id="topbar">
+  <div id="brandrow">
+    <div id="brand"><span id="verHdr" class="gold-shine">SILMARIL</span><span id="verNum">5.1</span><span id="buildStamp"></span></div>
+    <div id="clocks"><span id="clock">—</span></div>
+    <div id="ctrls">
+      <div id="fsCtl"><button id="fsM" title="smaller text">A−</button><button id="fs1" title="reset text">A</button><button id="fsP" title="larger text">A+</button></div>
+      <button class="themebtn" id="themeBtn" onclick="toggleTheme()" title="day / night">🌙</button>
+    </div>
+  </div>
+  <nav class="tabs" id="mainTabs">
+    <button class="on" data-p="cmd"><span class="tabIcon">◉</span> COMMAND</button><button data-p="strategy"><span class="tabIcon">♟</span> STRATEGY</button><button data-p="markets"><span class="tabIcon">🌐</span> MARKETS</button><button data-p="forensics"><span class="tabIcon">🔬</span> FORENSICS</button><button data-p="health"><span class="tabIcon">🩺</span> HEALTH</button><button data-p="settings"><span class="tabIcon">⚙</span> SETTINGS</button>
+  </nav>
+  <div id="tabGuide"></div>
+</header>
 
 <!-- COMMAND CENTER -->
-<div class="page on" id="p-cmd">
+<div id="content">
   <div id="alerts"></div>
-  <section style="margin-bottom:10px">
+  <section data-cat="cmd" style="margin-bottom:10px">
     <div class="master-card" onclick="openMaster()">
       <div style="color:#d4af37;font-size:13px;letter-spacing:2px;font-weight:bold">MASTER ACCOUNT</div>
       <div class="master-eq" id="mcEq">$10,000.00</div>
@@ -99,7 +202,7 @@
       <div style="color:#9a8a55;font-size:11px;margin-top:6px">Click to Expand — full decision tree, ledger & trade history</div>
     </div>
   </section>
-  <section><div class="hd">Market Engines</div><div class="bd">
+  <section data-cat="markets"><div class="hd">Market Engines</div><div class="bd">
     <div id="engStrip" style="font-size:11px;line-height:1.6;margin-bottom:6px"></div>
     <div id="regimePanel" style="margin:6px 0"></div>
     <div id="deniedPanel" style="margin:6px 0"></div>
@@ -113,22 +216,22 @@
     <div id="scanStatus" class="dim" style="font-size:11px;margin-top:8px;padding:7px;border:1px dashed var(--line)">scanning…</div>
     <div class="note">All four books are live and independent — own universe, own arena, own champion, own $10k (crypto 24/7 · stocks NYSE sessions · metals 24/5 · energy daily). Champions elected per book by forward survivability; the WIDE 280-grid sweeps 3×/day; quiet books still learn every cycle (fingerprints, rhythm, backtests) while waiting for a qualified setup.</div>
   </div></section>
-  <section><div class="hd">🧭 SILMARIL 5.1 — SPINE (nulls · census · contracts · invariants · utilization · conductor · research OS)</div><div class="bd">
+  <section data-cat="health"><div class="hd">🧭 SILMARIL 5.1 — SPINE (nulls · census · contracts · invariants · utilization · conductor · research OS)</div><div class="bd">
     <div id="fiveStrip" class="dim" style="font-size:11px">loading…</div>
   </div></section>
-  <section><div class="hd">ACCOUNT &middot; both books side by side</div><div class="bd">
+  <section data-cat="cmd"><div class="hd">ACCOUNT &middot; both books side by side</div><div class="bd">
     <div class="grid" id="acct"></div>
   </div></section>
-  <section><div class="hd">CHAMPION</div><div class="bd">
+  <section data-cat="cmd"><div class="hd">CHAMPION</div><div class="bd">
     <div class="grid" id="champCards"></div>
     <div class="note" style="margin-top:8px">TRADE MILESTONES (graduates only when met)</div><div class="milestone" id="mile"></div>
     <div class="note" id="champNote"></div>
   </div></section>
-  <section><div class="hd">🚦 LIVE-HANDOFF READINESS — the 90-day bar (100 out-of-sample trades) · not "since reset"</div><div class="bd">
+  <section data-cat="health"><div class="hd">🚦 LIVE-HANDOFF READINESS — the 90-day bar (100 out-of-sample trades) · not "since reset"</div><div class="bd">
     <div class="met" style="height:28px"><div class="fill" id="readyFill"></div><div class="lab" id="readyLab"></div></div>
     <div id="readySubs"></div>
   </div></section>
-  <section><div class="hd">💓 LIVE POSITIONS — the ▾ marker shows where price sits between stop ◄ and target ► · tap a ticker for its chart</div><div class="bd">
+  <section data-cat="cmd"><div class="hd">💓 LIVE POSITIONS — the ▾ marker shows where price sits between stop ◄ and target ► · tap a ticker for its chart</div><div class="bd">
     <div id="marksHealth" class="note" style="display:none"></div>
     <div class="dim" style="font-size:11px">◆ CRYPTO</div>
     <table><thead><tr><th>Sym</th><th>Entry → Now</th><th>uPL%</th><th>Hold</th><th>◄ stop ·· target ►</th></tr></thead><tbody id="posCrypto"></tbody></table>
@@ -141,7 +244,7 @@
     <div class="dim" style="font-size:11px;margin-top:10px;color:#e0b341">🦎 GEKKO — aggressive probe (crypto 24/7 · same rails, lower thresholds · NEVER Master-funded)</div>
     <table><thead><tr><th>Sym</th><th>Entry → Now</th><th>uPL%</th><th>Hold</th><th>◄ stop ·· target ►</th></tr></thead><tbody id="posAggressive"></tbody></table>
   </div></section>
-  <section><div class="hd">🧾 RECENT TRADES — all books (hover/tap any symbol for its chart)</div><div class="bd">
+  <section data-cat="cmd"><div class="hd">🧾 RECENT TRADES — all books (hover/tap any symbol for its chart)</div><div class="bd">
     <div class="dim" style="font-size:11px">◆ CRYPTO</div>
     <table><thead><tr><th>Trade</th><th>Px</th><th>P&L</th><th>When</th></tr></thead><tbody id="trCrypto"></tbody></table>
     <div class="dim" style="font-size:11px;margin-top:8px">◆ STOCK</div>
@@ -153,142 +256,144 @@
     <div class="dim" style="font-size:11px;margin-top:8px;color:#e0b341">🦎 GEKKO (aggressive probe)</div>
     <table><thead><tr><th>Trade</th><th>Px</th><th>P&L</th><th>When</th></tr></thead><tbody id="trAggressive"></tbody></table>
   </div></section>
-</div>
+<!--/page-->
 
 <!-- ARENA -->
-<div class="page" id="p-arena">
-  <section><div class="hd">👑 CHAMPION TRUTH PANEL — who's champion, why, and what blocks promotion</div><div class="bd">
+
+  <section data-cat="strategy"><div class="hd">🧪 STRATEGY LAB — A / B / C / D discipline race (which position management compounds?)</div><div class="bd"><div id="slabBody" class="dim">loading…</div></div></section>
+<section data-cat="strategy"><div class="hd">🎯 CONFIDENCE ENGINE — the unified prediction score (every signal, one number)</div><div class="bd"><div id="confBody" class="dim">loading…</div></div></section>
+<section data-cat="strategy"><div class="hd">👑 CHAMPION TRUTH PANEL — who's champion, why, and what blocks promotion</div><div class="bd">
     <div class="note"><b>Answers:</b> why this champion · is it the survivability leader · which tier · what promotion needs · what's blocking. No guessing.</div>
     <div id="champTruthBox">loading…</div></div></section>
-  <section><div class="hd">🏆 QUADRANT LEADERBOARDS & CHAMPIONS — independent election for each market</div><div class="bd">
+  <section data-cat="strategy"><div class="hd">🏆 QUADRANT LEADERBOARDS & CHAMPIONS — independent election for each market</div><div class="bd">
     <div class="note"><b>What:</b> each asset class (crypto/stock/metal/energy) has its own strategy leaderboard and its own champion. <b>Why:</b> markets are different; what wins in crypto may lose in stocks. <b>Action:</b> watch how champions shift as new edge emerges in each quadrant.</div>
     <div id="quadrantArena"></div></div></section>
-  <section><div class="hd">🏟 STRATEGY SURVIVAL LEADERBOARD</div><div class="bd">
+  <section data-cat="strategy"><div class="hd">🏟 STRATEGY SURVIVAL LEADERBOARD</div><div class="bd">
     <table><thead><tr><th>Strategy</th><th>n</th><th>Surv</th><th>Total%</th><th>Exp%</th><th>Win%</th><th>Sharpe</th><th>DD%</th><th>Tier</th></tr></thead><tbody id="arenaBody"></tbody></table>
     <div class="note" id="arenaNote"></div>
   </div></section>
-  <section><div class="hd">PROMOTION LADDER (capital earned, not granted)</div><div class="bd"><div id="ladder"></div>
+  <section data-cat="strategy"><div class="hd">PROMOTION LADDER (capital earned, not granted)</div><div class="bd"><div id="ladder"></div>
     <div class="note">Sandbox → Incubation (10 trades) → Candidate (25) → Production (50) → Verified (100).</div>
   </div></section>
-</div>
+<!--/page-->
 
 <!-- FORENSICS -->
-<div class="page" id="p-forensics">
-  <section><div class="hd">📊 PROJECT SCORECARD — honest self-grade, every cycle</div><div class="bd">
+
+  <section data-cat="health"><div class="hd">📊 PROJECT SCORECARD — honest self-grade, every cycle</div><div class="bd">
     <div class="note"><b>What:</b> the platform grading itself from real data. <b>Why care:</b> one number for "is this getting better?" <b>Action:</b> low confidence/profitability = let it gather trades, don't tinker.</div>
     <div id="scorecard"></div></div></section>
 
-  <section><div class="hd">📦 TODAY'S SESSION — black box recorder (since midnight Vegas)</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">📦 TODAY'S SESSION — black box recorder (since midnight Vegas)</div><div class="bd">
     <div class="note" style="background:#1a2f1a;border-left:3px solid #16c784"><b>OBSERVATIONAL ONLY.</b> Reconstructs every trade in today's session from REAL fills — no synthetic data, no 30-trade cap. Answers "why did crypto work today" with evidence and preserves the config so it can be recreated.</div>
     <div id="sessionBox">loading…</div></div></section>
-  <section><div class="hd">🔬 SESSION ANATOMY — why each buy & sell fired, and did we capture the move</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">🔬 SESSION ANATOMY — why each buy & sell fired, and did we capture the move</div><div class="bd">
     <div class="note" style="background:#1a2f1a;border-left:3px solid #16c784"><b>OBSERVATIONAL ONLY.</b> Replays every session trade against the real price path: how deep the entry dip was, the best exit that existed (MFE), the drawdown taken (MAE), how much of the move we captured, and what we left on the table. All real data.</div>
     <div id="anatomyBox">loading…</div></div></section>
-  <section><div class="hd">💎 CRYPTO EDGE CONCENTRATION — broad edge, or a few names?</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">💎 CRYPTO EDGE CONCENTRATION — broad edge, or a few names?</div><div class="bd">
     <div class="note"><b>OBSERVATIONAL ONLY.</b> How much of the crypto book's profit is broad vs concentrated in a handful of names. Real fills only.</div>
     <div id="concBox">loading…</div></div></section>
-  <section><div class="hd">🧪 REALITY CHECK — does the edge survive live fees?</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">🧪 REALITY CHECK — does the edge survive live fees?</div><div class="bd">
     <div class="note"><b>OBSERVATIONAL ONLY — a cost MODEL, not measured execution.</b> Applies the documented fee/slippage rates (fees_truth.json) to estimate what survives live friction. Does NOT fabricate spread; lists what it can't measure.</div>
     <div id="realityBox">loading…</div></div></section>
-  <section><div class="hd">👑 CHAMPION TIMELINE — did rotation actually help?</div><div class="bd">
+  <section data-cat="strategy"><div class="hd">👑 CHAMPION TIMELINE — did rotation actually help?</div><div class="bd">
     <div class="note"><b>OBSERVATIONAL ONLY.</b> Every champion reign with the REAL trades, win rate, and P&L produced under it (attributed by the champion active at exit). $/hr normalizes for reign length.</div>
     <div id="timelineBox">loading…</div></div></section>
-  <section><div class="hd">🐙 LIVE KRAKEN SPREAD — real bid/ask from a live exchange (no keys)</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">🐙 LIVE KRAKEN SPREAD — real bid/ask from a live exchange (no keys)</div><div class="bd">
     <div class="note"><b>The missing data.</b> price_samples is mid-only; this pulls REAL best bid/ask + spread from Kraken's public API so execution reality can finally be measured, not modeled. Populates on the next Actions run.</div>
     <div id="krakenBox">loading…</div></div></section>
-  <section><div class="hd">📔 DAILY JOURNAL — the log, in plain human words</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">📔 DAILY JOURNAL — the log, in plain human words</div><div class="bd">
     <div class="note">A human-voice note each run that points out what's genuinely going well — even on a rough day. Composed only from true state, never invented.</div>
     <div id="journalBox" style="font-size:13px;line-height:1.5;padding:6px 0">loading…</div>
     <div id="journalSignals" class="dim" style="font-size:10px"></div></div></section>
-  <section><div class="hd">🏛️ PARAMETER-CHAMPION REGISTRY — every rotating champion, one view</div><div class="bd">
+  <section data-cat="strategy"><div class="hd">🏛️ PARAMETER-CHAMPION REGISTRY — every rotating champion, one view</div><div class="bd">
     <div class="note"><b>What:</b> every parameter SILMARIL elects a champion for on each daily run — strategy, drop, bounce, the drop×bounce combo, hold-timer. <b>Why:</b> verify at a glance (human or AI) that each champion is alive, sensible, and rotating. <b>Health:</b> 🟢 electing from a live leaderboard · 🟡 thin · 🔴 none yet.</div>
     <div id="registryBox">loading…</div></div></section>
-  <section><div class="hd">💰 DAILY TAKE-HOME — what we actually kept after fees</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">💰 DAILY TAKE-HOME — what we actually kept after fees</div><div class="bd">
     <div class="note"><b>What:</b> real realized P&L per day (resets midnight Vegas), minus the documented 54 bps/round-trip fee bill, = net take-home. <b>Why:</b> see if early over-trading dragged us down and how recent days really net out. <span class="dim">OBSERVATIONAL.</span></div>
     <div id="dthBox">loading…</div></div></section>
-  <section style="border:2px solid #d4af37;box-shadow:0 0 12px rgba(212,175,55,.25)"><div class="hd" style="color:#d4af37">★ MASTER ACCOUNT — production rehearsal (the one real account)</div><div class="bd">
+  <section data-cat="cmd" style="border:2px solid #d4af37;box-shadow:0 0 12px rgba(212,175,55,.25)"><div class="hd" style="color:#d4af37">★ MASTER ACCOUNT — production rehearsal (the one real account)</div><div class="bd">
     <div class="note" style="color:#d4af37">The fifth book: a single $10k that funds ONLY proven champions and reports NET SPENDABLE CASH — what would actually land in checking after the full fee+tax+withdrawal chain. <span class="dim">v1 · OBSERVATIONAL · adopts proven trades, full reality chain.</span></div>
     <div id="masterBox">loading…</div></div></section>
-  <section><div class="hd">🛡 HEATSHIELD — heat-tolerance what-if (default ON · -5% floor)</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">🛡 HEATSHIELD — heat-tolerance what-if (default ON · -5% floor)</div><div class="bd">
     <div class="note"><b>What:</b> replays the SAME entry signals under the tight stop vs the -5% HEATSHIELD floor on real intraday price history. <b>Why:</b> mean-reversion winners often dip below a tight stop before bouncing — this proves whether sitting through more heat nets more after fees. <b>Action:</b> if Δ stays positive over the week, keep HEATSHIELD on; if negative, flip it off.</div>
     <div id="heatBox">accumulating signals…</div></div></section>
-  <section><div class="hd">💱 FEE SCENARIOS — same trades, different venue/order type</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">💱 FEE SCENARIOS — same trades, different venue/order type</div><div class="bd">
     <div class="note"><b>What:</b> our exact realized trades, re-charged at real 2026 fee rates for different venues and order types. <b>Why:</b> order type and venue are the biggest lever we have — limit (maker) orders and a low-flat venue can multiply take-home with no change to the edge. <span class="dim">OBSERVATIONAL.</span></div>
     <div id="feeScenBox">loading…</div></div></section>
-  <section><div class="hd">🎯 THRESHOLD SWEEP — cut the fat (fewer, deeper, profitable)</div><div class="bd">
+  <section data-cat="strategy"><div class="hd">🎯 THRESHOLD SWEEP — cut the fat (fewer, deeper, profitable)</div><div class="bd">
     <div class="note"><b>What:</b> simulated over REAL price history — at each drop trigger and bounce target, how many trades fire and the NET take-home PER TRADE after fees. <b>Why:</b> every trade must clear ~0.54% just to pay fees; this shows exactly which thresholds make money. <span class="dim">OBSERVATIONAL · simulation, not a guarantee.</span></div>
     <div id="sweepBox">loading…</div></div></section>
-  <section><div class="hd">🔬 TRADE QUALITY LEDGER — what the $0.00 trades actually are</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">🔬 TRADE QUALITY LEDGER — what the $0.00 trades actually are</div><div class="bd">
     <div class="note"><b>What:</b> every sell bucketed into real-win / real-loss / flat-timeout / dust, from the book's own P&L. <b>Why:</b> $0.00 rows are NOT hidden losses — sub-$1 dust (leftover-cash buys) or dips that never moved (sold at entry on timeout). <span class="dim">OBSERVATIONAL.</span></div>
     <div id="tqBox">loading…</div></div></section>
-  <section><div class="hd">🐙 KRAKEN MIRROR — internal vs live Kraken, side by side</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">🐙 KRAKEN MIRROR — internal vs live Kraken, side by side</div><div class="bd">
     <div class="note"><b>What:</b> our SAME internal round-trips, each charged the REAL Kraken bid/ask spread it would cross live — shown trade-by-trade (internal P&L | spread | Kraken P&L). <b>Why:</b> measured proof the edge survives real friction. <span class="dim">OBSERVATIONAL · no orders sent.</span></div>
     <div id="kmirBox">loading…</div></div></section>
-  <section><div class="hd">🧠 MASTER DECISIONS — the confidence gate, every cycle</div><div class="bd">
+  <section data-cat="strategy"><div class="hd">🧠 MASTER DECISIONS — the confidence gate, every cycle</div><div class="bd">
     <div class="note"><b>What:</b> per-quadrant confidence vs the {gate} bar and the ACCEPT/REJECT verdict, each cycle — how the Master decides, in numbers, not faith. Rows where a verdict flipped are highlighted. <span class="dim">OBSERVATIONAL.</span></div>
     <div id="mDecBox"><div class="dim">loading…</div></div>
   </div></section>
 
-  <section><div class="hd">📒 MASTER TRADE LOG — every trade, all books, paginated</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">📒 MASTER TRADE LOG — every trade, all books, paginated</div><div class="bd">
     <div class="note"><b>What:</b> the complete trade history, newest first, 100 per page — flip back through all of it with win/loss and exact timestamp. <span class="dim">OBSERVATIONAL.</span></div>
     <div id="mlogControls" style="margin-bottom:6px"></div><div id="mlogBox">loading…</div></div></section>
-  <section><div class="hd">📈 COMPOUNDING PROJECTION — what the champion edge compounds to</div><div class="bd">
+  <section data-cat="strategy"><div class="hd">📈 COMPOUNDING PROJECTION — what the champion edge compounds to</div><div class="bd">
     <div class="note"><b>What:</b> what the account becomes if our running daily average holds — 1d…1y, linear (honest). <b>⚠️ Scoreboard, not a promise</b> — built on a few days of a volatile, MKR-heavy edge; only 1d–1wk is credible. <span class="dim">OBSERVATIONAL.</span></div>
     <div id="compoundBox">loading…</div></div></section>
-  <section><div class="hd">⏱ TIME-OF-DAY ATTRIBUTION — which hours actually have edge</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">⏱ TIME-OF-DAY ATTRIBUTION — which hours actually have edge</div><div class="bd">
     <div class="note"><b>What:</b> win rate & expectancy by hour window, crypto/stock separate. <b>Why:</b> some hours are noise, some are edge. <b>Action:</b> evidence for later session-gating — not enforced yet.</div>
     <div id="todBox"></div></div></section>
-  <section><div class="hd">🎯 INTRABAR MISS AUDIT — did we miss sells between cycles?</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">🎯 INTRABAR MISS AUDIT — did we miss sells between cycles?</div><div class="bd">
     <div class="note"><b>What:</b> target hit between 10-12min cycles but we exited lower. <b>Why:</b> quantifies edge lost to coarse polling. <b>Action:</b> high rate = recoverable edge, not strategy failure.</div>
     <div id="intrabarBox"></div></div></section>
-  <section><div class="hd">📏 DROP-THRESHOLD SHADOW SIM — 2.9% vs 3.0% vs 3.1%</div><div class="bd">
+  <section data-cat="strategy"><div class="hd">📏 DROP-THRESHOLD SHADOW SIM — 2.9% vs 3.0% vs 3.1%</div><div class="bd">
     <div class="note"><b>What:</b> setups & forward recovery at each candidate trigger. <b>Why:</b> settles the threshold question with data. <b>Action:</b> tighter = fewer but stronger setups; shadow only, live stays 3.0%.</div>
     <div id="threshBox"></div></div></section>
-  <section><div class="hd">⚪ ZERO-PNL AUDIT — why the breakeven trades</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">⚪ ZERO-PNL AUDIT — why the breakeven trades</div><div class="bd">
     <div class="note"><b>What:</b> trades that closed ~flat and why. <b>Why:</b> many flat stock trades = dips that never moved. <b>Action:</b> supports the stock-MR-is-weak thesis.</div>
     <div id="zeroBox"></div></div></section>
-  <section><div class="hd">🔗 DECISION TRACE — why each trade happened & ended</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">🔗 DECISION TRACE — why each trade happened & ended</div><div class="bd">
     <div class="note"><b>What:</b> per-trade chain — why entered, why exited, outcome. <b>Why:</b> every trade auditable end-to-end. <b>Action:</b> if TIMEOUT_GAIN/LOSS dominate over TARGET_HIT, exits fire before target = leaving edge on the table.</div>
     <div id="traceBox"></div></div></section>
-  <section><div class="hd">⏱️ TIMER / EDGE-CAPTURE SIMULATION — what hold-timer captures the most edge</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">⏱️ TIMER / EDGE-CAPTURE SIMULATION — what hold-timer captures the most edge</div><div class="bd">
     <div class="note"><b>What:</b> replays every closed trade under many hold-timers (and no timer) to find the optimum per quadrant. <b>Why:</b> trades keep ending on TIMEOUT not target — this proves the best timer. <b>Action:</b> champion the best timer per book; leak breakdown says if we sell too early/late or the thesis is slow.</div>
     <div id="timerBox">loading…</div></div></section>
-  <section><div class="hd">🎯 DROP × BOUNCE-BACK CHAMPION — every entry 1-5% × every target 1-5%</div><div class="bd">
+  <section data-cat="strategy"><div class="hd">🎯 DROP × BOUNCE-BACK CHAMPION — every entry 1-5% × every target 1-5%</div><div class="bd">
     <div class="note"><b>What:</b> tests every drop trigger against every bounce-back target on real history, elects a champion drop, champion bounce, and best combo — like the strategy champion. <b>Why:</b> proves entry+exit thresholds with evidence. <b>Action:</b> accuracy champion = safe (downtrends); expectancy champion = aggressive (uptrends).</div>
     <div id="threshChampBox">loading…</div></div></section>
-  <section><div class="hd">💵 CAPITAL ROUTER EXPLAINED — the allocation math (hypothetical)</div><div class="bd">
+  <section data-cat="strategy"><div class="hd">💵 CAPITAL ROUTER EXPLAINED — the allocation math (hypothetical)</div><div class="bd">
     <div class="note"><b>HYPOTHETICAL research only.</b> How a single $10k would split across top strategies. The 4 books each trade their OWN independent $10k — they are NOT pooled.</div>
     <div id="routerBox"></div></div></section>
-  <section><div class="hd">🏷 STOCK SECTOR RECOVERY — does MR work in some sectors?</div><div class="bd">
+  <section data-cat="markets"><div class="hd">🏷 STOCK SECTOR RECOVERY — does MR work in some sectors?</div><div class="bd">
     <div class="note"><b>What:</b> stock recovery grouped by sector. <b>Why:</b> reveals if the weak stock edge is sector-specific. <b>Action:</b> whitelist positive sectors if any.</div>
     <div id="sectorBox"></div></div></section>
-  <section><div class="hd">🌡 REGIME OBSERVER — which market conditions help or hurt each strategy</div><div class="bd">
+  <section data-cat="markets"><div class="hd">🌡 REGIME OBSERVER — which market conditions help or hurt each strategy</div><div class="bd">
     <div class="note"><b>What:</b> every trade tagged with the market regime at entry (crypto & stock measured separately). <b>Why care:</b> it shows WHERE an edge actually exists. <b>Action:</b> if a strategy only wins in one regime, that's where it belongs — and where it doesn't, consider sitting out.</div>
     <div id="regimeBox"></div></div></section>
-  <section><div class="hd">🔎 OPPORTUNITY AUDIT — why every trade did or didn't happen</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">🔎 OPPORTUNITY AUDIT — why every trade did or didn't happen</div><div class="bd">
     <div class="note">Every name in the universe, classified with the EXACT rule it hit. If activity looks low, this says precisely why. No black boxes.</div>
     <div id="oppAudit"></div></div></section>
-  <section><div class="hd">🔚 EXIT FORENSICS — did we sell too early, or was the thesis wrong?</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">🔚 EXIT FORENSICS — did we sell too early, or was the thesis wrong?</div><div class="bd">
     <div class="note">For every closed trade, what the price did AFTER we exited. Leak = it ran up after we sold (too early). The crypto/stock split tells you which book has an EXIT problem vs a THESIS problem.</div>
     <div id="exitForensics"></div></div></section>
-  <section><div class="hd">⏱ STOCK RECOVERY — do stocks even mean-revert? (vs crypto)</div><div class="bd">
+  <section data-cat="forensics"><div class="hd">⏱ STOCK RECOVERY — do stocks even mean-revert? (vs crypto)</div><div class="bd">
     <div class="note">How often, and how fast, a name climbs back after a 3/5/7/10% drop. Low stock recovery rate = stocks do NOT bounce on our exit clock → stock MR may be structurally mismatched.</div>
     <div id="stockRecovery"></div></div></section>
-  <section><div class="hd">📈 SURVIVABILITY OVER TIME (from snapshots)</div><div class="bd"><div id="survChart" class="dim">accumulating…</div></div></section>
-  <section><div class="hd">💰 ALL 4 BOOKS (independent) · TOTAL EQUITY OVER TIME</div><div class="bd"><div id="eqChart" class="dim">accumulating…</div></div></section>
-  <section><div class="hd">🎯 EDGE CAPTURE</div><div class="bd"><div id="capHead" class="val" style="font-size:20px"></div>
+  <section data-cat="health"><div class="hd">📈 SURVIVABILITY OVER TIME (from snapshots)</div><div class="bd"><div id="survChart" class="dim">accumulating…</div></div></section>
+  <section data-cat="health"><div class="hd">💰 ALL 4 BOOKS (independent) · TOTAL EQUITY OVER TIME</div><div class="bd"><div id="eqChart" class="dim">accumulating…</div></div></section>
+  <section data-cat="forensics"><div class="hd">🎯 EDGE CAPTURE</div><div class="bd"><div id="capHead" class="val" style="font-size:20px"></div>
     <table><thead><tr><th>Biggest miss</th><th>Available</th><th>Captured</th></tr></thead><tbody id="capMiss"></tbody></table></div></section>
-  <section><div class="hd">📋 OPPORTUNITY JOURNAL</div><div class="bd" id="ojBody"></div></section>
-  <section><div class="hd">⚡ EXECUTION LEAK</div><div class="bd" id="leakBody"></div></section>
-</div>
+  <section data-cat="forensics"><div class="hd">📋 OPPORTUNITY JOURNAL</div><div class="bd" id="ojBody"></div></section>
+  <section data-cat="forensics"><div class="hd">⚡ EXECUTION LEAK</div><div class="bd" id="leakBody"></div></section>
+<!--/page-->
 
 <!-- AUTHORITY -->
-<div class="page" id="p-authority">
-  <section><div class="hd">📺 LIVE MARKET FEEDS — 3×3 wall · sliders solo the audio · full-screen for the whole wall</div><div class="bd">
+
+  <section data-cat="markets"><div class="hd">📺 LIVE MARKET FEEDS — 3×3 wall · sliders solo the audio · full-screen for the whole wall</div><div class="bd">
     <div style="display:flex;justify-content:flex-end;margin-bottom:4px"><button onclick="ytFull(true)" style="font-size:11px">⛶ full screen wall</button></div>
     <div id="ytWall"></div>
   </div></section>
-  <section><div class="hd">📰 SILMARIL NEWS — the project's own wire · research only, never trades</div><div class="bd">
+  <section data-cat="markets"><div class="hd">📰 SILMARIL NEWS — the project's own wire · research only, never trades</div><div class="bd">
     <div id="newsMast" style="border:3px double var(--fg,#ccc);padding:8px 10px;margin-bottom:8px;text-align:center">
       <div style="font-size:26px;font-weight:900;letter-spacing:3px;font-family:Georgia,'Times New Roman',serif">SILMARIL NEWS</div>
       <div id="newsMastSub" class="dim" style="font-size:11px;font-family:Georgia,serif">—</div>
@@ -297,16 +402,16 @@
     <div id="authStatus" class="note"></div><div id="authEvents"></div>
     <div class="note">Tracks what happens after Trump / Musk / Pelosi / Congress / Fed / Nvidia speak. Evidence before "what to buy." Deploys no capital.</div>
   </div></section>
-</div>
+<!--/page-->
 
 <!-- SETTINGS -->
-<div class="page" id="p-settings">
-  <section><div class="hd">🧠 SYSTEM BRAIN — every parameter, every gate, every critical function, one page</div><div class="bd">
+
+  <section data-cat="settings"><div class="hd">🧠 SYSTEM BRAIN — every parameter, every gate, every critical function, one page</div><div class="bd">
     <div class="note"><b>What:</b> the single control room. Every tunable knob (edit <b>PARAM_CATALOG.json</b> — no code, ever), every experimental gate with its evidence count, every critical subsystem with a live 🟢🟡🔴 health light, and the current REGIME per quadrant. If it matters, it has a light here.</div>
     <div id="brainBox"><div class=dim>loading…</div></div>
     <div id="mvBox" style="margin-top:8px"></div>
   </div></section>
-  <section><div class="hd">SETTINGS &amp; LINKS</div><div class="bd">
+  <section data-cat="settings"><div class="hd">SETTINGS &amp; LINKS</div><div class="bd">
     <details style="margin-bottom:10px;border:1px dashed #d4af3766;border-radius:6px;padding:6px"><summary style="cursor:pointer;font-size:12px;color:#d4af37">🥚 experimental — BOT HANDOFF (plug a live trader into the Master output)</summary><div id="handoffBox" style="padding:8px">loading…</div></details>
     <p>Theme: <button class="themebtn" onclick="toggleTheme()">toggle light / dark</button> (saved on this device)</p>
     <p class="dim">Deep / debug views:</p>
@@ -323,7 +428,7 @@
     <p><a href="legacy_dashboard.html">Legacy dashboard</a> · <a href="strategy_leaderboard.html">Raw leaderboard</a> · <a href="lifecycle.html">Lifecycle/validation</a> · <a href="paper_sim.html">Paper sim detail</a></p>
     <p class="note">SILMARIL · validation phase · champion must survive 100 out-of-sample trades. $100–300/day is an unproven hope, never income.</p>
   </div></section>
-</div>
+<!--/page-->
 <div id="healthMatrix" style="margin-top:14px"></div><div id="healthFooter" style="border-top:2px solid var(--line);margin-top:14px;padding:8px 0;font-size:11px" class="dim">—</div><div id="journalFooter" style="padding:6px 0 14px;font-size:11px;font-style:italic;opacity:.75" class="dim">—</div></div>
 
 <div id="modal"><div id="modalBox"><button id="modalClose" onclick="document.getElementById('modal').style.display='none'">CLOSE ✕</button>
@@ -332,6 +437,7 @@
   <div id="chartHost" style="border:1px solid var(--line);padding:4px">loading…</div><div id="mStats" class="note"></div>
 </div></div>
 
+</div><!--/content-->
 <script>var CACHE_BUST=Date.now();
 const $=id=>document.getElementById(id);
 const f=(n,d=2)=>n==null?'—':(+n).toFixed(d);
@@ -346,8 +452,15 @@ function toggleTheme(){const t=document.documentElement.getAttribute('data-theme
 applyTheme((()=>{try{return localStorage.getItem('silmaril-theme')||'light';}catch(e){return 'light';}})());
 // tabs
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));$('p-'+b.dataset.p).classList.add('on');
+  document.querySelectorAll('#mainTabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  const cat=b.dataset.p;const GUIDES={"cmd": "THE COCKPIT - everything happening right now, at a glance: accounts, live positions, recent fills, and today's take-home.", "strategy": "THE PLAYBOOK - what we're doing and whether it's proven: the A/B/C/D discipline lab, champions, confidence engine, promotion.", "markets": "THE WORLD - reading the market: multi-timeframe regimes, the confidence & rhythm engine, universe census, sectors, and news.", "forensics": "THE MICROSCOPE - why each trade happened and what we captured: session anatomy, edge, opportunity, fees, diagnostics.", "health": "THE TRUST LAYER - is the machine honest and alive: scorecard, wiring, invariants, readiness, and data-source health.", "settings": "THE CONTROLS - every tunable knob, experimental gate, the system brain, and connections."};
+  document.querySelectorAll('#content > section, #content > div').forEach(function(el){
+    const c=el.getAttribute('data-cat');
+    if(c){el.style.display=(c===cat)?'':'none';}
+    else if(el.tagName==='SECTION'){el.style.display='none';}
+  });
+  const g=document.getElementById('tabGuide');if(g)g.textContent=GUIDES[cat]||'';
+  window.scrollTo(0,0);
 });
 
 let LIVE=null,BOOKS={};
@@ -377,7 +490,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov,ch),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderPos('aggressive',$('posAggressive')),'posG'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderEngStrip(),'estrip'); safe(()=>renderMTFLadder(),'mtfl'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>renderWarmup(),'warm'); safe(()=>renderMasterReject(),'mrej'); safe(()=>renderWiring(),'wire'); safe(()=>renderFunnel(),'fun'); safe(()=>renderQuarantine(),'quar'); safe(()=>renderGekkoNote(),'gekko'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>renderMV(),'mv'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority'); safe(()=>renderFive(),'five');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderEngStrip(),'estrip'); safe(()=>renderMTFLadder(),'mtfl'); safe(()=>renderStrategyLab(),'slab'); safe(()=>renderConfidence(),'conf'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>renderWarmup(),'warm'); safe(()=>renderMasterReject(),'mrej'); safe(()=>renderWiring(),'wire'); safe(()=>renderFunnel(),'fun'); safe(()=>renderQuarantine(),'quar'); safe(()=>renderGekkoNote(),'gekko'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>renderMV(),'mv'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority'); safe(()=>renderFive(),'five');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -901,6 +1014,24 @@ async function renderWiring(){try{const el=$('wiringPanel');if(!el)return;
     +'<div class="bd"><div class=dim style="font-size:10px;margin-bottom:3px">\ud83d\udfe2 wired + fresh \u00b7 \ud83d\udfe1 wired but stale \u00b7 \u26aa not producing yet (needs trades/data). This is the "is it actually on?" check for every subsystem.</div>'
     +'<table style="font-size:11px"><tbody>'+rows+'</tbody></table></div>';
 }catch(e){}}
+async function renderStrategyLab(){try{const el=$('slabBody');if(!el)return;const d=await jget('data/STRATEGY_LAB.json');if(!d||!d.scoreboard){el.textContent='lab initializing…';return;}
+  const rows=d.scoreboard.map(function(r,i){const dv=r.delta_vs_hodl;const dvs=dv==null?'—':(dv>=0?'+':'')+dv+'%';const lead=i===0?' 👑':'';
+    return '<tr><td><b>'+r.sleeve+'</b> '+r.name+lead+'</td><td>'+r.cap+'</td><td class="'+(r.return_pct>=0?'pos':'neg')+'">'+(r.return_pct>=0?'+':'')+r.return_pct+'%</td><td class="'+(dv>=0?'pos':'neg')+'">'+dvs+'</td><td>'+r.open+'/'+r.closed+'</td><td>'+(r.win_rate!=null?r.win_rate+'%':'—')+'</td><td class="neg">'+r.max_dd_pct+'%</td></tr>'
+      +'<tr><td colspan="7" class="dim" style="font-size:10px;padding-top:0">'+r.desc+'</td></tr>';}).join('');
+  el.innerHTML='<div class="dim" style="font-size:10.5px;margin-bottom:8px">Four isolated $10k sleeves run the SAME entries on the crypto universe, differing ONLY in how they manage positions. <b>A is your current live behavior (the control).</b> Judged on \u0394-vs-HODL and compounding, not win rate.</div>'
+    +'<table><thead><tr><th>sleeve</th><th>cap</th><th>return</th><th>\u0394 vs HODL</th><th>open/closed</th><th>win%</th><th>max DD</th></tr></thead><tbody>'+rows+'</tbody></table>'
+    +'<div class="dim" style="font-size:9.5px;margin-top:6px">'+(d.how_to_read||'')+'</div>';
+}catch(e){}}
+async function renderConfidence(){try{const el=$('confBody');if(!el)return;const d=await jget('data/CONFIDENCE_ENGINE.json');if(!d||!d.by_symbol){el.textContent='confidence engine warming…';return;}
+  const rl=(d.rhythm_tradeable_leaders||[]).slice(0,10).map(function(x){return '<tr><td><b>'+x[0].replace('-USD','')+'</b></td><td class="pos">'+(x[1]*100).toFixed(0)+'%</td><td>'+(x[2]?Math.round(x[2])+'m':'\u2014')+'</td><td>'+(x[3]||0).toFixed(1)+'%</td></tr>';}).join('');
+  const tc=(d.top_confidence_by_class||{});
+  const classRows=['crypto','stock','metal','energy'].map(function(c){const arr=(tc[c]||[]).slice(0,4).map(function(x){return x[0].replace('-USD','')+' '+(x[1]*100).toFixed(0)+'%';}).join(' \u00b7 ');return arr?('<div style="margin:3px 0;font-size:11px"><b style="display:inline-block;min-width:60px;text-transform:uppercase">'+c+'</b> '+arr+'</div>'):'';}).join('');
+  el.innerHTML='<div class="dim" style="font-size:10.5px;margin-bottom:8px">Every predictive signal fused into ONE 0-1 score: fingerprint bounce reliability, <b>peak rhythm regularity + phase</b> (newly wired), MTF confluence, dip extension, trend. This now sizes conviction bets and gates the sniper.</div>'
+    +'<div style="font-weight:700;font-size:11px;margin:8px 0 4px">\ud83c\udfb5 RHYTHM-TRADEABLE LEADERS \u2014 sideways+volatile with a predictable cycle (the sniper\'s hunting ground)</div>'
+    +'<table><thead><tr><th>name</th><th>rhythm</th><th>cycle</th><th>swing</th></tr></thead><tbody>'+rl+'</tbody></table>'
+    +'<div style="font-weight:700;font-size:11px;margin:10px 0 4px">TOP CONFIDENCE BY CLASS</div>'+classRows
+    +'<div class="dim" style="font-size:9.5px;margin-top:8px">each component earns its weight forward \u2014 high confidence is a hypothesis until the record proves it wins more.</div>';
+}catch(e){}}
 async function renderRegimePanel(){try{const d=await jget('data/REGIME_CLASSIFIER.json');const el=$('regimePanel');if(!el||!d||!d.by_book)return;
   const dot=r=>r==='UPTREND'?'\ud83d\udfe2':r==='DOWNTREND'?'\ud83d\udd34':r==='NO DATA'?'\u26aa':'\ud83d\udfe1';
   const sgn=v=>v==null?'\u2014':(v>=0?'+':'')+v+'%';
@@ -1289,32 +1420,37 @@ function drawChart(){const s=(PRICES&&PRICES.samples)?PRICES.samples[CSYM]:null;
   const chg=(CM/CE-1)*100;$('mStats').innerHTML=`Live uPL <b class="${cl(chg)}">${sg(chg)}%</b> · to target <b>${f((tgt/CM-1)*100)}%</b> · to stop <b>${f((CM/stp-1)*100)}%</b> · ${rows.length} pts`;
 }
 document.querySelectorAll('#mIv button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#mIv button').forEach(x=>x.classList.remove('on'));b.classList.add('on');CH=+b.dataset.h;drawChart();});
-/* ── 5.1: font scaling (desktop+mobile) — persisted, whole-UI zoom ── */
-(function(){try{var st=document.createElement('style');st.textContent='#fsCtl{position:fixed;top:6px;right:8px;z-index:9999;display:flex;gap:4px;opacity:.85}#fsCtl button{font:700 12px/1 \"Courier New\",monospace;background:#111;color:#d4af37;border:1px solid #444;border-radius:4px;padding:4px 8px;cursor:pointer}#fsCtl button:hover{border-color:#d4af37}';document.head.appendChild(st);
-var z=parseFloat(localStorage.getItem('silmarilZoom')||'1')||1;function ap(){document.body.style.zoom=z;localStorage.setItem('silmarilZoom',String(z));}
-var d=document.createElement('div');d.id='fsCtl';d.innerHTML='<button id=fsM title=\"smaller\">A−</button><button id=fs1 title=\"reset\">A</button><button id=fsP title=\"larger\">A+</button>';document.body.appendChild(d);
-document.getElementById('fsM').onclick=function(){z=Math.max(.7,+(z-0.1).toFixed(2));ap();};
-document.getElementById('fsP').onclick=function(){z=Math.min(1.8,+(z+0.1).toFixed(2));ap();};
-document.getElementById('fs1').onclick=function(){z=1;ap();};ap();}catch(e){}})();
-/* ── 5.1: Command hierarchy — Master card, then the five account buttons, then LIVE POSITIONS ── */
+/* ── 5.1 FINAL: inject TODAY-NET card into COMMAND (layout handled by category routing) ── */
 (function(){try{var secs=Array.prototype.slice.call(document.querySelectorAll('section'));
 function byHd(t){return secs.find(function(x){var h=x.querySelector('.hd');return h&&h.textContent.indexOf(t)>=0;});}
-var master=byHd('MASTER ACCOUNT');var live=byHd('LIVE POSITIONS');
-var btns=secs.find(function(x){var t=x.textContent||'';return t.length<1600&&t.indexOf('GEKKO')>=0&&t.indexOf('CRYPTO')>=0&&t.indexOf('STOCK')>=0&&t.indexOf('METAL')>=0&&t.indexOf('ENERGY')>=0;});
-if(master&&live){master.after(live);}if(master&&btns&&btns!==live){master.after(btns);}
-var tr=byHd('RECENT TRADES');if(live&&tr){live.after(tr);}
-if(tr&&!document.getElementById('cmdTakehome')){var th=document.createElement('section');
-th.innerHTML='<div class="hd">💵 TODAY NET — what we actually kept after fees</div><div class="bd"><div id="cmdTakehome" class="dim">loading…</div></div>';
+var tr=byHd('RECENT TRADES');
+if(tr&&!document.getElementById('cmdTakehome')){var th=document.createElement('section');th.setAttribute('data-cat','cmd');
+th.innerHTML='<div class="hd">TODAY NET \u2014 what we actually kept after fees</div><div class="bd"><div id="cmdTakehome" class="dim">loading\u2026</div></div>';
 tr.after(th);
 jget('data/THRESHOLD_TAKEHOME.json').then(function(d){var r=((d&&d.daily_takehome)||[])[0];var el=document.getElementById('cmdTakehome');if(!el)return;
 if(r){var net=(r.net!=null?r.net:r.net_usd)||0,gr=(r.gross!=null?r.gross:r.gross_usd)||0,fe=(r.fees!=null?r.fees:r.fees_usd)||0;
-el.innerHTML='<b class="'+(net>=0?'pos':'neg')+'" style="font-size:16px">'+(net>=0?'+$':'-$')+Math.abs(net).toFixed(2)+'</b> net kept today · gross '+(gr>=0?'+':'')+'$'+(+gr).toFixed(2)+' · fees $'+(+fe).toFixed(2)+' <span class="dim">(full table + venue scenarios on FORENSICS)</span>';}
+el.innerHTML='<b class="'+(net>=0?'pos':'neg')+'" style="font-size:18px">'+(net>=0?'+$':'-$')+Math.abs(net).toFixed(2)+'</b> net kept today \u00b7 gross '+(gr>=0?'+':'')+'$'+(+gr).toFixed(2)+' \u00b7 fees $'+(+fe).toFixed(2)+' <span class="dim">(full table on FORENSICS)</span>';}
 else{el.textContent='no closed trades yet today';}}).catch(function(){});}
 }catch(e){}})();
 /* ── 5.1B: PWA — install as a real desktop/mobile app (GitHub Pages friendly) ── */
 let _pwaEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_pwaEvt=e;});
 function pwaInstall(){if(_pwaEvt){_pwaEvt.prompt();_pwaEvt=null;}else{alert('Chrome/Edge: browser menu \u2192 Install app.\niPhone/iPad: Share \u2192 Add to Home Screen.\nRuns standalone; always shows the live data.');}}
 if('serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js');}catch(e){}}
+/* 5.1 FINAL: category routing init - untagged content children belong to COMMAND */
+(function(){try{
+  var kids=document.querySelectorAll('#content > section, #content > div');
+  kids.forEach(function(el){ if(!el.getAttribute('data-cat')){ el.setAttribute('data-cat','cmd'); } });
+  // wire the font sizer (moved into header)
+  var z=parseFloat(localStorage.getItem('silmarilZoom')||'1')||1;
+  function ap(){document.body.style.zoom=z;localStorage.setItem('silmarilZoom',String(z));}
+  var m=document.getElementById('fsM'),o=document.getElementById('fs1'),pl=document.getElementById('fsP');
+  if(m)m.onclick=function(){z=Math.max(.7,+(z-0.1).toFixed(2));ap();};
+  if(pl)pl.onclick=function(){z=Math.min(1.8,+(z+0.1).toFixed(2));ap();};
+  if(o)o.onclick=function(){z=1;ap();};ap();
+  // activate COMMAND by default (runs the router once so only cmd shows)
+  var first=document.querySelector('#mainTabs button[data-p=cmd]');
+  if(first)first.click();
+}catch(e){}})();
 load();setInterval(load,60000);
 </script>  <script src="silmaril_chart.js"></script>
 </body></html>

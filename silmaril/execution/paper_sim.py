@@ -496,6 +496,12 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
     _mtf_bk = ((_mtf.get("books") or {}).get(uc) or {})
     _mtf_fastred = bool(_mtf_bk.get("fast_red"))
     _mtf_syms = {k: (v.get("confluence") or 0) for k, v in (_mtf.get("symbols") or {}).items()}
+    _ce_map = {}
+    try:
+        _ce_map = {k: (v.get("confidence") or 0.0)
+                   for k, v in (json.loads((out / "CONFIDENCE_ENGINE.json").read_text()).get("by_symbol") or {}).items()}
+    except Exception:
+        _ce_map = {}
     _rx = (cat.get("regime_exit") or {}); _rx_on = str(_rx.get("mode", "auto")).lower() == "auto"
     _sck = (cat.get("stale_capital") or {}); _sc_h = float(_sck.get("review_h", 36)); _sc_on = bool(_sck.get("fee_clear_exit", True))
     _cs = (cat.get("conviction_sizing") or {}); _cs_on = str(_cs.get("mode", "auto")).lower() == "auto"
@@ -877,7 +883,18 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                     _hw += 1 if (_t2.get("pnl") or 0) > 0 else 0
             _wr = (_hw / _hn) if _hn else 0.5
             _cf = float(_mtf_syms.get(sym) or 0.0)          # −8.5..+8.5
-            _conf = 0.45 * _rel + 0.35 * _wr + 0.20 * max(0.0, min(1.0, (_cf + 2.0) / 8.0))
+            # 5.1 FINAL: prefer the UNIFIED confidence engine (blends peak rhythm, phase,
+            # fingerprint, MTF, dip extension) when it has scored this name; fall back to
+            # the 3-factor blend otherwise. This is the "use everything" directive landed.
+            _ce_score = None
+            try:
+                _ce_score = (_ce_map or {}).get(sym)
+            except Exception:
+                _ce_score = None
+            if _ce_score is not None:
+                _conf = float(_ce_score)
+            else:
+                _conf = 0.45 * _rel + 0.35 * _wr + 0.20 * max(0.0, min(1.0, (_cf + 2.0) / 8.0))
             _mult = 0.5 + 2.0 * _conf                        # 0.5×..2.5×
             _base_frac = max(float(_cs.get("floor_frac", 0.05)),
                              min(float(_cs.get("max_frac", 0.25)), PER_NAME_FRAC * _mult))

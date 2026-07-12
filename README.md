@@ -30,6 +30,9 @@ root-cause before fix · every squashed bug becomes a permanent tripwire (`scrip
 | `NOTES_5_1_LEDGER.md` | every 5.1 operator note → what was done about it |
 | `INSTALL_5_1.md` | drag-and-drop install order + first-cycle expectations |
 
+## UI STRUCTURE (5.1 FINAL — six tabs, professional reorg)
+The dashboard is organized by the question a trader asks: **COMMAND** (what's happening now) · **STRATEGY** (what we're doing + the A/B/C/D lab + confidence engine) · **MARKETS** (reading the world) · **FORENSICS** (why each trade + diagnostics) · **HEALTH** (is the machine honest) · **SETTINGS** (controls). See DOCS_5_1/11 (Strategy Lab) and 12 (Confidence Engine).
+
 ## THE TAB-BY-TAB CHECKLIST — UI element ↔ engine source (audit 2026-07-11; all lanes live)
 
 ### ① COMMAND
