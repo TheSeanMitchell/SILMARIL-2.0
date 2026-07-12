@@ -422,6 +422,7 @@
       <div class="dim" style="font-size:10px;margin-top:6px">Unlocks only when BOTH hold: no reset in 90 days AND every book + Master above $10k across 90 unbroken days of snapshots.</div>
       <div style="margin-top:12px;border-top:1px solid #333;padding-top:10px">
         <button onclick="pwaInstall()" style="font-size:12px;padding:6px 14px;cursor:pointer">⬇ Install SILMARIL as a desktop app</button>
+        <a href="reset-app.html" style="font-size:10px;color:var(--muted);margin-left:10px" title="clears a stuck app cache if a hard reload ever shows an old page">↻ reset app cache</a>
         <div class="dim" style="font-size:10px;margin-top:4px">One click on Chrome/Edge (native install prompt). iPhone: Share → Add to Home Screen. Standalone window, cached shell, always the live engine data.</div>
       </div>
     </div>
@@ -1435,7 +1436,16 @@ else{el.textContent='no closed trades yet today';}}).catch(function(){});}
 /* ── 5.1B: PWA — install as a real desktop/mobile app (GitHub Pages friendly) ── */
 let _pwaEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_pwaEvt=e;});
 function pwaInstall(){if(_pwaEvt){_pwaEvt.prompt();_pwaEvt=null;}else{alert('Chrome/Edge: browser menu \u2192 Install app.\niPhone/iPad: Share \u2192 Add to Home Screen.\nRuns standalone; always shows the live data.');}}
-if('serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js');}catch(e){}}
+if('serviceWorker' in navigator){try{
+  // 5.1 FINAL self-heal: the old v51b SW cached the HTML shell cache-first and
+  // trapped users on the old UI. Update on every load so a new SW takes over ASAP,
+  // and when a new worker activates, reload ONCE so the fresh page is shown.
+  navigator.serviceWorker.register('sw.js').then(function(reg){ try{reg.update();}catch(e){} });
+  var _reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',function(){
+    if(_reloaded)return; _reloaded=true; location.reload();
+  });
+}catch(e){}}
 /* 5.1 FINAL: category routing init - untagged content children belong to COMMAND */
 (function(){try{
   var kids=document.querySelectorAll('#content > section, #content > div');
