@@ -31,6 +31,10 @@ schema + these rows every cycle; any missing/stale producer is a NAMED red light
 | FEATURE_GATES_STATUS.json | gates writer + **gate_evidence overwrite (5.1)**, P | System Brain gates board |
 | api_health.json | analytics api_health, D + **health_lights merge (keyed lanes), P** | Project Health / fallback depth |
 | deep_heartbeat.json | analytics.yml stamps, D | contracts freshness, scorecard lane-liveness |
+| MTF_REGIME.json | mtf_regime, P (5.1B) | paper_sim exits/throttle/override/sizing (next cycle), report card, UI ladder |
+| REGIME_EXIT_AB.jsonl | paper_sim harvest/fee-clear exits, P (5.1B; append-only, wipe-proof) | conductor_report_card grading |
+| CONDUCTOR_REPORT_CARD.json | conductor_report_card, P (5.1B) | SPINE, Conductor panel |
+| opportunity_journal.json | opportunity_journal (sane universe + audit reasons + stuck, 5.1B), P | Forensics journal, Conductor learning |
 | DECISION_TRACE / DAILY_JOURNAL / MASTER_ACCOUNT / BENCH_BOOKS / FINGERPRINTS | respective writers, P/H | UI + gate_evidence |
 
 **Integration rule:** a new feature is not "done" until its row exists here AND in

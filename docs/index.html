@@ -2,7 +2,13 @@
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
 <title>SILMARIL 5.1</title>
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<meta name="theme-color" content="#0b0b0b"/>
 <style>
+.ytph{display:flex;align-items:center;justify-content:center;aspect-ratio:16/9;background:#0b0b0b;border:1px dashed #555;color:#d4af37;cursor:pointer;font-weight:800;font-size:13px}
+#ytNav{display:none;gap:10px;justify-content:center;margin:8px 0}
+#ytNav button{font:700 13px "Courier New",monospace;padding:5px 12px;background:#111;color:#d4af37;border:1px solid #444;border-radius:4px;cursor:pointer}
+@media(max-width:640px){#ytWall .yttile{display:none}#ytWall .yttile.ytOn{display:block}#ytNav{display:flex!important}}
 .master-card{background:linear-gradient(110deg,#15120a,#2b2410,#4a3d16,#2b2410,#15120a);background-size:220% 100%;animation:goldSh 7s linear infinite;border:2px solid #d4af37;border-radius:9px;box-shadow:0 0 26px rgba(212,175,55,.4),inset 0 0 34px rgba(212,175,55,.07);cursor:pointer;padding:18px;text-align:center;transition:transform .15s,box-shadow .2s}
 .master-card:hover{transform:scale(1.012);box-shadow:0 0 42px rgba(212,175,55,.65)}
 .master-eq{font-size:44px;font-weight:bold;line-height:1.1;background:linear-gradient(110deg,#bfa14a,#fff8dc,#e8e8e8,#fff3c4,#bfa14a);background-size:220% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#d4af37;animation:goldSh 4.5s linear infinite}
@@ -75,7 +81,7 @@
   .quad-sub{font-size:11px;opacity:.85}.quad-champ{font-size:10px;opacity:.7;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .quad-st{font-size:10px;opacity:.6;margin-top:2px}
   </style></head><body><div class="wrap">
-<div class="banner" style="position:relative;padding-right:46px"><h1 style="font-weight:900;letter-spacing:.5px" id="verHdr" class="gold-shine">SILMARIL&nbsp;5.0</h1><span class="dim" style="font-size:12px;font-weight:bold" id="clock">—</span><span class="dim" style="font-size:10px" id="ts">—</span><button class="themebtn" id="themeBtn" onclick="toggleTheme()" style="position:absolute;top:5px;right:5px;padding:1px 5px;font-size:10px;line-height:1.3">🌙</button></div>
+<div class="banner" style="position:relative;padding-right:46px"><h1 style="font-weight:900;letter-spacing:.5px" id="verHdr" class="gold-shine">SILMARIL&nbsp;5.1</h1><span id="buildStamp" class="dim" style="font-size:9px;margin-left:6px"></span><span class="dim" style="font-size:12px;font-weight:bold" id="clock">—</span><span class="dim" style="font-size:10px" id="ts">—</span><button class="themebtn" id="themeBtn" onclick="toggleTheme()" style="position:absolute;top:5px;right:5px;padding:1px 5px;font-size:10px;line-height:1.3">🌙</button></div>
 <div class="tabs">
   <button class="on" data-p="cmd">COMMAND</button><button data-p="arena">ARENA</button>
   <button data-p="forensics">FORENSICS</button><button data-p="authority">SILMARIL NEWS</button><button data-p="settings">SETTINGS</button>
@@ -309,6 +315,10 @@
       <div id="bnbWhy" class="dim" style="font-size:11px;margin:4px 0 8px">checking eligibility…</div>
       <button id="bnbBtn" disabled style="opacity:.35;cursor:not-allowed;font-size:12px;padding:6px 14px">Connect Binance.US — LOCKED</button>
       <div class="dim" style="font-size:10px;margin-top:6px">Unlocks only when BOTH hold: no reset in 90 days AND every book + Master above $10k across 90 unbroken days of snapshots.</div>
+      <div style="margin-top:12px;border-top:1px solid #333;padding-top:10px">
+        <button onclick="pwaInstall()" style="font-size:12px;padding:6px 14px;cursor:pointer">⬇ Install SILMARIL as a desktop app</button>
+        <div class="dim" style="font-size:10px;margin-top:4px">One click on Chrome/Edge (native install prompt). iPhone: Share → Add to Home Screen. Standalone window, cached shell, always the live engine data.</div>
+      </div>
     </div>
     <p><a href="legacy_dashboard.html">Legacy dashboard</a> · <a href="strategy_leaderboard.html">Raw leaderboard</a> · <a href="lifecycle.html">Lifecycle/validation</a> · <a href="paper_sim.html">Paper sim detail</a></p>
     <p class="note">SILMARIL · validation phase · champion must survive 100 out-of-sample trades. $100–300/day is an unproven hope, never income.</p>
@@ -341,11 +351,17 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
 });
 
 let LIVE=null,BOOKS={};
+function T3(x){try{const d=(x instanceof Date)?x:new Date(x);if(isNaN(d))return String(x);
+  const f=(tz,lab)=>lab+' '+d.toLocaleString('en-US',{timeZone:tz,month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
+  return f('America/Los_Angeles','PT')+' · '+f('America/New_York','ET')+' · UTC '+d.toISOString().slice(5,16).replace('T',' ');}catch(e){return String(x);}}
+function T3t(x){try{const d=(x instanceof Date)?x:new Date(x);if(isNaN(d))return String(x);
+  const f=tz=>d.toLocaleTimeString('en-US',{timeZone:tz,hour:'2-digit',minute:'2-digit',hour12:false});
+  return f('America/Los_Angeles')+'PT·'+f('America/New_York')+'ET·'+d.toISOString().slice(11,16)+'Z';}catch(e){return String(x);}}
 function renderClock(){const now=new Date();
   const vegas=now.toLocaleTimeString('en-US',{timeZone:'America/Los_Angeles',hour:'2-digit',minute:'2-digit',second:'2-digit'});
   const et=new Date(now.toLocaleString('en-US',{timeZone:'America/New_York'}));const day=et.getDay(),mins=et.getHours()*60+et.getMinutes();
   const O=570,C=960;let s;if(day===0||day===6)s='NYSE closed · weekend';else if(mins<O){const d=O-mins;s='pre-market · opens in '+(d/60|0)+'h'+(d%60)+'m';}else if(mins>=C)s='NYSE closed · after hours';else{const d=C-mins;s='NYSE OPEN · closes in '+(d/60|0)+'h'+(d%60)+'m';}
-  const el=document.getElementById('clock');if(el)el.textContent='🕐 Vegas '+vegas+' · '+s;}
+  const utc=now.toISOString().slice(11,19);const nyT=now.toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});const el=document.getElementById('clock');if(el)el.textContent='🕐 Vegas '+vegas+' · NY '+nyT+' · UTC '+utc+' · '+s;}
 setInterval(renderClock,1000);renderClock();
 function renderHealth(){const L=LIVE||{};const el=document.getElementById('healthFooter');if(!el)return;
   const age=L.generated_at?Math.round((Date.now()-new Date(L.generated_at))/60000):null;
@@ -361,13 +377,13 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov,ch),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderPos('aggressive',$('posAggressive')),'posG'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderEngStrip(),'estrip'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>renderWarmup(),'warm'); safe(()=>renderMasterReject(),'mrej'); safe(()=>renderWiring(),'wire'); safe(()=>renderFunnel(),'fun'); safe(()=>renderQuarantine(),'quar'); safe(()=>renderGekkoNote(),'gekko'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>renderMV(),'mv'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority'); safe(()=>renderFive(),'five');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderEngStrip(),'estrip'); safe(()=>renderMTFLadder(),'mtfl'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>renderWarmup(),'warm'); safe(()=>renderMasterReject(),'mrej'); safe(()=>renderWiring(),'wire'); safe(()=>renderFunnel(),'fun'); safe(()=>renderQuarantine(),'quar'); safe(()=>renderGekkoNote(),'gekko'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>renderMV(),'mv'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority'); safe(()=>renderFive(),'five');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
-  const g=s.overall_grade,arrow=s.trend==='up'?'▲':s.trend==='down'?'▼':'■';
-  const cards=Object.entries(s.categories).map(([k,v])=>`<div class="stat"><div class="k">${k.replace(/_/g,' ')}</div><div class="val ${v.grade>=7?'pos':v.grade>=4?'':'neg'}">${v.grade}</div><div class="note">${v.why}</div></div>`).join('');
-  $('scorecard').innerHTML=`<div class="met" style="height:30px"><div class="fill" style="width:${g*10}%"></div><div class="lab">OVERALL ${g}/10 ${arrow} ${s.trend}</div></div>
+  const pct=Math.max(0,Math.min(100,+s.overall_score||0));
+  const cards=(s.categories||[]).map(c=>`<div class="stat"><div class="k">${c.name}</div><div class="val ${c.score>=80?'pos':c.score>=60?'':'neg'}">${c.grade} <span class="dim" style="font-size:10px">(${c.score})</span></div><div class="note" style="font-size:9px"><b>formula:</b> ${c.formula}<br>${c.evidence}</div></div>`).join('');
+  $('scorecard').innerHTML=`<div class="met" style="height:30px"><div class="fill" style="width:${pct}%"></div><div class="lab">OVERALL ${s.overall_grade} (${s.overall_score}) · ${s.trend||''}</div></div>
     <div class="note" style="margin:4px 0">${s.headline||''}</div><div class="grid">${cards}</div>`;}
 function getMarketHours(bk){const now=new Date(),et=new Date(now.toLocaleString('en-US',{timeZone:'America/New_York'}));const day=et.getDay(),mins=et.getHours()*60+et.getMinutes();
   if(bk==='crypto')return{open:0,close:1440,name:'24/7',msg:'crypto always trading, updates every cycle'};
@@ -444,7 +460,7 @@ async function renderTrades(){const L=await jget('data/paper_sim_live.json');if(
     return rt.slice(0,25).map(function(x){const pnl=x.pnl;
       const ret=x.realized_pct!=null?x.realized_pct:(x.ret_pct!=null?x.ret_pct:(x.return_pct!=null?x.return_pct:null));
       const c=pnl==null?'dim':((Math.abs(pnl)<0.005&&ret!=null)?(ret>=0?'pos':'neg'):(pnl>=0?'pos':'neg'));
-      const when=x.t?new Date(x.t).toLocaleString([], {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'';
+      const when=x.t?T3(x.t):'';
       const why=x.exit_reason||x.reason||'';
       // 2.7.2: a real win on a tiny position rounds to $0.00 — when dollars round to zero, show the REAL %
       // so a winning trade never reads as a flat "$0.00" again.
@@ -484,7 +500,7 @@ async function renderKraken(){const d=await jget('data/KRAKEN_SPREAD.json');if(!
   if(window.SilmarilChart)setTimeout(()=>SilmarilChart.autotag(document),50);}
 async function renderTimeline(){const d=await jget('data/CHAMPION_TIMELINE.json');if(!d||!d.reigns){$('timelineBox').innerHTML='<div class=dim>no data</div>';return;}
   const rows=d.reigns.map(r=>{const traded=r.trips>0;const pc=r.realized_usd>=0?'pos':'neg';
-    return `<tr style="${traded?'':'opacity:.45'}"><td>${pokeInline(r.champion)}</td><td class=dim style="font-size:10px">${r.from===''?'':(r.from==='(earliest)'?'earliest':new Date(r.from).toLocaleString([], {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}))} → ${r.to==='now'?'<b>now</b>':(r.to?new Date(r.to).toLocaleString([], {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'')}</td><td>${r.duration_hours!=null?r.duration_hours+'h':''}</td><td>${r.trips}</td><td>${r.win_rate_pct!=null?r.win_rate_pct+'%':'—'}</td><td class="${pc}">${r.realized_usd>=0?'+$':'-$'}${Math.abs(r.realized_usd).toFixed(2)}</td><td class="${(r.usd_per_hour||0)>=0?'pos':'neg'}">${r.usd_per_hour!=null?(r.usd_per_hour>=0?'+$':'-$')+Math.abs(r.usd_per_hour)+'/hr':''}</td></tr>`;}).join('');
+    return `<tr style="${traded?'':'opacity:.45'}"><td>${pokeInline(r.champion)}</td><td class=dim style="font-size:10px">${r.from===''?'':(r.from==='(earliest)'?'earliest':T3(r.from))} → ${r.to==='now'?'<b>now</b>':(r.to?T3(r.to):'')}</td><td>${r.duration_hours!=null?r.duration_hours+'h':''}</td><td>${r.trips}</td><td>${r.win_rate_pct!=null?r.win_rate_pct+'%':'—'}</td><td class="${pc}">${r.realized_usd>=0?'+$':'-$'}${Math.abs(r.realized_usd).toFixed(2)}</td><td class="${(r.usd_per_hour||0)>=0?'pos':'neg'}">${r.usd_per_hour!=null?(r.usd_per_hour>=0?'+$':'-$')+Math.abs(r.usd_per_hour)+'/hr':''}</td></tr>`;}).join('');
   $('timelineBox').innerHTML=`
     <div style="padding:8px;border:1px solid #16c78455;border-radius:6px;background:#14241a;margin-bottom:8px"><div style="font-weight:bold;color:#16c784">${d.verdict}</div></div>
     <table style="font-size:11px"><thead><tr><th>champion</th><th>reign</th><th>dur</th><th>trips</th><th>win%</th><th>realized</th><th>$/hr</th></tr></thead><tbody>${rows}</tbody></table>
@@ -586,7 +602,7 @@ async function renderSession(){const d=await jget('data/SESSION_TODAY.json');if(
   h+=`<div class=dim style="font-size:11px;margin:6px 0 3px">exit reasons: ${Object.entries(c.exit_reasons||{}).map(([k,v])=>k.replace(/_/g,' ')+': '+v).join(' · ')}</div>`;
   h+=`<div class=dim style="font-size:11px;margin-bottom:3px">top contributors: ${(c.top_symbols||[]).slice(0,6).map(s=>`<span class="tick" data-sym="${s.sym}">${s.sym}</span> $${s.usd}`).join(' · ')}</div>`;
   // full chronological trade list (no cap)
-  const rows=(c.trades||[]).slice().reverse().map(t=>{const w=t.outcome==='win'?'pos':(t.outcome==='loss'?'neg':'dim');const when=t.exit_t?new Date(t.exit_t).toLocaleString([], {hour:'2-digit',minute:'2-digit'}):'';
+  const rows=(c.trades||[]).slice().reverse().map(t=>{const w=t.outcome==='win'?'pos':(t.outcome==='loss'?'neg':'dim');const when=t.exit_t?T3(t.exit_t):'';
     return `<tr><td><span class="tick" data-sym="${t.sym}">${t.sym}</span></td><td class="${w}">${t.pnl_usd>=0?'+$':'-$'}${Math.abs(t.pnl_usd||0).toFixed(2)}</td><td>${t.realized_pct!=null?t.realized_pct+'%':''}</td><td>${t.hold_min!=null?t.hold_min+'m':''}</td><td class=dim style="font-size:10px">${t.exit_reason.replace(/_/g,' ')}</td><td class=dim style="font-size:10px">${when}</td></tr>`;}).join('');
   h+=`<div style="font-weight:bold;font-size:12px;margin:8px 0 3px">All ${c.round_trips} session trades (no cap):</div><table style="font-size:11px"><thead><tr><th>sym</th><th>P&L</th><th>%</th><th>hold</th><th>exit reason</th><th>when</th></tr></thead><tbody>${rows}</tbody></table>`;
   h+=`<div class="note" style="font-size:10px;margin-top:6px">${d.honest_note}</div>`;
@@ -603,7 +619,7 @@ async function renderMasterCard(){const d=await jget('data/MASTER_ACCOUNT.json')
   const eq=d.live_equity||10000,pct=(d.live_pct||0);
   var e=$('mcEq'); if(e)e.textContent='$'+eq.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
   var s=$('mcSub'); if(s)s.innerHTML='<span style="color:'+(pct>=0?'#39d353':'#ff6b6b')+'">'+(pct>=0?'+':'')+pct+'%</span> \u00b7 '+(d.live_status||'')+' \u00b7 champion '+(d.champion||'\u2014')+' \u00b7 '+(d.live_trades_count||0)+' trades since inception';
-  var br=$('mcBrain'); if(br){var tail=(d.decision_log_tail||[]).slice(0,3).map(function(r){var acc=(r.accepted||[]).join(',');var t=r.t?new Date(r.t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';return t+' \u2192 '+(acc?('funding '+acc):'no quadrant clears the gate');});
+  var br=$('mcBrain'); if(br){var tail=(d.decision_log_tail||[]).slice(0,3).map(function(r){var acc=(r.accepted||[]).join(',');var t=r.t?T3t(r.t):'';return t+' \u2192 '+(acc?('funding '+acc):'no quadrant clears the gate');});
     var tr=(d.live_trades_tail||[]).slice(0,3).map(function(x){var pl=(x.pnl!=null)?((x.pnl>=0?'+$':'-$')+Math.abs(x.pnl).toFixed(2)):'';return (x.side||'')+' '+(x.sym||'')+' '+pl;});
     br.innerHTML=(tail.length?('<b>gate:</b> '+tail.join(' \u00b7 ')):'')+(tr.length?('<br><b>trades:</b> '+tr.join(' \u00b7 ')):(tail.length?'':'gate + trade ledger arm after the first cycle'));}}
 async function renderMaster(){const d=await jget('data/MASTER_ACCOUNT.json');if(!d){$('masterBox').innerHTML='<div class=dim>no data</div>';return;}
@@ -685,14 +701,14 @@ function renderMarksHealth(){try{const mh=(typeof LIVE!=='undefined'&&LIVE&&LIVE
 async function renderMasterDecisions(){try{const d=await jget('data/MASTER_ACCOUNT.json');const el=$('mDecBox');if(!el)return;const rows=(d&&d.decision_log_tail)||[];
   if(!rows.length){el.innerHTML='<div class=dim>no decisions yet this run — the ledger fills every cycle</div>';return;}
   const bks=['crypto','stock','metal','energy'];
-  const body=rows.map(r=>{const t=r.t?new Date(r.t).toLocaleString([],{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
+  const body=rows.map(r=>{const t=r.t?T3(r.t):'—';
     const cells=bks.map(b=>{const q=(r.books||{})[b]||{};const acc=q.decision==='ACCEPT';return '<td class="'+(acc?'pos':'dim')+'" style="font-size:10px">'+(q.confidence!=null?q.confidence:'—')+'<span style="opacity:.6">/'+(r.gate||90)+'</span> '+(acc?'✔':'✕')+'</td>';}).join('');
     const hl=r.verdict_changed?' style="background:rgba(255,220,0,.07)"':'';
     return '<tr'+hl+'><td class=dim style="font-size:10px;white-space:nowrap">'+t+'</td>'+cells+'<td style="font-size:10px">'+((r.accepted||[]).join(', ')||'<span class=dim>none — stay flat</span>')+'</td></tr>';}).join('');
   el.innerHTML='<table style="font-size:11px"><thead><tr><th>cycle</th><th>crypto</th><th>stock</th><th>metal</th><th>energy</th><th>funded</th></tr></thead><tbody>'+body+'</tbody></table>';
 }catch(e){}}
 async function applyVersion(){try{const nm=$('newsMastSub');if(nm){const now=new Date();const ed=Math.floor((now-new Date(now.getFullYear(),0,0))/86400000);nm.textContent=now.toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'})+' \u00b7 Edition #'+ed;}}catch(e){}
-try{const m=await jget('data/PROJECT_META.json');if(m&&m.version){const h=$('verHdr');if(h)h.innerHTML='SILMARIL&nbsp;'+m.version;document.title='SILMARIL '+m.version;}}catch(e){}}
+try{const m=await jget('data/PROJECT_META.json');const b=$('buildStamp');if(b&&m&&m.version)b.textContent='build '+m.version;}catch(e){}}   /* 5.1B: the header is a CONSTANT — meta is a display-only build stamp; the '3.0 ghost' can never possess it again */
 /* ---- LIVE MARKET FEED WALL — 3x3, per-tile volume, solo audio, full-screen ---- */
 const YT_FEEDS=[
  {t:'Yahoo Finance',src:'KQp-e_XQnDE'},
@@ -701,9 +717,7 @@ const YT_FEEDS=[
  {t:'Gold & Silver Live (XAU/XAG)',src:'wJvRPbLvUig'},
  {t:'CNBC (latest lives)',src:'videoseries?list=PLDt0J62yU45sN1rBmNiSRr12acZBnPAZy',pl:true},
  {t:'Sky News (24/7 live)',src:'w9uJg68CV4g'},   // 5.1: Schwab stream went dark — replaced with a stable 24/7 broadcaster
- {t:'Daily Chart Analysis',src:'IWDz7ptmwRE',list:'PLPVve34yolHaEe5i98irKT8oZ_8CanC39'},
- {t:'TraderTV Live',src:'FCRXA6DqiXU'},
- {t:'Stock Market Live',src:'3i-LTNlwcQA'}];
+];   // 5.1B: feeds 7–9 removed by operator directive — stale streams have no home here
 function ytCmd(i,func,args){const f=document.getElementById('ytf'+i);if(f&&f.contentWindow)f.contentWindow.postMessage(JSON.stringify({event:'command',func:func,args:args||[]}),'*');}
 function ytVol(i,v){v=+v; if(v>0){for(let j=0;j<YT_FEEDS.length;j++){if(j!==i){const s=document.getElementById('yts'+j);if(s&&+s.value>0){s.value=0;ytCmd(j,'setVolume',[0]);ytCmd(j,'mute');}}}
     ytCmd(i,'unMute');ytCmd(i,'setVolume',[v]);ytCmd(i,'playVideo');}
@@ -711,11 +725,19 @@ function ytVol(i,v){v=+v; if(v>0){for(let j=0;j<YT_FEEDS.length;j++){if(j!==i){c
 function ytFull(on){const w=$('ytWall');if(!w)return;w.classList.toggle('ytfull',!!on);document.body.style.overflow=on?'hidden':'';const c=$('ytClose');if(c)c.style.display=on?'block':'none';}
 function buildYtWall(){const w=$('ytWall');if(!w||w.dataset.built)return;w.dataset.built='1';
   let h='<button id="ytClose" onclick="ytFull(false)" style="display:none;position:fixed;top:8px;right:10px;z-index:1001;font-size:13px">✕ exit full screen</button>';
-  YT_FEEDS.forEach((f,i)=>{const base=f.pl?('https://www.youtube.com/embed/'+f.src):('https://www.youtube.com/embed/'+f.src+'?'+(f.list?('list='+f.list+'&'):''));
-    const src=f.pl?(base+'&enablejsapi=1&autoplay=1&mute=1'):(base+'enablejsapi=1&autoplay=1&mute=1');
-    h+='<div class="yttile"><div class="ytttl">'+f.t+'</div><iframe id="ytf'+i+'" src="'+src+'" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>'
+  YT_FEEDS.forEach((f,i)=>{
+    h+='<div class="yttile" id="yttile'+i+'"><div class="ytttl">'+f.t+'</div><div class="ytph" onclick="ytLoad('+i+')">▶ tap to load stream</div>'
       +'<div class="ytbar">🔊 <input id="yts'+i+'" type="range" min="0" max="100" value="0" oninput="ytVol('+i+',this.value)"></div></div>';});
-  w.innerHTML=h;}
+  w.innerHTML=h+'<div id="ytNav"><button onclick="ytShow(-1)">◀ prev</button><span id="ytNavLbl" class="dim" style="align-self:center;font-size:11px"></span><button onclick="ytShow(1)">next ▶</button></div>';
+  if(window.innerWidth<=640){window._ytIdx=0;ytShow(0);}}
+function ytLoad(i){const t=$('yttile'+i);if(!t)return;const ph=t.querySelector('.ytph');if(!ph)return;
+  const f=YT_FEEDS[i];const base=f.pl?('https://www.youtube.com/embed/'+f.src):('https://www.youtube.com/embed/'+f.src+'?'+(f.list?('list='+f.list+'&'):''));
+  const src=(f.pl?(base+'&'):(base))+'enablejsapi=1&autoplay=1&mute=1';
+  ph.outerHTML='<iframe id="ytf'+i+'" src="'+src+'" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>';}
+function ytShow(dir){const n=YT_FEEDS.length;window._ytIdx=((window._ytIdx||0)+(dir===0?0:dir)+n)%n;
+  for(let j=0;j<n;j++){const t=$('yttile'+j);if(t)t.classList.toggle('ytOn',j===window._ytIdx);}
+  const L=$('ytNavLbl');if(L)L.textContent=(window._ytIdx+1)+'/'+n+' · '+YT_FEEDS[window._ytIdx].t;
+  ytLoad(window._ytIdx);}
 async function renderMV(){try{const el=$('mvBox');if(!el)return;
   const [cal,rq,ck,bl,al,ws,sp,cx,ra,tqx]=await Promise.all(['CALIBRATION','RESEARCH_QUEUE','ECONOMIC_CLOCK','DAILY_BASELINE','AGGRESSION_LADDER','WEEKLY_SCORECARD','STOCK_PARITY_AUDIT','COMPLEXITY_LEDGER','REGIME_ACCURACY','TRADE_QUALITY'].map(f=>jget('data/'+f+'.json').catch(()=>null)));
   let H='<div style="font-weight:800;margin:8px 0 4px">🧬 MOVEMENT V — self-calibration & meta-cognition (observe; earns trust on evidence)</div><table style="font-size:11px"><tbody>';
@@ -795,7 +817,7 @@ async function renderMasterReject(){try{const el=$('masterRejectPanel');if(!el)r
   const bks=['crypto','stock','metal','energy'];
   if(!led.length){el.innerHTML='<div class="hd" style="font-size:12px">\u2696\ufe0f MASTER ACCEPT / REJECT LEDGER</div><div class="bd"><div class=dim>no cycles logged yet \u2014 fills every run</div></div>';return;}
   const head='<tr><th>cycle</th>'+bks.map(b=>'<th>'+b+'</th>').join('')+'<th>funded</th></tr>';
-  const rows=led.slice(0,8).map(r=>{const t=r.t?new Date(r.t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+  const rows=led.slice(0,8).map(r=>{const t=r.t?T3t(r.t):'';
     const cells=bks.map(b=>{const q=(r.books||{})[b]||{};const acc=q.decision==='ACCEPT';const veto=q.regime_veto;
       const reason=acc?'\u2713':veto?'regime\u2715':(q.confidence!=null?q.confidence+'/'+(r.gate||90):'\u2715');
       return '<td class="'+(acc?'pos':'dim')+'" style="font-size:10px">'+reason+'</td>';}).join('');
@@ -812,7 +834,7 @@ async function renderFunnel(){try{const el=$('funnelPanel');if(!el)return;const 
   el.innerHTML='<div class="hd" style="font-size:12px">🔬 UNIVERSE FUNNEL — scanned → warm → candidates → bought, with every rejection named</div><div class="bd"><table style="font-size:11px"><tbody>'+rows+'</tbody></table></div>';
 }catch(e){}}
 async function renderFive(){const el=$('fiveStrip');if(!el)return;
-  const bn=await jget('data/BENCH_BOOKS.json'),cs=await jget('data/UNIVERSE_CENSUS.json'),sc=await jget('data/STORE_CONTRACTS.json'),iv=await jget('data/INVARIANTS.json'),ut=await jget('data/CHAMPION_UTILIZATION.json'),cd=await jget('data/CONDUCTOR_STATE.json'),ro=await jget('data/RESEARCH_OS.json'),fpr=await jget('data/FINGERPRINTS.json'),cat=await jget('data/PARAM_CATALOG.json');
+  const bn=await jget('data/BENCH_BOOKS.json'),cs=await jget('data/UNIVERSE_CENSUS.json'),sc=await jget('data/STORE_CONTRACTS.json'),iv=await jget('data/INVARIANTS.json'),ut=await jget('data/CHAMPION_UTILIZATION.json'),cd=await jget('data/CONDUCTOR_STATE.json'),ro=await jget('data/RESEARCH_OS.json'),fpr=await jget('data/FINGERPRINTS.json'),cat=await jget('data/PARAM_CATALOG.json'),mtfS=await jget('data/MTF_REGIME.json'),c1S=await jget('data/CONDUCTOR_C1.json'),rcS=await jget('data/CONDUCTOR_REPORT_CARD.json');
   const L=LIVE||{};const rows=[];
   if(bn&&bn.books){const B=bn.books;const g=k=>((B[k]||{}).return_pct);
     rows.push('<b>NULLS</b> '+['BENCH_CASH','BENCH_SPY','BENCH_HODL','BENCH_EQW'].map(k=>{const bb=B[k]||{};const r=bb.return_pct;const c=r>0?'pos':(r<0?'neg':'');const stt=String(bb.status||'');return k.replace('BENCH_','')+' <span class="'+c+'">'+(r!=null?sg(r)+'%':'\u2014')+'</span>'+(stt.indexOf('holding')===0||stt==='accruing'?'':' <span class="dim">('+stt+')</span>');}).join(' \u00b7 '));
@@ -828,7 +850,12 @@ async function renderFive(){const el=$('fiveStrip');if(!el)return;
     rows.push('<b>FINGERPRINTS</b> '+(fpr.fittable||0)+'/'+(fpr.tracked||0)+' valuables have a fee-clearing custom fit <span class="dim">— each trades its OWN chart, not a blanket threshold</span>');
     if(cc.length){rows.push('<div style="font-size:10px;opacity:.85;margin:2px 0 2px 10px;line-height:1.5">'+cc.map(function(c){var f=c.fit||{};return '<span class="tick" data-sym="'+c.sym+'">'+c.sym+'</span> dips ~'+((f.typical_dip||0)*100).toFixed(1)+'% \u2192 aims '+((f.target||0)*100).toFixed(1)+'% <span class="dim">(of ~'+((f.typical_bounce||0)*100).toFixed(1)+'% bounce, stop '+((f.stop||0)*100).toFixed(0)+'%'+(f.strong_up?', STRONG-UP':'')+')</span>';}).join('<br>')+'</div>');}}
   if(ut&&ut.summary_today){rows.push('<b>UTILIZATION</b> '+ut.summary_today+' <span class="dim">['+(ut.legend||'')+'] \u00b7 dep n/m = CYCLES deployed in window, not symbol count</span>');}
-  if(cd){rows.push('<b>CONDUCTOR C0</b> '+((cd.decisions_logged!=null)?cd.decisions_logged:0)+'/'+((cd.c1_gate!=null)?cd.c1_gate:300)+' decisions logged \u00b7 <span class="dim">'+(cd.rung||'')+'</span>');}
+  if(mtfS&&mtfS.books){const fr=Object.entries(mtfS.books).filter(([b,v])=>v.fast_red).map(([b])=>b);
+    rows.push('<b>MTF LADDER</b> '+Object.entries(mtfS.books).map(([b,v])=>b+' '+(v.confluence>=0?'+':'')+v.confluence).join(' \u00b7 ')+' <span class="dim">\u2014 12 timeframes 15m\u219230d vote per industry & valuable; '+(fr.length?('FAST RED on '+fr.join(',')+' \u2192 harvest + throttle engaged'):'no fast-red streak')+'</span>');}
+  if(cd){rows.push('<b>CONDUCTOR C0</b> '+((cd.decisions_logged!=null)?cd.decisions_logged:0)+'/'+((cd.c1_gate!=null)?cd.c1_gate:300)+' decisions logged \u00b7 <span class="dim">'+(cd.rung||'')+' \u2014 300 opens the ANALYSIS gate only (C1 shadow-scores policies on the log, zero trades); real behavior changes need C2: tiny \u03b5 on GEKKO after C1 shows positive uplift \u2014 never automatic</span>');}
+  if(c1S&&c1S.gate){rows.push('<b>CONDUCTOR C1</b> '+c1S.gate.have+'/'+c1S.gate.need+' scored \u00b7 <span class="dim">'+(c1S.policies||[]).map(p=>p.id+' '+(p.matched_mean_bps!=null?p.matched_mean_bps+'bps':'\u2014')).join(' \u00b7 ')+'</span>');}
+  if(rcS){const h=rcS.harvest_ab||{},sz=rcS.sizing_ab||{},st=rcS.stuck_capital||{},pf=rcS.realized_profit||{};
+    rows.push('<b>REPORT CARD</b> harvest A/B: '+(h.events_logged||0)+' logged, '+(h.graded_24h||0)+' graded'+(h.median_saved_pct_24h!=null?' (median saved '+h.median_saved_pct_24h+'%)':'')+' \u00b7 sizing A/B: '+(sz.closed_sized_trades||0)+' closed, '+(sz.extra_usd_vs_flat_base!=null?('$'+sz.extra_usd_vs_flat_base+' vs flat'):'accruing')+' \u00b7 stuck: $'+(st.capital_usd||0)+' \u00b7 realized all-books: $'+(pf.cumulative_realized_usd_all_books!=null?pf.cumulative_realized_usd_all_books:'\u2014')+' <span class="dim">\u2014 every new behavior carries a pre-registered kill criterion; the card, not enthusiasm, decides if it stays</span>');}
   if(ro){const t=(ro.priorities||[])[0];rows.push('<b>RESEARCH OS</b> '+(ro.summary||'\u2014')+(t?' \u00b7 <span class="dim">highest-value next: '+t.id+' \u2014 '+String(t.question).slice(0,64)+'\u2026</span>':''));
     const uu=ro.unknown_unknowns||{};if(uu.least_tested_market){rows.push('<b>UNKNOWN-UNKNOWNS</b> least-tested market: '+uu.least_tested_market+' \u00b7 stalest belief: '+((uu.stalest_belief_days!=null)?uu.stalest_belief_days:'\u2014')+'d \u00b7 biggest evidence gap: '+((uu.biggest_gap_debt!=null)?uu.biggest_gap_debt:'\u2014')+' obs');}}
   const rk=((cat||{}).champion_rotation)||{};rows.push('<b>ROTATION KNOBS</b> \u2265'+((rk.min_trades!=null)?rk.min_trades:5)+' live trades \u00b7 '+((rk.switch_margin!=null)?rk.switch_margin:15)+'-pt margin <span class="dim">\u2014 live-tunable (PARAM_CATALOG.champion_rotation); election every cycle, all books</span>');
@@ -935,7 +962,7 @@ async function renderCompound(){const d=await jget('data/COMPOUNDING_PROJECTION.
   $('compoundBox').innerHTML=`<div class="dim" style="margin-bottom:4px">equity now <b>$${d.current_equity.toLocaleString()}</b> \u00b7 running avg <b>$${d.avg_daily_usd_recent3}/day</b> (last 3d) \u00b7 all-time $${d.avg_daily_usd_all}/day \u00b7 from ${d.observed_days} days</div><table style="font-size:11px"><thead><tr><th>horizon</th><th>projected equity</th><th>gain</th></tr></thead><tbody>${rows}</tbody></table><div class="note" style="font-size:10px;color:var(--neg)">${d.honest_note}</div>`;}
 async function renderHealthMatrix(){const d=await jget('data/HEALTH_MATRIX.json');if(!d){return;}
   const dot=s=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴',GRAY:'⚪'}[s]||'⚪');
-  const feeds=(d.feeds||[]).map(f=>`<span style="white-space:nowrap">${dot(f.status)} ${f.name} <span class=dim>${f.detail}</span></span>`).join(' &nbsp;·&nbsp; ');
+  const feeds=(d.feeds||[]).map(f=>{if(/LEGACY/i.test(f.name||'')){f=Object.assign({},f,{status:'GRAY',detail:'retired — unused Alpaca legacy, not a fault'});}return f;}).map(f=>`<span style="white-space:nowrap">${dot(f.status)} ${f.name} <span class=dim>${f.detail}</span></span>`).join(' &nbsp;·&nbsp; ');
   const kg=((d.key_groups&&d.key_groups.length)?d.key_groups:null)===null?'<span class="dim">awaiting first keyed-lane health beat (writes every cycle from daily/hourly)</span>':(d.key_groups||[]).map(k=>`<span style="white-space:nowrap" title="${(k.all||[]).join(', ')}">${dot(k.status)} ${k.need} <span class=dim>${k.providers_active}/${k.providers_total} sources</span></span>`).join(' &nbsp;·&nbsp; ');
   const fr=d.freshness||{},pr=d.prices||{},nw=d.news||{};
   const cp=d.cron_pressure||{},provs=cp.providers||{};
@@ -990,7 +1017,7 @@ async function openMaster(){
   H+=sec('DECISION TREE', d.decision_tree);
   H+=sec('DAILY BRIEFING', d.daily_briefing);
   const led=(d.decision_log_tail||[]);
-  if(led.length){H+='<div style="font-weight:800;margin:12px 0 3px;border-bottom:1px solid #ffffff22;color:#d4af37">DECISION LEDGER \u2014 the gate, every cycle</div><table style="font-size:10px"><thead><tr><th>cycle</th><th>crypto</th><th>stock</th><th>metal</th><th>energy</th><th>funded</th></tr></thead><tbody>'+led.slice(0,10).map(function(r){var t=r.t?new Date(r.t).toLocaleString([],{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';var cells=['crypto','stock','metal','energy'].map(function(b){var q=(r.books||{})[b]||{};return '<td class="'+(q.decision==='ACCEPT'?'pos':'dim')+'">'+(q.confidence!=null?q.confidence:'\u2014')+'/'+(r.gate||90)+'</td>';}).join('');return '<tr><td class=dim>'+t+'</td>'+cells+'<td>'+((r.accepted||[]).join(', ')||'<span class=dim>none</span>')+'</td></tr>';}).join('')+'</tbody></table>';}
+  if(led.length){H+='<div style="font-weight:800;margin:12px 0 3px;border-bottom:1px solid #ffffff22;color:#d4af37">DECISION LEDGER \u2014 the gate, every cycle</div><table style="font-size:10px"><thead><tr><th>cycle</th><th>crypto</th><th>stock</th><th>metal</th><th>energy</th><th>funded</th></tr></thead><tbody>'+led.slice(0,10).map(function(r){var t=r.t?T3(r.t):'';var cells=['crypto','stock','metal','energy'].map(function(b){var q=(r.books||{})[b]||{};return '<td class="'+(q.decision==='ACCEPT'?'pos':'dim')+'">'+(q.confidence!=null?q.confidence:'\u2014')+'/'+(r.gate||90)+'</td>';}).join('');return '<tr><td class=dim>'+t+'</td>'+cells+'<td>'+((r.accepted||[]).join(', ')||'<span class=dim>none</span>')+'</td></tr>';}).join('')+'</tbody></table>';}
   const ap=d.allocation_plan||{};const apl=Object.entries(ap).filter(([k,v])=>v>0).map(([k,v])=>k+' '+v+'%').join(' · ');
   H+='<div style="font-weight:800;margin:12px 0 3px;border-bottom:1px solid #ffffff22;color:#d4af37">ALLOCATION PLAN — confidence-weighted (more capital to winning, confident books)</div>';
   H+='<div class=dim style="font-size:11px">'+(apl||'no book clears the gate — plan is 0% everywhere until confidence ≥ '+(d.gate||90))+'</div>';
@@ -1056,7 +1083,7 @@ async function openQuadrant(bk){
     H+='<table style="font-size:10px"><tr style="opacity:.6"><td>sym</td><td>dip</td><td>conviction</td><td>fate</td></tr>'+dtr.map(d=>'<tr><td>'+d.sym+'</td><td>'+d.dip_pct+'%</td><td>'+(d.conviction!=null?d.conviction:'—')+'</td><td class="'+(d.fate==='BOUGHT'?'pos':'dim')+'">'+d.fate+'</td></tr>').join('')+'</table>';}
   const mled=Array.isArray(led)?led:[];
   if(mled.length){H+='<div style="font-weight:800;margin:14px 0 4px;border-bottom:1px solid #ffffff22">MASTER GATE — is this book funded?</div>';
-    H+='<table style="width:100%;font-size:10px"><tr style="opacity:.6"><td>cycle</td><td>confidence</td><td>gate</td><td>regime</td><td>verdict</td></tr>'+mled.slice(0,8).map(function(r){var q=(r.books||{})[bk]||{};var t=r.t?new Date(r.t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';var acc=q.decision==='ACCEPT';return '<tr><td class=dim>'+t+'</td><td class="'+(acc?'pos':'neg')+'">'+(q.confidence!=null?q.confidence:'—')+'</td><td>'+(r.gate||90)+'</td><td>'+(q.regime||'—')+(q.regime_veto?' ✕':'')+'</td><td class="'+(acc?'pos':'dim')+'">'+(acc?'FUNDED':'held')+'</td></tr>';}).join('')+'</table>';
+    H+='<table style="width:100%;font-size:10px"><tr style="opacity:.6"><td>cycle</td><td>confidence</td><td>gate</td><td>regime</td><td>verdict</td></tr>'+mled.slice(0,8).map(function(r){var q=(r.books||{})[bk]||{};var t=r.t?T3t(r.t):'';var acc=q.decision==='ACCEPT';return '<tr><td class=dim>'+t+'</td><td class="'+(acc?'pos':'neg')+'">'+(q.confidence!=null?q.confidence:'—')+'</td><td>'+(r.gate||90)+'</td><td>'+(q.regime||'—')+(q.regime_veto?' ✕':'')+'</td><td class="'+(acc?'pos':'dim')+'">'+(acc?'FUNDED':'held')+'</td></tr>';}).join('')+'</table>';
     H+='<div class="dim" style="font-size:10px;margin-top:3px">Master funds only at confidence ≥ gate AND regime not red. This book\'s own trading (above) runs independently in its $10k workshop.</div>';}
 
   // TRADE HISTORY
@@ -1198,7 +1225,9 @@ async function renderForensics(){
   if(ec){$('capHead').innerHTML=`<span class="${ec.PRIMARY_KPI_portfolio_capture_pct>0?'pos':'neg'}">${ec.PRIMARY_KPI_portfolio_capture_pct}%</span> <span class="dim" style="font-size:12px">of available edge captured</span>`;
     $('capMiss').innerHTML=(ec.biggest_misses||[]).slice(0,8).map(r=>`<tr><td>${r.ticker}</td><td class="pos">+${r.available_move_pct}%</td><td class="${r.capture_pct>0?'pos':'neg'}">${r.capture_pct}%</td></tr>`).join('');}
   const oj=await jget('data/opportunity_journal.json');
-  if(oj)$('ojBody').innerHTML=`<b class="neg">${oj.pct_of_movers_missed}%</b> of ${oj.movers_logged} movers missed. <span class="dim">Top missed:</span> `+((oj.journal||[]).filter(r=>!r.captured).slice(0,5).map(r=>`${r.ticker} +${r.peak_available_pct}%`).join(' · '));
+  if(oj){const miss=(oj.journal||[]).filter(r=>!r.captured).slice(0,5).map(r=>`<div style="margin:2px 0">${r.ticker} <b class="pos">+${r.peak_available_pct}%</b> — <span class="dim" style="font-size:10px">${r.why||''}</span></div>`).join('');
+    const stuck=(oj.stuck_positions||[]).length?`<div style="margin-top:6px;padding:4px;border-left:3px solid #c33"><b>CAPITAL STUCK</b> (underwater ≥72h): ${(oj.stuck_positions||[]).map(r=>`${r.sym} $${Math.round(r.wager_usd)} [${r.book}]`).join(' · ')}</div>`:'';
+    $('ojBody').innerHTML=`<b class="neg">${oj.pct_of_movers_missed}%</b> of ${oj.movers_logged} tradable movers missed — each with its EXACT rule:${'<div style="margin-top:4px">'+miss+'</div>'}${stuck}<div class="note" style="margin-top:4px">sane universe: canonical · fresh ≤24h · one listing/base · |move|≤50%. Pair with DECISION TRACE — the journal says why we MISSED; the trace says why each TAKEN trade lived and died.</div>`;}
   const lk=await jget('data/execution_leak.json');
   if(lk)$('leakBody').innerHTML=`<div>${lk.headline||'—'}</div><div class="note">${lk.reconciliation_note||''}</div>`;
   // trend charts from snapshot history
@@ -1272,7 +1301,20 @@ document.getElementById('fs1').onclick=function(){z=1;ap();};ap();}catch(e){}})(
 function byHd(t){return secs.find(function(x){var h=x.querySelector('.hd');return h&&h.textContent.indexOf(t)>=0;});}
 var master=byHd('MASTER ACCOUNT');var live=byHd('LIVE POSITIONS');
 var btns=secs.find(function(x){var t=x.textContent||'';return t.length<1600&&t.indexOf('GEKKO')>=0&&t.indexOf('CRYPTO')>=0&&t.indexOf('STOCK')>=0&&t.indexOf('METAL')>=0&&t.indexOf('ENERGY')>=0;});
-if(master&&live){master.after(live);}if(master&&btns&&btns!==live){master.after(btns);}}catch(e){}})();
+if(master&&live){master.after(live);}if(master&&btns&&btns!==live){master.after(btns);}
+var tr=byHd('RECENT TRADES');if(live&&tr){live.after(tr);}
+if(tr&&!document.getElementById('cmdTakehome')){var th=document.createElement('section');
+th.innerHTML='<div class="hd">💵 TODAY NET — what we actually kept after fees</div><div class="bd"><div id="cmdTakehome" class="dim">loading…</div></div>';
+tr.after(th);
+jget('data/THRESHOLD_TAKEHOME.json').then(function(d){var r=((d&&d.daily_takehome)||[])[0];var el=document.getElementById('cmdTakehome');if(!el)return;
+if(r){var net=(r.net!=null?r.net:r.net_usd)||0,gr=(r.gross!=null?r.gross:r.gross_usd)||0,fe=(r.fees!=null?r.fees:r.fees_usd)||0;
+el.innerHTML='<b class="'+(net>=0?'pos':'neg')+'" style="font-size:16px">'+(net>=0?'+$':'-$')+Math.abs(net).toFixed(2)+'</b> net kept today · gross '+(gr>=0?'+':'')+'$'+(+gr).toFixed(2)+' · fees $'+(+fe).toFixed(2)+' <span class="dim">(full table + venue scenarios on FORENSICS)</span>';}
+else{el.textContent='no closed trades yet today';}}).catch(function(){});}
+}catch(e){}})();
+/* ── 5.1B: PWA — install as a real desktop/mobile app (GitHub Pages friendly) ── */
+let _pwaEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_pwaEvt=e;});
+function pwaInstall(){if(_pwaEvt){_pwaEvt.prompt();_pwaEvt=null;}else{alert('Chrome/Edge: browser menu \u2192 Install app.\niPhone/iPad: Share \u2192 Add to Home Screen.\nRuns standalone; always shows the live data.');}}
+if('serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js');}catch(e){}}
 load();setInterval(load,60000);
 </script>  <script src="silmaril_chart.js"></script>
 </body></html>

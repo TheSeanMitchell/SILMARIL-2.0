@@ -3521,9 +3521,11 @@ Reply in 3-5 bullets, no preamble.
         except Exception as _le50:
             log.warning("%s skipped: %s", _nm50, _le50)
     # ---- 5.1 SPINE ADDITIONS (each wrapped; none can break a trade run) ----
-    for _nm51, _imp51 in (("health lights (key-group depth)", "health_lights.build_health_lights"),
+    for _nm51, _imp51 in (("multi-timeframe regime ladder", "mtf_regime.build_mtf_regime"),
+                          ("health lights (key-group depth)", "health_lights.build_health_lights"),
                           ("gate evidence tally", "gate_evidence.build_gate_evidence"),
-                          ("conductor C1 shadow scoring", "conductor_c1.build_conductor_c1")):
+                          ("conductor C1 shadow scoring", "conductor_c1.build_conductor_c1"),
+                          ("conductor report card (A/B honesty)", "conductor_report_card.build_conductor_report_card")):
         try:
             _m51, _f51 = _imp51.split(".")
             _r51 = getattr(__import__("silmaril.execution." + _m51, fromlist=[_f51]), _f51)(out)

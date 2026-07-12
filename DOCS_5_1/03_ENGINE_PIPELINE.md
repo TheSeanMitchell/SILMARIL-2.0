@@ -11,8 +11,9 @@
    wager/champion; funnel records seen→warm→candidates→bought + named rejections.
 6. **Exits** — ONE loop, all five books, filtered by UNIVERSE CLASS (the GEKKO fix): TAKE at target
    (fresh price required — stale feeds mark-from-last-real, fill only on fresh ≤45m, flag
-   `stale_price_min`), TAKE_LIMIT high-water fills at limit, STOP at `max(p_stop, floor)` where the
-   floor is the 5.1 heatshield-autotune resolution, TIMEOUT at max-hold.
+   `stale_price_min`), TAKE_LIMIT high-water fills at limit, then **5.1B: REGIME_FLIP_HARVEST** (book fast-red + net-now ≥ 0 → bank it, A/B-logged)
+   and **FEE_CLEAR_TIME** (age > 36h + net-now ≥ 0 → free the capital), then STOP at
+   `max(p_stop, floor)` (heatshield-autotune resolution); underwater ≥72h gets `stuck` flagged.
 7. **Persist** — books + `paper_sim_live.json` (funnel, positions incl `exp_net_usd`, trades incl
    `wager_usd`), HEATSHIELD comparison (+`autotune_applied` stamp).
 8. **Governance** — validation (by strategy, per book) → election (crypto) → split (all books) →
@@ -20,8 +21,9 @@
 9. **SPINE (every cycle, each module wrapped — none can break a trade run):** bench nulls · census
    (content-age self-gate) · store contracts · invariants (incl INV10 market-hours) · utilization ·
    conductor C0 log · research OS · five labs (baseline/ladder/weekly/parity/complexity) · session
-   reconstruction + anatomy · decision trace · journal · **5.1:** health_lights (key-group depth) ·
-   gate_evidence · conductor C1 · evidence scorecard.
+   reconstruction + anatomy · decision trace · journal · **5.1:** health_lights · gate_evidence · conductor C1 · evidence scorecard ·
+   **5.1B:** mtf_regime (the 15m→30d ladder the NEXT cycle's exits/sizing consume) ·
+   conductor_report_card (harvest/sizing A/Bs, stuck capital, realized tally).
 10. **Broker bridge** — the ONLY gated call (`run_all_harvest_accounts` behind `_broker_policy`),
     gated at its CALL SITE. The core can never be enclosed again (selftest T1 enforces by AST).
 11. Commit/push (`-X theirs`, retried) → run_lock release → `✦ SILMARIL run complete`.

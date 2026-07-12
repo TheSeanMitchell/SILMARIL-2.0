@@ -37,7 +37,7 @@ root-cause before fix · every squashed bug becomes a permanent tripwire (`scrip
 |---|---|---|
 | ★ MASTER ACCOUNT (golden, top) | `MASTER_ACCOUNT.json` ← cli master gate, every cycle | WATCHING by design — trades only after the live-money bar; the cost-stack table is a production REHEARSAL of the proven book's gross |
 | Five account buttons + LIVE POSITIONS | `paper_sim_live.json` ← `paper_sim.live_step`, every cycle | 5.1: reordered directly beneath Master (boot JS, graceful no-op); rows now show **net now vs net @ target** + ⚑ AT TARGET only when price ≥ target price |
-| LIVE REGIME (⚡ shift watch) | `REGIME_CLASSIFIER.json` ← regime engine, every cycle | per-book; per-VALUABLE 10-min shift detector is Queued (see 09) |
+| LIVE REGIME + 🪜 MTF LADDER | `REGIME_CLASSIFIER.json` + **`MTF_REGIME.json` ← mtf_regime (5.1B)** | 12 timeframes 15m→30d per industry AND per valuable; confluence + fast_red drive harvest/throttle/override |
 | DENIED THIS CYCLE | `paper_sim_live.json.funnel.rejections` | empty = no vetoes fired that cycle (working, not broken) |
 | FIRST-TRADE READINESS / MASTER ACCEPT-REJECT | `MASTER_ACCOUNT.json.decision_log_tail` | fills as gate evaluates |
 | WIRING AUDIT | `STORE_CONTRACTS.json` ← `store_contracts`, every cycle | content-timestamp freshness (checkout-proof) |
@@ -83,7 +83,7 @@ root-cause before fix · every squashed bug becomes a permanent tripwire (`scrip
 | TUNABLE KNOBS | `PARAM_CATALOG.json` (edit → commit → next cycle) | 5.1 adds `heatshield_autotune`; `reentry_cooldown`, `_broker_policy` from rescue |
 | EXPERIMENTAL GATES | `FEATURE_GATES_STATUS.json` ← **5.1 `gate_evidence`** | evidence counts are REAL tallies from named stores; the eternal 0/60 era is over |
 | MOVEMENT V | RA/TQ/CALIBRATION/RESEARCH_QUEUE/ECONOMIC_CLOCK + five labs | writers alive post-rescue; rows fill as evidence accrues ("insufficient" is honesty, not breakage) |
-| CONDUCTOR | `CONDUCTOR_STATE.json` + **`CONDUCTOR_C1.json` (5.1)** | C0 logging → C1 shadow scoring live (gate 300); C2/C3 evidence-locked (see 02/09) |
+| CONDUCTOR | `CONDUCTOR_STATE.json` + `CONDUCTOR_C1.json` + **`CONDUCTOR_REPORT_CARD.json` (5.1B)** | C0 log → C1 shadow scoring; report card A/B-grades harvest·sizing·stuck·crash-avoidance with pre-registered kills; C2/C3 evidence-locked |
 
 ## OPERATIONS IN ONE PARAGRAPH
 Lanes: PULSE (external cron + `*/10` fallback → daily.yml, the trade cycle) · HOURLY (`:07`, heavy pass)
@@ -91,5 +91,7 @@ Lanes: PULSE (external cron + `*/10` fallback → daily.yml, the trade cycle) ·
 battery). All state-writers share the `silmaril-state` concurrency group; pushes rebase `-X theirs`
 with retries. Every store write is atomic; freshness is judged by CONTENT timestamps because git
 checkout resets mtimes. If any lane dies, `STORE_CONTRACTS.json` goes RED and names it within a day.
-Cron token: use a **fine-grained PAT with no expiration** (repo-scoped, Actions:write) so the
-external pinger never lapses — full steps in `DOCS_5_1/08`.
+Cron token: **fine-grained PAT, no expiration** — full recipe + per-lane endpoints in `CRON_SETUP.md`;
+the workflow TOC lives at `.github/WORKFLOWS_README.md`; set repo variable `EXTERNAL_CRON_ONLY=true`
+to silence every internal timer (reversible). 5.1B adds: regime-flip harvest · fee-clear time ·
+conviction sizing · entry throttle (all knob-gated, all A/B-graded on the Conductor report card).

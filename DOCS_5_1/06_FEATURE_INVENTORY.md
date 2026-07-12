@@ -14,13 +14,19 @@ ccxt universe waterfall (5.1) · edge-capture sane universe + pursuable feed (5.
 industries (5.1) · selftest battery + weekly lane (5.1) · UI 5.1 (font scaling, Command hierarchy,
 net/gross truth, challenger watch, forward chips, direct news links, survival/ladder live).
 
+**5.1B additions (all knob-gated, all A/B-graded):** multi-timeframe ladder per industry+valuable ·
+regime-flip harvest exit · stale-capital fee-clear + stuck flags · conviction-scaled wagers with
+flat-base twins · fast-red entry throttle · symbol-over-industry override · Conductor report card ·
+version pin (T9) · journal reasons + stuck strip · triple clocks · six-feed click-to-load news wall
+with mobile pager · PWA install · workflow TOC + EXTERNAL_CRON_ONLY switch.
+
 ## OBSERVE-GATED (evidence counts now REAL; flip only on stated proof)
 news_signals · dr_strange · lifecycle · fingerprint_weighting · regime_conditioning ·
 style_switching · stock_news_ranking · rotation_freshness. (heatshield_autotune is the one
 WEIGHTED-capable gate, and only while genuinely applied.)
 
 ## QUEUED (see 09 — evidence-gated, in order)
-Per-valuable 10-minute regime-shift alert · Conductor C2 (ε on GEKKO) after C1 gate opens ·
+Conductor C2 (ε on GEKKO) after C1 gate opens ·
 EXIT_LAB trailing-exit family · stock/metal/energy volatility-parity labs · BOOK_ROTATION →
 BOOK_RATES admissions · Decision-Replay UI.
 

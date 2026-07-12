@@ -4,9 +4,10 @@
 
 1. **Data harvest (now).** Let the healed lanes run. Gates: census fresh% climbing · every book
    ≥10 forward closed trades or census-excused · contracts+invariants green streak 30.
-2. **Per-valuable regime-shift alert (Queued #1).** 10-min window momentum-shift tag per symbol
-   (the industry ⚡ concept at symbol granularity), OBSERVE first: tag → grade 24h later (RA-style)
-   → only then may it route exits/entries. Kill: no win-rate split after 200 graded tags.
+2. **DONE in 5.1B → now GRADE it.** The per-valuable shift sensor shipped as the MTF ladder and
+   already routes exits/throttle/override/sizing. The next evidence step is reading its report
+   card: harvest A/B (kill: median 24h saved ≤0 @60), sizing A/B (kill: ≤$0 @60), and the
+   crash-avoidance Δ-vs-HODL line through the next red window.
 3. **Conductor C1 → C2.** C1 gate opens at 300 scored decisions (live counter on the panel);
    after ≥150 matched cycles per policy, promote the shadow-best to ε=5% exploration on GEKKO ONLY
    (propensity-logged). C3 influence needs CI-positive uplift vs status quo.

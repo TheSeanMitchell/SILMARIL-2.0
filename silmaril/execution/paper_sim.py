@@ -484,6 +484,21 @@ def conviction_score(prices, cur_move):
 def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dict[str, Any]:
     uc = "crypto" if book == "aggressive" else book   # GEKKO trades the crypto universe under its own book
     crypto = (uc == "crypto")
+    # ── 5.1B CRASH-DAY SENSORS & KNOBS — defined FIRST because the EXIT loop below
+    #    consumes them (July-11 lesson: adapt intraday; harvest the green on a fast
+    #    flip; free stale capital fee-clear; size new entries by earned conviction).
+    cat = _catalog(out)
+    _mtf = {}
+    try:
+        _mtf = json.loads((out / "MTF_REGIME.json").read_text())
+    except Exception:
+        _mtf = {}
+    _mtf_bk = ((_mtf.get("books") or {}).get(uc) or {})
+    _mtf_fastred = bool(_mtf_bk.get("fast_red"))
+    _mtf_syms = {k: (v.get("confluence") or 0) for k, v in (_mtf.get("symbols") or {}).items()}
+    _rx = (cat.get("regime_exit") or {}); _rx_on = str(_rx.get("mode", "auto")).lower() == "auto"
+    _sck = (cat.get("stale_capital") or {}); _sc_h = float(_sck.get("review_h", 36)); _sc_on = bool(_sck.get("fee_clear_exit", True))
+    _cs = (cat.get("conviction_sizing") or {}); _cs_on = str(_cs.get("mode", "auto")).lower() == "auto"
     # Default config when a book has NO elected champion yet. Commodities (metal/energy) start on a HOLD
     # default — buy a pullback, ride to a big target, wide stop on the commodity floor — so they actually
     # PARTICIPATE and generate real trades instead of sitting idle. This is a starting config, NOT an
@@ -615,23 +630,48 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
             why, fill = "TAKE", cur
         elif _limit_ok and hw_pct >= p_target and cur > pos["entry"]:
             why, fill = "TAKE_LIMIT", pos["entry"] * (1.0 + p_target)   # limit fill at the target price
+        elif _rx_on and _mtf_fastred and (chg - pos.get("cost", MIN_COST)) >= 0:
+            # 5.1B REGIME-FLIP HARVEST — the book's 15m·30m·1h all red: take every
+            # position whose NET-now clears fees, freeing capital before the slide.
+            # Limit-class fill at the live print (same maker cost model — no fee-
+            # bracket change). Every event is A/B-logged; the report card grades it.
+            why, fill = "REGIME_FLIP_HARVEST", cur
+        elif _sc_on and hold >= _sc_h * 60.0 and (chg - pos.get("cost", MIN_COST)) >= 0:
+            # 5.1B FEE-CLEAR TIME — head above water past the review window: bank
+            # it and reposition. Never forces a loss; underwater just gets flagged.
+            why, fill = "FEE_CLEAR_TIME", cur
         elif chg <= -eff_stop:
             why, fill = "STOP", cur
         elif TIMEOUT_EXIT and hold >= max_hold:
             why, fill = "TIMEOUT", cur
         else:
             why, fill = None, cur
+            if chg < 0 and hold >= float(_sck.get("stuck_flag_h", 72)) * 60.0:
+                pos["stuck"] = True            # Conductor report-card food: money on the table
         if why and not _fresh_px:
             # exit condition met on a STALE print — do not fill on fiction; the
             # position stays armed and fills the moment a fresh print arrives.
             why = None
         if why:
             _champ_entry = pos.get("champion_entry")
+            _cvf, _bwu = pos.get("conv_frac"), pos.get("base_wager_usd")
+            _pcost = pos.get("cost", MIN_COST)
             _rzpct = (fill / pos["entry"] - 1) * 100 if pos["entry"] > 0 else 0.0
             pnl = pbook.sell(sym, fill, now.isoformat())
+            if why in ("REGIME_FLIP_HARVEST", "FEE_CLEAR_TIME"):
+                try:  # append-only A/B ledger; the report card grades saved% at +6h/+24h
+                    with open(out / "REGIME_EXIT_AB.jsonl", "a") as _abf:
+                        _abf.write(json.dumps({"t": now.isoformat(), "sym": sym, "book": book,
+                                               "why": why, "exit_px": fill,
+                                               "net_pct": round(_rzpct - _pcost * 100, 3)}) + "\n")
+                except Exception:
+                    pass
             try:
                 tr = pbook.trades[-1]
                 tr["exit_reason"] = why
+                if _cvf is not None:
+                    tr["conv_frac"] = _cvf
+                    tr["base_wager_usd"] = _bwu
                 tr["champion_entry"] = _champ_entry
                 tr["champion_exit"] = champion
                 tr["champion_changed"] = bool(_champ_entry and champion and _champ_entry != champion)
@@ -740,11 +780,18 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
             abp.write_text(json.dumps(led[-3000:], indent=1))
         except Exception:
             pass
+        _ovr_min = float(_rx.get("symbol_override_min_conf", 5.0))
+        _mtf_pass = [c for c in _blocked if _mtf_syms.get(c[0], 0) >= _ovr_min][:2]
+        if _mtf_pass:
+            _through = list(_through) + _mtf_pass
+            actions.append({"act": "SKIP", "sym": ", ".join(c[0] for c in _mtf_pass),
+                            "why": "SYMBOL_OVERRIDE — its own multi-timeframe confluence ≥ %.1f beats the industry red (max 2/cycle, A/B-tracked via sizing ledger)" % _ovr_min})
         actions.append({"act": "REGIME_BLOCK", "book": book,
                         "why": "regime DOWNTREND + gate=hard → %d blocked (logged to A/B), %d strong-uptrend name(s) played through" % (len(_blocked[:MAX_NAMES]), len(_through))})
         cands = _through
     elif _regime == "DOWNTREND" and _rgmode == "soft":
-        cands = [c for c in cands if (c[3] or 0) >= _soft_cv]
+        _ovr_min2 = float(_rx.get("symbol_override_min_conf", 5.0))
+        cands = [c for c in cands if (c[3] or 0) >= _soft_cv or _mtf_syms.get(c[0], 0) >= _ovr_min2]
     try:
         from .integrity import quarantined as _quar
         _qset = _quar(out)
@@ -783,6 +830,13 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                                 "why": f"post-STOP cooldown — re-entry blocked {int(_cd_min)}m after a stop-out"})
     _dtrace = [{"sym": s_, "dip_pct": round(h_ * 100, 2), "conviction": c_, "fate": "candidate"}
                for s_, l_, h_, c_ in cands[:8]]
+    _rt = (cat.get("regime_throttle") or {})
+    if _mtf_fastred and str(_rt.get("mode", "auto")).lower() == "auto" and cands:
+        _cap_red = max(0, int(_rt.get("max_new_when_red", 1)))
+        if len(cands) > _cap_red:
+            actions.append({"act": "SKIP", "sym": f"{len(cands) - _cap_red} name(s)",
+                            "why": "regime throttle — 15m·30m·1h all red; new entries capped to %d this cycle" % _cap_red})
+            cands = cands[:_cap_red]
     for sym, lp, h1, cv in cands[:MAX_NAMES]:
         _t6s = _trajectory_6h(samples.get(sym) or [])
         _style = ("riding-strength" if (_t6s or 0) >= 0.02 else "deep-dip" if (h1 or 0) <= -0.04 else "range-play")
@@ -808,7 +862,26 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         if net_margin <= 0:
             actions.append({"act": "SKIP", "sym": sym, "why": "fee>=target — can never net positive"})
             continue
-        base = min(pbook.equity(mk) * PER_NAME_FRAC, pbook.cash * 0.95)
+        # 5.1B CONVICTION SIZING — the flat-$1000 era ends: wager scales with what
+        # this valuable has EARNED (fingerprint bounce-reliability · this book's own
+        # win history on the symbol · its multi-timeframe confluence), clamped to
+        # knob bounds. Every sized trade logs its flat-base twin for the A/B.
+        _conf = 0.5
+        _base_frac = PER_NAME_FRAC
+        if _cs_on:
+            _rel = float((_ft or {}).get("bounce_reliability") or 0.5)
+            _hn = _hw = 0
+            for _t2 in pbook.trades[-300:]:
+                if _t2.get("sym") == sym and _t2.get("side") == "SELL":
+                    _hn += 1
+                    _hw += 1 if (_t2.get("pnl") or 0) > 0 else 0
+            _wr = (_hw / _hn) if _hn else 0.5
+            _cf = float(_mtf_syms.get(sym) or 0.0)          # −8.5..+8.5
+            _conf = 0.45 * _rel + 0.35 * _wr + 0.20 * max(0.0, min(1.0, (_cf + 2.0) / 8.0))
+            _mult = 0.5 + 2.0 * _conf                        # 0.5×..2.5×
+            _base_frac = max(float(_cs.get("floor_frac", 0.05)),
+                             min(float(_cs.get("max_frac", 0.25)), PER_NAME_FRAC * _mult))
+        base = min(pbook.equity(mk) * _base_frac, pbook.cash * 0.95)
         cap = pbook.cash * 0.95
         budget = min(max(base, min_take / net_margin), cap)   # size UP so the target clears the floor
         if budget * net_margin < min_take - 1e-9:             # even max affordable size can't clear it
@@ -821,6 +894,12 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                 pbook.positions[sym]["entry_regime"] = _regime
                 pbook.positions[sym]["style"] = _style
                 pbook.positions[sym]["champion_entry"] = champion
+                pbook.positions[sym]["conv_frac"] = round(_base_frac, 4)
+                pbook.positions[sym]["base_wager_usd"] = round(pbook.equity(mk) * PER_NAME_FRAC, 2)
+                pbook.positions[sym]["conviction_conf"] = round(_conf, 3)
+                pbook.trades[-1]["conv_frac"] = round(_base_frac, 4)
+                pbook.trades[-1]["base_wager_usd"] = round(pbook.equity(mk) * PER_NAME_FRAC, 2)
+                pbook.trades[-1]["conviction_conf"] = round(_conf, 3)
                 pbook.trades[-1]["entry_regime"] = _regime
                 pbook.trades[-1]["style"] = _style   # trend vs range: the per-symbol playstyle dataset
                 pbook.trades[-1]["champion"] = champion   # which strategy made THIS trade (per-trade label)
@@ -1068,12 +1147,27 @@ def live_step(out_dir) -> Dict[str, Any]:
     # entries, so the dashboard shows HOW the engine reads each graph. Bounded scan to stay cheap.
     try:
         from .fingerprint import build_fingerprints as _bfp
-        _sp = {}; _cnt = 0
+        # 5.1B — CLASS-QUOTA universe (the GOLD fix): the old first-500-in-dict-order
+        # fill let crypto flood the cap before metals/energy ever loaded, so XAU
+        # could sit unfitted forever. Metals + energy now enter FIRST (all of them),
+        # then stocks and crypto by history depth, under the same 500 ceiling —
+        # every industry gets its custom fit, gold included, from the next cycle.
+        _by_cls = {}
         for _s, _rows in samples.items():
-            if _cnt >= 500:
-                break
+            _cl = asset_class(_s)
+            if _cl == "crypto" and "-" not in _s:
+                continue      # canonical-crypto only; metals/energy/stocks are dash-less and MUST fit
             _pp = [p for _t, p in _rows if p and p > 0]
             if len(_pp) >= 30:
+                _by_cls.setdefault(_cl, []).append((_s, _pp))
+        for _lst in _by_cls.values():
+            _lst.sort(key=lambda x: len(x[1]), reverse=True)
+        _quota = (("metal", 10**9), ("energy", 10**9), ("stock", 160), ("crypto", 10**9))
+        _sp = {}; _cnt = 0
+        for _cls, _cap in _quota:
+            for _s, _pp in _by_cls.get(_cls, [])[:_cap]:
+                if _cnt >= 500:
+                    break
                 _sp[_s] = _pp; _cnt += 1
         _fmap = (_catalog(out).get("floor_min") or {})
         _floor = {_s: _fmap.get(asset_class(_s), 0.06) for _s in _sp}
