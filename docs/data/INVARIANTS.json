@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-13T18:16:55.921237+00:00",
-  "all_green": true,
-  "verdict": "ALL GREEN \u2014 every safety invariant holds",
-  "green_streak": 2,
+  "generated_at": "2026-07-13T18:37:58.182984+00:00",
+  "all_green": false,
+  "verdict": "RED \u2014 1 invariant(s) violated",
+  "green_streak": 0,
   "dod_target": 30,
   "dod_met": false,
   "checks": [
@@ -16,13 +16,13 @@
       "id": "INV2",
       "name": "open positions carry target + stop",
       "status": "PASS",
-      "detail": "all 32 open positions carry target+stop"
+      "detail": "all 22 open positions carry target+stop"
     },
     {
       "id": "INV3",
       "name": "position entry prices positive",
       "status": "PASS",
-      "detail": "all 32 entry prices > 0"
+      "detail": "all 22 entry prices > 0"
     },
     {
       "id": "INV4",
@@ -40,7 +40,7 @@
       "id": "INV6",
       "name": "no trade entered on a synthetic candle",
       "status": "PASS",
-      "detail": "108 trades: none entered on a synthetic candle"
+      "detail": "122 trades: none entered on a synthetic candle"
     },
     {
       "id": "INV7",
@@ -51,8 +51,8 @@
     {
       "id": "INV8",
       "name": "realized P&L accounting identity",
-      "status": "PASS",
-      "detail": "3 books: realized_pnl = \u03a3 closed trades"
+      "status": "FAIL",
+      "detail": "aggressive: \u03a3trades $655.46 \u2260 realized $655.43"
     },
     {
       "id": "INV9",
@@ -67,6 +67,8 @@
       "detail": "market-hours: no weekend stock entries (last 200 trades)"
     }
   ],
-  "reds": [],
+  "reds": [
+    "INV8 realized P&L accounting identity: aggressive: \u03a3trades $655.46 \u2260 realized $655.43"
+  ],
   "what": "Per-cycle logical-safety invariants. Contracts prove stores are shaped right; invariants prove the live state is doing nothing impossible. Any RED names the exact violation. Green for 30 cycles satisfies the DoD clause."
 }
