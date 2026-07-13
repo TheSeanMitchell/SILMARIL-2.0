@@ -124,6 +124,9 @@
   /* ── live chart polish ── */
   canvas{max-width:100%}
   #alerts:empty{display:none}
+  .coinrow{display:inline-flex;gap:3px;margin-left:8px}
+  .coin{color:var(--gold);font-size:13px;animation:coinDrop .8s cubic-bezier(.2,.9,.3,1.2) both}
+  @keyframes coinDrop{0%{transform:translateY(-16px);opacity:0}60%{transform:translateY(2px);opacity:1}100%{transform:translateY(0)}}
 .gold-shine{background:linear-gradient(100deg,#8a6d1f 0%,#d4af37 22%,#fff3b0 40%,#d4af37 58%,#8a6d1f 100%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:goldSweep 5.5s ease-in-out infinite;text-shadow:0 0 18px rgba(212,175,55,.18)}
 @keyframes goldSweep{0%,100%{background-position:0% 0}50%{background-position:100% 0}}
 @media (max-width:480px){
@@ -185,7 +188,7 @@
     </div>
   </div>
   <nav class="tabs" id="mainTabs">
-    <button class="on" data-p="cmd"><span class="tabIcon">◉</span> COMMAND</button><button data-p="strategy"><span class="tabIcon">♟</span> STRATEGY</button><button data-p="markets"><span class="tabIcon">🌐</span> MARKETS</button><button data-p="forensics"><span class="tabIcon">🔬</span> FORENSICS</button><button data-p="health"><span class="tabIcon">🩺</span> HEALTH</button><button data-p="settings"><span class="tabIcon">⚙</span> SETTINGS</button>
+    <button class="on" data-p="cmd"><span class="tabIcon">◉</span> COMMAND</button><button data-p="brain"><span class="tabIcon">🧠</span> BRAIN</button><button data-p="strategy"><span class="tabIcon">♟</span> STRATEGY</button><button data-p="markets"><span class="tabIcon">🌐</span> MARKETS</button><button data-p="forensics"><span class="tabIcon">🔬</span> FORENSICS</button><button data-p="health"><span class="tabIcon">🩺</span> HEALTH</button><button data-p="settings"><span class="tabIcon">⚙</span> SETTINGS</button>
   </nav>
   <div id="tabGuide"></div>
 </header>
@@ -260,7 +263,14 @@
 
 <!-- ARENA -->
 
-  <section data-cat="strategy"><div class="hd">🧪 STRATEGY LAB — A / B / C / D discipline race (which position management compounds?)</div><div class="bd"><div id="slabBody" class="dim">loading…</div></div></section>
+  <section data-cat="brain"><div class="hd">🧠→👑 MASTER BRAIN — what the confidence engine is telling the Golden Master right now</div><div class="bd"><div id="masterBrain" class="dim">loading…</div></div></section>
+<section data-cat="brain"><div class="hd">🪙 DECISION FLOW — THE COIN MACHINE · every cycle: seen → warm → candidates → bought, with every block named</div><div class="bd"><div id="flowMachine" class="dim">loading…</div></div></section>
+<section data-cat="brain"><div class="hd">🔌 SIGNAL LEDGER — every metric, its consumers, and its shift since the last run · nothing is decoration</div><div class="bd"><div id="signalLedger" class="dim">loading…</div></div></section>
+<section data-cat="brain"><div class="hd">🎛 CONFIDENCE ANATOMY — the 9 components inside each score, name by name</div><div class="bd"><div id="confAnatomy" class="dim">loading…</div></div></section>
+<section data-cat="brain"><div class="hd">🔮 DR. STRANGE — SELF-GRADED PROJECTIONS · its own career record feeds the gate</div><div class="bd"><div id="drPanel" class="dim">loading…</div></div></section>
+<section data-cat="brain"><div class="hd">📁 SYMBOL DOSSIER — everything the system knows about one name: rhythm, peaks, ETA, likelihoods, trajectory</div><div class="bd"><div id="dossierPanel" class="dim">loading…</div></div></section>
+<section data-cat="brain"><div class="hd">👁 ALL CHARTS, ONE EYESHOT — every open position with entry · target · stop overlaid</div><div class="bd"><div id="eyeshotGrid" class="dim">no open positions yet — fills the moment a book buys</div></div></section>
+<section data-cat="strategy"><div class="hd">🧪 STRATEGY LAB — A / B / C / D discipline race (which position management compounds?)</div><div class="bd"><div id="slabBody" class="dim">loading…</div></div></section>
 <section data-cat="strategy"><div class="hd">🎯 CONFIDENCE ENGINE — the unified prediction score (every signal, one number)</div><div class="bd"><div id="confBody" class="dim">loading…</div></div></section>
 <section data-cat="strategy"><div class="hd">👑 CHAMPION TRUTH PANEL — who's champion, why, and what blocks promotion</div><div class="bd">
     <div class="note"><b>Answers:</b> why this champion · is it the survivability leader · which tier · what promotion needs · what's blocking. No guessing.</div>
@@ -455,7 +465,7 @@ applyTheme((()=>{try{return localStorage.getItem('silmaril-theme')||'light';}cat
 // tabs
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#mainTabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
-  const cat=b.dataset.p;const GUIDES={"cmd": "THE COCKPIT - everything happening right now, at a glance: accounts, live positions, recent fills, and today's take-home.", "strategy": "THE PLAYBOOK - what we're doing and whether it's proven: the A/B/C/D discipline lab, champions, confidence engine, promotion.", "markets": "THE WORLD - reading the market: multi-timeframe regimes, the confidence & rhythm engine, universe census, sectors, and news.", "forensics": "THE MICROSCOPE - why each trade happened and what we captured: session anatomy, edge, opportunity, fees, diagnostics.", "health": "THE TRUST LAYER - is the machine honest and alive: scorecard, wiring, invariants, readiness, and data-source health.", "settings": "THE CONTROLS - every tunable knob, experimental gate, the system brain, and connections."};
+  const cat=b.dataset.p;const GUIDES={"cmd": "THE COCKPIT - everything happening right now, at a glance: accounts, live positions, recent fills, and today's take-home.", "strategy": "THE PLAYBOOK - what we're doing and whether it's proven: the A/B/C/D discipline lab, champions, confidence engine, promotion.", "markets": "THE WORLD - reading the market: multi-timeframe regimes, the confidence & rhythm engine, universe census, sectors, and news.", "forensics": "THE MICROSCOPE - why each trade happened and what we captured: session anatomy, edge, opportunity, fees, diagnostics.", "health": "THE TRUST LAYER - is the machine honest and alive: scorecard, wiring, invariants, readiness, and data-source health.", "brain": "THE MIND - every signal, who consumes it, how it shifted since the last run, and everything the system knows about each name: the coin machine, the dossiers, Dr. Strange's self-graded record.", "settings": "THE CONTROLS - every tunable knob, experimental gate, the system brain, and connections."};
   document.querySelectorAll('#content > section, #content > div').forEach(function(el){
     const c=el.getAttribute('data-cat');
     if(c){el.style.display=(c===cat)?'':'none';}
@@ -492,7 +502,7 @@ async function load(){
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
   safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov,ch),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderPos('aggressive',$('posAggressive')),'posG'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderEngStrip(),'estrip'); safe(()=>renderMTFLadder(),'mtfl'); safe(()=>renderStrategyLab(),'slab'); safe(()=>renderConfidence(),'conf'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>renderWarmup(),'warm'); safe(()=>renderMasterReject(),'mrej'); safe(()=>renderWiring(),'wire'); safe(()=>renderFunnel(),'fun'); safe(()=>renderQuarantine(),'quar'); safe(()=>renderGekkoNote(),'gekko'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>renderMV(),'mv'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority'); safe(()=>renderFive(),'five');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderEngStrip(),'estrip'); safe(()=>renderMTFLadder(),'mtfl'); safe(()=>renderBrain(),'brain'); safe(()=>renderStrategyLab(),'slab'); safe(()=>renderConfidence(),'conf'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>renderWarmup(),'warm'); safe(()=>renderMasterReject(),'mrej'); safe(()=>renderWiring(),'wire'); safe(()=>renderFunnel(),'fun'); safe(()=>renderQuarantine(),'quar'); safe(()=>renderGekkoNote(),'gekko'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>renderMV(),'mv'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority'); safe(()=>renderFive(),'five');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -652,21 +662,7 @@ async function renderReality(){const d=await jget('data/REALITY_CHECK.json');if(
 async function renderAnatomy(){const d=await jget('data/SESSION_ANATOMY.json');if(!d||!d.overall){$('anatomyBox').innerHTML='<div class=dim>no anatomy yet</div>';return;}
   const o=d.overall,mk=d.top_symbol_anatomy||{},rs=d.rest_anatomy||{};
   const vbar=v=>Object.entries(v||{}).map(([k,n])=>k.replace(/_/g,' ')+': <b>'+n+'</b>').join(' · ');
-  let h=`<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
-    <div style="flex:1;min-width:230px;padding:10px;border:1px solid #2f74ff66;border-radius:8px;background:#0e1622">
-      <div style="font-weight:800;color:#4f9bff">ALL 4 QUADRANTS \u00b7 working together</div>
-      <div style="font-size:23px;font-weight:900" class="${cR>=0?'pos':'neg'}">${cR>=0?'+$':'-$'}${Math.abs(cR).toFixed(2)}</div>
-      <div class=dim style="font-size:11px">${cT} trips \u00b7 ${cW}W/${cL}L/${cF} flat \u00b7 ${cWin}% win \u00b7 sim realized</div>
-      <div class=dim style="font-size:10px">${['crypto','stock','metal','energy'].map(b=>{const x=d.by_book[b]||{};return b+' $'+(x.realized_usd||0).toFixed(0);}).join(' \u00b7 ')}</div>
-    </div>
-    <div style="flex:1;min-width:230px;padding:10px;border:2px solid #d4af37;border-radius:8px;background:#15120a">
-      <div style="font-weight:800;color:#d4af37">\ud83c\udfc6 MASTER ACCOUNT only \u00b7 distilled output</div>
-      <div style="font-size:23px;font-weight:900" class="${mPnl>=0?'pos':'neg'}">${mPnl>=0?'+$':'-$'}${Math.abs(mPnl).toFixed(2)}</div>
-      <div class=dim style="font-size:11px">equity $${mEq.toLocaleString(undefined,{maximumFractionDigits:2})} \u00b7 ${mPct>=0?'+':''}${mPct}% \u00b7 ${mTr} trades \u00b7 NET of real fees</div>
-      <div class=dim style="font-size:10px">what a live account plugged into the Master would have done today</div>
-    </div></div>
-  <div class=dim style="font-size:10px;margin-bottom:10px">LEFT = all four workhorse books combined (sim realized). RIGHT = the Master's single distilled output, after full Binance.US/Coinbase-style fees \u2014 the more conservative, real number. Watch which you trust more before going live.</div>
-  <div style="font-weight:bold;font-size:12px;margin:4px 0">Crypto detail \u2014</div>
+  let h=`<div style="font-weight:bold;font-size:12px;margin:4px 0">Crypto detail \u2014</div>
   <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
     <div style="flex:1;min-width:140px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>AVG DIP AT ENTRY</div><div style="font-size:17px;font-weight:bold" class="neg">${o.avg_dip_at_entry_pct}%</div><div class=dim>how oversold our buys were</div></div>
     <div style="flex:1;min-width:140px;padding:8px;border:1px solid var(--line,#333);border-radius:6px"><div class=dim>CAPTURE EFFICIENCY</div><div style="font-size:17px;font-weight:bold" class="pos">${o.avg_capture_efficiency_pct}%</div><div class=dim>of the available up-move banked</div></div>
@@ -1017,6 +1013,120 @@ async function renderWiring(){try{const el=$('wiringPanel');if(!el)return;
     +'<div class="bd"><div class=dim style="font-size:10px;margin-bottom:3px">\ud83d\udfe2 wired + fresh \u00b7 \ud83d\udfe1 wired but stale \u00b7 \u26aa not producing yet (needs trades/data). This is the "is it actually on?" check for every subsystem.</div>'
     +'<table style="font-size:11px"><tbody>'+rows+'</tbody></table></div>';
 }catch(e){}}
+function svgSpark(d,w,h){try{
+  var ser=(d.series||[]);if(ser.length<2)return '<div class="dim" style="padding:20px">tape too thin</div>';
+  var ts=ser.map(function(r){return new Date(r[0]).getTime();});
+  var px=ser.map(function(r){return r[1];});
+  var lo=Math.min.apply(null,px),hi=Math.max.apply(null,px);
+  var tgt=null,stp=null;
+  if(d.open&&d.entry){if(d.target!=null)tgt=d.entry*(1+d.target);if(d.stop!=null)stp=d.entry*(1-d.stop);
+    lo=Math.min(lo,stp!=null?stp:lo,d.entry);hi=Math.max(hi,tgt!=null?tgt:hi,d.entry);}
+  var pad=(hi-lo)*0.08||hi*0.002;lo-=pad;hi+=pad;
+  var t0=ts[0],t1=ts[ts.length-1]||t0+1;
+  function X(t){return 4+(w-8)*(t-t0)/Math.max(1,(t1-t0));}
+  function Y(v){return 4+(h-8)*(1-(v-lo)/Math.max(1e-12,(hi-lo)));}
+  var pts=ser.map(function(r){return X(new Date(r[0]).getTime()).toFixed(1)+','+Y(r[1]).toFixed(1);}).join(' ');
+  var g='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;background:var(--panel2);border:1px solid var(--line);border-radius:8px">';
+  function hline(v,color,lab){if(v==null)return '';var y=Y(v).toFixed(1);
+    return '<line x1="4" x2="'+(w-4)+'" y1="'+y+'" y2="'+y+'" stroke="'+color+'" stroke-dasharray="4 3" stroke-width="1"/>'
+      +'<text x="'+(w-6)+'" y="'+(y-2)+'" text-anchor="end" font-size="8" fill="'+color+'">'+lab+'</text>';}
+  if(d.open&&d.entry){g+=hline(tgt,'var(--pos)','TARGET');g+=hline(d.entry,'var(--gold)','ENTRY');g+=hline(stp,'var(--neg)','STOP');}
+  g+='<polyline fill="none" stroke="var(--accent)" stroke-width="1.6" points="'+pts+'"/>';
+  function mark(at,sym,color){if(!at)return '';var t=new Date(at).getTime();if(t<t0||t>t1)return '';
+    var i=0,best=1e18;for(var k=0;k<ts.length;k++){var dd=Math.abs(ts[k]-t);if(dd<best){best=dd;i=k;}}
+    return '<text x="'+X(ts[i]).toFixed(1)+'" y="'+(Y(px[i])+(sym==='\u25b2'?-4:10)).toFixed(1)+'" text-anchor="middle" font-size="10" fill="'+color+'">'+sym+'</text>';}
+  g+=mark(d.last_peak_at,'\u25b2','var(--pos)')+mark(d.last_trough_at,'\u25bc','var(--neg)');
+  g+='</svg>';return g;}catch(e){return '';}}
+function _fmtAgoIso(iso){try{var m=(Date.now()-new Date(iso).getTime())/60000;if(m<0)return 'in '+Math.round(-m)+'m';if(m<90)return Math.round(m)+'m ago';return (m/60).toFixed(1)+'h ago';}catch(e){return '';}}
+async function renderBrain(){try{
+  var bw=await jget('data/BRAIN_WIRING.json');
+  var live=await jget('data/paper_sim_live.json');
+  var dr=await jget('data/dr_strange.json');
+  /* MASTER BRAIN */
+  var mb=$('masterBrain');
+  if(mb&&bw&&bw.master_brain){var cls=['crypto','stock','metal','energy'];
+    mb.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:14px">'+cls.map(function(c){var arr=bw.master_brain[c]||[];
+      return '<div><div class="dim" style="font-size:9px;text-transform:uppercase">'+c+'</div>'
+        +(arr.length?arr.map(function(x){return '<div style="font-size:12px"><b>'+x[0].replace('-USD','')+'</b> <span class="pos">'+Math.round(x[1]*100)+'%</span></div>';}).join(''):'<div class="dim" style="font-size:11px">warming</div>')+'</div>';
+    }).join('')+'</div><div class="dim" style="font-size:10px;margin-top:8px">These are the confidence engine\u2019s strongest leans per industry \u2014 the same numbers that size every wager and gate the sniper. The Golden Master watches this exact feed; it earns trading rights only through the 90-day bar, but what it will follow is already visible here.</div>';}
+  /* COIN MACHINE */
+  var fm=$('flowMachine');
+  if(fm&&live){var books=['crypto','stock','metal','energy','aggressive'];
+    fm.innerHTML='<div class="dim" style="font-size:10px;margin-bottom:8px">Each cycle every industry pours its universe through the same funnel. Coins = names; each stage names exactly what it kept and what it blocked. This IS the decision path \u2014 not a picture of it.</div>'
+    +books.map(function(bk){var b=(live[bk]||{});var f=b.funnel||{};var rej=f.rejections||{};
+      var rejChips=Object.keys(rej).slice(0,5).map(function(k){return '<span style="font-size:9px;border:1px solid var(--line2);border-radius:3px;padding:1px 5px;margin:1px;display:inline-block" class="dim">'+k+' \u00d7'+rej[k]+'</span>';}).join('');
+      var coins='';var n=Math.min(f.bought||0,8);for(var i=0;i<n;i++){coins+='<span class="coin" style="animation-delay:'+(i*0.12)+'s">\u25cf</span>';}
+      function st(nm,v,cl){return '<div style="text-align:center;min-width:74px"><div class="dim" style="font-size:8.5px;text-transform:uppercase">'+nm+'</div><div style="font-size:16px;font-weight:800" class="'+(cl||'')+'">'+(v!=null?v:'\u2014')+'</div></div>';}
+      return '<div style="display:flex;align-items:center;gap:8px;margin:8px 0;padding:8px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;flex-wrap:wrap">'
+        +'<b style="min-width:86px;text-transform:uppercase">'+bk+'</b>'
+        +st('seen',f.seen)+ '<span class="dim">\u2192</span>'+st('warm',f.entry_warm)+'<span class="dim">\u2192</span>'
+        +st('candidates',f.candidates_after_gates)+'<span class="dim">\u2192</span>'+st('bought',f.bought,(f.bought?'pos':''))
+        +'<span class="coinrow">'+coins+'</span>'
+        +(rejChips?'<div style="flex-basis:100%">'+rejChips+'</div>':'')
+        +'</div>';}).join('');}
+  /* SIGNAL LEDGER */
+  var sl2=$('signalLedger');
+  if(sl2&&bw&&bw.signals){
+    sl2.innerHTML='<div style="margin-bottom:6px"><b class="pos">'+bw.wired+'/'+bw.total+' wired</b> <span class="dim" style="font-size:10px">\u00b7 every consumer below is verified by the selftest against the real files \u2014 this table cannot lie \u00b7 arrows = shift since last run</span></div>'
+    +'<table><thead><tr><th></th><th>signal</th><th>now</th><th>\u0394</th><th>feeds</th></tr></thead><tbody>'
+    +bw.signals.map(function(r){var m=r.metric||{};var ms=Object.keys(m).slice(0,2).map(function(k){var v=m[k];return k+': <b>'+(v==null?'\u2014':(typeof v==='object'?JSON.stringify(v).slice(0,26):v))+'</b>';}).join(' \u00b7 ');
+      var ar=r.shift==='green'?'<span class="pos">\u25b2</span>':r.shift==='red'?'<span class="neg">\u25bc</span>':'<span class="dim">\u2014</span>';
+      var dot=r.light==='green'?'<span class="pos">\u25cf</span>':'<span class="neg">\u25cf DECORATION</span>';
+      return '<tr><td>'+dot+'</td><td><b>'+r.label+'</b><div class="dim" style="font-size:9px">'+r.store+' \u00b7 '+(r.age_min!=null?r.age_min+'m old':'')+'</div></td><td style="font-size:11px">'+ms+'</td><td>'+ar+'</td><td class="dim" style="font-size:9.5px" title="'+(r.consumers||[]).join('\\n')+'">'+(r.consumers||[]).length+' file(s) \u2192 '+r.decision+'</td></tr>';}).join('')
+    +'</tbody></table>';}
+  /* CONFIDENCE ANATOMY */
+  var ca=$('confAnatomy');
+  var ce=await jget('data/CONFIDENCE_ENGINE.json');
+  if(ca&&ce&&ce.by_symbol){var rows=Object.entries(ce.by_symbol).sort(function(a,b){return (b[1].confidence||0)-(a[1].confidence||0);}).slice(0,8);
+    var wk=Object.keys(ce.weights||{});
+    ca.innerHTML='<div class="dim" style="font-size:10px;margin-bottom:6px">Each score decomposed into its 9 components (bar length = component value \u00d7 weight). This is the anatomy of every sizing decision.</div>'
+    +rows.map(function(e){var sym=e[0],r=e[1];var parts=r.parts||{};
+      var bars=wk.map(function(k){var v=(parts[k]||0)*(ce.weights[k]||0);
+        return '<div title="'+k+' = '+(parts[k]!=null?parts[k]:'\u2014')+'" style="height:9px;background:var(--gold);opacity:'+(0.35+0.65*(parts[k]||0))+';width:'+Math.max(1,v*220)+'px;border-radius:2px"></div>';}).join('');
+      return '<div style="display:flex;align-items:center;gap:10px;margin:5px 0"><b style="min-width:84px">'+sym.replace('-USD','')+'</b><b class="pos" style="min-width:44px">'+Math.round((r.confidence||0)*100)+'%</b><div style="display:flex;gap:2px;align-items:center">'+bars+'</div><span class="dim" style="font-size:9px;margin-left:6px">'+(r.why||'')+'</span></div>';}).join('');}
+  /* DR STRANGE */
+  var dp=$('drPanel');
+  if(dp&&dr){var c=dr.career||{};var pk=dr.pick||{};var picks=(dr.picks||[]).slice(-8).reverse();
+    dp.innerHTML='<div style="display:flex;gap:22px;flex-wrap:wrap;align-items:center">'
+    +'<div><div class="dim" style="font-size:9px;text-transform:uppercase">career (self-graded)</div><div style="font-size:22px;font-weight:800">'+(c.hits!=null?c.hits:'\u2014')+'/'+(c.resolved!=null?c.resolved:'\u2014')+' <span class="'+((c.hit_rate||0)>=0.5?'pos':'neg')+'">'+Math.round((c.hit_rate||0)*100)+'%</span></div><div class="dim" style="font-size:9.5px">resolved picks \u00b7 hit-rate \u00b7 feeds the experimental gate ('+(c.resolved||0)+'/50)</div></div>'
+    +'<div><div class="dim" style="font-size:9px;text-transform:uppercase">current projection</div><div style="font-size:14px"><b>'+(pk.ticker||'\u2014')+'</b> '+(pk.direction||'')+' <span class="dim">agreement '+Math.round((pk.agreement||0)*100)+'% \u00b7 median '+((pk.median||0)*100).toFixed(2)+'%</span></div></div>'
+    +'</div>'
+    +'<table style="margin-top:10px"><thead><tr><th>pick</th><th>dir</th><th>agree</th><th>median</th><th>date</th></tr></thead><tbody>'
+    +picks.map(function(x){return '<tr><td><b>'+(x.ticker||'')+'</b></td><td class="'+(x.direction==='UP'?'pos':'neg')+'">'+(x.direction||'')+'</td><td>'+Math.round((x.agreement||0)*100)+'%</td><td>'+((x.median||0)*100).toFixed(2)+'%</td><td class="dim">'+(x.date||'')+'</td></tr>';}).join('')
+    +'</tbody></table><div class="dim" style="font-size:9.5px;margin-top:6px">Every projection is graded against what the tape actually did \u2014 the career line above is that grading. Trust is earned at 50 resolved with direction beating baseline drift; until then this stays OBSERVE.</div>';}
+  /* DOSSIER */
+  var dpn=$('dossierPanel');
+  if(dpn&&bw&&bw.dossiers&&bw.dossiers.length){
+    if(window._dosSel==null)window._dosSel=bw.dossiers[0].sym;
+    var chips=bw.dossiers.map(function(d){return '<button onclick="window._dosSel=\''+d.sym+'\';renderBrain();" style="font-size:10px;padding:3px 8px;margin:2px;border-radius:5px;border:1px solid '+(d.sym===window._dosSel?'var(--gold)':'var(--line2)')+';background:'+(d.sym===window._dosSel?'var(--gold)':'var(--panel2)')+';color:'+(d.sym===window._dosSel?'#0a0a0b':'var(--fg)')+';cursor:pointer">'+(d.open?'\u25cf ':'')+d.sym.replace('-USD','')+'</button>';}).join('');
+    var d=bw.dossiers.find(function(x){return x.sym===window._dosSel;})||bw.dossiers[0];
+    var tr=d.trajectory||{};function tchip(k){var v=tr[k];return '<span style="font-size:10px;margin-right:6px">'+k+' <b class="'+((v||0)>=0?'pos':'neg')+'">'+(v!=null?(v>=0?'+':'')+v.toFixed(2)+'%':'\u2014')+'</b></span>';}
+    var parts=d.confidence_parts||{};var pbars=Object.keys(parts).map(function(k){return '<div style="display:flex;align-items:center;gap:6px;font-size:9px"><span class="dim" style="min-width:120px">'+k.replace(/_/g,' ')+'</span><div style="height:7px;width:'+Math.max(2,(parts[k]||0)*120)+'px;background:var(--gold);border-radius:2px"></div><span>'+(parts[k]!=null?Math.round(parts[k]*100)+'%':'\u2014')+'</span></div>';}).join('');
+    function fact(k,v){return '<div style="margin:3px 0"><span class="dim" style="font-size:9px;text-transform:uppercase">'+k+'</span><div style="font-size:12.5px;font-weight:700">'+v+'</div></div>';}
+    dpn.innerHTML='<div style="margin-bottom:8px">'+chips+'</div>'
+    +'<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;align-items:start">'
+    +'<div>'+svgSpark(d,560,230)
+    +'<div style="margin-top:6px">'+tchip('h1')+tchip('d1')+tchip('d2')+tchip('w1')+' <span class="dim" style="font-size:9px">trajectory (momentum windows)</span></div></div>'
+    +'<div>'
+    +fact('last peak', d.last_peak_at?_fmtAgoIso(d.last_peak_at):'\u2014')
+    +fact('next peak ETA', d.next_peak_eta?(_fmtAgoIso(d.next_peak_eta)+' <span class=dim style=font-size:9px>(last peak + median cycle '+Math.round(d.cycle_min||0)+'m)</span>'):'learning')
+    +fact('typical swing', (d.amplitude_pct!=null?d.amplitude_pct.toFixed(2)+'%':'\u2014')+' <span class=dim style=font-size:9px>cycle '+(d.cycle_min?Math.round(d.cycle_min)+'m':'\u2014')+'</span>')
+    +fact('bounce likelihood', d.bounce_likelihood!=null?Math.round(d.bounce_likelihood*100)+'% <span class=dim style=font-size:9px>of dips historically recovered</span>':'learning')
+    +fact('its own buy level', d.typical_dip!=null?('dip \u2265 '+(d.typical_dip*100).toFixed(2)+'% \u00b7 aims +'+((d.typical_bounce||0)*100).toFixed(2)+'%'):'vol-native fallback')
+    +fact('MTF confluence', (d.mtf_confluence!=null?((d.mtf_confluence>=0?'+':'')+d.mtf_confluence):'\u2014'))
+    +fact('confidence', d.confidence!=null?('<span class=pos>'+Math.round(d.confidence*100)+'%</span> \u00b7 rhythm-tradeability '+Math.round((d.rhythm_tradeability||0)*100)+'%'):'\u2014')
+    +'<div style="margin-top:6px">'+pbars+'</div>'
+    +(d.why?'<div class="dim" style="font-size:9.5px;margin-top:6px">'+d.why+'</div>':'')
+    +'</div></div>';}
+  /* EYESHOT */
+  var eg=$('eyeshotGrid');
+  if(eg&&bw&&bw.dossiers){var opens=bw.dossiers.filter(function(x){return x.open;});
+    if(opens.length){eg.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px">'
+      +opens.map(function(d){var u=(d.mark&&d.entry)?((d.mark/d.entry-1)*100):null;
+        return '<div style="background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px"><div style="display:flex;justify-content:space-between;font-size:11px"><b>'+d.sym.replace('-USD','')+'</b><span class="dim">'+(d.book||'')+'</span><b class="'+((u||0)>=0?'pos':'neg')+'">'+(u!=null?(u>=0?'+':'')+u.toFixed(2)+'%':'')+'</b></div>'+svgSpark(d,250,100)+'</div>';}).join('')+'</div>';}
+  }
+}catch(e){}}
+
 async function renderStrategyLab(){try{const el=$('slabBody');if(!el)return;const d=await jget('data/STRATEGY_LAB.json');if(!d||!d.scoreboard){el.textContent='lab initializing…';return;}
   const rows=d.scoreboard.map(function(r,i){const dv=r.delta_vs_hodl;const dvs=dv==null?'—':(dv>=0?'+':'')+dv+'%';const lead=i===0?' 👑':'';
     return '<tr><td><b>'+r.sleeve+'</b> '+r.name+lead+'</td><td>'+r.cap+'</td><td class="'+(r.return_pct>=0?'pos':'neg')+'">'+(r.return_pct>=0?'+':'')+r.return_pct+'%</td><td class="'+(dv>=0?'pos':'neg')+'">'+dvs+'</td><td>'+r.open+'/'+r.closed+'</td><td>'+(r.win_rate!=null?r.win_rate+'%':'—')+'</td><td class="neg">'+r.max_dd_pct+'%</td></tr>'
@@ -1260,11 +1370,14 @@ function renderChamp(cv,st,gov,ch){if(!cv)return;
   const govTxt=provTxt+(gov?('Governance: <b>'+(gov.aligned?'ALIGNED ✓':'reconciling')+'</b> · '):'');
   $('champNote').innerHTML=govTxt+(st?st.promotion_eligibility:'')+' · OOS consistent: <b>'+(sv.oos_consistent?'YES':'NO')+'</b>';
 }
-function renderReady(cv){if(!cv)return;const row=(cv.strategies||[]).find(r=>r.strategy===cv.declared_champion)||{},sv=row.survivability||{},n=row.n||0;
+function renderReady(cv){
+  if(!cv){const rl=$('readyLab');rl.textContent='waiting for champion validation (fills after the first validation cycle)';$('readyFill').style.width='2%';return;}
+  const row=(cv.strategies||[]).find(r=>r.strategy===cv.declared_champion)||{},sv=row.survivability||{},n=row.n||0;
+  const NUM=x=>(typeof x==='number'&&isFinite(x))?x:0;   /* 5.11: post-wipe nulls → NaN score → 'READINESS NaN%'. Every metric is now numeric-or-zero. */
   const tradeGate=Math.min(n/100,1);
-  const q=[['Positive expectancy',row.avg_return_pct>0?1:0,sg(row.avg_return_pct)+'%'],['Survives OOS split',sv.oos_consistent?1:(sv.second_half_avg_pct>0?.5:0),sv.oos_consistent?'YES':'partial/no'],
-    ['Healthy drawdown',row.max_drawdown_pct>-5?1:Math.max(0,1+row.max_drawdown_pct/15),f(row.max_drawdown_pct)+'%'],['Sharpe →1.0',Math.min(Math.max(row.sharpe_proxy||0,0),1),f(row.sharpe_proxy)]];
-  const qAvg=q.reduce((a,g)=>a+g[1],0)/q.length, score=Math.round(tradeGate*qAvg*100);
+  const q=[['Positive expectancy',NUM(row.avg_return_pct)>0?1:0,sg(row.avg_return_pct)+'%'],['Survives OOS split',sv.oos_consistent?1:(NUM(sv.second_half_avg_pct)>0?.5:0),sv.oos_consistent?'YES':'partial/no'],
+    ['Healthy drawdown',NUM(row.max_drawdown_pct)>-5?1:Math.max(0,1+NUM(row.max_drawdown_pct)/15),f(row.max_drawdown_pct)+'%'],['Sharpe →1.0',Math.min(Math.max(NUM(row.sharpe_proxy),0),1),f(row.sharpe_proxy)]];
+  const qAvg=q.reduce((a,g)=>a+NUM(g[1]),0)/q.length, score=Math.round(NUM(tradeGate*qAvg)*100);
   $('readyFill').style.width=score+'%';$('readyLab').textContent='READINESS '+score+'%  (gated by trade count)';
   $('readySubs').innerHTML=[['Out-of-sample trades →100 (the gate)',tradeGate,n+'/100']].concat(q).map(g=>`<div style="display:flex;gap:8px;align-items:center;margin:3px 0"><span style="flex:0 0 50%;font-size:11px">${g[0]}</span><div class="met" style="flex:1;height:18px"><div class="fill" style="width:${Math.round(g[1]*100)}%"></div><div class="lab">${g[2]}</div></div></div>`).join('');
 }

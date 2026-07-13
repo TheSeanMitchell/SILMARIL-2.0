@@ -54,6 +54,7 @@ def build_gate_evidence(out_dir) -> Dict[str, Any]:
     ab = _j(out, "REGIME_AB.json") or {}
     tl = _j(out, "CHAMPION_TIMELINE.json") or {}
     sim = _j(out, "paper_sim_live.json") or {}
+    dr = _j(out, "dr_strange.json") or {}
 
     fits = 0
     styled = 0
@@ -73,7 +74,10 @@ def build_gate_evidence(out_dir) -> Dict[str, Any]:
     evidence = {
         "news_signals": (int(news.get("scored") or news.get("logged") or 0), 60,
                          "shadow hit-rate beats coin-flip at p<0.05 over min samples"),
-        "dr_strange": (graded, 50, "projection direction beats baseline drift over min samples"),
+        "dr_strange": (int(((dr.get("career") or {}).get("resolved")) or 0), 50,
+                       "projection direction beats baseline drift over min samples \u00b7 live hit-rate %s%% on %s resolved"
+                       % (round(float((dr.get("career") or {}).get("hit_rate") or 0) * 100, 1),
+                          int((dr.get("career") or {}).get("resolved") or 0))),
         "lifecycle": (len(traces), 50, "state-conditioned MR beats unconditioned MR net-of-fees"),
         "fingerprint_weighting": (fits, 50, "fingerprint-ranked entries out-earn conviction-ranked entries"),
         "regime_conditioning": (ab_obs, 40, "regime-conditioned entries beat unconditioned net-of-fees (REGIME_AB proof)"),

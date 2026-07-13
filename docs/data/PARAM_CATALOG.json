@@ -110,6 +110,10 @@
    "UPTREND": {
     "entry": 0.005,
     "target": 0.008
+   },
+   "DOWNTREND": {
+    "entry": 0.005,
+    "target": 0.007
    }
   },
   "energy": {
@@ -120,6 +124,10 @@
    "UPTREND": {
     "entry": 0.01,
     "target": 0.015
+   },
+   "DOWNTREND": {
+    "entry": 0.01,
+    "target": 0.014
    }
   }
  },
@@ -219,5 +227,30 @@
   "mode": "auto",
   "max_new_when_red": 1,
   "_what": "5.1B: while the book's fast trio is red, new entries are capped per cycle \u2014 never march fresh capital into a confirmed slide."
+ },
+ "vol_native": {
+  "mode": "auto",
+  "k_sigma": 1.5,
+  "floor": {
+   "crypto": 0.012,
+   "stock": 0.005,
+   "metal": 0.0035,
+   "energy": 0.007
+  },
+  "cap": {
+   "crypto": 0.04,
+   "stock": 0.015,
+   "metal": 0.01,
+   "energy": 0.02
+  },
+  "_what": "5.11 ACTIVATION: per-name entry = clamp(k\u00b7\u03c31h, class floor, min(class cap, regime base)); \u03c31h = robust MAD of the name's ACTUAL trailing-1h moves (48h window). Custom-fits EVERY trade to the name's own pulse \u2014 quiet markets and quiet INDUSTRIES (the frozen metal/energy books) still surface their own outliers. Never looser than the floor, never demands more than the regime base. mode:'off' restores blanket thresholds. KILL: if vol-native entries lose to fingerprint entries after 60 closed (report card), turn off."
+ },
+ "position_caps": {
+  "crypto": 10,
+  "aggressive": 10,
+  "stock": 6,
+  "metal": 5,
+  "energy": 5,
+  "_what": "5.11 industry law: max TOTAL open positions per book \u2014 the anti-lockup governor applied to every industry. A new name must beat a held one for a slot; every cap-skip is logged to actions."
  }
 }

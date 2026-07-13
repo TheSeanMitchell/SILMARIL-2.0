@@ -43,6 +43,70 @@ FRESHNESS_LOOKBACK = 60
 START_CASH = 10000.0
 PER_NAME_FRAC = 0.10      # 10% of the book per position
 MAX_NAMES = 10
+
+
+def _vol_sigma1h(rows):
+    """A name's OWN typical 1h move (fraction) — the DIRECT answer to "how unusual
+    is this hour's dip?" Built from the distribution of ACTUAL trailing-1h moves
+    over the last ~24-48h (each print vs the print ~1h before it), sized with a
+    robust MAD estimator so one spike can't inflate a quiet tape. Per-print
+    returns were the v1 mistake: irregular print spacing inflated σ 3-4× and the
+    activation fix failed its own test case. Returns None when tape is thin."""
+    try:
+        from datetime import datetime as _dt, timezone as _tz
+        pts = []
+        for t_, p_ in (rows or []):
+            if not p_ or "T00:00:00" in str(t_):
+                continue
+            try:
+                ts = _dt.fromisoformat(str(t_).replace("Z", "+00:00"))
+                ts = ts if ts.tzinfo else ts.replace(tzinfo=_tz.utc)
+                pts.append((ts.timestamp(), float(p_)))
+            except Exception:
+                continue
+        if len(pts) < 12:
+            return None
+        pts.sort()
+        nowt = pts[-1][0]
+        # last 48h window; for each print find the print ~1h earlier (45-90m band)
+        win = [(t, p) for t, p in pts if t >= nowt - 48 * 3600]
+        moves = []
+        j = 0
+        for i in range(len(win)):
+            ti, pi = win[i]
+            lo, hi = ti - 90 * 60, ti - 45 * 60
+            base = None
+            for t2, p2 in win[max(0, i - 12):i]:
+                if lo <= t2 <= hi:
+                    base = p2            # closest-to-1h older print in band
+            if base and base > 0:
+                moves.append(pi / base - 1.0)
+        if len(moves) < 8:
+            return None
+        med = sorted(moves)[len(moves) // 2]
+        mad = sorted(abs(m - med) for m in moves)[len(moves) // 2]
+        sigma = 1.4826 * mad             # robust σ of true 1h moves
+        return sigma if sigma > 0 else None
+    except Exception:
+        return None
+
+
+_VN_FLOOR = {"crypto": 0.012, "stock": 0.005, "metal": 0.0035, "energy": 0.007}
+_VN_CAP = {"crypto": 0.040, "stock": 0.015, "metal": 0.010, "energy": 0.020}
+
+
+def _vol_native_entry(rows, cls, base_entry, knob):
+    """clamp(k·σ1h, class floor, min(class cap, base)) — never looser than the
+    floor, never DEMANDS more than the old base. Returns None if disabled/thin."""
+    if str((knob or {}).get("mode", "auto")).lower() != "auto":
+        return None
+    sig = _vol_sigma1h(rows)
+    if sig is None:
+        return None
+    k = float((knob or {}).get("k_sigma", 1.5))
+    fl = float(((knob or {}).get("floor") or {}).get(cls, _VN_FLOOR.get(cls, 0.01)))
+    cp = float(((knob or {}).get("cap") or {}).get(cls, _VN_CAP.get(cls, 0.04)))
+    return max(fl, min(k * sig, cp, float(base_entry)))
 # GOLDEN RULE — book-specific minimum post-fee take-home per trade (USD). A close must net at least this
 # much AFTER fees or the trade is not taken; positions are sized UP so the target clears it. This also
 # kills the dust-position bug (no more $0.01 buys from leftover cash). Tunable per book: raise toward 5.00
@@ -735,11 +799,27 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                             + 0.30 * (_ft.get("bounce_reliability") or 0.0)
                     scored.append((s, lp, h1, _cv))
                     _fits[s] = dict(_ft, _rank=_rank)
+                elif _ft is None:
+                    # 5.11 VOL-NATIVE FALLBACK: unfittable names (thin/no-pattern tape) are no
+                    # longer invisible — they qualify against their OWN volatility, clamped by
+                    # class floors/caps and never looser than the fingerprint law's spirit.
+                    _vn = _vol_native_entry(samples.get(s), uc, entry, _cat0.get("vol_native"))
+                    if _vn is not None and h1 <= -_vn:
+                        _cv, _ = conviction_score(_pp, h1)
+                        _tgt = max(2.0 * _vn, round_trip_cost(_pp) * 2.5)
+                        _fits[s] = {"entry": _vn, "target": _tgt, "stop": max(_vn * 2.0, float(_fmin0 or 0.02)),
+                                    "bounce_reliability": None, "strong_up": False,
+                                    "vol_native": True, "_rank": (_cv or 0.0)}
+                        scored.append((s, lp, h1, _cv))
         cands = sorted(scored, key=lambda x: _fits.get(x[0], {}).get("_rank", (x[3] or 0.0)), reverse=True)
     else:
         scored = []
         for s, (lp, h1) in side_marks.items():
-            if h1 <= -entry and s not in pbook.positions and fresh_ok(s) and s in _WARM_SYMS:
+            if s in pbook.positions or not fresh_ok(s) or s not in _WARM_SYMS:
+                continue
+            _vn = _vol_native_entry(samples.get(s), uc, entry, _cat0.get("vol_native"))
+            _eff = min(entry, _vn) if _vn is not None else entry   # 5.11: quiet-market custom fit
+            if h1 <= -_eff:
                 cv, _ = conviction_score(px_of(s), h1)
                 scored.append((s, lp, h1, cv))
         cands = sorted(scored, key=lambda x: (x[3] if x[3] is not None else 0.0), reverse=True)
@@ -843,7 +923,12 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
             actions.append({"act": "SKIP", "sym": f"{len(cands) - _cap_red} name(s)",
                             "why": "regime throttle — 15m·30m·1h all red; new entries capped to %d this cycle" % _cap_red})
             cands = cands[:_cap_red]
-    for sym, lp, h1, cv in cands[:MAX_NAMES]:
+    _poscap = int((cat.get("position_caps") or {}).get(book, MAX_NAMES))
+    _slots = max(0, _poscap - len(pbook.positions))   # cap governs TOTAL open, not per-cycle
+    if _slots < len(cands[:MAX_NAMES]):
+        actions.append({"act": "SKIP", "sym": f"{len(cands[:MAX_NAMES]) - _slots} name(s)",
+                        "why": "position cap %d/%d for %s — concentration law: a new name must beat a held one" % (len(pbook.positions), _poscap, book)})
+    for sym, lp, h1, cv in cands[:min(MAX_NAMES, _slots)]:
         _t6s = _trajectory_6h(samples.get(sym) or [])
         _style = ("riding-strength" if (_t6s or 0) >= 0.02 else "deep-dip" if (h1 or 0) <= -0.04 else "range-play")
         if book == "stock":
@@ -1188,7 +1273,7 @@ def live_step(out_dir) -> Dict[str, Any]:
                 _sp[_s] = _pp; _cnt += 1
         _fmap = (_catalog(out).get("floor_min") or {})
         _floor = {_s: _fmap.get(asset_class(_s), 0.06) for _s in _sp}
-        _bfp(out, _sp, rows_by_sym={s: samples.get(s) for s in _sp}, floor_by_sym=_floor, limit=80)
+        _bfp(out, _sp, rows_by_sym={s: samples.get(s) for s in _sp}, floor_by_sym=_floor, limit=150)
     except Exception:
         pass
     try:

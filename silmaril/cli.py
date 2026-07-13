@@ -3527,7 +3527,8 @@ Reply in 3-5 bullets, no preamble.
                           ("gate evidence tally", "gate_evidence.build_gate_evidence"),
                           ("conductor C1 shadow scoring", "conductor_c1.build_conductor_c1"),
                           ("conductor report card (A/B honesty)", "conductor_report_card.build_conductor_report_card"),
-                          ("strategy lab A/B/C/D", "strategy_lab_abcd.build_strategy_lab")):
+                          ("strategy lab A/B/C/D", "strategy_lab_abcd.build_strategy_lab"),
+                          ("brain wiring (nothing is decoration)", "brain_wiring.build_brain_wiring")):
         try:
             _m51, _f51 = _imp51.split(".")
             _r51 = getattr(__import__("silmaril.execution." + _m51, fromlist=[_f51]), _f51)(out)

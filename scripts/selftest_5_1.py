@@ -395,6 +395,79 @@ def t21_sw_network_first():
           f"active_cache={active_cache} fetch_first={fetch_first} no_precache={no_shell_precache}")
 
 
+# ── T22 · BRAIN WIRING MAP IS TRUTHFUL — every listed consumer file really
+#    contains the store's filename. The nothing-is-decoration table cannot lie. ──
+def t22_brain_map_truthful():
+    from silmaril.execution.brain_wiring import _signals
+    rows = _signals(ROOT / "docs/data")
+    bad = []
+    for r in rows:
+        if not r["consumers"]:
+            bad.append(r["store"] + ":NO_CONSUMER")
+            continue
+        for cf in r["consumers"]:
+            try:
+                if r["store"] not in (ROOT / cf).read_text():
+                    bad.append(f"{r['store']}!in!{cf}")
+            except Exception:
+                bad.append(f"{r['store']}:missing:{cf}")
+    check("T22 brain-wiring map truthful (every consumer really reads the store)",
+          not bad, f"violations={bad[:4]}")
+
+
+# ── T23 · DR. STRANGE self-grades feed the experimental gate ──
+def t23_dr_strange_graded_gate():
+    src = (ROOT / "silmaril/execution/gate_evidence.py").read_text()
+    ok = 'dr_strange.json' in src and 'career' in src and 'resolved' in src and 'hit_rate' in src
+    check("T23 dr_strange gate fed by its own career (resolved + hit-rate)", ok,
+          "gate_evidence not sourcing dr career")
+
+
+# ── T24 · VOL-NATIVE entry clamps (quiet floor · wild cap · never above base · off=None) ──
+def t24_vol_native_clamps():
+    from silmaril.execution.paper_sim import _vol_native_entry
+    from datetime import datetime, timedelta, timezone
+    now = datetime.now(timezone.utc)
+    def tape(step_pct):
+        rows, px = [], 100.0
+        for i in range(60):
+            t = (now - timedelta(minutes=10 * (60 - i))).isoformat()
+            px *= (1 + step_pct * ((-1) ** i))
+            rows.append((t, px))
+        return rows
+    quiet = _vol_native_entry(tape(0.0005), "crypto", 0.03, {"mode": "auto", "k_sigma": 1.5})
+    wild = _vol_native_entry(tape(0.02), "crypto", 0.03, {"mode": "auto", "k_sigma": 1.5})
+    off = _vol_native_entry(tape(0.001), "crypto", 0.03, {"mode": "off"})
+    ok = (quiet is not None and abs(quiet - 0.012) < 1e-9        # quiet → class floor binds
+          and wild is not None and wild <= 0.03 + 1e-9           # wild → never above base/cap
+          and off is None)
+    check("T24 vol-native clamps: floor on quiet, ≤base on wild, off disables",
+          ok, f"quiet={quiet} wild={wild} off={off}")
+
+
+# ── T25 · BRAIN TAB exists: 7th tab + guide + ≥4 brain-categorized sections ──
+def t25_brain_tab():
+    ix = (ROOT / "docs/index.html").read_text()
+    ok = ('data-p="brain"' in ix and '"brain"' in ix
+          and ix.count('data-cat="brain"') >= 4 and 'renderBrain' in ix)
+    check("T25 BRAIN tab wired (button + guide + ≥4 sections + renderer)", ok,
+          f"btn={'data-p=\"brain\"' in ix} sections={ix.count('data-cat=\"brain\"')}")
+
+
+# ── T26 · DOSSIER contract — the graphs carry EVERYTHING (peaks, ETA, likelihoods,
+#    trajectory, confidence anatomy) ──
+def t26_dossier_contract():
+    import json as _json
+    d = _json.loads((ROOT / "docs/data/BRAIN_WIRING.json").read_text())
+    need = {"sym", "series", "last_peak_at", "next_peak_eta", "cycle_min",
+            "bounce_likelihood", "trajectory", "mtf_confluence",
+            "confidence_parts", "rhythm_tradeability"}
+    ds = d.get("dossiers") or []
+    ok = bool(ds) and need.issubset(set(ds[0].keys())) and "master_brain" in d
+    check("T26 dossier contract (peaks·ETA·likelihood·trajectory·anatomy) + master brain",
+          ok, f"dossiers={len(ds)} missing={sorted(need - set(ds[0].keys())) if ds else 'ALL'}")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -404,7 +477,8 @@ if __name__ == "__main__":
               t15_confidence_uses_rhythm, t16_fast_band_regime,
               t17_strategy_lab_sleeves, t18_ui_six_tabs,
               t19_confidence_all_signals, t20_ui_render_resilience,
-              t21_sw_network_first):
+              t21_sw_network_first, t22_brain_map_truthful, t23_dr_strange_graded_gate,
+              t24_vol_native_clamps, t25_brain_tab, t26_dossier_contract):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test
