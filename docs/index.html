@@ -440,7 +440,8 @@
 
 </div><!--/content-->
 <script>var CACHE_BUST=Date.now();
-const $=id=>document.getElementById(id);
+const _NULLSTUB=new Proxy({},{get:(t,k)=>{if(k==='style'||k==='classList'||k==='dataset')return _NULLSTUB;if(k==='innerHTML'||k==='textContent'||k==='value'||k==='className')return '';if(typeof k==='string')return ()=>_NULLSTUB;return undefined;},set:()=>true});
+const $=id=>document.getElementById(id)||_NULLSTUB;  /* 5.1 FINAL: missing ids return a no-op stub so one stale reference can NEVER abort the render loop */
 const f=(n,d=2)=>n==null?'—':(+n).toFixed(d);
 const sg=(n,d=2)=>n==null?'—':((n>=0?'+':'')+(+n).toFixed(d));
 const cl=n=>n==null?'dim':n>0?'pos':n<0?'neg':'dim';
@@ -485,7 +486,7 @@ async function load(){
   const cv=await jget('data/champion_validation.json'), gov=await jget('data/CHAMPION_GOVERNANCE.json'), st=await jget('data/CHAMPION_STATUS.json'), ch=await jget('data/champion.json');
   BOOKS.crypto=await jget('data/paper_book_crypto.json'); BOOKS.stock=await jget('data/paper_book_stock.json');
   if(LIVE&&LIVE.champion_live_params){EXIT.t=LIVE.champion_live_params.target;EXIT.s=LIVE.champion_live_params.stop;EXIT.h=LIVE.champion_live_params.max_hold_min;}
-  if(LIVE)$('ts').textContent=new Date(LIVE.generated_at).toLocaleString();
+  { const _tsel=$('ts'); if(LIVE&&_tsel)_tsel.textContent=T3(LIVE.generated_at); }  /* ts element removed in 5.1 reorg; guarded so a missing id can never abort load() */
   // each render is isolated: a bad/missing field in one panel can never blank the rest
   const safe=(fn,name)=>{try{fn();}catch(e){console.error(name,e);}};
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
@@ -531,6 +532,7 @@ async function renderChampTruth(){const g=await jget('data/CHAMPION_GOVERNANCE.j
     const verdict=(s1-s0>=rMargin&&(c1.n||0)>=rMin)?`<b class=pos>FLIP PENDING</b> — challenger leads by ${(s1-s0).toFixed(0)} ≥ margin ${rMargin}`
       :((c1.n||0)<rMin?`challenger needs ${rMin-(c1.n||0)} more trade(s) to qualify`:`challenger trails by ${gap} pts (flips at +${rMargin} lead)`);
     return `<tr><td>${bk}</td><td>${pokeInline(c0.strategy)} surv ${s0} vs ${pokeInline(c1.strategy)} surv ${s1} (n ${c1.n})</td><td style=\"font-size:10px\">${verdict}</td></tr>`;}).join('');
+  const sl=(dc&&dc.strategy)?((cv2.strategies||[]).find(r=>r.strategy===dc.strategy)||null):null;  /* 5.1 FINAL: sl was undefined — resolve it from the validation rows */
   const leaderN=(sl&&sl.n)||0;const aligned=g.aligned;const ci=(dc.expectancy_ci95_pct||[]);
   const tierOrder=['Sandbox','Incubation','Candidate','Production','Production-Verified'];
   const need={Sandbox:10,Incubation:25,Candidate:50,Production:100};
@@ -1027,7 +1029,8 @@ async function renderConfidence(){try{const el=$('confBody');if(!el)return;const
   const rl=(d.rhythm_tradeable_leaders||[]).slice(0,10).map(function(x){return '<tr><td><b>'+x[0].replace('-USD','')+'</b></td><td class="pos">'+(x[1]*100).toFixed(0)+'%</td><td>'+(x[2]?Math.round(x[2])+'m':'\u2014')+'</td><td>'+(x[3]||0).toFixed(1)+'%</td></tr>';}).join('');
   const tc=(d.top_confidence_by_class||{});
   const classRows=['crypto','stock','metal','energy'].map(function(c){const arr=(tc[c]||[]).slice(0,4).map(function(x){return x[0].replace('-USD','')+' '+(x[1]*100).toFixed(0)+'%';}).join(' \u00b7 ');return arr?('<div style="margin:3px 0;font-size:11px"><b style="display:inline-block;min-width:60px;text-transform:uppercase">'+c+'</b> '+arr+'</div>'):'';}).join('');
-  el.innerHTML='<div class="dim" style="font-size:10.5px;margin-bottom:8px">Every predictive signal fused into ONE 0-1 score: fingerprint bounce reliability, <b>peak rhythm regularity + phase</b> (newly wired), MTF confluence, dip extension, trend. This now sizes conviction bets and gates the sniper.</div>'
+  const wk=Object.keys(d.weights||{});const wchips=wk.map(function(k){return '<span class="dim" style="font-size:9px;background:var(--panel2);border:1px solid var(--line);border-radius:3px;padding:1px 5px;margin:1px;display:inline-block">'+k.replace(/_/g,' ')+' '+Math.round((d.weights[k]||0)*100)+'%</span>';}).join('');
+  el.innerHTML='<div class="dim" style="font-size:10.5px;margin-bottom:6px">Every predictive signal we measure, fused into ONE 0-1 score per valuable \u2014 <b>'+wk.length+' signals</b>: fingerprint bounce reliability, peak rhythm regularity + phase, MTF confluence, dip extension, <b>time-of-day timing fingerprint</b>, <b>momentum-chain exhaustion</b>, <b>independent conviction ranking</b>, and trend. This sizes conviction bets and gates the sniper.</div><div style="margin-bottom:8px">'+wchips+'</div>'
     +'<div style="font-weight:700;font-size:11px;margin:8px 0 4px">\ud83c\udfb5 RHYTHM-TRADEABLE LEADERS \u2014 sideways+volatile with a predictable cycle (the sniper\'s hunting ground)</div>'
     +'<table><thead><tr><th>name</th><th>rhythm</th><th>cycle</th><th>swing</th></tr></thead><tbody>'+rl+'</tbody></table>'
     +'<div style="font-weight:700;font-size:11px;margin:10px 0 4px">TOP CONFIDENCE BY CLASS</div>'+classRows

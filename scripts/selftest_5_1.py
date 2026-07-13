@@ -343,6 +343,58 @@ def t18_ui_six_tabs():
           f"six_tabs={has_six} sections={secs} tagged={tagged} orphans={orphan}")
 
 
+# ── T19 · CONFIDENCE ENGINE fuses EVERY predictive signal (the "wire the brain
+#    to everything" directive). Guards that the high-value stores are all read. ──
+def t19_confidence_all_signals():
+    src = (ROOT / "silmaril/execution/confidence_engine.py").read_text()
+    needed = ["PEAK_RHYTHM.json", "FINGERPRINTS.json", "MTF_REGIME.json",
+              "timing_fingerprint.json", "momentum_chain.json", "conviction_ranking.json"]
+    missing = [n for n in needed if n not in src]
+    # and the weight table must carry the new components
+    comps = ["timing_alignment", "momentum_exhaustion", "conviction_backing"]
+    miss_c = [c for c in comps if c not in src]
+    check("T19 confidence engine reads all predictive stores + new components",
+          not missing and not miss_c,
+          f"missing_stores={missing} missing_components={miss_c}")
+
+
+# ── T20 · UI RENDER RESILIENCE (the bug that blanked the whole dashboard):
+#    $() must return a no-op stub for missing ids so one stale reference can
+#    never abort load(). And there must be no UNGUARDED $('id').prop before the
+#    safe() wrappers. ---------------------------------------------------------
+def t20_ui_render_resilience():
+    ix = (ROOT / "docs/index.html").read_text()
+    has_stub = "_NULLSTUB" in ix and "document.getElementById(id)||_NULLSTUB" in ix
+    # the old crash pattern: $('ts').textContent with no guard, before safe() exists
+    import re
+    # find the load() region up to the first safe= definition
+    m = re.search(r"async function load\(\).*?const safe=", ix, re.S)
+    region = m.group(0) if m else ""
+    # any bare $('literal').prop= assignment that isn't guarded by a local var check
+    risky = re.findall(r"[$]\('[a-zA-Z]+'\)\.(?:textContent|innerHTML|value)\s*=", region)
+    check("T20 UI render resilience: $() stub + no unguarded id writes pre-safe()",
+          has_stub and len(risky) == 0,
+          f"stub={has_stub} risky_writes={len(risky)}")
+
+
+# ── T21 · SERVICE WORKER is network-first (the cache bug that trapped the old
+#    UI). Cache-first shells are banned. -------------------------------------
+def t21_sw_network_first():
+    sw = (ROOT / "docs/sw.js").read_text()
+    import re
+    # the ACTIVE cache name (not comment text) must not be the old v51b shell cache
+    m = re.search(r"const\s+CACHE\s*=\s*'([^']+)'", sw)
+    active_cache = m.group(1) if m else ""
+    bumped = "v51b" not in active_cache and active_cache != ""
+    # network-first: the fetch handler tries fetch() first, falls back to caches.match
+    fetch_first = "fetch(e.request)" in sw and "caches.match" in sw
+    # must NOT pre-cache the html shell (that was the cache-first trap)
+    no_shell_precache = "'./index.html'])" not in sw and "addAll(['./', './index.html'" not in sw
+    check("T21 service worker network-first (no cache-first shell trap)",
+          fetch_first and no_shell_precache and bumped,
+          f"active_cache={active_cache} fetch_first={fetch_first} no_precache={no_shell_precache}")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -350,7 +402,9 @@ if __name__ == "__main__":
               t9_version_pin, t10_scorecard_contract, t11_mtf_votes,
               t12_regime_harvest, t13_fee_clear_time, t14_conviction_clamps,
               t15_confidence_uses_rhythm, t16_fast_band_regime,
-              t17_strategy_lab_sleeves, t18_ui_six_tabs):
+              t17_strategy_lab_sleeves, t18_ui_six_tabs,
+              t19_confidence_all_signals, t20_ui_render_resilience,
+              t21_sw_network_first):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

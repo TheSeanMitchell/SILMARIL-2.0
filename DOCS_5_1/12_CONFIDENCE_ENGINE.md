@@ -5,14 +5,22 @@ arsenal of prediction signals that fed *nothing that traded* — most importantl
 timing-between-peaks backbone). The confidence engine fuses them all.
 
 ## What it fuses (`confidence_engine.py` → `CONFIDENCE_ENGINE.json`, every cycle)
+**5.1 FINAL — wired to NINE signals, every predictive metric the platform measures:**
 | Signal | Source | Contribution | Weight |
 |---|---|---|---|
-| bounce reliability | fingerprint | how often this name's dips recover | 30% |
-| rhythm regularity | **peak_rhythm** (newly wired) | is the high→low cycle predictable? | 20% |
-| rhythm phase | **peak_rhythm** (newly wired) | are we near a trough (buy) or peak (avoid)? | 15% |
-| MTF confluence | mtf_regime | multi-timeframe agreement | 15% |
-| dip extension | fingerprint | is this dip deeper than the name's typical? | 12% |
-| trend alignment | fingerprint | multi-timeframe trend tailwind | 8% |
+| bounce reliability | fingerprint | how often this name's dips recover | 22% |
+| rhythm regularity | peak_rhythm | is the high→low cycle predictable? | 16% |
+| rhythm phase | peak_rhythm | near a trough (buy) or peak (avoid)? | 12% |
+| MTF confluence | mtf_regime | multi-timeframe agreement | 12% |
+| dip extension | fingerprint | deeper than the name's typical dip? | 10% |
+| **timing alignment** | **timing_fingerprint** | is NOW this name's measured best-buy window? | 10% |
+| **momentum exhaustion** | **momentum_chain** | is the downward run slowing (MR-ready)? | 8% |
+| **conviction backing** | **conviction_ranking** | the independent multi-signal ranker's score | 6% |
+| trend alignment | fingerprint | multi-timeframe trend tailwind | 4% |
+
+The bolded three are new in 5.1 FINAL — the brain now reads timing fingerprints (per-symbol
+time-of-day probability curves), momentum chains (multi-window momentum with exhaustion detection),
+and the independent conviction ranker, so the confidence number reflects *everything* we measure.
 
 Output per symbol: a blended 0-1 **confidence** score + the **component breakdown** (so the UI shows *why*),
 plus a dedicated **rhythm-tradeability** score.

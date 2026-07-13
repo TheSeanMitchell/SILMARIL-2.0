@@ -22,3 +22,33 @@ Nothing here guarantees the edge is large enough — but the Strategy Lab will t
 whether concentrating + recycling + riding winners beats your current behavior. Reset clean Monday, let the
 90-day clock run on this finished engine, and watch the A/B/C/D race. When a sleeve beats A on Δ-vs-HODL over
 40 trades, you'll have earned the right to promote it — and real evidence, not hope, that $10k can climb.
+
+
+---
+
+## POST-INSTALL FIX (2026-07-12 PM) — the dashboard was blank; root-caused and killed the whole bug class
+
+**Symptom:** after the SW cache fix landed and the new six-tab UI finally showed, panels sat on
+"loading…" — SPINE, readiness, the lab, confidence, all stuck.
+
+**Root cause (found by rendering the real repo over HTTP in a real browser):** ONE line —
+`$('ts').textContent = ...` — referenced a timestamp element (`ts`) that the header reorg had
+removed. `$('ts')` returned null, `.textContent` threw, and because that line ran *before* the
+per-panel `safe()` wrappers, the single exception aborted the entire `load()` function → every panel
+downstream never rendered. A second latent bug (`sl` undefined in `renderChampTruth`) was masked by
+the first.
+
+**The fix (three layers, so this can never happen again):**
+1. `$()` now returns a chainable no-op stub for missing element ids — ANY stale reference silently
+   no-ops instead of crashing the render loop.
+2. The `ts` line and the `sl` variable are both directly fixed.
+3. Three new tripwires: **T19** (confidence engine reads every predictive store), **T20** (UI render
+   resilience: `$()` stub present + no unguarded id writes before `safe()`), **T21** (service worker
+   is network-first, no cache-first shell trap). Verified in a real browser: **zero JS errors, zero
+   stuck panels, all six tabs render.**
+
+**Also in this pass — the brain wired to everything (your top priority):** the confidence engine now
+fuses NINE predictive signals (added timing_fingerprint, momentum_chain, conviction_ranking to the
+existing six), so the score that sizes conviction bets and gates the sniper reflects every metric the
+platform measures. The Conductor report card continues to A/B-grade every behavior with pre-registered
+kills. Confidence panel shows all nine signal weights live.

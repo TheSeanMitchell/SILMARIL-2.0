@@ -40,12 +40,15 @@ STORE = "CONFIDENCE_ENGINE.json"
 
 # component weights — each earns/loses trust forward; these are the priors
 W = {
-    "bounce_reliability": 0.30,
-    "rhythm_regularity": 0.20,
-    "rhythm_phase": 0.15,
-    "mtf_confluence": 0.15,
-    "dip_extension": 0.12,
-    "trend_alignment": 0.08,
+    "bounce_reliability": 0.22,   # fingerprint: do this name's dips recover
+    "rhythm_regularity": 0.16,    # peak_rhythm: is the cycle predictable
+    "rhythm_phase": 0.12,         # peak_rhythm: near a trough (buy) vs peak
+    "mtf_confluence": 0.12,       # mtf_regime: multi-timeframe agreement
+    "dip_extension": 0.10,        # fingerprint: deeper-than-usual dip
+    "timing_alignment": 0.10,     # timing_fingerprint: is NOW this name's best buy window
+    "momentum_exhaustion": 0.08,  # momentum_chain: is the downward run exhausting
+    "conviction_backing": 0.06,   # conviction_ranking: independent multi-signal score
+    "trend_alignment": 0.04,      # fingerprint: multi-tf trend tailwind
 }
 
 
@@ -121,6 +124,18 @@ def build_confidence_engine(out_dir) -> Dict[str, Any]:
     fp_cards = {c.get("symbol"): c for c in (fp.get("cards") or []) if c.get("symbol")}
     pkr = (_load(out, "PEAK_RHYTHM.json").get("by_symbol") or {})
     mtf = (_load(out, "MTF_REGIME.json").get("symbols") or {})
+    # 5.1 FINAL — wire the brain to EVERY predictive signal we measure:
+    tfp = (_load(out, "timing_fingerprint.json").get("fingerprints") or {})
+    _mc_raw = _load(out, "momentum_chain.json").get("chains") or {}
+    mom = _mc_raw if isinstance(_mc_raw, dict) else {}
+    cvr = {}
+    for _op in (_load(out, "conviction_ranking.json").get("ranked_opportunities") or []):
+        _sy = _op.get("ticker") or _op.get("symbol")
+        if _sy:
+            cvr[_sy] = _op
+    # current UTC time-of-day bucket for timing alignment
+    _hhmm = _now().strftime("%H:%M")
+    _hh = _now().hour + _now().minute / 60.0
 
     per_symbol: Dict[str, Any] = {}
     rhythm_leaders = []
@@ -152,12 +167,55 @@ def build_confidence_engine(out_dir) -> Dict[str, Any]:
         tl = card.get("trend")
         c_trend = 1.0 if card.get("strong_up") else (0.6 if tl == "up" else 0.4 if tl == "mixed" else 0.2)
 
+        # timing_alignment: how close is NOW to this name's measured best BUY window?
+        # tod_curve values are 0..1 "how good is this bucket"; use the current bucket directly.
+        c_timing = 0.5
+        _tf = tfp.get(sym) or {}
+        _curve = _tf.get("tod_curve") or {}
+        if _curve and not _tf.get("learning", True):
+            # nearest bucket to now
+            _bv = _curve.get(_hhmm)
+            if _bv is None:
+                try:
+                    _bk = min(_curve.keys(), key=lambda k: abs((int(k[:2]) + int(k[3:]) / 60.0) - _hh))
+                    _bv = _curve.get(_bk)
+                except Exception:
+                    _bv = None
+            if _bv is not None:
+                # buying is best when the bucket value is LOW (price low in its daily range)
+                c_timing = _clamp(1.0 - float(_bv))
+
+        # momentum_exhaustion: a down-chain that's slowing = MR opportunity; up-chain = caution
+        c_mom = 0.5
+        _mc = mom.get(sym) or {}
+        _win = _mc.get("windows") or {}
+        # recent multi-window momentum: negative short-window run that is FLATTENING (d1 less
+        # negative than d2) = exhausting downtrend = prime MR. Persistent up = caution.
+        _d1 = float(_win.get("d1") or 0.0)
+        _d2 = float(_win.get("d2") or 0.0)
+        _h1 = float(_win.get("h1") or 0.0)
+        if _d2 < -0.3 and _d1 >= _d2:          # was falling, now slowing/turning
+            c_mom = _clamp(0.55 + min(abs(_d2), 3.0) / 6.0)
+        elif _h1 > 0.5 or _d1 > 1.0:           # strong fresh up-run → don't fade blindly
+            c_mom = _clamp(0.5 - min(_d1, 3.0) / 6.0)
+
+        # conviction_backing: the independent multi-signal ranker's own score (0..1)
+        c_conv = 0.5
+        _cv = cvr.get(sym) or {}
+        if _cv:
+            _sc = _cv.get("score")
+            if _sc is not None:
+                c_conv = _clamp(float(_sc))
+
         parts = {
             "bounce_reliability": round(c_bounce, 3),
             "rhythm_regularity": round(c_reg, 3),
             "rhythm_phase": round(c_phase, 3),
             "mtf_confluence": round(c_mtf, 3),
             "dip_extension": round(c_dip, 3),
+            "timing_alignment": round(c_timing, 3),
+            "momentum_exhaustion": round(c_mom, 3),
+            "conviction_backing": round(c_conv, 3),
             "trend_alignment": round(c_trend, 3),
         }
         score = sum(W[k] * v for k, v in parts.items())
