@@ -1,0 +1,31 @@
+name: integrity backfill (one-shot, 2026-07-13 sawtooth day)
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type TAG to retro-tag July-13 phantom-band wins as SUSPECT_OSC"
+        required: true
+        default: ""
+permissions:
+  contents: write
+concurrency:
+  group: silmaril-state
+  cancel-in-progress: false
+jobs:
+  backfill:
+    if: ${{ github.event.inputs.confirm == 'TAG' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: retro-tag suspect trades
+        run: python scripts/tag_suspect_history.py
+      - name: commit
+        run: |
+          git config user.name "silmaril-bot"
+          git config user.email "bot@silmaril"
+          git add docs/data/paper_book_*.json
+          git diff --cached --quiet || git commit -m "integrity backfill: retro-tag 2026-07-13 phantom-band wins as SUSPECT_OSC"
+          git push

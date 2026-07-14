@@ -1,0 +1,35 @@
+name: cleanup 5.11 (attic superseded docs + stale workflows)
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type SUNSET to attic superseded root docs and stale cleanup workflows"
+        required: true
+        default: ""
+permissions:
+  contents: write
+concurrency:
+  group: silmaril-state
+  cancel-in-progress: false
+jobs:
+  sunset:
+    if: ${{ github.event.inputs.confirm == 'SUNSET' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: attic
+        run: |
+          mkdir -p attic/docs attic/workflows
+          for f in INSTALL_5_1.md INSTALL_5_1B.md NOTES_5_1_LEDGER.md READ_ME_FIRST.md \
+                   READ_ME_FIRST_SW_FIX.md 5_1_REACTION_LEDGER.md 5_1_FINAL_LEDGER.md; do
+            [ -f "$f" ] && git mv "$f" "attic/docs/$f" || true
+          done
+          for w in cleanup_5_0_final.yml cleanup_clutter.yml cleanup_root.yml cleanup_5_1_docs.yml; do
+            [ -f ".github/workflows/$w" ] && git mv ".github/workflows/$w" "attic/workflows/$w" || true
+          done
+      - name: commit
+        run: |
+          git config user.name "silmaril-bot"
+          git config user.email "bot@silmaril"
+          git diff --cached --quiet || git commit -m "5.11 WRAP cleanup: attic superseded docs + stale workflows"
+          git push
