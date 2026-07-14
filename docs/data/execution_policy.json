@@ -1,28 +1,30 @@
 {
   "version": "4.0",
-  "generated_at": "2026-07-14T00:24:44.627345+00:00",
-  "market_mode": "ATTACK",
-  "winner_engine": "default",
-  "winner_action": "NORMAL",
-  "winner_precedence_name": "ADVISORY",
-  "halt_opens": false,
-  "halt_opens_reasons": [],
+  "generated_at": "2026-07-14T00:46:05.712304+00:00",
+  "market_mode": "PRESERVATION",
+  "winner_engine": "market_state",
+  "winner_action": "preservation_halt",
+  "winner_precedence_name": "PRESERVATION",
+  "halt_opens": true,
+  "halt_opens_reasons": [
+    "market_state: market_state=PRESERVATION: in danger window (overnight_thin)"
+  ],
   "force_close": {},
   "elite_tickers": [],
   "urgency_tickers": [],
-  "elite_suppressed": false,
-  "elite_suppression_reason": "",
+  "elite_suppressed": true,
+  "elite_suppression_reason": "Elite mode suppressed: market_state=PRESERVATION is not compatible with concentration escalation.",
   "blocked_tickers": {},
   "vulnerable_tickers": [],
   "deployment_pressure": {
-    "score": 0.15,
+    "score": 0.0,
     "high": false,
     "actions": [],
     "components": {
       "idle_cash": 0.0,
       "sgov_exposure": 0.0,
       "elite_pipeline": 0.0,
-      "market_mode_bias": 0.2,
+      "market_mode_bias": -0.2,
       "vulnerability_drag": -0.0
     },
     "totals": {
@@ -32,33 +34,33 @@
       "elite_count": 0,
       "vulnerable_count": 0
     },
-    "rationale": "mode=ATTACK \u00b7 score=0.15"
+    "rationale": "mode=PRESERVATION \u00b7 score=0.00"
   },
   "sizing": {
-    "base_multiplier": 1.2,
-    "min_conviction_floor": 0.35,
+    "base_multiplier": 0.4,
+    "min_conviction_floor": 0.75,
     "elite_multiplier": 1.5,
     "elite_concentration_cap": 0.2,
     "normal_concentration_cap": 0.12,
-    "deployment_pressure": 0.15,
+    "deployment_pressure": 0.0,
     "concentration_limits": {
-      "max_per_sector": 4,
-      "max_per_asset_class": 10,
-      "max_sector_book_pct": 0.4
+      "max_per_sector": 1,
+      "max_per_asset_class": 3,
+      "max_sector_book_pct": 0.1
     }
   },
   "close_loop": {
-    "trail_tightness": 0.85,
+    "trail_tightness": 1.5,
     "bleed_exit_enabled": true,
     "stale_close_enabled": true,
-    "stale_close_age_days": 5,
+    "stale_close_age_days": 3,
     "force_close_vulnerable_critical": true
   },
   "sweep": {
-    "aggression_multiplier": 0.8,
+    "aggression_multiplier": 1.75,
     "instant_sweep_usd": 300.0,
     "instant_sweep_pct": 0.05,
-    "news_boost_multiplier": 1.2,
+    "news_boost_multiplier": 0.0,
     "force_sweep_floor": 10500.0,
     "redeploy_sgov": {
       "recommended": false,
@@ -67,12 +69,32 @@
     }
   },
   "urgency_priority_order": [
-    "MRNA"
+    "OKE",
+    "AXON",
+    "SWK"
   ],
   "urgency_by_ticker": {
-    "MRNA": {
-      "ticker": "MRNA",
-      "score": 0.0,
+    "AXON": {
+      "ticker": "AXON",
+      "score": 0.0972,
+      "urgent": false,
+      "threshold": 0.65,
+      "components": {
+        "momentum_acceleration": 0.1905,
+        "breakout_velocity": 0.0,
+        "fresh_catalyst": 0.0,
+        "fresh_catalyst_raw": 0.0,
+        "intraday_thrust": 0.0,
+        "source_credibility": 0.8,
+        "narrative_persistence": 0.0
+      },
+      "decay_factor": 1.0,
+      "empirical_lift": 1.0,
+      "rationale": "4 sources"
+    },
+    "SWK": {
+      "ticker": "SWK",
+      "score": 0.04,
       "urgent": false,
       "threshold": 0.65,
       "components": {
@@ -81,106 +103,124 @@
         "fresh_catalyst": 0.0,
         "fresh_catalyst_raw": 0.0,
         "intraday_thrust": 0.0,
-        "source_credibility": 0.0,
+        "source_credibility": 0.8,
         "narrative_persistence": 0.0
       },
       "decay_factor": 1.0,
       "empirical_lift": 1.0,
-      "rationale": "no urgency signals"
+      "rationale": "4 sources"
+    },
+    "OKE": {
+      "ticker": "OKE",
+      "score": 0.3688,
+      "urgent": false,
+      "threshold": 0.65,
+      "components": {
+        "momentum_acceleration": 0.5412,
+        "breakout_velocity": 0.226,
+        "fresh_catalyst": 0.0,
+        "fresh_catalyst_raw": 0.0,
+        "intraday_thrust": 1.0,
+        "source_credibility": 1.0,
+        "narrative_persistence": 0.0
+      },
+      "decay_factor": 1.0,
+      "empirical_lift": 1.0,
+      "rationale": "acceleration 0.54; intraday thrust 1.00; 5 sources"
     }
   },
   "narrative": {
     "dominant": "risk_on",
     "regime_shift": "RISK_ON",
-    "confidence": 0.4926
+    "confidence": 0.4719
   },
   "sector_rotation": {
-    "rationale": "Communication Services (strengthening) vs Semiconductors (weakening)",
+    "rationale": "Token (accelerating) vs Commodities (weakening)",
     "top_pairs": [
       {
-        "from": "Semiconductors",
-        "to": "Communication Services",
-        "strength": 0.6312,
-        "rationale": "Semiconductors -0.35 \u2192 Communication Services +0.28"
-      },
-      {
-        "from": "Token",
-        "to": "Communication Services",
-        "strength": 0.6312,
-        "rationale": "Token -0.35 \u2192 Communication Services +0.28"
-      },
-      {
         "from": "Commodities",
-        "to": "Communication Services",
-        "strength": 0.5599,
-        "rationale": "Commodities -0.28 \u2192 Communication Services +0.28"
+        "to": "Token",
+        "strength": 0.7,
+        "rationale": "Commodities -0.35 \u2192 Token +0.35"
+      },
+      {
+        "from": "Semiconductors",
+        "to": "Token",
+        "strength": 0.7,
+        "rationale": "Semiconductors -0.35 \u2192 Token +0.35"
+      },
+      {
+        "from": "Materials",
+        "to": "Token",
+        "strength": 0.7,
+        "rationale": "Materials -0.35 \u2192 Token +0.35"
       }
     ],
     "sector_lift": {
-      "Communication Services": 1.0844,
+      "Communication Services": 1.0628,
+      "Health Care": 1.0446,
+      "Commodities": 0.9125,
+      "Rates": 0.9136,
       "Semiconductors": 0.9125,
-      "Industrials": 0.9926,
-      "Technology": 0.9867,
-      "Energy": 1.048,
-      "Communication": 1.0354,
-      "FX": 0.9762,
-      "Utilities": 0.9697,
-      "Healthcare": 1.0441,
-      "Credit": 0.9676,
-      "Consumer Discretionary": 1.0295,
-      "Software": 1.0569,
-      "Token": 0.9125,
-      "Health Care": 1.0602,
-      "Discretionary": 0.9726,
-      "Materials": 0.949,
-      "Crypto": 1.0318,
-      "Communications": 1.0244,
-      "Consumer Staples": 0.9754,
-      "Rates": 0.964,
-      "Real Estate": 0.9875,
-      "Index": 0.9667,
-      "Staples": 0.9963,
-      "Commodities": 0.9303,
-      "Financials": 1.0713,
-      "Innovation": 0.9537
+      "Index": 0.9163,
+      "Financials": 1.0107,
+      "FX": 0.9258,
+      "Software": 0.997,
+      "Utilities": 0.9242,
+      "Communications": 0.9699,
+      "Token": 1.105,
+      "Real Estate": 0.9371,
+      "Materials": 0.9125,
+      "Healthcare": 0.9863,
+      "Credit": 0.9171,
+      "Industrials": 0.9422,
+      "Staples": 0.9458,
+      "Consumer Discretionary": 1.0236,
+      "Technology": 0.9322,
+      "Innovation": 0.9125,
+      "Consumer Staples": 0.9803,
+      "Crypto": 0.9543,
+      "Discretionary": 0.9222,
+      "Communication": 0.979,
+      "Energy": 0.9896
     },
     "sector_tag": {
-      "Communication Services": "strengthening",
-      "Semiconductors": "weakening",
-      "Industrials": "neutral",
-      "Technology": "neutral",
-      "Energy": "neutral",
-      "Communication": "neutral",
-      "FX": "neutral",
-      "Utilities": "neutral",
-      "Healthcare": "neutral",
-      "Credit": "neutral",
-      "Consumer Discretionary": "neutral",
-      "Software": "neutral",
-      "Token": "deteriorating",
+      "Communication Services": "neutral",
       "Health Care": "neutral",
-      "Discretionary": "neutral",
-      "Materials": "neutral",
-      "Crypto": "neutral",
-      "Communications": "neutral",
-      "Consumer Staples": "neutral",
-      "Rates": "neutral",
-      "Real Estate": "neutral",
-      "Index": "neutral",
-      "Staples": "neutral",
       "Commodities": "weakening",
+      "Rates": "deteriorating",
+      "Semiconductors": "weakening",
+      "Index": "deteriorating",
       "Financials": "neutral",
-      "Innovation": "neutral"
+      "FX": "deteriorating",
+      "Software": "neutral",
+      "Utilities": "weakening",
+      "Communications": "neutral",
+      "Token": "accelerating",
+      "Real Estate": "deteriorating",
+      "Materials": "weakening",
+      "Healthcare": "neutral",
+      "Credit": "deteriorating",
+      "Industrials": "neutral",
+      "Staples": "neutral",
+      "Consumer Discretionary": "neutral",
+      "Technology": "deteriorating",
+      "Innovation": "weakening",
+      "Consumer Staples": "neutral",
+      "Crypto": "neutral",
+      "Discretionary": "deteriorating",
+      "Communication": "neutral",
+      "Energy": "neutral"
     }
   },
   "deployment_floor": {},
   "orchestrator": {
-    "system_objective_today": "DEPLOY_SELECTIVELY",
-    "posture": "OFFENSIVE",
-    "target_market_exposure_pct": 0.75,
+    "system_objective_today": "DEFENSE_HARDENING",
+    "posture": "DEFENSIVE",
+    "target_market_exposure_pct": 0.5,
     "max_sector_concentration_pct": 0.4,
     "max_position_concentration_pct": 0.15,
-    "deployment_pacing": "deploy_fast",
+    "deployment_pacing": "deploy_minimal",
     "account_priority_order": [
       "LEGACY",
       "HARVEST_3",
@@ -190,14 +230,6 @@
   "setup_classifications": {
     "per_ticker": {
       "MRNA": {
-        "archetype": "GENERIC",
-        "setup_lift": 1.0
-      },
-      "PYTH-USD": {
-        "archetype": "GENERIC",
-        "setup_lift": 1.0
-      },
-      "PSA": {
         "archetype": "GENERIC",
         "setup_lift": 1.0
       }
@@ -215,7 +247,17 @@
     }
   },
   "position_directives": [],
-  "rationale": "mode=ATTACK",
-  "directives": [],
+  "rationale": "mode=PRESERVATION | HALT_OPENS",
+  "directives": [
+    {
+      "precedence": 1,
+      "precedence_name": "PRESERVATION",
+      "engine": "market_state",
+      "action": "preservation_halt",
+      "ticker": null,
+      "payload": {},
+      "rationale": "market_state=PRESERVATION: in danger window (overnight_thin)"
+    }
+  ],
   "global_directives": []
 }
