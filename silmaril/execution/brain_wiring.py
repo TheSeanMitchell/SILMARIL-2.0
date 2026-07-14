@@ -95,11 +95,18 @@ def _signals(out: Path) -> List[Dict[str, Any]]:
         "harvest exits · entry throttle · symbol override · confidence blend")
 
     sig("CONFIDENCE_ENGINE.json", "Unified confidence (9 signals)",
-        ["silmaril/execution/paper_sim.py", "silmaril/execution/strategy_lab_abcd.py",
-         "silmaril/execution/brain_wiring.py", "docs/index.html"],
+        ["silmaril/execution/paper_sim.py", "silmaril/execution/brain_wiring.py",
+         "docs/index.html"],
         lambda d: {"scored": d.get("n_scored"),
                    "top_crypto": ((d.get("top_confidence_by_class") or {}).get("crypto") or [["—", 0]])[0]},
         "conviction sizing · D-sleeve entry gate · Master brain line")
+
+    sig("CONFIDENCE_CARDS.json", "UNIVERSAL CONFIDENCE CARDS (the baseball cards)",
+        ["silmaril/execution/paper_sim.py", "silmaril/execution/strategy_lab_abcd.py",
+         "docs/index.html", "docs/silmaril_chart.js"],
+        lambda d: {"n_cards": d.get("n_cards"),
+                   "top_compounder": (d.get("compounder_leaders") or [["—", 0]])[0]},
+        "compounder sizing tilt · E-striker pools · card↔chart parity · dossiers")
 
     sig("FINGERPRINTS.json", "Per-name fitted strategies",
         ["silmaril/execution/confidence_engine.py", "docs/index.html"],

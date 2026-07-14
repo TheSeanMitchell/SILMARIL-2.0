@@ -107,6 +107,7 @@ def _fresh_state(apy: float) -> Dict[str, Any]:
         "books": {
             "BENCH_CASH": _new_book("BENCH_CASH", f"risk-free hurdle — accrues {apy*100:.2f}% APY (knob)"),
             "BENCH_SPY":  _new_book("BENCH_SPY", "SPY buy & hold — the stock-book null"),
+            "BENCH_QQQ":  _new_book("BENCH_QQQ", "QQQ buy & hold — the growth/tech market null"),
             "BENCH_HODL": _new_book("BENCH_HODL", "50/50 BTC-ETH hold — the crypto/GEKKO null (MR must beat HOLDING)"),
             "BENCH_EQW":  _new_book("BENCH_EQW", "equal-weight fresh-crypto basket, frozen at creation — selection-vs-exposure null"),
         },
@@ -174,6 +175,9 @@ def build_bench_books(out_dir) -> Dict[str, Any]:
         book["status"] = "holding" if not stale else ("holding (stale marks: " + ", ".join(sorted(stale)) + ")")
 
     _mark_holdings(books["BENCH_SPY"], {str(knob.get("spy", "SPY")): 1.0})
+    if "BENCH_QQQ" not in books:   # states created before 5.11 WRAP gain the QQQ null in place
+        books["BENCH_QQQ"] = _new_book("BENCH_QQQ", "QQQ buy & hold — the growth/tech market null")
+    _mark_holdings(books["BENCH_QQQ"], {str(knob.get("qqq", "QQQ")): 1.0})
     _mark_holdings(books["BENCH_HODL"], {"BTC-USD": 0.5, "ETH-USD": 0.5})
 
     eqw = books["BENCH_EQW"]

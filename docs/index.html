@@ -181,7 +181,7 @@
 <header id="topbar">
   <div id="brandrow">
     <div id="brand"><span id="verHdr" class="gold-shine">SILMARIL</span><span id="verNum">5.1</span><span id="buildStamp"></span></div>
-    <div id="clocks"><span id="clock">—</span></div>
+    <div id="clocks"><span id="clock">—</span><span id="lastUpd" class="dim" style="font-size:9.5px;display:block;margin-top:1px"></span></div>
     <div id="ctrls">
       <div id="fsCtl"><button id="fsM" title="smaller text">A−</button><button id="fs1" title="reset text">A</button><button id="fsP" title="larger text">A+</button></div>
       <button class="themebtn" id="themeBtn" onclick="toggleTheme()" title="day / night">🌙</button>
@@ -482,7 +482,8 @@ function T3(x){try{const d=(x instanceof Date)?x:new Date(x);if(isNaN(d))return 
 function T3t(x){try{const d=(x instanceof Date)?x:new Date(x);if(isNaN(d))return String(x);
   const f=tz=>d.toLocaleTimeString('en-US',{timeZone:tz,hour:'2-digit',minute:'2-digit',hour12:false});
   return f('America/Los_Angeles')+'PT·'+f('America/New_York')+'ET·'+d.toISOString().slice(11,16)+'Z';}catch(e){return String(x);}}
-function renderClock(){const now=new Date();
+function _updLastUpd(){try{var el=document.getElementById('lastUpd');if(!el)return;var g=window.__lastGen;if(!g){el.textContent='';return;}var m=(Date.now()-new Date(g).getTime())/60000;el.textContent='engine updated '+(m<1?'just now':(m<90?Math.round(m)+'m ago':(m/60).toFixed(1)+'h ago'));}catch(e){}}
+function renderClock(){_updLastUpd();const now=new Date();
   const vegas=now.toLocaleTimeString('en-US',{timeZone:'America/Los_Angeles',hour:'2-digit',minute:'2-digit',second:'2-digit'});
   const et=new Date(now.toLocaleString('en-US',{timeZone:'America/New_York'}));const day=et.getDay(),mins=et.getHours()*60+et.getMinutes();
   const O=570,C=960;let s;if(day===0||day===6)s='NYSE closed · weekend';else if(mins<O){const d=O-mins;s='pre-market · opens in '+(d/60|0)+'h'+(d%60)+'m';}else if(mins>=C)s='NYSE closed · after hours';else{const d=C-mins;s='NYSE OPEN · closes in '+(d/60|0)+'h'+(d%60)+'m';}
@@ -492,11 +493,12 @@ function renderHealth(){const L=LIVE||{};const el=document.getElementById('healt
   const age=L.generated_at?Math.round((Date.now()-new Date(L.generated_at))/60000):null;
   el.innerHTML=`PROJECT HEALTH · last sim run: ${L.generated_at?new Date(L.generated_at).toLocaleString()+(age!=null?' ('+age+'m ago)':''):'—'} · books live: crypto/stock/metal/energy + 🦎 GEKKO + 4 bench nulls · feeds: price+ccxt+news active, metals/energy via API keys · data: internal paper sim (Alpaca paper + live shown separately when wired)`;}
 async function load(){
+  try{ if(!window.__SIL_CARDS){ const _cc = await jget('data/CONFIDENCE_CARDS.json'); window.__SIL_CARDS = (_cc&&_cc.cards)||{}; window.__SIL_CARDS_META = {n:(_cc&&_cc.n_cards)||0, leaders:(_cc&&_cc.compounder_leaders)||[]}; } }catch(e){ window.__SIL_CARDS = window.__SIL_CARDS||{}; }
   LIVE=await jget('data/paper_sim_live.json');
   const cv=await jget('data/champion_validation.json'), gov=await jget('data/CHAMPION_GOVERNANCE.json'), st=await jget('data/CHAMPION_STATUS.json'), ch=await jget('data/champion.json');
   BOOKS.crypto=await jget('data/paper_book_crypto.json'); BOOKS.stock=await jget('data/paper_book_stock.json');
   if(LIVE&&LIVE.champion_live_params){EXIT.t=LIVE.champion_live_params.target;EXIT.s=LIVE.champion_live_params.stop;EXIT.h=LIVE.champion_live_params.max_hold_min;}
-  { const _tsel=$('ts'); if(LIVE&&_tsel)_tsel.textContent=T3(LIVE.generated_at); }  /* ts element removed in 5.1 reorg; guarded so a missing id can never abort load() */
+  { const _tsel=$('ts'); if(LIVE&&_tsel)_tsel.textContent=T3(LIVE.generated_at); if(LIVE&&LIVE.generated_at){window.__lastGen=LIVE.generated_at;_updLastUpd();} }  /* ts element removed in 5.1 reorg; guarded so a missing id can never abort load() */
   // each render is isolated: a bad/missing field in one panel can never blank the rest
   const safe=(fn,name)=>{try{fn();}catch(e){console.error(name,e);}};
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
@@ -805,6 +807,7 @@ function pnlClass(pnl,pct){
   return v==null?'dim':(v>=0?'pos':'neg');
 }
 function renderMarksHealth(){try{const mh=(typeof LIVE!=='undefined'&&LIVE&&LIVE.marks_health)?LIVE.marks_health:null;const el=$('marksHealth');if(!el)return;if(!mh){el.style.display='none';return;}
+  try{ if(mh.oscillating){ el.style.display='block'; el.innerHTML = '<b class="neg">\u26a0 '+mh.oscillating+' name(s) OSCILLATION-QUARANTINED</b> <span class="dim" style="font-size:9.5px">(two-cluster sawtooth tape \u2014 entries blocked, marks median-smoothed): '+(mh.oscillating_syms||[]).join(', ')+'</span><br>' + el.innerHTML; } }catch(e){}
   const bad=/DEGRADED|STALLED/.test(mh.state||'');const quiet=/QUIET/.test(mh.state||'');
   el.style.display='block';
   el.style.color=bad?'var(--neg)':(quiet?'var(--dim)':'var(--pos)');
@@ -949,7 +952,7 @@ async function renderFive(){const el=$('fiveStrip');if(!el)return;
   const bn=await jget('data/BENCH_BOOKS.json'),cs=await jget('data/UNIVERSE_CENSUS.json'),sc=await jget('data/STORE_CONTRACTS.json'),iv=await jget('data/INVARIANTS.json'),ut=await jget('data/CHAMPION_UTILIZATION.json'),cd=await jget('data/CONDUCTOR_STATE.json'),ro=await jget('data/RESEARCH_OS.json'),fpr=await jget('data/FINGERPRINTS.json'),cat=await jget('data/PARAM_CATALOG.json'),mtfS=await jget('data/MTF_REGIME.json'),c1S=await jget('data/CONDUCTOR_C1.json'),rcS=await jget('data/CONDUCTOR_REPORT_CARD.json');
   const L=LIVE||{};const rows=[];
   if(bn&&bn.books){const B=bn.books;const g=k=>((B[k]||{}).return_pct);
-    rows.push('<b>NULLS</b> '+['BENCH_CASH','BENCH_SPY','BENCH_HODL','BENCH_EQW'].map(k=>{const bb=B[k]||{};const r=bb.return_pct;const c=r>0?'pos':(r<0?'neg':'');const stt=String(bb.status||'');return k.replace('BENCH_','')+' <span class="'+c+'">'+(r!=null?sg(r)+'%':'\u2014')+'</span>'+(stt.indexOf('holding')===0||stt==='accruing'?'':' <span class="dim">('+stt+')</span>');}).join(' \u00b7 '));
+    rows.push('<b>NULLS</b> '+['BENCH_CASH','BENCH_SPY','BENCH_HODL','BENCH_EQW'].map(k=>{const bb=B[k]||{}+(b&&b.books&&b.books.BENCH_QQQ?(' \u00b7 QQQ '+((b.books.BENCH_QQQ.return_pct>=0?'+':'')+b.books.BENCH_QQQ.return_pct+'%')):'');const r=bb.return_pct;const c=r>0?'pos':(r<0?'neg':'');const stt=String(bb.status||'');return k.replace('BENCH_','')+' <span class="'+c+'">'+(r!=null?sg(r)+'%':'\u2014')+'</span>'+(stt.indexOf('holding')===0||stt==='accruing'?'':' <span class="dim">('+stt+')</span>');}).join(' \u00b7 '));
     const dH=(L.crypto&&g('BENCH_HODL')!=null)?((L.crypto.return_pct||0)-g('BENCH_HODL')):null;
     const dS=(L.stock&&g('BENCH_SPY')!=null)?((L.stock.return_pct||0)-g('BENCH_SPY')):null;
     rows.push('<b>\u0394 vs NULL</b> crypto\u2212HODL: '+(dH!=null?'<span class="'+(dH>=0?'pos':'neg')+'">'+sg(dH)+'%</span>':'\u2014')+' \u00b7 stock\u2212SPY: '+(dS!=null?'<span class="'+(dS>=0?'pos':'neg')+'">'+sg(dS)+'%</span>':'\u2014')+' <span class="dim">(Law 10: beat doing-nothing, or it is not edge)</span>');
@@ -1127,14 +1130,17 @@ async function renderBrain(){try{
   }
 }catch(e){}}
 
-async function renderStrategyLab(){try{const el=$('slabBody');if(!el)return;const d=await jget('data/STRATEGY_LAB.json');if(!d||!d.scoreboard){el.textContent='lab initializing…';return;}
-  const rows=d.scoreboard.map(function(r,i){const dv=r.delta_vs_hodl;const dvs=dv==null?'—':(dv>=0?'+':'')+dv+'%';const lead=i===0?' 👑':'';
-    return '<tr><td><b>'+r.sleeve+'</b> '+r.name+lead+'</td><td>'+r.cap+'</td><td class="'+(r.return_pct>=0?'pos':'neg')+'">'+(r.return_pct>=0?'+':'')+r.return_pct+'%</td><td class="'+(dv>=0?'pos':'neg')+'">'+dvs+'</td><td>'+r.open+'/'+r.closed+'</td><td>'+(r.win_rate!=null?r.win_rate+'%':'—')+'</td><td class="neg">'+r.max_dd_pct+'%</td></tr>'
-      +'<tr><td colspan="7" class="dim" style="font-size:10px;padding-top:0">'+r.desc+'</td></tr>';}).join('');
-  el.innerHTML='<div class="dim" style="font-size:10.5px;margin-bottom:8px">Four isolated $10k sleeves run the SAME entries on the crypto universe, differing ONLY in how they manage positions. <b>A is your current live behavior (the control).</b> Judged on \u0394-vs-HODL and compounding, not win rate.</div>'
-    +'<table><thead><tr><th>sleeve</th><th>cap</th><th>return</th><th>\u0394 vs HODL</th><th>open/closed</th><th>win%</th><th>max DD</th></tr></thead><tbody>'+rows+'</tbody></table>'
-    +'<div class="dim" style="font-size:9.5px;margin-top:6px">'+(d.how_to_read||'')+'</div>';
+async function renderStrategyLab(){try{const el=$('slabBody');if(!el)return;const d=await jget('data/STRATEGY_LAB.json');
+  if(!d||!d.by_industry){el.textContent='lab initializing\u2026';return;}
+  var order=['crypto','stock','metal','energy'];
+  el.innerHTML='<div class="dim" style="font-size:10px;margin-bottom:8px">'+(d.what||'')+'</div>'
+  + order.map(function(bk){var rows=d.by_industry[bk]||[];if(!rows.length)return '';
+    return '<div style="margin:10px 0 4px;font-weight:800;text-transform:uppercase;letter-spacing:.5px">'+bk+' <span class="dim" style="font-weight:400;font-size:9.5px">\u2014 leader: '+(rows[0]?rows[0].sleeve+' '+rows[0].name:'\u2014')+'</span></div>'
+    +'<table><thead><tr><th>sleeve</th><th>cap</th><th>return</th><th>\u0394 vs HODL</th><th>vault</th><th>open/closed</th><th>win%</th><th>max DD</th></tr></thead><tbody>'
+    +rows.map(function(r){var dv=r.delta_vs_hodl;return '<tr><td><b>'+r.sleeve+'</b> '+r.name+'<div class="dim" style="font-size:8.5px;max-width:340px">'+r.desc+'</div></td><td>'+r.cap+(r.sleeve==='E'?'+2\u26a1':'')+'</td><td class="'+(r.return_pct>=0?'pos':'neg')+'">'+(r.return_pct>=0?'+':'')+r.return_pct+'%</td><td>'+(dv==null?'\u2014':('<span class="'+(dv>=0?'pos':'neg')+'">'+(dv>=0?'+':'')+dv+'%</span>'))+'</td><td>'+(r.vault_usd?('<b class="pos">$'+r.vault_usd.toFixed(2)+'</b>'):'\u2014')+'</td><td>'+r.open+'/'+r.closed+'</td><td>'+(r.win_rate==null?'\u2014':r.win_rate+'%')+'</td><td class="neg">'+r.max_dd_pct+'%</td></tr>';}).join('')
+    +'</tbody></table>';}).join('');
 }catch(e){}}
+
 async function renderConfidence(){try{const el=$('confBody');if(!el)return;const d=await jget('data/CONFIDENCE_ENGINE.json');if(!d||!d.by_symbol){el.textContent='confidence engine warming…';return;}
   const rl=(d.rhythm_tradeable_leaders||[]).slice(0,10).map(function(x){return '<tr><td><b>'+x[0].replace('-USD','')+'</b></td><td class="pos">'+(x[1]*100).toFixed(0)+'%</td><td>'+(x[2]?Math.round(x[2])+'m':'\u2014')+'</td><td>'+(x[3]||0).toFixed(1)+'%</td></tr>';}).join('');
   const tc=(d.top_confidence_by_class||{});
@@ -1542,8 +1548,18 @@ document.querySelectorAll('#mIv button').forEach(b=>b.onclick=()=>{document.quer
 function byHd(t){return secs.find(function(x){var h=x.querySelector('.hd');return h&&h.textContent.indexOf(t)>=0;});}
 var tr=byHd('RECENT TRADES');
 if(tr&&!document.getElementById('cmdTakehome')){var th=document.createElement('section');th.setAttribute('data-cat','cmd');
-th.innerHTML='<div class="hd">TODAY NET \u2014 what we actually kept after fees</div><div class="bd"><div id="cmdTakehome" class="dim">loading\u2026</div></div>';
+th.innerHTML='<div class="hd">TODAY NET \u2014 what we actually kept after fees</div><div class="bd"><div id="cmdTakehome" class="dim">loading\u2026</div><div id="openTruth" style="margin-top:8px"></div></div>';
 tr.after(th);
+(function(){try{
+  var ot=document.getElementById('openTruth'); if(!ot) return;
+  var ob=[], tot=0, n=0;
+  ['crypto','stock','metal','energy','aggressive'].forEach(function(b){var ps=((LIVE&&LIVE[b])||{}).positions||[];var v=0;ps.forEach(function(q){v+=(q.qty||0)*(q.entry||0);});if(ps.length){ob.push(b+' $'+v.toFixed(0)+' in '+ps.length);tot+=v;n+=ps.length;}});
+  var base='<div style="padding:8px;border:1px dashed var(--line2);border-radius:6px"><b style="font-size:10.5px">OPEN-TRADE TRUTH</b> <span class="dim" style="font-size:10px">\u2014 profits are only real when flat. Right now <b>$'+tot.toFixed(0)+'</b> is committed across <b>'+n+'</b> open trades'+(ob.length?(' ('+ob.join(' \u00b7 ')+')'):'')+'.';
+  ot.innerHTML=base+'</span></div>';
+  jget('data/CONDUCTOR_REPORT_CARD.json').then(function(rc){try{var ig=rc&&rc.realized_profit&&rc.realized_profit.integrity;if(!ig)return;
+    ot.innerHTML=base+' Data-integrity: <b class="'+(ig.suspect_trades?'neg':'pos')+'">'+ig.suspect_trades+' suspect trade(s) \u00b7 $'+Number(ig.suspect_usd).toFixed(2)+'</b> \u2192 verified realized <b>$'+Number(ig.verified_realized_usd).toFixed(2)+'</b>.</span></div>';
+  }catch(e){}});
+}catch(e){}})();
 jget('data/THRESHOLD_TAKEHOME.json').then(function(d){var r=((d&&d.daily_takehome)||[])[0];var el=document.getElementById('cmdTakehome');if(!el)return;
 if(r){var net=(r.net!=null?r.net:r.net_usd)||0,gr=(r.gross!=null?r.gross:r.gross_usd)||0,fe=(r.fees!=null?r.fees:r.fees_usd)||0;
 el.innerHTML='<b class="'+(net>=0?'pos':'neg')+'" style="font-size:18px">'+(net>=0?'+$':'-$')+Math.abs(net).toFixed(2)+'</b> net kept today \u00b7 gross '+(gr>=0?'+':'')+'$'+(+gr).toFixed(2)+' \u00b7 fees $'+(+fe).toFixed(2)+' <span class="dim">(full table on FORENSICS)</span>';}

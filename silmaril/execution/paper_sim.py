@@ -329,6 +329,28 @@ def load_all_samples(out) -> Dict[str, List]:
     return merged
 
 
+_LAST_OSC: set = set()
+
+
+def _osc_ratio(pxs) -> bool:
+    """5.11 WRAP oscillation detector: an alternating two-cluster series (the
+    stale-source sawtooth) has |p[i]-p[i-2]| tiny vs |p[i]-p[i-1]|. ratio<0.35
+    with a real step size = quarantine. Immune to genuine trends and chop."""
+    try:
+        px = [float(x) for x in pxs][-20:]
+        if len(px) < 12:
+            return False
+        d1 = sorted(abs(px[i] - px[i - 1]) for i in range(1, len(px)))
+        d2 = sorted(abs(px[i] - px[i - 2]) for i in range(2, len(px)))
+        m1 = d1[len(d1) // 2]
+        m2 = d2[len(d2) // 2]
+        if m1 <= 0 or px[-1] <= 0:
+            return False
+        return (m2 / m1) < 0.35 and (m1 / px[-1]) > 0.01
+    except Exception:
+        return False
+
+
 def _marks_from_samples(samples: Dict[str, List]):
     """Returns (marks, warm, health).
     marks: {sym: (last_price, h1_drop_fraction)} for EVERY symbol with a fresh last print (<=90 min old,
@@ -346,6 +368,7 @@ def _marks_from_samples(samples: Dict[str, List]):
     WARMUP_MIN_POINTS = int(_WARM_KNOB.get("min_points", 8))
     WARMUP_MIN_SPAN_S = int(float(_WARM_KNOB.get("min_span_h", 1.5)) * 3600)
     out, warm = {}, set()
+    _osc_set = set()
     newest_age = None
     try:
         nowt = _dt.now(_tz.utc)
@@ -368,6 +391,10 @@ def _marks_from_samples(samples: Dict[str, List]):
         if len(recent) < 6:
             continue
         last_t, last_p = recent[-1]
+        if _osc_ratio([p for _, p in recent]):
+            _osc_set.add(sym)
+            _l4 = sorted(p for _, p in recent[-4:])
+            last_p = _l4[len(_l4) // 2]
         try:
             age = (nowt - _dt.fromisoformat(last_t)).total_seconds() if nowt is not None else 0.0
         except Exception:
@@ -402,6 +429,11 @@ def _marks_from_samples(samples: Dict[str, List]):
               "newest_sample_age_min": round(newest_age / 60.0, 1) if newest_age is not None else None,
               "state": ("OK" if warm else ("DEGRADED — marks live, entries paused (warmup starved; cron cadence slow?)"
                                             if out else "STALLED — no fresh prices at all (ingestion down?)"))}
+    warm -= _osc_set
+    health["oscillating"] = len(_osc_set)
+    health["oscillating_syms"] = sorted(_osc_set)[:12]
+    global _LAST_OSC
+    _LAST_OSC = _osc_set
     return out, warm, health
 
 class PaperBook:
@@ -457,7 +489,8 @@ class PaperBook:
         self.cash += proceeds
         self.realized_pnl += pnl
         realized_pct = (eff / pos["entry"] - 1) if pos["entry"] > 0 else 0.0
-        srow = {"side": "SELL", "sym": sym, "qty": round(pos["qty"], 6), "price": round(eff, 6),
+        srow = {"side": "SELL", "sym": sym, "integrity": ("SUSPECT_OSC" if sym in _LAST_OSC else "ok"),
+                "qty": round(pos["qty"], 6), "price": round(eff, 6),
                 "pnl": round(pnl, 2), "realized_pct": round(realized_pct * 100, 3), "t": t or _now(),
                 "wager_usd": round(pos["qty"] * pos["entry"], 2)}
         tgt = pos.get("target")
@@ -560,6 +593,21 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
     _mtf_bk = ((_mtf.get("books") or {}).get(uc) or {})
     _mtf_fastred = bool(_mtf_bk.get("fast_red"))
     _mtf_syms = {k: (v.get("confluence") or 0) for k, v in (_mtf.get("symbols") or {}).items()}
+    _comp_map = {}
+    try:
+        _cc0 = json.loads((out / "CONFIDENCE_CARDS.json").read_text()).get("cards") or {}
+        _comp_map = {k: (v.get("compounder_score") or 0.5) for k, v in _cc0.items()}
+    except Exception:
+        _comp_map = {}
+    _exp_hold = {}
+    try:
+        _pkr0 = json.loads((out / "PEAK_RHYTHM.json").read_text()).get("by_symbol") or {}
+        for _s0, _v0 in _pkr0.items():
+            _c0 = _v0.get("median_minutes_between_peaks")
+            if _c0:
+                _exp_hold[_s0] = round(float(_c0))
+    except Exception:
+        _exp_hold = {}
     _ce_map = {}
     try:
         _ce_map = {k: (v.get("confidence") or 0.0)
@@ -706,7 +754,7 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
             # Limit-class fill at the live print (same maker cost model — no fee-
             # bracket change). Every event is A/B-logged; the report card grades it.
             why, fill = "REGIME_FLIP_HARVEST", cur
-        elif _sc_on and hold >= _sc_h * 60.0 and (chg - pos.get("cost", MIN_COST)) >= 0:
+        elif _sc_on and hold >= max(_sc_h * 60.0, (pos.get("exp_hold_min") or 0) * 1.15) and (chg - pos.get("cost", MIN_COST)) >= 0:
             # 5.1B FEE-CLEAR TIME — head above water past the review window: bank
             # it and reposition. Never forces a loss; underwater just gets flagged.
             why, fill = "FEE_CLEAR_TIME", cur
@@ -978,6 +1026,17 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                 _ce_score = None
             if _ce_score is not None:
                 _conf = float(_ce_score)
+            try:
+                _ck = (cat.get("compounder") or {})
+                if str(_ck.get("mode", "auto")).lower() == "auto":
+                    _cm = _comp_map.get(sym)
+                    if _cm is not None:
+                        _mt = float(_ck.get("max_tilt", 1.25))
+                        _tilt = 1.0 + (float(_cm) - 0.5) * 2.0 * (_mt - 1.0)
+                        _tilt = min(max(_tilt, 1.0 / _mt), _mt)
+                        _conf = min(1.0, max(0.0, _conf * _tilt))
+            except Exception:
+                pass
             else:
                 _conf = 0.45 * _rel + 0.35 * _wr + 0.20 * max(0.0, min(1.0, (_cf + 2.0) / 8.0))
             _mult = 0.5 + 2.0 * _conf                        # 0.5×..2.5×
@@ -994,6 +1053,7 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                      target=_use_target, stop=_use_stop, conviction=cv, expected=net_margin):
             try:
                 pbook.positions[sym]["entry_regime"] = _regime
+                pbook.positions[sym]["exp_hold_min"] = _exp_hold.get(sym)
                 pbook.positions[sym]["style"] = _style
                 pbook.positions[sym]["champion_entry"] = champion
                 pbook.positions[sym]["conv_frac"] = round(_base_frac, 4)

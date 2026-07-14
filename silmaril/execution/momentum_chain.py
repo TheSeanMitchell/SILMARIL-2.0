@@ -116,6 +116,32 @@ def record_samples(out_dir, prices: Dict[str, float]) -> Dict[str, Any]:
                         "ticker": tk, "rejected_price": pr,
                         "last_good": last_good, "at": ts}])[-100:]
                     continue
+        # ── 5.11 WRAP · TWO-PRINT CONFIRMATION (the July-13 lesson) ──────────
+        # Root cause of the sawtooth charts: the source waterfall alternated a
+        # LIVE feed with one serving ~2h-stale prices → every name flipped
+        # between two clusters (~3.4% apart on a down day), and MR "won" the
+        # gap. Fix at the source: any tick that jumps >1.5% from the last
+        # accepted print goes PENDING; it is only accepted when the NEXT fetch
+        # confirms within 0.75%. A real crash confirms ~10min later; an
+        # alternating stale source can never confirm and is rejected forever.
+        if row:
+            _lg = row[-1][1]
+            if _lg > 0:
+                _jump = abs(pr / _lg - 1.0)
+                _pend = store.setdefault("pending_ticks", {})
+                if _jump > 0.015:
+                    _pd = _pend.get(tk)
+                    if _pd and abs(pr / float(_pd["price"]) - 1.0) <= 0.0075:
+                        _pend.pop(tk, None)      # two agreeing prints → real move, accept
+                    else:
+                        _pend[tk] = {"price": pr, "at": ts}
+                        store.setdefault("rejected_ticks", [])
+                        store["rejected_ticks"] = (store["rejected_ticks"] + [{
+                            "ticker": tk, "rejected_price": pr, "last_good": _lg,
+                            "at": ts, "why": "unconfirmed_jump"}])[-100:]
+                        continue
+                else:
+                    _pend.pop(tk, None)
         row.append([ts, round(pr, 8)])
         # trim old
         row = [r for r in row if r[0] >= cutoff]

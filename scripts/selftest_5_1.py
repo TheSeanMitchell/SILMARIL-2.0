@@ -321,13 +321,16 @@ def t16_fast_band_regime():
 
 # ── T17 · STRATEGY LAB has four distinct sleeves with different caps ──
 def t17_strategy_lab_sleeves():
-    from silmaril.execution.strategy_lab_abcd import SLEEVES
+    from silmaril.execution.strategy_lab_abcd import SLEEVES, BOOKS
     caps = {k: v["cap"] for k, v in SLEEVES.items()}
-    ok = (set(SLEEVES) == {"A", "B", "C", "D"} and caps["A"] == 10 and caps["B"] == 5
-          and caps["D"] <= 3 and SLEEVES["C"]["recycle_h"] and SLEEVES["D"]["conf_gate"] > 0)
-    check("T17 strategy lab: 4 sleeves, distinct discipline (A=10 control, D=sniper≤3 conf-gated)", ok,
-          f"caps={caps}")
-
+    ok = (set(SLEEVES.keys()) == {"A", "B", "C", "D", "E", "F"}
+          and caps["A"] == 10                                  # the control
+          and caps["D"] <= 3 and SLEEVES["D"]["conf_gate"] > 0  # the sniper
+          and SLEEVES["E"]["strike_extra"] == 2                 # adaptive striker
+          and SLEEVES["F"]["vault"] is True                     # cash harvester
+          and BOOKS == ("crypto", "stock", "metal", "energy"))
+    check("T17 lab v2: A-F sleeves per industry (control·sniper·striker·vault)",
+          ok, f"caps={caps}")
 
 # ── T18 · UI STRUCTURE: six-tab routing, every section categorized, nothing orphaned ──
 def t18_ui_six_tabs():
@@ -450,8 +453,10 @@ def t25_brain_tab():
     ix = (ROOT / "docs/index.html").read_text()
     ok = ('data-p="brain"' in ix and '"brain"' in ix
           and ix.count('data-cat="brain"') >= 4 and 'renderBrain' in ix)
+    _btn = 'data-p="brain"' in ix
+    _nsec = ix.count('data-cat="brain"')
     check("T25 BRAIN tab wired (button + guide + ≥4 sections + renderer)", ok,
-          f"btn={'data-p=\"brain\"' in ix} sections={ix.count('data-cat=\"brain\"')}")
+          f"btn={_btn} sections={_nsec}")
 
 
 # ── T26 · DOSSIER contract — the graphs carry EVERYTHING (peaks, ETA, likelihoods,
@@ -468,6 +473,58 @@ def t26_dossier_contract():
           ok, f"dossiers={len(ds)} missing={sorted(need - set(ds[0].keys())) if ds else 'ALL'}")
 
 
+# ── T27 · PRICE-INTEGRITY GUARDS (the July-13 sawtooth lesson, permanently armed) ──
+def t27_price_integrity_guards():
+    rec = (ROOT / "silmaril/execution/momentum_chain.py").read_text()
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    rc = (ROOT / "silmaril/execution/conductor_report_card.py").read_text()
+    ok = ("pending_ticks" in rec and "unconfirmed_jump" in rec
+          and "_osc_ratio" in sim and "_LAST_OSC" in sim and "SUSPECT_OSC" in sim
+          and "verified_realized_usd" in rc)
+    check("T27 price integrity: recorder two-print confirm + osc quarantine + suspect tagging + verified line",
+          ok, "a guard is missing")
+
+
+# ── T28 · UNIVERSAL CONFIDENCE CARD contract ──
+def t28_confidence_cards():
+    import json as _json
+    eng = (ROOT / "silmaril/execution/confidence_engine.py").read_text()
+    ok_src = "CONFIDENCE_CARDS.json" in eng and "compounder_score" in eng
+    d = {}
+    try:
+        d = _json.loads((ROOT / "docs/data/CONFIDENCE_CARDS.json").read_text())
+    except Exception:
+        pass
+    cards = d.get("cards") or {}
+    need = {"class", "last_px", "confidence", "cycle_min", "expected_hold_min",
+            "vol_native_bar_pct", "compounder_score", "book_win_pct", "momentum",
+            "timing_best_buy", "bounce_reliability"}
+    sample = next(iter(cards.values()), {})
+    ok = ok_src and d.get("n_cards", 0) > 0 and need.issubset(set(sample.keys()))
+    _missing = sorted(need - set(sample.keys())) if sample else ["NO_CARDS"]
+    check("T28 universal confidence card (every valuable, full stat block + compounder)",
+          ok, f"missing={_missing}")
+
+
+# ── T29 · PER-INDUSTRY LAB with E (striker) + F (vault) sleeves ──
+def t29_lab_per_industry():
+    import json as _json
+    lab = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
+    ok_src = "strike_extra" in lab and "vault_usd" in lab and 'BOOKS = ("crypto", "stock", "metal", "energy")' in lab
+    d = {}
+    try:
+        d = _json.loads((ROOT / "docs/data/STRATEGY_LAB.json").read_text())
+    except Exception:
+        pass
+    bi = d.get("by_industry") or {}
+    ok = (ok_src and set(bi.keys()) == {"crypto", "stock", "metal", "energy"}
+          and all(len(rows) == 6 for rows in bi.values())
+          and all(any(r["sleeve"] == "E" for r in rows) and any(r["sleeve"] == "F" for r in rows)
+                  for rows in bi.values()))
+    check("T29 per-industry lab: 4 industries × A-F incl ADAPTIVE STRIKER + CASH HARVESTER",
+          ok, f"books={sorted(bi.keys())} sizes={[len(v) for v in bi.values()]}")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -478,7 +535,8 @@ if __name__ == "__main__":
               t17_strategy_lab_sleeves, t18_ui_six_tabs,
               t19_confidence_all_signals, t20_ui_render_resilience,
               t21_sw_network_first, t22_brain_map_truthful, t23_dr_strange_graded_gate,
-              t24_vol_native_clamps, t25_brain_tab, t26_dossier_contract):
+              t24_vol_native_clamps, t25_brain_tab, t26_dossier_contract,
+              t27_price_integrity_guards, t28_confidence_cards, t29_lab_per_industry):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

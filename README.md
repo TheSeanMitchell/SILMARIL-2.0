@@ -1,3 +1,10 @@
+> **5.11 WRAP (2026-07-13)** — data-integrity armor (two-print recorder confirmation ·
+> oscillation quarantine · suspect-vs-verified realized), the **universal Confidence Card**
+> (1050 cards; compounder score tilts live sizing; chart⇄card parity), **per-industry
+> Strategy Labs A–F** (E ADAPTIVE STRIKER · F CASH HARVESTER vault), rhythm-holds, QQQ null,
+> OPEN-TRADE TRUTH honesty line, battery → 29. Start here: `SILMARIL_MASTER_BRIEF.md`, then
+> `5_11_WRAP_LEDGER.md`.
+
 # SILMARIL 5.1 — deterministic paper-trading research platform
 ### The root orientation document. Read this file and `DOCS_5_1/` before touching anything; together they replace every legacy directive/audit/install doc (all moved to `attic/docs_pre_5_1/`).
 

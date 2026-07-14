@@ -158,6 +158,21 @@
     H += "<div style='font-weight:700;color:" + tcol + "'>" + tr.label + " (" + (tr.slopePct >= 0 ? "+" : "") + tr.slopePct + "% over view)</div>";
     H += "<div style='font-size:11px;color:#9aa4b8;margin-top:2px'>" + bounceExpect(tr) + "</div></div>";
     H += "<div style='font-weight:700;color:#cfd6e4;margin:2px 0 6px'>PERFORMANCE (this view)</div>";
+    try {
+      // data source: CONFIDENCE_CARDS.json — loaded once by index.html into window.__SIL_CARDS
+      var CC = (window.__SIL_CARDS || {})[sym];
+      if (CC) {
+        var _f = function(x,d){ return (x==null?'\u2014':(typeof x==='number'?x.toFixed(d==null?2:d):x)); };
+        H += "<div style='font-weight:700;color:#d4af37;margin:10px 0 4px'>CONFIDENCE CARD</div>";
+        H += "<div style='font-size:10px;line-height:1.55'>"
+          + "confidence <b>" + Math.round((CC.confidence||0)*100) + "%</b> \u00b7 rhythm-tradeable <b>" + Math.round((CC.rhythm_tradeability||0)*100) + "%</b> \u00b7 compounder <b>" + _f(CC.compounder_score,3) + "</b><br>"
+          + "cycle <b>" + _f(CC.cycle_min,0) + "m</b> \u00b7 expected hold <b>" + _f(CC.expected_hold_min,0) + "m</b> \u00b7 swing <b>" + _f(CC.amplitude_pct) + "%</b><br>"
+          + "its own bar: dip \u2265 <b>" + _f(CC.vol_native_bar_pct) + "%</b> (\u03c31h " + _f(CC.sigma1h_pct) + "%) \u00b7 fp dip " + _f(CC.typical_dip_pct) + "% \u2192 bounce " + _f(CC.typical_bounce_pct) + "%<br>"
+          + "bounce likelihood <b>" + (CC.bounce_reliability==null?'\u2014':Math.round(CC.bounce_reliability*100)+'%') + "</b> \u00b7 MTF " + _f(CC.mtf_confluence,2) + " \u00b7 mom h1 " + _f(CC.momentum&&CC.momentum.h1) + "% / d1 " + _f(CC.momentum&&CC.momentum.d1) + "%<br>"
+          + "timing: buy " + (CC.timing_best_buy||'\u2014') + " \u00b7 sell " + (CC.timing_best_sell||'\u2014') + " \u00b7 our record: <b>" + (CC.book_win_pct==null?'no trades yet':(CC.book_wins+'/'+CC.book_trades+' ('+CC.book_win_pct+'%) $'+_f(CC.book_pnl_usd))) + "</b>"
+          + "</div>";
+      }
+    } catch(e) {}
     H += row("Open", fmtP(st.open));
     H += row("Last", fmtP(st.close));
     H += row("Change", (st.chg >= 0 ? "+" : "") + fmtP(st.chg) + " (" + st.chgP.toFixed(2) + "%)", st.chg >= 0 ? "#16c784" : "#ea3943");

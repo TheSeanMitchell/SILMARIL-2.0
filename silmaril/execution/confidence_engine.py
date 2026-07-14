@@ -34,7 +34,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from .atomic_io import write_json_atomic
-from .paper_sim import load_all_samples, asset_class
+from .paper_sim import load_all_samples, asset_class, _vol_sigma1h, _vol_native_entry
 
 STORE = "CONFIDENCE_ENGINE.json"
 
@@ -261,6 +261,87 @@ def build_confidence_engine(out_dir) -> Dict[str, Any]:
                        key=lambda x: -x[1])[:8]
         by_class_top[cls] = names
 
+    # ── 5.11 WRAP · THE UNIVERSAL CONFIDENCE CARD ─────────────────────────────
+    # The operator's baseball card: EVERY valuable gets the full stat block —
+    # rhythm, fingerprint aims, its own vol bar, expected hold, momentum
+    # trajectory, timing windows, book track record, and a COMPOUNDER SCORE
+    # (conf × swing × cadence) that now tilts live sizing and ranks the
+    # daily-compounding bread-and-butter (NEAR-style: high conf · ~300m · 2%+).
+    _book_stats: Dict[str, Dict[str, Any]] = {}
+    for _bk in ("crypto", "stock", "metal", "energy", "aggressive"):
+        try:
+            _pb = json.loads((out / f"paper_book_{_bk}.json").read_text())
+            for _t in _pb.get("trades") or []:
+                if _t.get("side") != "SELL":
+                    continue
+                _sy = _t.get("sym")
+                _st = _book_stats.setdefault(_sy, {"trades": 0, "wins": 0, "pnl": 0.0})
+                _st["trades"] += 1
+                _st["pnl"] += float(_t.get("pnl") or 0.0)
+                if float(_t.get("pnl") or 0.0) > 0:
+                    _st["wins"] += 1
+        except Exception:
+            pass
+    _vn_knob = {}
+    try:
+        _vn_knob = json.loads((out / "PARAM_CATALOG.json").read_text()).get("vol_native") or {}
+    except Exception:
+        pass
+    cards: Dict[str, Any] = {}
+    _comp_rank = []
+    for _sym, _rec in per_symbol.items():
+        _rows = samples.get(_sym) or []
+        _pxs = [pp for _tt, pp in _rows if pp and "T00:00:00" not in str(_tt)]
+        _lastpx = _pxs[-1] if _pxs else None
+        _pk = pkr.get(_sym) or {}
+        _cyc = _pk.get("median_minutes_between_peaks")
+        _amp = _rec.get("amplitude_pct") or 0.0
+        _sig = _vol_sigma1h(_rows)
+        _vbar = _vol_native_entry(_rows, _rec["class"], 0.03, dict(_vn_knob, mode="auto"))
+        _card_fp = fp_cards.get(_sym) or {}
+        _bs = _book_stats.get(_sym) or {}
+        _conf = _rec["confidence"]
+        # compounder: confidence × swing-quality × cadence-speed, each clamped
+        _swf = min(max((_amp or 0) / 2.0, 0.6), 1.6)
+        _caf = min(max((360.0 / max(float(_cyc or 720), 30.0)) ** 0.5, 0.6), 1.6)
+        _comp = round(min(1.0, max(0.0, _conf * _swf * _caf / 1.6)), 3)
+        _comp_rank.append((_sym, _comp))
+        cards[_sym] = {
+            "class": _rec["class"], "last_px": _lastpx,
+            "confidence": _conf, "parts": _rec["parts"],
+            "rhythm_tradeability": _rec["rhythm_tradeability"],
+            "cycle_min": _cyc, "amplitude_pct": _amp,
+            "last_peak_at": _pk.get("last_peak_at"), "last_trough_at": _pk.get("last_trough_at"),
+            "expected_hold_min": (round(float(_cyc)) if _cyc else None),
+            "sigma1h_pct": (round(_sig * 100, 3) if _sig else None),
+            "vol_native_bar_pct": (round(_vbar * 100, 3) if _vbar else None),
+            "typical_dip_pct": (round(float(_card_fp.get("typical_dip") or 0) * 100, 3) or None),
+            "typical_bounce_pct": (round(float(_card_fp.get("typical_bounce") or 0) * 100, 3) or None),
+            "bounce_reliability": _card_fp.get("bounce_reliability"),
+            "trend": _card_fp.get("trend"), "strong_up": _card_fp.get("strong_up"),
+            "mtf_confluence": (mtf.get(_sym) or {}).get("confluence"),
+            "momentum": ((_load(out, "momentum_chain.json") or {}).get("chains") or {}).get(_sym, {}).get("windows"),
+            "timing_best_buy": (tfp.get(_sym) or {}).get("best_buy_window"),
+            "timing_best_sell": (tfp.get(_sym) or {}).get("best_sell_window"),
+            "book_trades": _bs.get("trades", 0), "book_wins": _bs.get("wins", 0),
+            "book_win_pct": (round(100 * _bs["wins"] / _bs["trades"], 1) if _bs.get("trades") else None),
+            "book_pnl_usd": round(_bs.get("pnl", 0.0), 2),
+            "compounder_score": _comp,
+            "why": _rec.get("why"),
+        }
+    _comp_rank.sort(key=lambda x: -x[1])
+    write_json_atomic(out / "CONFIDENCE_CARDS.json", {
+        "generated_at": _now().isoformat(),
+        "what": ("the universal confidence card — every valuable's full baseball-card stat block: "
+                 "rhythm cycle + expected hold, fingerprint aims, its OWN vol bar, momentum "
+                 "trajectory, timing windows, our track record on it, and the COMPOUNDER score "
+                 "(conf × swing × cadence) that tilts live sizing. Card↔strategy matching is the "
+                 "scientific heart: the chart shows the card, the card explains the chart."),
+        "n_cards": len(cards),
+        "compounder_leaders": _comp_rank[:15],
+        "cards": cards,
+    })
+
     payload = {
         "generated_at": _now().isoformat(),
         "what": ("the unified confidence layer — every predictive signal (fingerprint bounce reliability, "
@@ -277,7 +358,7 @@ def build_confidence_engine(out_dir) -> Dict[str, Any]:
                         "cycle_min = typical minutes between peaks; amplitude_pct = typical swing size."),
     }
     write_json_atomic(out / STORE, payload)
-    return {"summary": f"confidence engine: {len(per_symbol)} scored · "
+    return {"summary": f"confidence engine: {len(per_symbol)} scored · {len(cards)} cards · "
                        f"{len(rhythm_leaders)} rhythm-tradeable · top crypto "
                        f"{(by_class_top.get('crypto') or [['—']])[0][0]}"}
 

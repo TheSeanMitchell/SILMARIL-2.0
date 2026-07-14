@@ -159,7 +159,18 @@ def build_conductor_report_card(out_dir) -> Dict[str, Any]:
     for bk in BOOKS:
         d = _j(out, f"paper_book_{bk}.json") or {}
         total_net += float(d.get("realized_pnl") or 0)
-    profit = {"cumulative_realized_usd_all_books": round(total_net, 2),
+    _sus_n, _sus_usd = 0, 0.0
+    for _b, _pb in books.items():
+        for _t in (_pb.get("trades") or []):
+            if _t.get("side") == "SELL" and _t.get("integrity") == "SUSPECT_OSC":
+                _sus_n += 1
+                _sus_usd += float(_t.get("pnl") or 0.0)
+    integrity = {"suspect_trades": _sus_n, "suspect_usd": round(_sus_usd, 2),
+                 "verified_realized_usd": round(total_net - _sus_usd, 2),
+                 "note": ("wins booked on an oscillation-quarantined tape count here, not in the "
+                          "headline; recorder two-print confirmation ends the class")}
+    profit = {"integrity": integrity,
+              "cumulative_realized_usd_all_books": round(total_net, 2),
               "note": ("the honest 'do we have profits' number: realized only, fees inside. "
                        "Tracked as accounting — no sweep trades, no extra fees (the SGOV question, answered).")}
 
