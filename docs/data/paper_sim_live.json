@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-07-14T10:22:32.968111+00:00",
+  "generated_at": "2026-07-14T10:46:43.996380+00:00",
   "marks_health": {
     "marked": 883,
     "entry_warm": 883,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.5,
+    "newest_sample_age_min": 1.0,
     "state": "OK",
     "oscillating": 0,
     "oscillating_syms": []
@@ -45,7 +45,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-14T10:22:32.136054+00:00",
+    "generated_at": "2026-07-14T10:46:43.157276+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -172,7 +172,7 @@
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {
-        "regime DOWNTREND + gate=hard \u2192 5 blocked": 1
+        "regime DOWNTREND + gate=hard \u2192 10 blocked": 1
       }
     },
     "decision_trace_live": [],
@@ -430,7 +430,7 @@
         "fit_target_pct": 1.42
       }
     ],
-    "tradeable_universe": 53,
+    "tradeable_universe": 51,
     "universe_seen": 342
   },
   "stock": {
@@ -456,11 +456,34 @@
     "funnel": {
       "seen": 342,
       "entry_warm": 342,
-      "candidates_after_gates": 0,
+      "candidates_after_gates": 3,
       "bought": 0,
-      "rejections": {}
+      "rejections": {
+        "position cap 8/10 for aggressive": 1,
+        "fee>=target": 1,
+        "cannot clear $1.00 net": 1
+      }
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "INJ-USD",
+        "dip_pct": -6.76,
+        "conviction": 0.875,
+        "fate": "candidate"
+      },
+      {
+        "sym": "CRV-USD",
+        "dip_pct": -4.17,
+        "conviction": 0.6804,
+        "fate": "candidate"
+      },
+      {
+        "sym": "SUSHI-USD",
+        "dip_pct": -2.64,
+        "conviction": 0.5535,
+        "fate": "candidate"
+      }
+    ],
     "equity": 9984.94,
     "cash": 11.08,
     "realized_pnl": 0.0,
@@ -734,7 +757,7 @@
         "champion": "GEKKO"
       }
     ],
-    "tradeable_universe": 53,
+    "tradeable_universe": 51,
     "universe_seen": 342,
     "display_name": "GEKKO"
   },
@@ -742,22 +765,29 @@
     "funnel": {
       "seen": 12,
       "entry_warm": 12,
-      "candidates_after_gates": 0,
-      "bought": 0,
+      "candidates_after_gates": 1,
+      "bought": 1,
       "rejections": {}
     },
-    "decision_trace_live": [],
-    "equity": 9995.12,
-    "cash": 6737.41,
+    "decision_trace_live": [
+      {
+        "sym": "XPT",
+        "dip_pct": -0.53,
+        "conviction": 0.0443,
+        "fate": "BOUGHT"
+      }
+    ],
+    "equity": 9981.81,
+    "cash": 5262.5,
     "realized_pnl": 0.0,
-    "return_pct": -0.05,
-    "open_positions": 2,
+    "return_pct": -0.18,
+    "open_positions": 3,
     "positions": [
       {
         "sym": "XPD",
         "qty": 1.508,
         "entry": 1268.519185,
-        "mark": 1264.5,
+        "mark": 1260.0,
         "t": "2026-07-14T08:25:47.095444+00:00",
         "wager_usd": 1912.9,
         "target": 0.0113,
@@ -766,13 +796,13 @@
         "style": "range-play",
         "entry_regime": "SIDEWAYS",
         "exp_net_usd": 17.03,
-        "upl_pct": -0.32
+        "upl_pct": -0.67
       },
       {
         "sym": "XAG",
         "qty": 23.1452,
         "entry": 58.314032,
-        "mark": 58.365002,
+        "mark": 58.169998,
         "t": "2026-07-14T08:25:47.095444+00:00",
         "wager_usd": 1349.69,
         "target": 0.007215534559743553,
@@ -781,10 +811,45 @@
         "style": "range-play",
         "entry_regime": "SIDEWAYS",
         "exp_net_usd": 5.84,
-        "upl_pct": 0.09
+        "upl_pct": -0.25
+      },
+      {
+        "sym": "XPT",
+        "qty": 0.9159,
+        "entry": 1610.295558,
+        "mark": 1608.099976,
+        "t": "2026-07-14T10:46:43.261395+00:00",
+        "wager_usd": 1474.91,
+        "target": 0.0088,
+        "stop": 0.1,
+        "conviction": 0.0443,
+        "style": "range-play",
+        "entry_regime": "SIDEWAYS",
+        "exp_net_usd": 8.95,
+        "upl_pct": -0.14
       }
     ],
     "recent_trades": [
+      {
+        "side": "BUY",
+        "sym": "XPT",
+        "qty": 0.915925,
+        "price": 1610.295558,
+        "t": "2026-07-14T10:46:43.261395+00:00",
+        "wager_usd": 1474.91,
+        "target_pct": 0.88,
+        "stop_pct": 10.0,
+        "expected_move_pct": 0.607,
+        "conviction": 0.0443,
+        "conv_frac": 0.1477,
+        "base_wager_usd": 998.18,
+        "conviction_conf": 0.489,
+        "entry_regime": "SIDEWAYS",
+        "style": "range-play",
+        "champion": "MR_d1_t5_s8",
+        "fit": "fp dip~0.53%\u2192tgt 0.88% stop 10.0% down reliable",
+        "fit_target_pct": 0.88
+      },
       {
         "side": "BUY",
         "sym": "XAG",
@@ -848,21 +913,21 @@
     "tradeable_universe": 3,
     "universe_seen": 6
   },
-  "combined_equity": 39966.46,
+  "combined_equity": 39953.15,
   "combined_realized_pnl": 0.0,
   "backtest_3day_crypto": {
     "universe_total": 1746,
-    "tradeable": 55,
-    "ghosts_excluded": 1691,
-    "trades": 277,
-    "win_rate_pct": 78.7,
-    "mean_net_pct": 0.142,
+    "tradeable": 53,
+    "ghosts_excluded": 1693,
+    "trades": 282,
+    "win_rate_pct": 77.0,
+    "mean_net_pct": 0.15,
     "exits": {
-      "TAKE": 229,
-      "STOP": 48,
+      "TAKE": 232,
+      "STOP": 50,
       "TIMEOUT": 0
     },
-    "equity_after": 10386.31
+    "equity_after": 10417.92
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy). Ghosts excluded; fees = max(0.2%, 2x noise floor). Metal/energy stay empty until their data feed is wired (metals_samples.json / energy_samples.json)."
 }
