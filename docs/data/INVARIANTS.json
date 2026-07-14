@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-07-14T02:13:37.131456+00:00",
+  "generated_at": "2026-07-14T02:00:42.679784+00:00",
   "all_green": false,
-  "verdict": "RED \u2014 1 invariant(s) violated",
+  "verdict": "RED \u2014 2 invariant(s) violated",
   "green_streak": 0,
   "dod_target": 30,
   "dod_met": false,
@@ -16,19 +16,19 @@
       "id": "INV2",
       "name": "open positions carry target + stop",
       "status": "PASS",
-      "detail": "all 35 open positions carry target+stop"
+      "detail": "all 38 open positions carry target+stop"
     },
     {
       "id": "INV3",
       "name": "position entry prices positive",
       "status": "PASS",
-      "detail": "all 35 entry prices > 0"
+      "detail": "all 38 entry prices > 0"
     },
     {
       "id": "INV4",
       "name": "no book over-allocated",
-      "status": "PASS",
-      "detail": "no book over-allocated (\u2264 $10500)"
+      "status": "FAIL",
+      "detail": "aggressive deployed $11206 > cap $10500"
     },
     {
       "id": "INV5",
@@ -40,7 +40,7 @@
       "id": "INV6",
       "name": "no trade entered on a synthetic candle",
       "status": "PASS",
-      "detail": "189 trades: none entered on a synthetic candle"
+      "detail": "190 trades: none entered on a synthetic candle"
     },
     {
       "id": "INV7",
@@ -52,7 +52,7 @@
       "id": "INV8",
       "name": "realized P&L accounting identity",
       "status": "FAIL",
-      "detail": "aggressive: \u03a3trades $1264.01 \u2260 realized $1263.97"
+      "detail": "aggressive: \u03a3trades $1244.68 \u2260 realized $1244.65"
     },
     {
       "id": "INV9",
@@ -68,7 +68,8 @@
     }
   ],
   "reds": [
-    "INV8 realized P&L accounting identity: aggressive: \u03a3trades $1264.01 \u2260 realized $1263.97"
+    "INV4 no book over-allocated: aggressive deployed $11206 > cap $10500",
+    "INV8 realized P&L accounting identity: aggressive: \u03a3trades $1244.68 \u2260 realized $1244.65"
   ],
   "what": "Per-cycle logical-safety invariants. Contracts prove stores are shaped right; invariants prove the live state is doing nothing impossible. Any RED names the exact violation. Green for 30 cycles satisfies the DoD clause."
 }
