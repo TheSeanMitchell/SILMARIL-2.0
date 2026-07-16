@@ -63,9 +63,14 @@ _SEED_COINBASE = _SEED_BINANCEUS + [
  "SWFTC","SYLO","SYN","TIME","TONE" if False else "TRAC","TRIBE","TRU","UNFI","UPI","VARA","VGX","VTHO",
  "WAMPL","WCFG","XYO","ZETA",
 ]
+# Robinhood publishes no product endpoint — this seed is maintained by hand from its
+# listed-crypto page. Under-listing here only ever COSTS us names, never invents them.
 _SEED_ROBINHOOD = ["BTC","ETH","SOL","XRP","ADA","DOGE","AVAX","LINK","LTC","BCH","UNI","ETC","XLM",
-                   "AAVE","COMP","SHIB","PEPE","BONK","WIF","DOT","XTZ","TRUMP" if False else "ONDO",
-                   "ARB","OP","SUI","NEAR","RENDER","JUP","POPCAT" if False else "PENGU"]
+                   "AAVE","COMP","SHIB","PEPE","BONK","WIF","DOT","XTZ","ONDO","ARB","OP","SUI",
+                   "NEAR","RENDER","JUP","PENGU","TRUMP","MATIC","POL","ATOM","ALGO","XCN","CRV",
+                   "MKR","GRT","SAND","MANA","AXS","CHZ","APE","IMX","LDO","INJ","SEI","TIA","STX",
+                   "FIL","HBAR","VET","APT","EOS","QNT","ENA","ENS","JTO","PYTH","BAT","YFI","ZEC",
+                   "TON","TAO","FET","WLD","MOODENG","POPCAT","TRX","SHIB"]
 
 
 def _now():
@@ -92,8 +97,14 @@ def fetch_listings(out_dir) -> Dict[str, Any]:
     try:
         import requests
         r = requests.get("https://api.binance.us/api/v3/exchangeInfo", timeout=20)
+        # 5.3.1 ROOT CAUSE: Binance.US quotes MOST of its book in USDT, not USD. The
+        # USD-only filter returned 54 names and made the venue look tiny. Accept every
+        # USD-equivalent quote and dedupe by base — that is the real tradable universe.
+        _QUOTES = {"USD", "USDT", "USDC", "BUSD"}
         syms = [s["baseAsset"] for s in r.json().get("symbols", [])
-                if s.get("quoteAsset") == "USD" and s.get("status") == "TRADING"]
+                if s.get("quoteAsset") in _QUOTES and s.get("status") == "TRADING"
+                and s.get("baseAsset") not in _QUOTES]
+        syms = sorted(set(syms))
         if len(syms) >= 40:
             listed["binanceus"] = sorted(_usd(syms)); changed.append("binanceus")
     except Exception:
@@ -101,15 +112,19 @@ def fetch_listings(out_dir) -> Dict[str, Any]:
     try:
         import requests
         r = requests.get("https://api.exchange.coinbase.com/products", timeout=20)
-        syms = [p["base_currency"] for p in r.json()
-                if p.get("quote_currency") == "USD" and not p.get("trading_disabled")]
+        syms = sorted({p["base_currency"] for p in r.json()
+                       if p.get("quote_currency") in ("USD", "USDC")
+                       and not p.get("trading_disabled")})
         if len(syms) >= 60:
             listed["coinbase"] = sorted(_usd(syms)); changed.append("coinbase")
     except Exception:
         pass
     listed.setdefault("binanceus", sorted(_usd(_SEED_BINANCEUS)))
     listed.setdefault("coinbase", sorted(_usd(_SEED_COINBASE)))
-    listed.setdefault("robinhood", sorted(_usd(_SEED_ROBINHOOD)))
+    # Robinhood has no public product endpoint: its listing is a DECLARATION, so it is
+    # rewritten from the seed every cycle (a stale persisted copy must never outrank the
+    # maintained source of truth).
+    listed["robinhood"] = sorted(_usd(_SEED_ROBINHOOD))
     store.update({"generated_at": _now(), "fees": VENUES, "listed": listed,
                   "refreshed": changed or ["seed"],
                   "what": ("declared venue fees + live listings. cost = fee + spread + capped "

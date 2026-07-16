@@ -207,12 +207,12 @@ def t9_version_pin():
     ix = (ROOT / "docs/index.html").read_text()
     # 5.1 FINAL header: brand constant "SILMARIL" + separate verNum "5.1"; no 5.0 anywhere
     ok_h1 = ('id="verHdr"' in ix and ">SILMARIL<" in ix
-             and '<span id="verNum">5.1</span>' in ix and "5.0" not in ix.split("<script")[0])
+             and '<span id="verNum">5.3</span>' in ix and "5.0" not in ix.split("<script")[0])
     ok_no_override = "h.innerHTML='SILMARIL&nbsp;'+m.version" not in ix
     meta = json.loads((ROOT / "docs/data/PROJECT_META.json").read_text())
     vi = (ROOT / ".github/workflows/verify_install.yml").read_text()
-    check("T9 version pin (header constant · meta 5.1 · verify asserts 5.1)",
-          ok_h1 and ok_no_override and meta.get("version") == "5.1" and "v=='5.1'" in vi,
+    check("T9 version pin (header constant · meta 5.3 · verify asserts 5.3)",
+          ok_h1 and ok_no_override and meta.get("version") == "5.3" and "v=='5.3'" in vi,
           f"h1={ok_h1} override_gone={ok_no_override} meta={meta.get('version')}")
 
 
@@ -736,6 +736,22 @@ def t42_discovery_contract():
           ok_src and ok_d, "")
 
 
+def t43_fingerprint_coverage():
+    """M11: the fit ceiling is a knob, not a constant — 86% of the universe may not sit unfitted."""
+    import json as _json
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok_src = ("_scan_cap" in sim and "_pub_cap" in sim and "_cnt >= 500" not in sim)
+    try:
+        k = _json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text()).get("fingerprint_coverage") or {}
+        ok_k = int(k.get("scan_cap", 0)) >= 1000 and int(k.get("publish_cap", 0)) >= 500
+    except Exception:
+        ok_k = False
+    ven = (ROOT / "silmaril/execution/venues.py").read_text()
+    ok_v = ("USDT" in ven and "_QUOTES" in ven)
+    check("T43 fingerprint coverage knob (no hard 500) + venue reads its USDT book",
+          ok_src and ok_k and ok_v, f"src={ok_src} knob={ok_k} venue={ok_v}")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -751,7 +767,8 @@ if __name__ == "__main__":
               t30_accounting_units, t31_starvation_exposed, t32_clean_room,
               t33_venue_contract, t34_harvest_identity, t36_master_decides,
               t37_crash_lane, t38_reconciliation, t39_champion_honesty,
-              t40_fit_quality, t41_readiness_numeric, t42_discovery_contract):
+              t40_fit_quality, t41_readiness_numeric, t42_discovery_contract,
+              t43_fingerprint_coverage):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

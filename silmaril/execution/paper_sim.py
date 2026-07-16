@@ -1368,14 +1368,21 @@ def live_step(out_dir) -> Dict[str, Any]:
             _lst.sort(key=lambda x: len(x[1]), reverse=True)
         _quota = (("metal", 10**9), ("energy", 10**9), ("stock", 160), ("crypto", 10**9))
         _sp = {}; _cnt = 0
+        # 5.3.1 M11 — the ceiling is a KNOB, not a constant. The old hard 500 meant 86%
+        # of the universe never got its own chart read. scan_cap governs how many names
+        # are FIT; publish_cap governs how many cards reach the store/dashboard.
+        _fpk = (_catalog(out).get("fingerprint_coverage") or {})
+        _scan_cap = int(_fpk.get("scan_cap", 1600))
+        _pub_cap = int(_fpk.get("publish_cap", 1200))
         for _cls, _cap in _quota:
             for _s, _pp in _by_cls.get(_cls, [])[:_cap]:
-                if _cnt >= 500:
+                if _cnt >= _scan_cap:
                     break
                 _sp[_s] = _pp; _cnt += 1
         _fmap = (_catalog(out).get("floor_min") or {})
         _floor = {_s: _fmap.get(asset_class(_s), 0.06) for _s in _sp}
-        _bfp(out, _sp, rows_by_sym={s: samples.get(s) for s in _sp}, floor_by_sym=_floor, limit=150)
+        _bfp(out, _sp, rows_by_sym={s: samples.get(s) for s in _sp}, floor_by_sym=_floor,
+             limit=_pub_cap)
     except Exception:
         pass
     try:
