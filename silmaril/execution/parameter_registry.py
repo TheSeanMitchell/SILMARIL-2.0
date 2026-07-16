@@ -90,7 +90,7 @@ def build_parameter_registry(out_dir) -> Dict[str, Any]:
     lb = sorted(lb, key=lambda x: float(x["note"].split("avg ")[1].split("%")[0]), reverse=True)[:5]
     gated = [b for b in ("stock", "metal", "energy") if b not in tbooks]
     entries.append(_entry(
-        "Hold-timer", ("no timer" if (opt is None and cryp) else (str(opt) + " min" if opt else None)),
+        "Hold-timer",  # 5.3: the hold IS the rhythm now ("rhythm-hold: each name's own cycle ×1.15 (exp_hold_min on every position)" if (opt is None and cryp) else (str(opt) + " min" if opt else None)),
         None, "edge captured per trade", cryp.get("optimal_avg_realized_pct"),
         lb, "ROTATING (crypto)" + (f" · {','.join(gated)} data-gated" if gated else ""), "TIMER_OPTIMIZATION.json"))
 

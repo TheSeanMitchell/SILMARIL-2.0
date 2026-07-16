@@ -40,17 +40,27 @@ def _anatomy(t, ser):
     mae = min(hold) if hold else entry
     mfe_pct = round((mfe / entry - 1) * 100, 2)
     mae_pct = round((mae / entry - 1) * 100, 2)
-    capture = round((exitp - entry) / (mfe - entry) * 100, 1) if mfe > entry else None
+    # 5.3 TRUTH: capture is GROSS exit vs GROSS best when the book stamped them (Law 16).
+    _rg, _bg = t.get("realized_gross_pct"), t.get("best_pct")
+    if _rg is not None and _bg not in (None, 0):
+        capture = round(max(0.0, min(1.0, _rg / _bg)) * 100, 1) if _bg > 0 else None
+    else:
+        capture = round((exitp - entry) / (mfe - entry) * 100, 1) if mfe > entry else None
     dip_pct = round((entry / max(before) - 1) * 100, 2) if before else None   # how deep the entry dip was
     post_high = max(after) if after else exitp
     left_pct = round((post_high / exitp - 1) * 100, 2) if after else None     # more that was available after exit
     # verdict
+    _reason = str(t.get("exit_reason") or "")
+    _fee = float(t.get("fee_pct") or 0.5)
     if t.get("outcome") == "flat":
         verdict = "FLAT_CLOSE"
-    elif left_pct is not None and left_pct > 0.5:
-        verdict = "SOLD_TOO_EARLY"      # price kept climbing after we sold
+    elif _reason.startswith("TAKE"):
+        # a target fill DID ITS JOB; post-exit climb is information, never blame (M1 rule)
+        verdict = "CAPTURED_WELL"
+    elif (_rg is not None and _bg is not None and _bg - _rg > 2.0 * _fee):
+        verdict = "SOLD_TOO_EARLY"      # proven: exited > 2x fee below the gross peak, and not on target
     elif capture is not None and capture < 60:
-        verdict = "GAVE_BACK"           # we banked under 60% of the up-move we saw
+        verdict = "GAVE_BACK"
     else:
         verdict = "CAPTURED_WELL"
     return {**t, "dip_at_entry_pct": dip_pct, "mfe_pct": mfe_pct, "mae_pct": mae_pct,

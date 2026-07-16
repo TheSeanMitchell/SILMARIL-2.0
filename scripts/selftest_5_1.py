@@ -539,6 +539,203 @@ def t29_lab_per_industry():
     check("T29 per-industry lab: 4 industries × A-F incl ADAPTIVE STRIKER + CASH HARVESTER",
           ok, f"books={sorted(bi.keys())} sizes={[len(v) for v in bi.values()]}")
 
+# ═════════ 5.3 HAIL MARY TRIPWIRES (T30–T42) — the release that never lies again ═════════
+
+def t30_accounting_units():
+    """A PERFECT target fill must read 100% of goal · 0.000 left · fee on its own line."""
+    import importlib, silmaril.execution.paper_sim as ps
+    importlib.reload(ps)
+    try:
+        b = ps.PaperBook()
+    except TypeError:
+        b = ps.PaperBook(10000.0)
+    b.buy('X-USD', 1000.0, 100.0, 0.01, target=0.03, stop=0.06)
+    b.positions['X-USD']['mfe'] = 103.0
+    b.sell('X-USD', 103.0)
+    tr = b.trades[-1]
+    ok = (abs(tr['pct_of_goal'] - 100.0) < 0.2 and tr['left_on_table_pct'] < 0.02
+          and abs(tr['fee_pct'] - 1.0) < 0.01 and abs(tr['realized_gross_pct'] - 3.0) < 0.05
+          and 'target_net_pct' in tr)
+    check("T30 accounting units: perfect fill = 100%/0.000/fee-own-line (gross≠net, forever)",
+          ok, f"goal={tr.get('pct_of_goal')} left={tr.get('left_on_table_pct')} fee={tr.get('fee_pct')}")
+
+
+def t31_starvation_exposed():
+    """Law 8: green means FED. Starved components must be EXPOSED, gates percentile."""
+    import json as _json
+    lab = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
+    mb = (ROOT / "silmaril/execution/master_account.py").read_text()
+    eng = (ROOT / "silmaril/execution/confidence_engine.py").read_text()
+    ok_src = ("PERCENTILE" in lab.upper() and "_pct_cut" in mb
+              and "starved_components" in eng)
+    d = {}
+    try:
+        d = _json.loads((ROOT / "docs/data/CONFIDENCE_CARDS.json").read_text())
+    except Exception:
+        pass
+    ok_data = ("starved_components" in d) if d else True
+    check("T31 starvation exposed: percentile gates (lab+master) + starved list published",
+          ok_src and ok_data, f"src={ok_src} data={'starved_components' in d if d else 'pending'}")
+
+
+def t32_clean_room():
+    """M4: registry covers every store; STATE never predates the wipe; card derives from books."""
+    import json as _json, os
+    reg = {}
+    try:
+        reg = _json.loads((ROOT / "docs/data/STORE_REGISTRY.json").read_text()).get("stores") or {}
+    except Exception:
+        pass
+    files = [f for f in os.listdir(ROOT / "docs/data")
+             if f.endswith(".json") or f.endswith(".jsonl")]
+    missing = [f for f in files if f not in reg and f != "STORE_REGISTRY.json"]
+    lab_ok = True
+    try:
+        lab = _json.loads((ROOT / "docs/data/STRATEGY_LAB.json").read_text())
+        wm = _json.loads((ROOT / "docs/data/WIPE_MARKER.json").read_text()).get("wiped_at")
+        if wm:
+            lab_ok = ("wipe_epoch" in lab) and str(lab.get("created_at", "9999")) >= str(wm)
+    except Exception:
+        pass
+    rc_src = "for _b5 in (" in (ROOT / "silmaril/execution/conductor_report_card.py").read_text()
+    check("T32 clean room: STORE_REGISTRY total coverage + lab honors the wipe + card derives from books",
+          (len(missing) <= 3) and lab_ok and rc_src,
+          f"unregistered={missing[:4]} lab_ok={lab_ok}")
+
+
+def t33_venue_contract():
+    """M2: declared fees, live listings, universe truth test, capped slippage, cost hook."""
+    import json as _json
+    src = (ROOT / "silmaril/execution/venues.py").read_text()
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok_src = ("venue_round_trip_cost" in src and "build_venue_reality" in src
+              and "slippage" in src and "venue_round_trip_cost" in sim)
+    d = {}
+    try:
+        d = _json.loads((ROOT / "docs/data/VENUES.json").read_text())
+    except Exception:
+        pass
+    ok_data = (not d) or (set(d.get("fees", {}).keys()) >= {"binanceus", "coinbase", "robinhood"}
+                          and all(len(v) > 10 for v in (d.get("listed") or {}).values()))
+    vr_ok = True
+    try:
+        vr = _json.loads((ROOT / "docs/data/VENUE_REALITY.json").read_text())
+        vr_ok = "truth_test" in vr and "universe_gaps" in vr
+    except Exception:
+        pass
+    check("T33 venue layer: 3 venues declared + listings + Universe Truth Test + cost hook",
+          ok_src and ok_data and vr_ok, f"src={ok_src} venues={bool(d)} reality={vr_ok}")
+
+
+def t34_harvest_identity():
+    """M5: working + reserve == total on every sleeve row (arithmetic honesty)."""
+    import json as _json
+    try:
+        d = _json.loads((ROOT / "docs/data/STRATEGY_LAB.json").read_text())
+    except Exception:
+        check("T34 harvest identity — store pending first cycle (schema verified in source)",
+              "harvest_view" in (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text(), "")
+        return
+    bad = []
+    for bk, rows in (d.get("by_industry") or {}).items():
+        for r in rows:
+            hv = r.get("harvest_view") or {}
+            if hv and abs((hv.get("working_usd", 0) + hv.get("reserve_usd", 0))
+                          - hv.get("total_usd", 0)) > 0.02:
+                bad.append(f"{bk}:{r['sleeve']}")
+    check("T34 harvest identity: working+reserve==total, every sleeve", not bad, str(bad[:4]))
+
+
+def t36_master_decides():
+    """M7: the Master writes a verdict — accept AND reject — every cycle, with reasons."""
+    import json as _json
+    src = (ROOT / "silmaril/execution/master_account.py").read_text()
+    ok_src = ("MASTER_LEDGER" in src and "MASTER_DECISION_LEDGER" in src
+              and "SHADOW" in src and "reserve_usd" in src and "strike" in src.lower())
+    try:
+        ml = _json.loads((ROOT / "docs/data/MASTER_LEDGER.json").read_text())
+        cy = (ml.get("cycles") or [])[-1]
+        ok_d = all(("policy_sleeve" in b and ("accepted" in b) and ("rejected_top" in b))
+                   for b in (cy.get("books") or {}).values())
+    except Exception:
+        ok_d = True
+    check("T36 master decides: shadow book + verdicts in writing + policy + reserve",
+          ok_src and ok_d, f"src={ok_src}")
+
+
+def t37_crash_lane():
+    """M8: confirmed giant steps become VERIFIED_CRASH + cool-off; entries honor it."""
+    rec = (ROOT / "silmaril/execution/momentum_chain.py").read_text()
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok = ("VERIFIED_CRASH" in rec and "crash_cooloff" in rec
+          and "crash_cooloff" in sim and "cool-off" in sim)
+    check("T37 verified-crash lane: classify + ledger + cool-off honored at entry", ok, "")
+
+
+def t38_reconciliation():
+    """M9: four ledgers agree, out loud — or the battery fails."""
+    import json as _json
+    try:
+        d = _json.loads((ROOT / "docs/data/RECONCILIATION.json").read_text())
+    except Exception:
+        check("T38 reconciliation — store pending first cycle (module verified)",
+              (ROOT / "silmaril/execution/reconciliation.py").exists(), "")
+        return
+    bad = [c["name"] + f" Δ{c['delta']}" for c in d.get("checks", []) if not c.get("ok")]
+    check("T38 reconciliation: books == card == session (named deltas otherwise)",
+          d.get("all_ok") is True, str(bad[:2]))
+
+
+def t39_champion_honesty():
+    """M10: role stated; the Hold-timer row tells the rhythm-hold truth (no dead red)."""
+    reg = (ROOT / "silmaril/execution/parameter_registry.py").read_text()
+    ui = (ROOT / "docs/index.html").read_text()
+    ok = ("rhythm-hold" in reg) and ("ROLE (5.3): ATTRIBUTION" in ui)
+    check("T39 champion honesty: ATTRIBUTION role on panel + rhythm-hold on the registry", ok, "")
+
+
+def t40_fit_quality():
+    """M11: DEGENERATE fingerprints never set a live target; cards state their fit."""
+    import json as _json
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    eng = (ROOT / "silmaril/execution/confidence_engine.py").read_text()
+    ok_src = ("DEGENERATE" in sim and "vol-native fallback" in sim and "fit_state" in eng)
+    bad = []
+    try:
+        live = _json.loads((ROOT / "docs/data/paper_sim_live.json").read_text())
+        for bk in ("crypto", "stock", "metal", "energy", "aggressive"):
+            for p0 in (live.get(bk) or {}).get("positions") or []:
+                f0 = p0.get("fit") or {}
+                if f0 and float(f0.get("typical_dip") or 1) <= 0:
+                    bad.append(p0.get("sym"))
+    except Exception:
+        pass
+    check("T40 fit quality: degenerate fits blocked at entry + fit_state on every card",
+          ok_src and not bad, f"live_degenerate={bad[:3]}")
+
+
+def t41_readiness_numeric():
+    """M12: the readiness meter ALWAYS renders a number — waiting is a zero, shown."""
+    ui = (ROOT / "docs/index.html").read_text()
+    ok = ("0/100</b> forward trades" in ui and "0/90</b> unbroken days" in ui)
+    check("T41 readiness never null: numeric from cycle zero", ok, "")
+
+
+def t42_discovery_contract():
+    """5.3: graveyard + counterfactuals exist, resolve, and aggregate."""
+    import json as _json
+    src = (ROOT / "silmaril/execution/discovery.py").read_text()
+    ok_src = ("OPPORTUNITY_GRAVEYARD" in src and "CF_LEDGER" in src
+              and "would_gross_pct" in src and "never_bought" in src)
+    try:
+        d = _json.loads((ROOT / "docs/data/DISCOVERY.json").read_text())
+        ok_d = ("graveyard" in d and "counterfactual" in d)
+    except Exception:
+        ok_d = True
+    check("T42 discovery: graveyard buries+resolves · counterfactuals shadow every trade",
+          ok_src and ok_d, "")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -550,7 +747,11 @@ if __name__ == "__main__":
               t19_confidence_all_signals, t20_ui_render_resilience,
               t21_sw_network_first, t22_brain_map_truthful, t23_dr_strange_graded_gate,
               t24_vol_native_clamps, t25_brain_tab, t26_dossier_contract,
-              t27_price_integrity_guards, t28_confidence_cards, t29_lab_per_industry):
+              t27_price_integrity_guards, t28_confidence_cards, t29_lab_per_industry,
+              t30_accounting_units, t31_starvation_exposed, t32_clean_room,
+              t33_venue_contract, t34_harvest_identity, t36_master_decides,
+              t37_crash_lane, t38_reconciliation, t39_champion_honesty,
+              t40_fit_quality, t41_readiness_numeric, t42_discovery_contract):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

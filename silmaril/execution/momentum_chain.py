@@ -133,6 +133,28 @@ def record_samples(out_dir, prices: Dict[str, float]) -> Dict[str, Any]:
                     _pd = _pend.get(tk)
                     if _pd and abs(pr / float(_pd["price"]) - 1.0) <= 0.0075:
                         _pend.pop(tk, None)      # two agreeing prints → real move, accept
+                        # ── 5.3 VERIFIED-CRASH LANE (M8): a CONFIRMED giant step is a REAL
+                        # event (IBM −25.2%, LCID −46.3% were real). Log it, cool off entries,
+                        # and LEARN from it instead of binning it as bad data.
+                        if _jump >= 0.12:
+                            try:
+                                import json as _j
+                                from datetime import timedelta as _td
+                                _cl = {"sym": tk, "from": _lg, "to": pr,
+                                       "step_pct": round((pr / _lg - 1) * 100, 2),
+                                       "t": ts, "verdict": "VERIFIED_CRASH"}
+                                with open(str(out_path.parent / "CRASH_LEDGER.jsonl"), "a") as _f:
+                                    _f.write(_j.dumps(_cl) + "\n")
+                                _co = store.setdefault("crash_cooloff", {})
+                                _kb = {}
+                                try:
+                                    _kb = _j.loads((out_path.parent / "PARAM_CATALOG.json").read_text()).get("crash_lane") or {}
+                                except Exception:
+                                    pass
+                                _hrs = float(_kb.get("cooloff_h", 6))
+                                _co[tk] = (datetime.now(timezone.utc) + _td(hours=_hrs)).isoformat()
+                            except Exception:
+                                pass
                     else:
                         _pend[tk] = {"price": pr, "at": ts}
                         store.setdefault("rejected_ticks", [])

@@ -155,12 +155,18 @@ def build_conductor_report_card(out_dir) -> Dict[str, Any]:
     }
 
     # ── 5 · REALIZED HARVEST (profit that actually banked) ───────────────
+    # 5.3 Law 17 — cumulative realized DERIVES from the books every cycle. The old
+    # accumulator survived wipes (reconciliation caught $2,235 vs $681 on first run).
+    _bk5 = {}
     total_net = 0.0
-    for bk in BOOKS:
-        d = _j(out, f"paper_book_{bk}.json") or {}
-        total_net += float(d.get("realized_pnl") or 0)
+    for _b5 in ("crypto", "stock", "metal", "energy", "aggressive"):
+        _bk5[_b5] = _j(out, f"paper_book_{_b5}.json") or {}
+        for _btt in (_bk5[_b5].get("trades") or []):
+            if _btt.get("side") == "SELL":
+                total_net += float(_btt.get("pnl") or 0.0)
+    total_net = round(total_net, 2)
     _sus_n, _sus_usd = 0, 0.0
-    for _b, _pb in books.items():
+    for _b, _pb in _bk5.items():
         for _t in (_pb.get("trades") or []):
             if _t.get("side") == "SELL" and _t.get("integrity") == "SUSPECT_OSC":
                 _sus_n += 1

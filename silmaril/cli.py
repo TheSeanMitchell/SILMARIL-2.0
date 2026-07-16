@@ -3528,6 +3528,10 @@ Reply in 3-5 bullets, no preamble.
                           ("conductor C1 shadow scoring", "conductor_c1.build_conductor_c1"),
                           ("conductor report card (A/B honesty)", "conductor_report_card.build_conductor_report_card"),
                           ("strategy lab A/B/C/D", "strategy_lab_abcd.build_strategy_lab"),
+                          ("venue layer (fees·listings·universe truth)", "venues.build_venue_reality"),
+                          ("master brain (shadow book · decisions)", "master_account.build_master_account"),
+                          ("discovery (graveyard · counterfactuals)", "discovery.build_discovery"),
+                          ("reconciliation (four ledgers agree)", "reconciliation.build_reconciliation"),
                           ("brain wiring (nothing is decoration)", "brain_wiring.build_brain_wiring")):
         try:
             _m51, _f51 = _imp51.split(".")

@@ -77,6 +77,10 @@ def _refresh_one(out, top_n: int, exchange: str) -> Dict[str, Any]:
         ex.load_markets()
         # rank by quote volume from one tickers call
         tickers = ex.fetch_tickers()
+        try:
+            tickers = list(dict.fromkeys(list(tickers) + [x for x in _extra_syms if isinstance(x, str)]))
+        except Exception:
+            pass
         ranked = []
         for sym, t in tickers.items():
             try:

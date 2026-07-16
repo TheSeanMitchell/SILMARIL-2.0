@@ -70,21 +70,19 @@ def _pair_book(trades: List[dict], tgt_pct, stop_pct, start: datetime):
             # exit reason — timeouts are OFF, so every closed trade is a TARGET hit (minus fees) or a STOP/
             # floor hit. Use the RECORDED target/stop and % of goal. A fee-haircut target lands ~85-105% of
             # goal, so anything >=85% of goal (or within fee range of target) is honestly a TARGET_HIT.
-            pog = tr.get("pct_of_goal")
-            use_tgt = tr.get("target_pct") if tr.get("target_pct") is not None else tgt_pct
-            use_stop = tr.get("stop_pct") if tr.get("stop_pct") is not None else stop_pct
-            if pog is not None and pog >= 85:
-                reason = "TARGET_HIT"
-            elif rp is not None and use_stop and rp <= -use_stop * 0.95:
-                reason = "STOP_HIT"
-            elif rp is not None and use_tgt and rp >= use_tgt * 0.85:
-                reason = "TARGET_HIT"
-            elif outcome == "win":
-                reason = "HELD_GAIN"
-            elif outcome == "loss":
-                reason = "HELD_LOSS"
-            else:
-                reason = "FLAT"
+            # ── 5.3 Law 17: facts are READ from their source of truth, never re-derived.
+            # The book stamps exit_reason at the fill; consume it verbatim. Legacy fallback
+            # only for pre-5.3 rows that carry no exit_reason.
+            reason = tr.get("exit_reason")
+            if not reason:
+                pog = tr.get("pct_of_goal")
+                use_stop = tr.get("stop_pct") if tr.get("stop_pct") is not None else stop_pct
+                if pog is not None and pog >= 85:
+                    reason = "TAKE"
+                elif rp is not None and use_stop and rp <= -use_stop * 0.95:
+                    reason = "STOP"
+                else:
+                    reason = "HELD_GAIN" if outcome == "win" else ("HELD_LOSS" if outcome == "loss" else "FLAT")
             et = _dt(buy.get("t"))
             hold = round((xt - et).total_seconds() / 60) if (et and xt) else None
             out.append({
@@ -93,6 +91,9 @@ def _pair_book(trades: List[dict], tgt_pct, stop_pct, start: datetime):
                 "realized_pct": round(rp, 3) if rp is not None else None,
                 "entry_t": buy.get("t"), "exit_t": tr.get("t"),
                 "hold_min": hold, "exit_reason": reason, "outcome": outcome,
+                "fee_pct": tr.get("fee_pct"), "best_pct": tr.get("best_pct"),
+                "realized_gross_pct": tr.get("realized_gross_pct"),
+                "target_net_pct": tr.get("target_net_pct"),
             })
     return out
 

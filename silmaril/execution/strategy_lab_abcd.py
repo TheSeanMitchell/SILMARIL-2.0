@@ -85,6 +85,15 @@ def _load_state(out: Path) -> Dict[str, Any]:
         pass
     if not st or "sleeves" not in st:
         st = {"sleeves": {}, "created_at": _now().isoformat()}
+    # ── 5.3 CLEAN ROOM (M4): the lab honors the wipe like every other STATE store.
+    # F4 receipt: created 07-12, wiped 07-14, sleeve trades from 07-12 → void.
+    try:
+        _wm = json.loads((out / "WIPE_MARKER.json").read_text()).get("wiped_at")
+    except Exception:
+        _wm = None
+    if _wm and str(st.get("created_at", "")) < str(_wm):
+        st = {"sleeves": {}, "created_at": _now().isoformat()}
+    st["wipe_epoch"] = _wm
     for k in list(st["sleeves"].keys()):
         if ":" not in k:
             st["sleeves"][f"crypto:{k}"] = st["sleeves"].pop(k)
@@ -112,7 +121,7 @@ def _sell(bk: Dict[str, Any], sym: str, price: float, why: str, vault: bool):
     if vault and pnl > 0:
         bk["cash"] -= pnl
         bk["vault_usd"] = round(bk.get("vault_usd", 0.0) + pnl, 2)
-    bk["trades"].append({"side": "SELL", "sym": sym, "why": why,
+    bk["trades"].append({"side": "SELL", "sym": sym, "why": why, "simulated": True,
                          "pnl": round(pnl, 2),
                          "realized_pct": round((eff / pos["entry"] - 1) * 100, 3) if pos["entry"] > 0 else 0,
                          "style": pos.get("style", "MR"),
@@ -173,7 +182,7 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
             bk["positions"][sym] = {"qty": qty, "entry": px, "cost": cost_of(px),
                                     "target": 0.04, "stop": 0.05, "style": "STRIKE",
                                     "t": now.isoformat(), "conf": round(conf_map.get(sym, 0.0), 3)}
-            bk["trades"].append({"side": "BUY", "sym": sym, "style": "STRIKE",
+            bk["trades"].append({"side": "BUY", "sym": sym, "style": "STRIKE", "simulated": True,
                                  "wager_usd": round(budget, 2), "mom_h1": mom,
                                  "t": now.isoformat()})
             room -= 1
@@ -183,7 +192,13 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
     if open_mr < cap:
         pool = [c for c in candidates if c[0] not in bk["positions"]]
         if cfg["conf_gate"] > 0:
-            pool = [c for c in pool if conf_map.get(c[0], 0.0) >= cfg["conf_gate"]]
+            # 5.3 Law 18 — PERCENTILE GATE. The 0.45 absolute gate starved D/E/F forever
+            # (card scale maxes ~0.39). The sniper now demands the TOP DECILE of THIS
+            # cycle's live industry pool (min pool 20); small pools stand the gate down.
+            _vals = sorted(v for v in conf_map.values() if v is not None)
+            if len(_vals) >= 20:
+                _cut = _vals[max(0, int(len(_vals) * 0.90))]
+                pool = [c for c in pool if conf_map.get(c[0], 0.0) >= _cut]
             pool.sort(key=lambda c: -conf_map.get(c[0], 0.0))
         else:
             pool.sort(key=lambda c: (c[2] or 0))
@@ -199,7 +214,7 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
             bk["positions"][sym] = {"qty": qty, "entry": px, "cost": cost_of(px),
                                     "target": 0.05, "stop": 0.06, "style": "MR",
                                     "t": now.isoformat(), "conf": round(conf_map.get(sym, 0.0), 3)}
-            bk["trades"].append({"side": "BUY", "sym": sym, "style": "MR",
+            bk["trades"].append({"side": "BUY", "sym": sym, "style": "MR", "simulated": True,
                                  "wager_usd": round(budget, 2),
                                  "conf": round(conf_map.get(sym, 0.0), 3), "t": now.isoformat()})
 
@@ -289,6 +304,14 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                 "open": len(bk["positions"]), "closed": len(closed),
                 "win_rate": round(wins / len(closed) * 100, 1) if closed else None,
                 "max_dd_pct": bk.get("max_dd_pct", 0.0),
+                # 5.3 HARVEST VIEW (M5, arithmetic approximation, labeled): what this sleeve
+                # would hold if every realized win had been vaulted instead of rolled.
+                "harvest_view": {
+                    "reserve_usd": round(sum(max(0.0, t["pnl"]) for t in closed), 2),
+                    "working_usd": round(eq - sum(max(0.0, t["pnl"]) for t in closed), 2),
+                    "total_usd": round(eq, 2),
+                    "note": "same trades, profits pocketed — approximation, not a resim"},
+                "trades_since_wipe": len(bk["trades"]),
                 "desc": cfg["desc"],
             })
         rows.sort(key=lambda r: -(r["delta_vs_hodl"] if r["delta_vs_hodl"] is not None

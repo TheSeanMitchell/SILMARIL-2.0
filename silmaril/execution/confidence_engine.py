@@ -287,6 +287,17 @@ def build_confidence_engine(out_dir) -> Dict[str, Any]:
         _vn_knob = json.loads((out / "PARAM_CATALOG.json").read_text()).get("vol_native") or {}
     except Exception:
         pass
+    _osc_flag = set()
+    try:
+        _osc_flag = set((json.loads((out / "paper_sim_live.json").read_text())
+                         .get("marks_health") or {}).get("oscillating_syms") or [])
+    except Exception:
+        pass
+    fp_store = {}
+    try:
+        fp_store = json.loads((out / "FINGERPRINTS.json").read_text())
+    except Exception:
+        fp_store = {}
     cards: Dict[str, Any] = {}
     _comp_rank = []
     for _sym, _rec in per_symbol.items():
@@ -329,6 +340,65 @@ def build_confidence_engine(out_dir) -> Dict[str, Any]:
             "compounder_score": _comp,
             "why": _rec.get("why"),
         }
+    # ── 5.3 THE EVIDENCE LAYER — every number answers "how PROVEN is it?" ────
+    # (improved from the 5.3 notes: deterministic, sample-weighted, no vibes)
+    _fp_n = {}
+    for _r in (fp_store.get("cards") or []) if isinstance(fp_store, dict) else []:
+        _fp_n[_r.get("sym")] = int(_r.get("dip_samples") or 0)
+    _listed_map = {}
+    try:
+        for _ven, _ls in (json.loads((out / "VENUES.json").read_text()).get("listed") or {}).items():
+            for _sy in _ls:
+                _listed_map.setdefault(_sy, []).append(_ven)
+    except Exception:
+        pass
+    _lab_lead = {}
+    try:
+        for _bk2, _rows2 in (json.loads((out / "STRATEGY_LAB.json").read_text())
+                             .get("by_industry") or {}).items():
+            _lab_lead[_bk2] = next((r for r in _rows2 if (r.get("closed") or 0) >= 3),
+                                   _rows2[0] if _rows2 else {})
+    except Exception:
+        pass
+    _defaults = {}
+    for _sym2, _c2 in cards.items():
+        for _pk2, _pv2 in (_c2.get("parts") or {}).items():
+            if _pv2 in (0.5, 0, None):
+                _defaults[_pk2] = _defaults.get(_pk2, 0) + 1
+    _n_all = max(1, len(cards))
+    starved = sorted(k for k, v in _defaults.items() if v / _n_all > 0.90)
+    for _sym2, _c2 in cards.items():
+        _bn = _c2.get("book_trades") or 0
+        _bw = _c2.get("book_wins") or 0
+        # Wilson lower bound on win rate — the honest "how sure" number
+        _wl = None
+        if _bn > 0:
+            import math as _m
+            _ph, _z = _bw / _bn, 1.96
+            _den = 1 + _z * _z / _bn
+            _wl = round(max(0.0, (_ph + _z * _z / (2 * _bn)
+                        - _z * _m.sqrt(_ph * (1 - _ph) / _bn + _z * _z / (4 * _bn * _bn))) / _den), 3)
+        _fn = _fp_n.get(_sym2, 0)
+        _rn = 1 if _c2.get("cycle_min") else 0
+        _ev = round(min(1.0, 0.35 * min(_fn, 30) / 30.0 + 0.35 * min(_bn, 20) / 20.0
+                        + 0.30 * _rn), 3)
+        _vl = _listed_map.get(_sym2, [])
+        _sym_rel = round(max(0.0, min(1.0, 0.6 + 0.2 * (1 if _vl else 0)
+                                      - (0.4 if _sym2 in _osc_flag else 0.0))), 3)
+        _exec_c = round(min(1.0, 0.34 * len(_vl)), 3)
+        _ld = _lab_lead.get(_c2.get("class")) or {}
+        _strat_c = round(max(0.0, min(1.0, 0.5 + (float(_ld.get("return_pct") or 0) / 10.0))), 3)
+        _mkt = _c2.get("confidence") or 0.0
+        _master = round(0.40 * _mkt + 0.15 * _strat_c + 0.15 * _sym_rel
+                        + 0.15 * _exec_c + 0.15 * _ev, 3)
+        _c2["evidence"] = {"fp_n": _fn, "book_n": _bn, "wilson_win_lo": _wl,
+                           "rhythm_known": bool(_rn), "venues_listed": _vl,
+                           "evidence_score": _ev}
+        _c2["layers"] = {"market": round(_mkt, 3), "strategy": _strat_c,
+                         "symbol": _sym_rel, "execution": _exec_c, "evidence": _ev,
+                         "master_score": _master}
+        _c2["fit_state"] = ("FITTED(n=%d)" % _fn if _fn >= 5
+                            else ("DEGENERATE" if 0 < _fn < 5 else "VOL-NATIVE"))
     _comp_rank.sort(key=lambda x: -x[1])
     write_json_atomic(out / "CONFIDENCE_CARDS.json", {
         "generated_at": _now().isoformat(),
@@ -338,6 +408,9 @@ def build_confidence_engine(out_dir) -> Dict[str, Any]:
                  "(conf × swing × cadence) that tilts live sizing. Card↔strategy matching is the "
                  "scientific heart: the chart shows the card, the card explains the chart."),
         "n_cards": len(cards),
+        "starved_components": starved,
+        "_starved_note": ("components defaulting on >90% of the universe — exposed per Law 8; "
+                          "percentile gates make the compressed scale harmless"),
         "compounder_leaders": _comp_rank[:15],
         "cards": cards,
     })

@@ -257,5 +257,34 @@
   "mode": "auto",
   "max_tilt": 1.25,
   "_what": "5.11 WRAP: wager tilt from the confidence card's compounder_score (conf \u00d7 swing \u00d7 cadence). KILL via sizing A/B: mode:'off'."
+ },
+ "venue_layer": {
+  "mode": "auto",
+  "venue": "binanceus",
+  "order_type": "maker",
+  "slippage_cap_bps": 20.0,
+  "default_spread_bps": 8.0,
+  "_what": "5.3 M2: cost = declared venue fee (rt) + measured spread + slippage capped at slippage_cap_bps. venue: binanceus|coinbase|robinhood. KILL: mode:'off' restores the legacy noise-floor model."
+ },
+ "master_brain": {
+  "mode": "auto",
+  "gate_pct": 80,
+  "max_open_per_book": 2,
+  "max_expected_hold_min": 720,
+  "min_bounce_reliability": 0.5,
+  "strike_on_shift": true,
+  "harvest_frac": 1.0,
+  "_what": "5.3 M7: the Master SHADOW-TRADES its own $10k from evidence-gated picks (top gate_pct percentile of live card scores), strikes within one cycle on a fast-band UPTREND shift, refuses long-hold setups (expected hold > max), and vaults harvest_frac of every realized win as non-spendable USD reserve. KILL: mode:'off' \u2192 pure WATCHING."
+ },
+ "crash_lane": {
+  "mode": "auto",
+  "cooloff_h": 6,
+  "reentry": "off",
+  "_what": "5.3 M8: a CONFIRMED >12% single-step move is a VERIFIED_CRASH \u2014 logged to CRASH_LEDGER with forward paths, entries cool off cooloff_h. reentry stays OFF until the ledger holds \u226520 observations."
+ },
+ "discovery": {
+  "mode": "auto",
+  "graveyard_cap": 5000,
+  "_what": "5.3: the Opportunity Graveyard (every rejection, resolved at +24h/+7d) and the Counterfactual engine (per closed trade: never/limit/held+4h/half). The system learns from what it did NOT do. KILL: mode:'off'."
  }
 }

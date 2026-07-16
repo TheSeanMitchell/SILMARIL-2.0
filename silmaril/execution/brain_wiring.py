@@ -101,6 +101,30 @@ def _signals(out: Path) -> List[Dict[str, Any]]:
                    "top_crypto": ((d.get("top_confidence_by_class") or {}).get("crypto") or [["—", 0]])[0]},
         "conviction sizing · D-sleeve entry gate · Master brain line")
 
+    sig("MASTER_LEDGER.json", "MASTER BRAIN verdicts (accept+reject, in writing)",
+        ["silmaril/execution/master_account.py", "docs/index.html"],
+        lambda d: {"cycles": len(d.get("cycles") or []),
+                   "last_accepts": sum(len((b or {}).get("accepted") or [])
+                                       for b in ((d.get("cycles") or [{}])[-1].get("books") or {}).values())},
+        "the Master's shadow book · policy rotation · ⚡strike log")
+
+    sig("DISCOVERY.json", "Graveyard + Counterfactuals (learn from the not-done)",
+        ["silmaril/execution/discovery.py", "docs/index.html"],
+        lambda d: {"buried": (d.get("graveyard") or {}).get("buried_total"),
+                   "cf": (d.get("counterfactual") or {}).get("trades_analyzed")},
+        "rejection-cost measurement · policy deltas (limit / hold+4h)")
+
+    sig("VENUE_REALITY.json", "Universe Truth Test (venue listings vs our edge)",
+        ["silmaril/execution/venues.py", "docs/index.html"],
+        lambda d: {"unlisted_$": (d.get("truth_test") or {}).get("realized_on_UNLISTED_usd"),
+                   "gaps": (d.get("universe_gaps") or {}).get("venue_listed_but_untracked_n")},
+        "venue cost model · Master listing gate · roster expansion")
+
+    sig("RECONCILIATION.json", "Four ledgers agree (books=card=session)",
+        ["silmaril/execution/reconciliation.py", "docs/index.html"],
+        lambda d: {"all_ok": d.get("all_ok"), "checks": len(d.get("checks") or [])},
+        "T38 · any named delta fails the battery")
+
     sig("CONFIDENCE_CARDS.json", "UNIVERSAL CONFIDENCE CARDS (the baseball cards)",
         ["silmaril/execution/paper_sim.py", "silmaril/execution/strategy_lab_abcd.py",
          "docs/index.html", "docs/silmaril_chart.js"],

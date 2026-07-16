@@ -493,18 +493,30 @@ class PaperBook:
                 "qty": round(pos["qty"], 6), "price": round(eff, 6),
                 "pnl": round(pnl, 2), "realized_pct": round(realized_pct * 100, 3), "t": t or _now(),
                 "wager_usd": round(pos["qty"] * pos["entry"], 2)}
+        # ── 5.3 TRUTH IN ACCOUNTING (Law 16: never compare NET to GROSS) ─────────
+        # entry is fee-adjusted; reconstruct the RAW basis so gross means gross.
+        _cost = float(pos.get("cost", MIN_COST))
+        _raw_entry = pos["entry"] / (1.0 + _cost / 2.0) if pos["entry"] > 0 else 0.0
+        _exit_gross = (price / _raw_entry - 1.0) if _raw_entry > 0 else 0.0
+        srow["fee_pct"] = round(_cost * 100, 3)                       # the fee, on its OWN line
+        srow["realized_gross_pct"] = round(_exit_gross * 100, 3)      # the market move we exited on
         tgt = pos.get("target")
         if tgt is not None:
-            srow["target_pct"] = round(tgt * 100, 3)
-            srow["pct_of_goal"] = round((realized_pct / tgt) * 100, 1) if tgt > 0 else None
+            srow["target_pct"] = round(tgt * 100, 3)                  # gross goal (unchanged meaning)
+            # EXACT net of a perfect fill under the half-fee model (multiplicative, not linear):
+            _tgt_net = (1.0 + tgt) * (1.0 - _cost / 2.0) / (1.0 + _cost / 2.0) - 1.0
+            srow["target_net_pct"] = round(_tgt_net * 100, 3)
+            # % of goal = NET vs NET. A perfect target fill reads 100, forever.
+            srow["pct_of_goal"] = (round((realized_pct / _tgt_net) * 100, 1)
+                                   if _tgt_net > 0 else None)
         if pos.get("stop") is not None:
             srow["stop_pct"] = round(pos["stop"] * 100, 3)
-        # left on table = best the position reached vs what we actually captured (real high-water, not a guess)
+        # left on table = GROSS best vs GROSS exit. Selling ON the peak print reads 0.000.
         mfe = pos.get("mfe")
-        if mfe and pos["entry"] > 0:
-            best_pct = mfe / pos["entry"] - 1
-            srow["best_pct"] = round(best_pct * 100, 3)
-            srow["left_on_table_pct"] = round(max(0.0, best_pct - realized_pct) * 100, 3)
+        if mfe and _raw_entry > 0:
+            best_gross = mfe / _raw_entry - 1.0
+            srow["best_pct"] = round(best_gross * 100, 3)             # (gross, as it always physically was)
+            srow["left_on_table_pct"] = round(max(0.0, best_gross - _exit_gross) * 100, 3)
         self.trades.append(srow)
         del self.positions[sym]
         return pnl
@@ -593,6 +605,11 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
     _mtf_bk = ((_mtf.get("books") or {}).get(uc) or {})
     _mtf_fastred = bool(_mtf_bk.get("fast_red"))
     _mtf_syms = {k: (v.get("confluence") or 0) for k, v in (_mtf.get("symbols") or {}).items()}
+    _crash_co = {}
+    try:
+        _crash_co = (json.loads((out / "price_samples.json").read_text()).get("crash_cooloff") or {})
+    except Exception:
+        _crash_co = {}
     _comp_map = {}
     try:
         _cc0 = json.loads((out / "CONFIDENCE_CARDS.json").read_text()).get("cards") or {}
@@ -976,6 +993,13 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
     if _slots < len(cands[:MAX_NAMES]):
         actions.append({"act": "SKIP", "sym": f"{len(cands[:MAX_NAMES]) - _slots} name(s)",
                         "why": "position cap %d/%d for %s — concentration law: a new name must beat a held one" % (len(pbook.positions), _poscap, book)})
+    if _crash_co:
+        _nowiso = now.isoformat()
+        _hot = [c for c in cands if _crash_co.get(c[0]) and _nowiso < str(_crash_co[c[0]])]
+        for _cs in _hot:
+            actions.append({"act": "SKIP", "sym": _cs[0],
+                            "why": "verified-crash cool-off (M8) — real disaster, let it settle"})
+        cands = [c for c in cands if c not in _hot]
     for sym, lp, h1, cv in cands[:min(MAX_NAMES, _slots)]:
         _t6s = _trajectory_6h(samples.get(sym) or [])
         _style = ("riding-strength" if (_t6s or 0) >= 0.02 else "deep-dip" if (h1 or 0) <= -0.04 else "range-play")
@@ -992,7 +1016,25 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                                 "why": "falling knife — %.1f%% over 6h, no bounce (veto at %.0f%%)" % (t6 * 100, knife * 100)})
                 continue
         cost = round_trip_cost(px_of(sym))
+        # 5.3 VENUE LAYER — declared fee + measured spread + CAPPED slippage (noise demoted).
+        # The proxy that drifted 1.494%→0.450% on ONDO in 24h can never set economics again.
+        try:
+            _vk = (cat.get("venue_layer") or {})
+            if str(_vk.get("mode", "auto")).lower() == "auto" and book in ("crypto", "aggressive"):
+                from .venues import venue_round_trip_cost as _vrt
+                _vc = _vrt(out, sym, px_of(sym), _vk, cost)
+                cost = float(_vc["total"])
+        except Exception:
+            pass
         _ft = _fits.get(sym)                    # this valuable's OWN fitted strategy (fingerprint), if any
+        # 5.3 QUALITY FLOOR (M11): a fit with no dip distribution is a default wearing a
+        # fingerprint's name (ONDO receipt: "fp dip~0.00% → tgt 3.74% ?"). DEGENERATE fits
+        # fall back to vol-native and SAY SO; they never set a live target again.
+        if _ft is not None and ((float(_ft.get("typical_dip") or 0.0) <= 0.0)
+                                or (int(_ft.get("dip_samples") or _ft.get("n") or 0) < 5)):
+            actions.append({"act": "NOTE", "sym": sym,
+                            "why": "fingerprint DEGENERATE (dip~0 or n<5) — vol-native fallback (T40)"})
+            _ft = None
         _use_target = float(_ft["target"]) if _ft else target
         _use_stop = max(float(_ft["stop"]), float(fmin or 0)) if _ft else stop_
         net_margin = _use_target - cost         # fraction of the position kept if the target hits, after fees

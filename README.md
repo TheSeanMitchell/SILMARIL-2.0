@@ -1,3 +1,10 @@
+> **5.3 HAIL MARY (2026-07-15) — THE EVIDENCE ENGINE · the final structural build.** Truth in
+> accounting (a perfect fill reads 100%, forever — T30) · the MASTER BRAIN shadow-trades with
+> verdicts in writing · declared venue economics + the Universe Truth Test · percentile gates ·
+> the Opportunity Graveyard & Counterfactuals · verified-crash lane · four-ledger reconciliation
+> (caught $1,553.80 of wipe residue on its first run) · battery **29 → 41**. Read
+> `SILMARIL_5_3_DIRECTIVE.md`, then freeze for 90 days.
+
 > **5.11 WRAP (2026-07-13)** — data-integrity armor (two-print recorder confirmation ·
 > oscillation quarantine · suspect-vs-verified realized), the **universal Confidence Card**
 > (1050 cards; compounder score tilts live sizing; chart⇄card parity), **per-industry
