@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-16T09:46:58.501335+00:00",
+  "generated_at": "2026-07-16T10:17:23.803692+00:00",
   "what": "the nothing-is-decoration ledger: every signal store, WHO consumes it (selftest-verified against the real files), its freshness, its key metric, and its red/green shift since the last run. Plus per-symbol dossiers: everything the system knows about each open position and each leader, in one record. Measures and displays only \u2014 changes no behavior.",
   "signals": [
     {
@@ -15,10 +15,10 @@
       "exists": true,
       "age_min": 0.1,
       "metric": {
-        "crypto_conf": -2.5,
+        "crypto_conf": -3.0,
         "fast_red": []
       },
-      "shift": "green",
+      "shift": "red",
       "light": "green"
     },
     {
@@ -35,9 +35,77 @@
       "metric": {
         "scored": 1050,
         "top_crypto": [
-          "WIF-USD",
+          "BCH-USD",
           0.37
         ]
+      },
+      "shift": "flat",
+      "light": "green"
+    },
+    {
+      "store": "MASTER_LEDGER.json",
+      "label": "MASTER BRAIN verdicts (accept+reject, in writing)",
+      "consumers": [
+        "silmaril/execution/master_account.py",
+        "docs/index.html"
+      ],
+      "decision": "the Master's shadow book \u00b7 policy rotation \u00b7 \u26a1strike log",
+      "exists": true,
+      "age_min": 0.0,
+      "metric": {
+        "cycles": 1,
+        "last_accepts": 0
+      },
+      "shift": "flat",
+      "light": "green"
+    },
+    {
+      "store": "DISCOVERY.json",
+      "label": "Graveyard + Counterfactuals (learn from the not-done)",
+      "consumers": [
+        "silmaril/execution/discovery.py",
+        "docs/index.html"
+      ],
+      "decision": "rejection-cost measurement \u00b7 policy deltas (limit / hold+4h)",
+      "exists": true,
+      "age_min": 0.0,
+      "metric": {
+        "buried": 1,
+        "cf": 39
+      },
+      "shift": "flat",
+      "light": "green"
+    },
+    {
+      "store": "VENUE_REALITY.json",
+      "label": "Universe Truth Test (venue listings vs our edge)",
+      "consumers": [
+        "silmaril/execution/venues.py",
+        "docs/index.html"
+      ],
+      "decision": "venue cost model \u00b7 Master listing gate \u00b7 roster expansion",
+      "exists": true,
+      "age_min": 0.0,
+      "metric": {
+        "unlisted_$": 88.06,
+        "gaps": 1
+      },
+      "shift": "flat",
+      "light": "green"
+    },
+    {
+      "store": "RECONCILIATION.json",
+      "label": "Four ledgers agree (books=card=session)",
+      "consumers": [
+        "silmaril/execution/reconciliation.py",
+        "docs/index.html"
+      ],
+      "decision": "T38 \u00b7 any named delta fails the battery",
+      "exists": true,
+      "age_min": 0.0,
+      "metric": {
+        "all_ok": true,
+        "checks": 7
       },
       "shift": "flat",
       "light": "green"
@@ -58,7 +126,7 @@
         "n_cards": 1050,
         "top_compounder": [
           "FLOW-USD",
-          0.387
+          0.393
         ]
       },
       "shift": "flat",
@@ -90,7 +158,7 @@
       ],
       "decision": "rhythm regularity + phase in confidence \u00b7 dossier next-peak ETA",
       "exists": true,
-      "age_min": 0.8,
+      "age_min": 0.7,
       "metric": {
         "tracked": 52
       },
@@ -105,7 +173,7 @@
       ],
       "decision": "timing_alignment component of confidence",
       "exists": true,
-      "age_min": 954.7,
+      "age_min": 30.1,
       "metric": {
         "learned": 626
       },
@@ -121,7 +189,7 @@
       ],
       "decision": "momentum_exhaustion component \u00b7 dossier trajectory",
       "exists": true,
-      "age_min": 2.1,
+      "age_min": 1.5,
       "metric": {
         "tracked": 625
       },
@@ -140,7 +208,7 @@
       "metric": {
         "ranked": 3
       },
-      "shift": "red",
+      "shift": "flat",
       "light": "green"
     },
     {
@@ -152,7 +220,7 @@
       ],
       "decision": "regime gate (hard/soft) \u00b7 per-regime entry profiles",
       "exists": true,
-      "age_min": 0.2,
+      "age_min": 0.3,
       "metric": {
         "crypto": "DOWNTREND",
         "fast": "stable"
@@ -169,12 +237,12 @@
       ],
       "decision": "experimental gate evidence \u2014 earns trust only by forward accuracy",
       "exists": true,
-      "age_min": 954.6,
+      "age_min": 30.1,
       "metric": {
-        "resolved": 21,
-        "hit_rate": 0.571
+        "resolved": 22,
+        "hit_rate": 0.591
       },
-      "shift": "flat",
+      "shift": "green",
       "light": "green"
     },
     {
@@ -185,7 +253,7 @@
       ],
       "decision": "report-card grading of the crash-day exits (pre-registered kill)",
       "exists": true,
-      "age_min": 11.9,
+      "age_min": 12.0,
       "metric": {
         "events": 24
       },
@@ -200,12 +268,12 @@
       ],
       "decision": "the judge: every new behavior lives or dies by this card",
       "exists": true,
-      "age_min": 3204.3,
+      "age_min": 0.0,
       "metric": {
-        "harvest_logged": 20,
-        "realized_all": 2235.01
+        "harvest_logged": 24,
+        "realized_all": 418.22
       },
-      "shift": "flat",
+      "shift": "green",
       "light": "green"
     },
     {
@@ -219,7 +287,7 @@
       "age_min": 0.0,
       "metric": {
         "leader": "A",
-        "leader_ret": 1.575
+        "leader_ret": 0.0
       },
       "shift": "red",
       "light": "green"
@@ -237,9 +305,9 @@
       "age_min": 0.2,
       "metric": {
         "bought_all": 0,
-        "cands_crypto": 2
+        "cands_crypto": 0
       },
-      "shift": "red",
+      "shift": "flat",
       "light": "green"
     },
     {
@@ -250,7 +318,7 @@
       ],
       "decision": "champion selection (forward survivability, \u226515-pt switch margin)",
       "exists": true,
-      "age_min": 1.1,
+      "age_min": 0.8,
       "metric": {
         "strategies": 5
       },
@@ -258,8 +326,8 @@
       "light": "green"
     }
   ],
-  "wired": 15,
-  "total": 15,
+  "wired": 19,
+  "total": 19,
   "dossiers": [
     {
       "sym": "GALA-USD",
@@ -269,12 +337,8 @@
       "entry": 0.002041,
       "target": 0.02,
       "stop": 0.06,
-      "mark": 0.001994,
+      "mark": 0.001992,
       "series": [
-        [
-          "2026-07-14T06:34:24.574140+00:00",
-          0.002085
-        ],
         [
           "2026-07-14T07:14:55.176089+00:00",
           0.00203501
@@ -750,6 +814,10 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           0.00199398
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          0.00199158
         ]
       ],
       "last_peak_at": null,
@@ -761,22 +829,22 @@
       "typical_dip": null,
       "typical_bounce": null,
       "trajectory": {
-        "h1": 0.388,
-        "d1": -1.535,
-        "d2": -2.581,
-        "w1": -6.086
+        "h1": -0.159,
+        "d1": -1.316,
+        "d2": -4.023,
+        "w1": -6.392
       },
       "mtf_votes": null,
       "mtf_confluence": null,
-      "confidence": 0.276,
+      "confidence": 0.255,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
         "mtf_confluence": 0.5,
         "dip_extension": 0.0,
-        "timing_alignment": 0.397,
-        "momentum_exhaustion": 0.98,
+        "timing_alignment": 0.169,
+        "momentum_exhaustion": 1.0,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
       },
@@ -791,12 +859,8 @@
       "entry": 0.220293,
       "target": 0.02,
       "stop": 0.06,
-      "mark": 0.2134,
+      "mark": 0.2132,
       "series": [
-        [
-          "2026-07-14T05:58:18.684103+00:00",
-          0.207258
-        ],
         [
           "2026-07-14T06:12:40.616159+00:00",
           0.207258
@@ -1272,6 +1336,10 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           0.21340001
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          0.2132
         ]
       ],
       "last_peak_at": null,
@@ -1283,21 +1351,21 @@
       "typical_dip": null,
       "typical_bounce": null,
       "trajectory": {
-        "h1": -0.327,
-        "d1": -3.22,
-        "d2": -3.96,
-        "w1": 5.487
+        "h1": -0.047,
+        "d1": -3.135,
+        "d2": -4.266,
+        "w1": 5.44
       },
       "mtf_votes": null,
       "mtf_confluence": null,
-      "confidence": 0.282,
+      "confidence": 0.259,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
         "mtf_confluence": 0.5,
         "dip_extension": 0.0,
-        "timing_alignment": 0.441,
+        "timing_alignment": 0.212,
         "momentum_exhaustion": 1.0,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
@@ -1313,12 +1381,8 @@
       "entry": 0.084299,
       "target": 0.0467,
       "stop": 0.06,
-      "mark": 0.0822,
+      "mark": 0.0816,
       "series": [
-        [
-          "2026-07-14T01:52:43.042042+00:00",
-          0.0799
-        ],
         [
           "2026-07-14T02:16:25.681940+00:00",
           0.0799
@@ -1794,6 +1858,10 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           0.0822
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          0.0816
         ]
       ],
       "last_peak_at": null,
@@ -1805,21 +1873,21 @@
       "typical_dip": null,
       "typical_bounce": null,
       "trajectory": {
-        "h1": -2.837,
-        "d1": -1.202,
-        "d2": 2.921,
-        "w1": 7.311
+        "h1": -1.091,
+        "d1": -2.275,
+        "d2": -1.091,
+        "w1": 6.806
       },
       "mtf_votes": null,
       "mtf_confluence": null,
-      "confidence": 0.238,
+      "confidence": 0.228,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
         "mtf_confluence": 0.5,
         "dip_extension": 0.0,
-        "timing_alignment": 0.399,
+        "timing_alignment": 0.297,
         "momentum_exhaustion": 0.5,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
@@ -1835,12 +1903,8 @@
       "entry": 0.028871,
       "target": 0.02,
       "stop": 0.06,
-      "mark": 0.02846,
+      "mark": 0.02844,
       "series": [
-        [
-          "2026-07-14T07:14:55.176089+00:00",
-          0.0270753
-        ],
         [
           "2026-07-14T07:44:20.513627+00:00",
           0.02703049
@@ -2316,6 +2380,10 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           0.02845978
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          0.02844007
         ]
       ],
       "last_peak_at": null,
@@ -2327,22 +2395,22 @@
       "typical_dip": null,
       "typical_bounce": null,
       "trajectory": {
-        "h1": 1.724,
-        "d1": -2.783,
-        "d2": 5.535,
-        "w1": -0.735
+        "h1": 1.251,
+        "d1": -1.826,
+        "d2": 5.689,
+        "w1": -0.757
       },
       "mtf_votes": null,
       "mtf_confluence": null,
-      "confidence": 0.279,
+      "confidence": 0.253,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
         "mtf_confluence": 0.5,
         "dip_extension": 0.0,
-        "timing_alignment": 0.443,
-        "momentum_exhaustion": 0.964,
+        "timing_alignment": 0.31,
+        "momentum_exhaustion": 0.804,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
       },
@@ -2357,12 +2425,8 @@
       "entry": 0.147664,
       "target": 0.0234,
       "stop": 0.06,
-      "mark": 0.146309,
+      "mark": 0.14644,
       "series": [
-        [
-          "2026-07-14T07:14:55.176089+00:00",
-          0.14632694
-        ],
         [
           "2026-07-14T07:44:20.513627+00:00",
           0.14437953
@@ -2838,6 +2902,10 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           0.14630909
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          0.1464399
         ]
       ],
       "last_peak_at": null,
@@ -2849,21 +2917,21 @@
       "typical_dip": null,
       "typical_bounce": null,
       "trajectory": {
-        "h1": -1.391,
-        "d1": 0.887,
-        "d2": 2.362,
-        "w1": 5.968
+        "h1": 0.064,
+        "d1": 0.39,
+        "d2": 2.57,
+        "w1": 6.065
       },
       "mtf_votes": null,
       "mtf_confluence": null,
-      "confidence": 0.227,
+      "confidence": 0.213,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
         "mtf_confluence": 0.5,
         "dip_extension": 0.0,
-        "timing_alignment": 0.291,
+        "timing_alignment": 0.151,
         "momentum_exhaustion": 0.5,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
@@ -2879,12 +2947,8 @@
       "entry": 0.048772,
       "target": 0.0201,
       "stop": 0.06,
-      "mark": 0.04776,
+      "mark": 0.0477,
       "series": [
-        [
-          "2026-07-14T05:28:50.058616+00:00",
-          0.0476
-        ],
         [
           "2026-07-14T06:12:40.616159+00:00",
           0.048321
@@ -3360,6 +3424,10 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           0.04776
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          0.0477
         ]
       ],
       "last_peak_at": null,
@@ -3371,21 +3439,21 @@
       "typical_dip": null,
       "typical_bounce": null,
       "trajectory": {
-        "h1": -1.505,
-        "d1": -0.769,
-        "d2": 1.279,
-        "w1": 0.126
+        "h1": -0.313,
+        "d1": -0.728,
+        "d2": 0.846,
+        "w1": 0.021
       },
       "mtf_votes": null,
       "mtf_confluence": null,
-      "confidence": 0.227,
+      "confidence": 0.225,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
         "mtf_confluence": 0.5,
         "dip_extension": 0.0,
-        "timing_alignment": 0.291,
+        "timing_alignment": 0.274,
         "momentum_exhaustion": 0.5,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
@@ -3401,12 +3469,8 @@
       "entry": 34.771644,
       "target": 0.0247,
       "stop": 0.06,
-      "mark": 33.779999,
+      "mark": 33.759998,
       "series": [
-        [
-          "2026-07-14T03:04:42.051160+00:00",
-          32.61999893
-        ],
         [
           "2026-07-14T03:27:53.937612+00:00",
           32.45999908
@@ -3882,6 +3946,10 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           33.77999878
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          33.75999832
         ]
       ],
       "last_peak_at": null,
@@ -3893,21 +3961,21 @@
       "typical_dip": null,
       "typical_bounce": null,
       "trajectory": {
-        "h1": -1.688,
-        "d1": -1.054,
-        "d2": 2.894,
-        "w1": -0.735
+        "h1": 0.03,
+        "d1": -1.229,
+        "d2": 2.708,
+        "w1": -1.084
       },
       "mtf_votes": null,
       "mtf_confluence": null,
-      "confidence": 0.243,
+      "confidence": 0.232,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
         "mtf_confluence": 0.5,
         "dip_extension": 0.0,
-        "timing_alignment": 0.446,
+        "timing_alignment": 0.337,
         "momentum_exhaustion": 0.5,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
@@ -3923,12 +3991,8 @@
       "entry": 0.084978,
       "target": 0.02,
       "stop": 0.06,
-      "mark": 0.083,
+      "mark": 0.0831,
       "series": [
-        [
-          "2026-07-14T07:44:20.513627+00:00",
-          0.0838
-        ],
         [
           "2026-07-14T08:09:06.696781+00:00",
           0.083404
@@ -4404,26 +4468,30 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           0.083
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          0.0831
         ]
       ],
       "last_peak_at": "2026-07-16T05:22:22.814104+00:00",
       "last_trough_at": "2026-07-16T04:10:31.106262+00:00",
-      "cycle_min": 202.0,
-      "amplitude_pct": 1.33,
-      "next_peak_eta": "2026-07-16T08:44:22.814104+00:00",
+      "cycle_min": 196.15,
+      "amplitude_pct": 1.56,
+      "next_peak_eta": "2026-07-16T08:38:31.814104+00:00",
       "bounce_likelihood": null,
       "typical_dip": null,
       "typical_bounce": null,
       "trajectory": {
-        "h1": -0.36,
-        "d1": -2.238,
-        "d2": -0.484,
-        "w1": -2.582
+        "h1": -0.24,
+        "d1": -1.889,
+        "d2": -0.954,
+        "w1": -2.465
       },
       "mtf_votes": {
         "15m": 0,
-        "30m": -1,
-        "1h": -1,
+        "30m": 1,
+        "1h": 0,
         "2h": -1,
         "3h": -1,
         "6h": -1,
@@ -4434,21 +4502,21 @@
         "7d": -1,
         "30d": 0
       },
-      "mtf_confluence": -7.5,
-      "confidence": 0.265,
+      "mtf_confluence": -5.0,
+      "confidence": 0.304,
       "confidence_parts": {
         "bounce_reliability": 0.0,
-        "rhythm_regularity": 0.692,
+        "rhythm_regularity": 0.776,
         "rhythm_phase": 0.25,
-        "mtf_confluence": 0.059,
+        "mtf_confluence": 0.206,
         "dip_extension": 0.0,
-        "timing_alignment": 0.391,
+        "timing_alignment": 0.472,
         "momentum_exhaustion": 0.5,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
       },
-      "rhythm_tradeability": 0.529,
-      "why": "regular 202m cycle"
+      "rhythm_tradeability": 0.657,
+      "why": "regular 196m cycle \u00b7 RHYTHM-TRADEABLE (sideways+predictable)"
     },
     {
       "sym": "SUSHI-USD",
@@ -4458,12 +4526,8 @@
       "entry": 0.17011,
       "target": 0.0294,
       "stop": 0.06,
-      "mark": 0.1679,
+      "mark": 0.1674,
       "series": [
-        [
-          "2026-07-14T04:14:19.466982+00:00",
-          0.1646
-        ],
         [
           "2026-07-14T05:17:05.582803+00:00",
           0.161688
@@ -4939,6 +5003,10 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           0.1679
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          0.1674
         ]
       ],
       "last_peak_at": null,
@@ -4950,22 +5018,22 @@
       "typical_dip": null,
       "typical_bounce": null,
       "trajectory": {
-        "h1": -0.415,
-        "d1": 1.084,
-        "d2": 3.514,
-        "w1": 4.027
+        "h1": -1.005,
+        "d1": 0.601,
+        "d2": 3.079,
+        "w1": 3.717
       },
       "mtf_votes": null,
       "mtf_confluence": null,
-      "confidence": 0.239,
+      "confidence": 0.229,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
         "mtf_confluence": 0.5,
         "dip_extension": 0.0,
-        "timing_alignment": 0.55,
-        "momentum_exhaustion": 0.319,
+        "timing_alignment": 0.306,
+        "momentum_exhaustion": 0.5,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
       },
@@ -4980,12 +5048,8 @@
       "entry": 5.098265,
       "target": 0.0295,
       "stop": 0.06,
-      "mark": 5.065,
+      "mark": 5.066,
       "series": [
-        [
-          "2026-07-14T05:17:05.582803+00:00",
-          4.86552286
-        ],
         [
           "2026-07-14T05:58:18.684103+00:00",
           4.86552286
@@ -5461,6 +5525,10 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           5.06500006
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          5.06599998
         ]
       ],
       "last_peak_at": null,
@@ -5472,22 +5540,22 @@
       "typical_dip": null,
       "typical_bounce": null,
       "trajectory": {
-        "h1": -2.088,
-        "d1": 2.884,
-        "d2": 0.876,
-        "w1": 5.543
+        "h1": -0.393,
+        "d1": 2.634,
+        "d2": 1.604,
+        "w1": 5.06
       },
       "mtf_votes": null,
       "mtf_confluence": null,
-      "confidence": 0.199,
+      "confidence": 0.206,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
         "mtf_confluence": 0.5,
         "dip_extension": 0.0,
-        "timing_alignment": 0.39,
-        "momentum_exhaustion": 0.019,
+        "timing_alignment": 0.435,
+        "momentum_exhaustion": 0.061,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
       },
@@ -5504,10 +5572,6 @@
       "stop": 0.08,
       "mark": 21.43,
       "series": [
-        [
-          "2026-07-14T07:44:20.513627+00:00",
-          21.55
-        ],
         [
           "2026-07-14T08:09:06.696781+00:00",
           21.55
@@ -5983,6 +6047,10 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           21.43000031
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          21.43
         ]
       ],
       "last_peak_at": null,
@@ -6001,14 +6069,14 @@
       },
       "mtf_votes": null,
       "mtf_confluence": null,
-      "confidence": 0.233,
+      "confidence": 0.255,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
         "mtf_confluence": 0.5,
         "dip_extension": 0.0,
-        "timing_alignment": 0.234,
+        "timing_alignment": 0.455,
         "momentum_exhaustion": 0.643,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
@@ -6024,12 +6092,8 @@
       "entry": 182.056875,
       "target": 0.0089,
       "stop": 0.08,
-      "mark": 181.600006,
+      "mark": 181.6,
       "series": [
-        [
-          "2026-07-14T07:44:20.513627+00:00",
-          182.2
-        ],
         [
           "2026-07-14T08:09:06.696781+00:00",
           182.2
@@ -6505,6 +6569,10 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           181.6000061
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          181.6
         ]
       ],
       "last_peak_at": null,
@@ -6536,14 +6604,14 @@
         "30d": 0
       },
       "mtf_confluence": 0.25,
-      "confidence": 0.258,
+      "confidence": 0.263,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
         "mtf_confluence": 0.515,
         "dip_extension": 0.0,
-        "timing_alignment": 0.493,
+        "timing_alignment": 0.55,
         "momentum_exhaustion": 0.605,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
@@ -6559,12 +6627,8 @@
       "entry": 112.32221,
       "target": 0.0062,
       "stop": 0.08,
-      "mark": 111.459999,
+      "mark": 111.46,
       "series": [
-        [
-          "2026-07-14T07:44:20.513627+00:00",
-          112.85
-        ],
         [
           "2026-07-14T08:09:06.696781+00:00",
           112.85
@@ -7040,6 +7104,10 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           111.45999908
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          111.46
         ]
       ],
       "last_peak_at": null,
@@ -7051,21 +7119,21 @@
       "typical_dip": null,
       "typical_bounce": null,
       "trajectory": {
-        "h1": -0.0,
+        "h1": 0.0,
         "d1": -0.366,
         "d2": -1.232,
         "w1": 0.668
       },
       "mtf_votes": null,
       "mtf_confluence": null,
-      "confidence": 0.259,
+      "confidence": 0.249,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
         "mtf_confluence": 0.5,
         "dip_extension": 0.0,
-        "timing_alignment": 0.407,
+        "timing_alignment": 0.306,
         "momentum_exhaustion": 0.755,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
@@ -7083,10 +7151,6 @@
       "stop": 0.08,
       "mark": 27.27,
       "series": [
-        [
-          "2026-07-14T07:44:20.513627+00:00",
-          27.09
-        ],
         [
           "2026-07-14T08:09:06.696781+00:00",
           27.09
@@ -7562,6 +7626,10 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           27.27000046
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          27.27
         ]
       ],
       "last_peak_at": null,
@@ -7580,14 +7648,14 @@
       },
       "mtf_votes": null,
       "mtf_confluence": null,
-      "confidence": 0.25,
+      "confidence": 0.261,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
         "mtf_confluence": 0.5,
         "dip_extension": 0.0,
-        "timing_alignment": 0.521,
+        "timing_alignment": 0.628,
         "momentum_exhaustion": 0.5,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
@@ -7603,12 +7671,8 @@
       "entry": 199.01882,
       "target": 0.0147,
       "stop": 0.08,
-      "mark": 196.160004,
+      "mark": 196.16,
       "series": [
-        [
-          "2026-07-14T07:44:20.513627+00:00",
-          198.29
-        ],
         [
           "2026-07-14T08:09:06.696781+00:00",
           198.29
@@ -8084,6 +8148,10 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           196.16000366
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          196.16
         ]
       ],
       "last_peak_at": null,
@@ -8102,14 +8170,14 @@
       },
       "mtf_votes": null,
       "mtf_confluence": null,
-      "confidence": 0.244,
+      "confidence": 0.239,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
         "mtf_confluence": 0.5,
         "dip_extension": 0.0,
-        "timing_alignment": 0.46,
+        "timing_alignment": 0.406,
         "momentum_exhaustion": 0.5,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
@@ -8125,12 +8193,8 @@
       "entry": 4078.874849,
       "target": 0.0079,
       "stop": 0.1,
-      "mark": 4037.699951,
+      "mark": 4036.699951,
       "series": [
-        [
-          "2026-07-14T07:51:50.341435+00:00",
-          4031.5
-        ],
         [
           "2026-07-14T08:14:33.038292+00:00",
           4025.100098
@@ -8606,6 +8670,10 @@
         [
           "2026-07-16T09:45:39.274296+00:00",
           4037.699951
+        ],
+        [
+          "2026-07-16T10:16:35.782671+00:00",
+          4036.699951
         ]
       ],
       "last_peak_at": null,
@@ -8623,33 +8691,33 @@
         "w1": null
       },
       "mtf_votes": {
-        "15m": -1,
-        "30m": -1,
-        "1h": 0,
+        "15m": 0,
+        "30m": 0,
+        "1h": -1,
         "2h": 0,
         "3h": 0,
         "6h": 0,
         "12h": -1,
-        "24h": 1,
+        "24h": 0,
         "2d": 1,
         "3d": -1,
         "7d": -1,
         "30d": 1
       },
-      "mtf_confluence": -1.25,
-      "confidence": 0.239,
+      "mtf_confluence": -1.75,
+      "confidence": 0.236,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
-        "mtf_confluence": 0.426,
+        "mtf_confluence": 0.397,
         "dip_extension": 0.0,
         "timing_alignment": 0.5,
         "momentum_exhaustion": 0.5,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
       },
-      "rhythm_tradeability": 0.171,
+      "rhythm_tradeability": 0.159,
       "why": "no strong predictive signal"
     },
     {
@@ -8660,12 +8728,8 @@
       "entry": 59.19741,
       "target": 0.009224534099126299,
       "stop": 0.1,
-      "mark": 57.224998,
+      "mark": 57.075001,
       "series": [
-        [
-          "2026-07-14T07:51:50.341435+00:00",
-          58.349998
-        ],
         [
           "2026-07-14T08:14:33.038292+00:00",
           58.285
@@ -9141,6 +9205,10 @@
         [
           "2026-07-16T09:45:39.274296+00:00",
           57.224998
+        ],
+        [
+          "2026-07-16T10:16:35.782671+00:00",
+          57.075001
         ]
       ],
       "last_peak_at": null,
@@ -9158,9 +9226,9 @@
         "w1": null
       },
       "mtf_votes": {
-        "15m": -1,
+        "15m": 0,
         "30m": -1,
-        "1h": 0,
+        "1h": -1,
         "2h": -1,
         "3h": -1,
         "6h": -1,
@@ -9169,22 +9237,22 @@
         "2d": -1,
         "3d": -1,
         "7d": -1,
-        "30d": 1
+        "30d": -1
       },
-      "mtf_confluence": -6.75,
-      "confidence": 0.2,
+      "mtf_confluence": -7.75,
+      "confidence": 0.193,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
-        "mtf_confluence": 0.103,
+        "mtf_confluence": 0.044,
         "dip_extension": 0.0,
         "timing_alignment": 0.5,
         "momentum_exhaustion": 0.5,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
       },
-      "rhythm_tradeability": 0.041,
+      "rhythm_tradeability": 0.018,
       "why": "no strong predictive signal"
     },
     {
@@ -9197,10 +9265,6 @@
       "stop": 0.1,
       "mark": 1674.5,
       "series": [
-        [
-          "2026-07-14T07:51:50.341435+00:00",
-          1614.0
-        ],
         [
           "2026-07-14T08:14:33.038292+00:00",
           1613.599976
@@ -9676,6 +9740,10 @@
         [
           "2026-07-16T09:45:39.274296+00:00",
           1674.5
+        ],
+        [
+          "2026-07-16T10:16:35.782671+00:00",
+          1674.5
         ]
       ],
       "last_peak_at": null,
@@ -9693,8 +9761,8 @@
         "w1": null
       },
       "mtf_votes": {
-        "15m": 1,
-        "30m": 1,
+        "15m": 0,
+        "30m": 0,
         "1h": 1,
         "2h": 1,
         "3h": 1,
@@ -9706,20 +9774,20 @@
         "7d": 1,
         "30d": 1
       },
-      "mtf_confluence": 4.75,
-      "confidence": 0.281,
+      "mtf_confluence": 3.5,
+      "confidence": 0.273,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
-        "mtf_confluence": 0.779,
+        "mtf_confluence": 0.706,
         "dip_extension": 0.0,
         "timing_alignment": 0.5,
         "momentum_exhaustion": 0.5,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
       },
-      "rhythm_tradeability": 0.088,
+      "rhythm_tradeability": 0.118,
       "why": "no strong predictive signal"
     },
     {
@@ -9730,12 +9798,8 @@
       "entry": 1310.969353,
       "target": 0.0137,
       "stop": 0.1,
-      "mark": 1304.0,
+      "mark": 1303.5,
       "series": [
-        [
-          "2026-07-14T07:51:50.341435+00:00",
-          1273.0
-        ],
         [
           "2026-07-14T08:14:33.038292+00:00",
           1273.0
@@ -10211,6 +10275,10 @@
         [
           "2026-07-16T09:45:39.274296+00:00",
           1304.0
+        ],
+        [
+          "2026-07-16T10:16:35.782671+00:00",
+          1303.5
         ]
       ],
       "last_peak_at": null,
@@ -10228,33 +10296,33 @@
         "w1": null
       },
       "mtf_votes": {
-        "15m": 1,
-        "30m": 1,
-        "1h": 1,
-        "2h": -1,
+        "15m": 0,
+        "30m": 0,
+        "1h": 0,
+        "2h": 1,
         "3h": -1,
         "6h": -1,
         "12h": -1,
-        "24h": -1,
+        "24h": 0,
         "2d": 1,
         "3d": 1,
         "7d": 1,
         "30d": 1
       },
-      "mtf_confluence": -0.75,
-      "confidence": 0.243,
+      "mtf_confluence": -0.25,
+      "confidence": 0.246,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
-        "mtf_confluence": 0.456,
+        "mtf_confluence": 0.485,
         "dip_extension": 0.0,
         "timing_alignment": 0.5,
         "momentum_exhaustion": 0.5,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
       },
-      "rhythm_tradeability": 0.182,
+      "rhythm_tradeability": 0.194,
       "why": "no strong predictive signal"
     },
     {
@@ -10265,12 +10333,8 @@
       "entry": 80.509623,
       "target": 0.0147,
       "stop": 0.1,
-      "mark": 79.269997,
+      "mark": 79.559998,
       "series": [
-        [
-          "2026-07-14T07:51:50.347260+00:00",
-          80.699997
-        ],
         [
           "2026-07-14T08:14:33.042753+00:00",
           80.870003
@@ -10746,6 +10810,10 @@
         [
           "2026-07-16T09:45:39.279310+00:00",
           79.269997
+        ],
+        [
+          "2026-07-16T10:16:35.787377+00:00",
+          79.559998
         ]
       ],
       "last_peak_at": null,
@@ -10763,12 +10831,12 @@
         "w1": null
       },
       "mtf_votes": {
-        "15m": 1,
+        "15m": 0,
         "30m": 1,
-        "1h": -1,
-        "2h": -1,
-        "3h": -1,
-        "6h": -1,
+        "1h": 1,
+        "2h": 1,
+        "3h": 1,
+        "6h": 0,
         "12h": -1,
         "24h": -1,
         "2d": -1,
@@ -10776,20 +10844,20 @@
         "7d": 1,
         "30d": 1
       },
-      "mtf_confluence": -3.75,
-      "confidence": 0.221,
+      "mtf_confluence": 2.75,
+      "confidence": 0.267,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
-        "mtf_confluence": 0.279,
+        "mtf_confluence": 0.662,
         "dip_extension": 0.0,
         "timing_alignment": 0.5,
         "momentum_exhaustion": 0.5,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
       },
-      "rhythm_tradeability": 0.112,
+      "rhythm_tradeability": 0.135,
       "why": "no strong predictive signal"
     },
     {
@@ -10800,12 +10868,8 @@
       "entry": 86.419455,
       "target": 0.0193,
       "stop": 0.1,
-      "mark": 84.290001,
+      "mark": 84.739998,
       "series": [
-        [
-          "2026-07-14T07:51:50.347260+00:00",
-          86.139999
-        ],
         [
           "2026-07-14T08:14:33.042753+00:00",
           86.470001
@@ -11281,6 +11345,10 @@
         [
           "2026-07-16T09:45:39.279310+00:00",
           84.290001
+        ],
+        [
+          "2026-07-16T10:16:35.787377+00:00",
+          84.739998
         ]
       ],
       "last_peak_at": null,
@@ -11298,33 +11366,33 @@
         "w1": null
       },
       "mtf_votes": {
-        "15m": 1,
+        "15m": 0,
         "30m": 1,
-        "1h": -1,
-        "2h": -1,
-        "3h": -1,
-        "6h": -1,
+        "1h": 1,
+        "2h": 1,
+        "3h": 1,
+        "6h": 0,
         "12h": -1,
         "24h": -1,
         "2d": -1,
         "3d": 1,
         "7d": 1,
-        "30d": 0
+        "30d": 1
       },
-      "mtf_confluence": -4.0,
-      "confidence": 0.22,
+      "mtf_confluence": 2.75,
+      "confidence": 0.267,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
-        "mtf_confluence": 0.265,
+        "mtf_confluence": 0.662,
         "dip_extension": 0.0,
         "timing_alignment": 0.5,
         "momentum_exhaustion": 0.5,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
       },
-      "rhythm_tradeability": 0.106,
+      "rhythm_tradeability": 0.135,
       "why": "no strong predictive signal"
     },
     {
@@ -11335,32 +11403,8 @@
       "entry": 0.07434,
       "target": 0.02,
       "stop": 0.06,
-      "mark": 0.0732,
+      "mark": 0.07323,
       "series": [
-        [
-          "2026-07-15T23:45:00+00:00",
-          0.07418
-        ],
-        [
-          "2026-07-15T23:50:00+00:00",
-          0.07418
-        ],
-        [
-          "2026-07-15T23:55:00+00:00",
-          0.07418
-        ],
-        [
-          "2026-07-16T00:05:00+00:00",
-          0.07414
-        ],
-        [
-          "2026-07-16T00:10:00+00:00",
-          0.07419
-        ],
-        [
-          "2026-07-16T00:15:00+00:00",
-          0.0742
-        ],
         [
           "2026-07-16T00:20:00+00:00",
           0.07389
@@ -11815,7 +11859,31 @@
         ],
         [
           "2026-07-16T09:45:00+00:00",
-          0.0732
+          0.07317
+        ],
+        [
+          "2026-07-16T09:50:00+00:00",
+          0.07321
+        ],
+        [
+          "2026-07-16T09:55:00+00:00",
+          0.07311
+        ],
+        [
+          "2026-07-16T10:00:00+00:00",
+          0.07311
+        ],
+        [
+          "2026-07-16T10:05:00+00:00",
+          0.07311
+        ],
+        [
+          "2026-07-16T10:10:00+00:00",
+          0.07323
+        ],
+        [
+          "2026-07-16T10:15:00+00:00",
+          0.07323
         ]
       ],
       "last_peak_at": null,
@@ -11847,12 +11915,8 @@
       "entry": 0.028939,
       "target": 0.02,
       "stop": 0.06,
-      "mark": 0.028378,
+      "mark": 0.028035,
       "series": [
-        [
-          "2026-07-13T23:11:45.671720+00:00",
-          0.02857551
-        ],
         [
           "2026-07-13T23:38:19.382541+00:00",
           0.029735
@@ -12328,6 +12392,10 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           0.02837752
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          0.02803539
         ]
       ],
       "last_peak_at": null,
@@ -12339,22 +12407,22 @@
       "typical_dip": null,
       "typical_bounce": null,
       "trajectory": {
-        "h1": 0.561,
-        "d1": -1.129,
-        "d2": -2.332,
-        "w1": -8.765
+        "h1": 0.309,
+        "d1": -3.02,
+        "d2": -2.777,
+        "w1": -10.245
       },
       "mtf_votes": null,
       "mtf_confluence": null,
-      "confidence": 0.29,
+      "confidence": 0.244,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
         "mtf_confluence": 0.5,
         "dip_extension": 0.0,
-        "timing_alignment": 0.57,
-        "momentum_exhaustion": 0.939,
+        "timing_alignment": 0.46,
+        "momentum_exhaustion": 0.5,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
       },
@@ -12369,12 +12437,8 @@
       "entry": 0.187961,
       "target": 0.02,
       "stop": 0.06,
-      "mark": 0.18788,
+      "mark": 0.189435,
       "series": [
-        [
-          "2026-07-14T05:17:05.582803+00:00",
-          0.186417
-        ],
         [
           "2026-07-14T05:58:18.684103+00:00",
           0.186417
@@ -12850,6 +12914,10 @@
         [
           "2026-07-16T09:38:03.878022+00:00",
           0.18787999
+        ],
+        [
+          "2026-07-16T10:08:36.914475+00:00",
+          0.18943501
         ]
       ],
       "last_peak_at": null,
@@ -12861,22 +12929,22 @@
       "typical_dip": null,
       "typical_bounce": null,
       "trajectory": {
-        "h1": -0.747,
-        "d1": 2.238,
-        "d2": 4.077,
-        "w1": 3.831
+        "h1": 0.584,
+        "d1": 3.043,
+        "d2": 6.449,
+        "w1": 5.032
       },
       "mtf_votes": null,
       "mtf_confluence": null,
-      "confidence": 0.215,
+      "confidence": 0.193,
       "confidence_parts": {
         "bounce_reliability": 0.0,
         "rhythm_regularity": 0.0,
         "rhythm_phase": 0.5,
         "mtf_confluence": 0.5,
         "dip_extension": 0.0,
-        "timing_alignment": 0.471,
-        "momentum_exhaustion": 0.127,
+        "timing_alignment": 0.346,
+        "momentum_exhaustion": 0.0,
         "conviction_backing": 0.5,
         "trend_alignment": 0.2
       },
@@ -12887,58 +12955,58 @@
   "master_brain": {
     "crypto": [
       [
-        "WIF-USD",
+        "BCH-USD",
         0.37
       ],
       [
-        "SAND-USD",
-        0.342
+        "ETC-USD",
+        0.333
       ],
       [
         "ETH-USD",
-        0.338
+        0.321
       ]
     ],
     "stock": [
       [
         "BF-B",
-        0.338
+        0.344
       ],
       [
         "DGX",
         0.314
       ],
       [
-        "JNJ",
-        0.313
+        "CAH",
+        0.312
       ]
     ],
     "metal": [
       [
         "IAU",
-        0.315
+        0.329
       ],
       [
         "GLD",
-        0.309
+        0.321
       ],
       [
         "PPLT",
-        0.292
+        0.296
       ]
     ],
     "energy": [
       [
         "USO",
-        0.318
+        0.295
       ],
       [
         "UNG",
-        0.304
+        0.293
       ],
       [
-        "BNO",
-        0.283
+        "NATGAS",
+        0.28
       ]
     ]
   },
