@@ -81,8 +81,18 @@ def build_census(out_dir) -> Optional[Dict[str, Any]]:
             return None  # fresh enough — skip the heavy parse this cycle
 
     try:
-        samples: Dict[str, List[Any]] = (json.loads(
-            (out / "price_samples.json").read_text()).get("samples") or {})
+        # 7.0.1 UNDERCOUNT FIX: the engine marks from FOUR sample stores (paper_sim
+        # merges price + ccxt + metals + energy), but the census counted price_samples
+        # alone. After the genesis wipe that read "crypto 91 listed" while the engine
+        # was actually marking 886 symbols — a panel that made a healthy engine look
+        # dead. The census now counts exactly what the engine sees.
+        samples: Dict[str, List[Any]] = {}
+        for _sf in ("price_samples.json", "ccxt_samples.json",
+                    "metals_samples.json", "energy_samples.json"):
+            try:
+                samples.update(json.loads((out / _sf).read_text()).get("samples") or {})
+            except Exception:
+                pass
     except Exception:
         return None
 

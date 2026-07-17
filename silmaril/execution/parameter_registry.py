@@ -90,7 +90,16 @@ def build_parameter_registry(out_dir) -> Dict[str, Any]:
     lb = sorted(lb, key=lambda x: float(x["note"].split("avg ")[1].split("%")[0]), reverse=True)[:5]
     gated = [b for b in ("stock", "metal", "energy") if b not in tbooks]
     entries.append(_entry(
-        "Hold-timer",  # 5.3: the hold IS the rhythm now ("rhythm-hold: each name's own cycle ×1.15 (exp_hold_min on every position)" if (opt is None and cryp) else (str(opt) + " min" if opt else None)),
+        "Hold-timer",
+        # 7.0.1 ROOT CAUSE REPAIR: the 5.3 patch appended a "#" comment onto a line that
+        # was MID-ARGUMENT-LIST — the comment swallowed the champion expression, so
+        # _entry() lost its last positional arg and raised TypeError EVERY cycle. Because
+        # 14 builders shared one try-block, that single TypeError silently killed the 8
+        # builders after it (concentration, session, anatomy, reality-check, timeline...).
+        # That is the "+$71.60 after the wipe" ghost and the short daily run. Never again:
+        # comments now live on their own line, and cli.py isolates every builder (T52).
+        ("rhythm-hold: each name's own cycle ×1.15 (exp_hold_min on every position)"
+         if (opt is None and cryp) else (str(opt) + " min" if opt else None)),
         None, "edge captured per trade", cryp.get("optimal_avg_realized_pct"),
         lb, "ROTATING (crypto)" + (f" · {','.join(gated)} data-gated" if gated else ""), "TIMER_OPTIMIZATION.json"))
 

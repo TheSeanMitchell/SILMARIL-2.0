@@ -856,6 +856,64 @@ def t51_genesis():
     check("T51 genesis wipe: registry-driven total reset, archives untouched (Law 30)", ok, "")
 
 
+def t52_builder_isolation():
+    """7.0.1: no builder may take another down. The +$71.60 ghost was ONE TypeError in
+    parameter_registry killing 8 semicolon-chained builders inside a shared try-block —
+    silently, every cycle, since 5.3. This asserts isolation AND that every hourly
+    builder actually runs against the live tree."""
+    import importlib
+    cli = (ROOT / "silmaril/cli.py").read_text()
+    ok_iso = ("BUILDER FAILED (isolated" in cli
+              and "_pregr = _preg(out); _cmp(out)" not in cli
+              and "stale-derived sweep" in cli)
+    broken = []
+    for m in ("timer_optimization.build_timer_optimization",
+              "chart_overlays.build_chart_overlays",
+              "threshold_champion.build_threshold_champion",
+              "parameter_registry.build_parameter_registry",
+              "compounding_projection.build_compounding_projection",
+              "regime_classifier.build_regime_classifier",
+              "daily_journal.build_daily_journal",
+              "session_reconstruction.build_session_reconstruction",
+              "session_anatomy.build_session_anatomy",
+              "crypto_concentration.build_crypto_concentration",
+              "reality_check.build_reality_check",
+              "champion_timeline.build_champion_timeline"):
+        mod, fn = m.rsplit(".", 1)
+        try:
+            getattr(importlib.import_module("silmaril.execution." + mod), fn)(str(ROOT / "docs/data"))
+        except Exception as e:
+            broken.append(f"{mod}:{type(e).__name__}")
+    check("T52 builder isolation: no shared-try cascade + all 12 hourly builders run clean",
+          ok_iso and not broken, f"isolated={ok_iso} broken={broken[:3]}")
+
+
+def t53_no_stale_derived():
+    """A DERIVED store older than the wipe is a confident lie on the dashboard."""
+    import json as _json, os
+    try:
+        wm = _json.loads((ROOT / "docs/data/WIPE_MARKER.json").read_text()).get("wiped_at")
+        reg = _json.loads((ROOT / "docs/data/STORE_REGISTRY.json").read_text()).get("stores") or {}
+    except Exception:
+        check("T53 no stale DERIVED — no wipe marker yet (fresh tree)", True, "")
+        return
+    stale = []
+    for f, cls in reg.items():
+        if cls != "DERIVED":
+            continue
+        p = ROOT / "docs/data" / f
+        if not p.exists():
+            continue
+        try:
+            g = _json.loads(p.read_text()).get("generated_at")
+        except Exception:
+            continue
+        if g and wm and str(g) < str(wm):
+            stale.append(f)
+    check("T53 no stale DERIVED store may predate the wipe (the +$71.60 ghost class)",
+          not stale, f"stale={stale[:4]}")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -874,7 +932,8 @@ if __name__ == "__main__":
               t40_fit_quality, t41_readiness_numeric, t42_discovery_contract,
               t43_fingerprint_coverage, t44_geometry_gate, t45_edge_surface,
               t46_maker_book, t47_calibration_teeth, t48_sizer_hand,
-              t49_learning_permanence, t50_question_engine, t51_genesis):
+              t49_learning_permanence, t50_question_engine, t51_genesis,
+              t52_builder_isolation, t53_no_stale_derived):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

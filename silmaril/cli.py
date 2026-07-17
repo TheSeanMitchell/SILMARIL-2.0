@@ -2434,14 +2434,42 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                 from .execution.reality_check import build_reality_check as _rchk
                 from .execution.champion_timeline import build_champion_timeline as _ctl
                 _rgc(out)
+                # ── 7.0.1 PER-BUILDER ISOLATION ─────────────────────────────────
+                # These twelve were semicolon-chained inside ONE try-block. When
+                # parameter_registry started raising TypeError (a 5.3 patch appended a
+                # "#" comment mid-argument-list and ate an argument), _cmp and _djr on
+                # the same line died with it — and the outer except swallowed the raise,
+                # so the ENTIRE next block (session · anatomy · concentration · reality
+                # · timeline) never ran either. Result: "+$71.60" frozen since 07-16,
+                # empty Forensics, and a daily run that finished early because eight
+                # builders were silently absent. Root-caused and repaired; now each
+                # builder stands alone and any failure NAMES ITSELF in the log. (T52)
+                _tor = _cor = _tcr = _pregr = _djent = {}
+                _sessr = _anatr = _concr = _rchkr = _ctlr = {}
                 if _HOURLY:
-                    _tor = _to(out); _cor = _co(out); _tcr = _tc(out); _pregr = _preg(out); _cmp(out); _djent = _djr(out)
-                else:
-                    _tor = _cor = _tcr = _pregr = _djent = {}
-                if _HOURLY:
-                    _sessr = _sess(out); _anatr = _anat(out); _concr = _conc(out); _rchkr = _rchk(out); _ctlr = _ctl(out)
-                else:
-                    _sessr = _anatr = _concr = _rchkr = _ctlr = {}
+                    _res70 = {}
+                    for _bn70, _bf70 in (("timer optimization", _to), ("chart overlays", _co),
+                                         ("threshold champion", _tc), ("parameter registry", _preg),
+                                         ("compounding projection", _cmp), ("daily journal", _djr),
+                                         ("session reconstruction", _sess), ("session anatomy", _anat),
+                                         ("crypto concentration", _conc), ("reality check", _rchk),
+                                         ("champion timeline", _ctl)):
+                        try:
+                            _res70[_bn70] = _bf70(out) or {}
+                        except Exception as _be70:
+                            _res70[_bn70] = {}
+                            log.warning("  BUILDER FAILED (isolated, chain intact): %s → %s: %s",
+                                        _bn70, type(_be70).__name__, str(_be70)[:120])
+                    _tor = _res70.get("timer optimization", {})
+                    _cor = _res70.get("chart overlays", {})
+                    _tcr = _res70.get("threshold champion", {})
+                    _pregr = _res70.get("parameter registry", {})
+                    _djent = _res70.get("daily journal", {})
+                    _sessr = _res70.get("session reconstruction", {})
+                    _anatr = _res70.get("session anatomy", {})
+                    _concr = _res70.get("crypto concentration", {})
+                    _rchkr = _res70.get("reality check", {})
+                    _ctlr = _res70.get("champion timeline", {})
                 try:
                     if _HOURLY:   # same hourly gate as forensics: real Kraken spread (network call)
                         from .ingestion.kraken_spread import build_kraken_spread as _kspr
@@ -3520,6 +3548,33 @@ Reply in 3-5 bullets, no preamble.
             log.info("  %s ✔ (spine)", _nm50)
         except Exception as _le50:
             log.warning("%s skipped: %s", _nm50, _le50)
+    # ── 7.0.1 THE STALE-DERIVED SWEEP ──────────────────────────────────────
+    # Defence in depth for the ghost above: any DERIVED store that predates
+    # WIPE_MARKER is deleted before the builders run, so a crashed builder shows
+    # "pending" instead of yesterday's number wearing today's clothes.
+    try:
+        import json as _j71
+        _wm71 = _j71.loads((out / "WIPE_MARKER.json").read_text()).get("wiped_at")
+        _reg71 = _j71.loads((out / "STORE_REGISTRY.json").read_text()).get("stores") or {}
+        _killed71 = []
+        for _f71, _c71 in _reg71.items():
+            if _c71 != "DERIVED":
+                continue
+            _p71 = out / _f71
+            if not _p71.exists():
+                continue
+            try:
+                _g71 = _j71.loads(_p71.read_text()).get("generated_at")
+            except Exception:
+                continue
+            if _g71 and _wm71 and str(_g71) < str(_wm71):
+                _p71.unlink(); _killed71.append(_f71)
+        if _killed71:
+            log.warning("  stale-derived sweep: removed %d pre-wipe store(s) → %s",
+                        len(_killed71), ", ".join(_killed71[:6]))
+    except Exception as _e71:
+        log.info("  stale-derived sweep skipped: %s", _e71)
+
     # ---- 5.1 SPINE ADDITIONS (each wrapped; none can break a trade run) ----
     for _nm51, _imp51 in (("multi-timeframe regime ladder", "mtf_regime.build_mtf_regime"),
                           ("confidence engine (unified prediction)", "confidence_engine.build_confidence_engine"),
