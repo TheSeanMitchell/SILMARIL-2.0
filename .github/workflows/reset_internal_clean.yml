@@ -5,6 +5,12 @@ on:
       confirm:
         description: 'Type WIPE to confirm a clean $10k reset of all internal books'
         required: true
+      wipe_mode:
+        description: 'standard = books/sleeves/master reset, learning kept · genesis = learning resets too (archives are sacred) — Law 30'
+        required: true
+        default: 'standard'
+        type: choice
+        options: [standard, genesis]
 concurrency:
   group: silmaril-state
   cancel-in-progress: false
@@ -17,6 +23,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: python scripts/reset_internal_clean.py
+      - name: GENESIS — learning resets too (Law 30; archive/ is sacred)
+        if: ${{ github.event.inputs.wipe_mode == 'genesis' }}
+        run: |
+          python - <<'PY'
+          import json, os
+          reg = json.load(open('docs/data/STORE_REGISTRY.json')).get('stores', {})
+          killed = []
+          for f, cls in reg.items():
+              path = f'docs/data/{f}'
+              if cls == 'LEARNING' and os.path.exists(path):
+                  os.remove(path); killed.append(f)
+          try:
+              wm = json.load(open('docs/data/WIPE_MARKER.json'))
+          except Exception:
+              wm = {}
+          wm['mode'] = 'genesis'
+          json.dump(wm, open('docs/data/WIPE_MARKER.json', 'w'), indent=1)
+          print('GENESIS: learning reset →', killed)
+          PY
       - run: |
           git config user.name "silmaril-bot"
           git config user.email "bot@silmaril"
