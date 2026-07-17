@@ -1513,11 +1513,50 @@ def live_step(out_dir) -> Dict[str, Any]:
         # could sit unfitted forever. Metals + energy now enter FIRST (all of them),
         # then stocks and crypto by history depth, under the same 500 ceiling —
         # every industry gets its custom fit, gold included, from the next cycle.
-        _by_cls = {}
+        # ── 7.0.2 THE CANONICAL MERGE (root cause of "crypto has no fingerprints") ──
+        # The old rule SKIPPED every crypto key without a dash. That silently discarded
+        # the ENTIRE ccxt tape — 404 symbols × ~300 candles = 121,069 datapoints of real
+        # history — because ccxt keys are BTCUSDT / BTCUSD, not BTC-USD. Before a genesis
+        # wipe this was invisible: price_samples had weeks of canonical depth. After one,
+        # the canonical keys are ~14 prints old and ALL the depth sits in keys we threw
+        # away → 0 crypto fingerprints → 0 geometry rows → 0 crypto trades, for ~17 hours.
+        # Now non-canonical crypto is CANONICALIZED and its history UNIONED onto the
+        # canonical key (same rule as scripts/remap_keys.py), so BTCUSDT's 300 candles
+        # deepen BTC-USD immediately. Fingerprints only — marks/entries are untouched.
+        def _canon7(k):
+            if k.endswith("-USD"):
+                return k
+            if k.endswith("-USDT"):
+                return k[:-5] + "-USD"
+            if "/" in k:
+                return k.split("/")[0] + "-USD"
+            if k.endswith("USDT"):
+                return k[:-4] + "-USD"
+            if k.endswith("USDC"):
+                return k[:-4] + "-USD"
+            if k.endswith("USD") and len(k) > 4:
+                return k[:-3] + "-USD"
+            return None
+
+        _fp_rows = {}
         for _s, _rows in samples.items():
             _cl = asset_class(_s)
+            _key = _s
             if _cl == "crypto" and "-" not in _s:
-                continue      # canonical-crypto only; metals/energy/stocks are dash-less and MUST fit
+                _key = _canon7(_s)
+                if not _key:
+                    continue
+            _prev = _fp_rows.get(_key)
+            if _prev is None:
+                _fp_rows[_key] = list(_rows)
+            else:
+                _m7 = {t: p for t, p in _prev}
+                for _t7, _p7 in _rows:
+                    _m7.setdefault(_t7, _p7)
+                _fp_rows[_key] = sorted(_m7.items())
+        _by_cls = {}
+        for _s, _rows in _fp_rows.items():
+            _cl = asset_class(_s)
             _pp = [p for _t, p in _rows if p and p > 0]
             if len(_pp) >= 30:
                 _by_cls.setdefault(_cl, []).append((_s, _pp))
@@ -1538,7 +1577,7 @@ def live_step(out_dir) -> Dict[str, Any]:
                 _sp[_s] = _pp; _cnt += 1
         _fmap = (_catalog(out).get("floor_min") or {})
         _floor = {_s: _fmap.get(asset_class(_s), 0.06) for _s in _sp}
-        _bfp(out, _sp, rows_by_sym={s: samples.get(s) for s in _sp}, floor_by_sym=_floor,
+        _bfp(out, _sp, rows_by_sym={s: _fp_rows.get(s, samples.get(s)) for s in _sp}, floor_by_sym=_floor,
              limit=_pub_cap)
     except Exception:
         pass

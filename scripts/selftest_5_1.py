@@ -599,9 +599,14 @@ def t32_clean_room():
     except Exception:
         pass
     rc_src = "for _b5 in (" in (ROOT / "silmaril/execution/conductor_report_card.py").read_text()
-    check("T32 clean room: STORE_REGISTRY total coverage + lab honors the wipe + card derives from books",
-          (len(missing) <= 3) and lab_ok and rc_src,
-          f"unregistered={missing[:4]} lab_ok={lab_ok}")
+    # 7.0.2: the registry is rebuilt BY RULE every cycle, so coverage is total by
+    # construction — the old "<=3 unregistered" tolerance was papering over a registry
+    # that could not keep up with its own tree (it failed the moment the 7.0.1 repair
+    # resurrected THRESHOLD_TAKEHOME/KRAKEN_SPREAD/MASTER_LOG/SESSION_ANATOMY).
+    reg_src = "build_store_registry" in (ROOT / "silmaril/cli.py").read_text()
+    check("T32 clean room: registry self-heals to TOTAL coverage + lab honors wipe + card derives from books",
+          (not missing) and lab_ok and rc_src and reg_src,
+          f"unregistered={missing[:4]} lab_ok={lab_ok} self_healing={reg_src}")
 
 
 def t33_venue_contract():
@@ -914,6 +919,28 @@ def t53_no_stale_derived():
           not stale, f"stale={stale[:4]}")
 
 
+def t54_canonical_fingerprint_merge():
+    """7.0.2: the ccxt tape MUST reach fingerprints. The old rule skipped every crypto key
+    without a dash, discarding 404 symbols x ~300 candles — invisible until a genesis wipe
+    left the canonical keys shallow and crypto fingerprints went to ZERO."""
+    import json as _json
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok_src = ("_canon7" in sim and "_fp_rows" in sim
+              and 'if _cl == "crypto" and "-" not in _s:\n                continue' not in sim)
+    ok_d = True
+    try:
+        fp = _json.loads((ROOT / "docs/data/FINGERPRINTS.json").read_text())
+        cards = fp.get("cards") or []
+        # if a crypto tape exists at all, crypto MUST be represented among fits
+        cx = _json.loads((ROOT / "docs/data/ccxt_samples.json").read_text()).get("samples") or {}
+        if len(cx) > 50 and cards:
+            ok_d = any(str(c.get("sym", "")).endswith("-USD") for c in cards)
+    except Exception:
+        pass
+    check("T54 canonical fingerprint merge: the ccxt tape reaches fingerprints (crypto can fit)",
+          ok_src and ok_d, f"src={ok_src} crypto_fitted={ok_d}")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -933,7 +960,8 @@ if __name__ == "__main__":
               t43_fingerprint_coverage, t44_geometry_gate, t45_edge_surface,
               t46_maker_book, t47_calibration_teeth, t48_sizer_hand,
               t49_learning_permanence, t50_question_engine, t51_genesis,
-              t52_builder_isolation, t53_no_stale_derived):
+              t52_builder_isolation, t53_no_stale_derived,
+              t54_canonical_fingerprint_merge):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

@@ -3548,6 +3548,14 @@ Reply in 3-5 bullets, no preamble.
             log.info("  %s ✔ (spine)", _nm50)
         except Exception as _le50:
             log.warning("%s skipped: %s", _nm50, _le50)
+    # ── 7.0.2 SELF-HEALING REGISTRY (must run BEFORE the sweep reads it) ────
+    try:
+        from .execution.store_registry import build_store_registry as _bsr72
+        _sr72 = _bsr72(out)
+        log.info("  %s ✔ (spine)", _sr72.get("summary", "store registry"))
+    except Exception as _e72:
+        log.warning("store registry skipped: %s", _e72)
+
     # ── 7.0.1 THE STALE-DERIVED SWEEP ──────────────────────────────────────
     # Defence in depth for the ghost above: any DERIVED store that predates
     # WIPE_MARKER is deleted before the builders run, so a crashed builder shows
