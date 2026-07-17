@@ -79,6 +79,11 @@ def build_master_account(out_dir) -> Dict[str, Any]:
     live = _load(out, "paper_sim_live.json")
     mtf_books = (_load(out, "MTF_REGIME.json").get("books") or {})
     lab_bi = (_load(out, "STRATEGY_LAB.json").get("by_industry") or {})
+    _geo = (_load(out, "GEOMETRY.json").get("by_symbol") or {})
+    _cal = _load(out, "CALIBRATION.json")
+    _cal_q = _cal.get("status") == "QUARANTINED"
+    _szr = _load(out, "SIZER.json")
+    _szr_mult = float(_szr.get("mult", 1.0))
     listed_union = set()
     for l in (_load(out, "VENUES.json").get("listed") or {}).values():
         listed_union |= set(l)
@@ -136,7 +141,7 @@ def build_master_account(out_dir) -> Dict[str, Any]:
 
     def _buy(sym: str, bk: str, px_raw: float, why: str, style: str, card: Dict[str, Any]):
         cost = _cost_for(sym, px_raw)
-        budget = min(book["cash"] * 0.25, 2500.0)
+        budget = min(book["cash"] * 0.25, 2500.0) * _szr_mult
         if budget < 50 or px_raw <= 0:
             return False
         eff = px_raw * (1 + cost / 2.0)
@@ -180,7 +185,11 @@ def build_master_account(out_dir) -> Dict[str, Any]:
     for bk in BOOKS:
         pool = [(s, c) for s, c in cards.items()
                 if c.get("class") == bk and c.get("last_px")]
-        scores = [c.get("confidence") for _, c in pool]
+        # Law 23 TEETH: a quarantined score loses gating authority — the Master falls
+        # back to raw evidence percentile until confidence re-earns its calibration.
+        _score_of = ((lambda c: ((c.get("evidence") or {}).get("evidence_score") or 0.0))
+                     if _cal_q else (lambda c: (c.get("confidence") or 0.0)))
+        scores = [_score_of(c) for _, c in pool]
         cut = _pct_cut(scores, gate_pct)
         regime = ((live.get("regimes") or {}) if isinstance(live, dict) else {}).get(bk)
         fast = bool((mtf_books.get(bk) or {}).get("fast_green"))
@@ -188,7 +197,22 @@ def build_master_account(out_dir) -> Dict[str, Any]:
         book["prev_fast"][bk] = fast
         # policy rotation from the lab (closable, auto-rotating)
         rows = lab_bi.get(bk) or []
+        # ── 7.0 REGIME-CONDITIONAL POLICY: the sleeve that has PROVEN itself in THIS
+        # regime leads; stand-down to the global leader until n≥3 in-regime closes.
+        _lab_full = _load(out, "STRATEGY_LAB.json")
+        _reg_now = regime
+        _best_reg, _best_ret, _best_n = None, None, 0
+        for _r in rows:
+            _sv = (_lab_full.get("sleeves") or {}).get(f"{bk}:{_r.get('sleeve')}") or {}
+            _cl = [t for t in (_sv.get("trades") or [])
+                   if t.get("side") == "SELL" and t.get("regime") == _reg_now]
+            if len(_cl) >= 3:
+                _rr = sum(float(t.get("pnl") or 0) for t in _cl)
+                if _best_ret is None or _rr > _best_ret:
+                    _best_reg, _best_ret, _best_n = _r.get("sleeve"), _rr, len(_cl)
         leader = next((r for r in rows if (r.get("closed") or 0) >= 3), rows[0] if rows else None)
+        if _best_reg:
+            leader = next((r for r in rows if r.get("sleeve") == _best_reg), leader)
         pin = str(kb.get("policy", "auto"))
         policy = (pin.split(":", 1)[1] if pin.startswith("pin:")
                   else (leader.get("sleeve") if leader else "A"))
@@ -210,6 +234,11 @@ def build_master_account(out_dir) -> Dict[str, Any]:
             elif not ((c.get("bounce_reliability") or 0) >= min_br
                       or (c.get("rhythm_tradeability") or 0) >= 0.5):
                 why_no = "no revert evidence (bounce/rhythm below floor)"
+            elif str((cat.get("geometry") or {}).get("mode", "auto")).lower() == "auto" \
+                    and (_geo.get(sym) or {}).get("verdict", "").startswith("UNTRADEABLE"):
+                why_no = f"geometry gate: {(_geo.get(sym) or {}).get('verdict')} " \
+                         f"(p* {( _geo.get(sym) or {}).get('p_star_pct')}% vs floor " \
+                         f"{(_geo.get(sym) or {}).get('p_floor_pct')}%)"
             elif bk in ("crypto",) and listed_union and sym not in listed_union:
                 why_no = "not listed on any target venue"
             elif regime == "DOWNTREND":
@@ -254,6 +283,8 @@ def build_master_account(out_dir) -> Dict[str, Any]:
         quadrants[bk] = {"confidence": conf_disp, "gate": gate_disp,
                          "gate_style": f"top-{int(100-gate_pct)}% percentile",
                          "decision": decision, "reason": reason, "regime": regime,
+                         "policy_src": ("in-regime proven" if _best_reg else "global leader"),
+                         "gate_input": ("evidence (calibration QUARANTINED)" if _cal_q else "confidence"),
                          "fast_green": fast, "shift": shift, "policy_sleeve": policy}
         cycle["books"][bk] = {"pool": len(pool), "cut": cut, "accepted": accepted,
                               "rejected_top": rejected, "struck": struck,
@@ -271,7 +302,14 @@ def build_master_account(out_dir) -> Dict[str, Any]:
     wins = sum(1 for t in closed if t["pnl"] > 0)
 
     led = _load(out, "MASTER_LEDGER.json", {"cycles": []})
-    led["cycles"] = (led.get("cycles") or [])[-47:] + [cycle]
+    _prev_cycles = (led.get("cycles") or [])
+    if len(_prev_cycles) >= 48:
+        try:
+            from .retention import archive_evicted
+            archive_evicted(out, "MASTER_LEDGER_cycles", _prev_cycles[:-47])
+        except Exception:
+            pass
+    led["cycles"] = _prev_cycles[-47:] + [cycle]
     led["generated_at"] = _iso()
     led["what"] = ("every Master verdict, every cycle, in writing — accept AND reject, "
                    "with the percentile cut, the revert-evidence, and the reason")
@@ -290,6 +328,12 @@ def build_master_account(out_dir) -> Dict[str, Any]:
                               "decision": q["decision"], "regime": q.get("regime")}
                          for bk, q in quadrants.items()},
                "accepted": [b for b, q in quadrants.items() if q["decision"] == "ACCEPT"]})
+    if len(md) > 300:
+        try:
+            from .retention import archive_evicted
+            archive_evicted(out, "MASTER_DECISIONS", md[:-300])
+        except Exception:
+            pass
     write_json_atomic(out / "MASTER_DECISIONS.json", md[-300:])
 
     payload = {

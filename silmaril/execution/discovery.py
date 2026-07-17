@@ -128,6 +128,12 @@ def build_discovery(out_dir) -> Dict[str, Any]:
                             "max_gross_pct": (round((max(win) / r["px"] - 1) * 100, 2)
                                               if win else None)}
                 resolved += 1
+    if len(rows) > cap:
+        try:
+            from .retention import archive_evicted
+            archive_evicted(out, "OPPORTUNITY_GRAVEYARD", rows[:-cap])
+        except Exception:
+            pass
     rows = rows[-cap:]
     _write_jsonl(out / GY, rows)
 
@@ -171,6 +177,12 @@ def build_discovery(out_dir) -> Dict[str, Any]:
                             "actual_net_pct": t.get("realized_pct"),
                             "exit_reason": t.get("exit_reason"), "alts": alts})
             new_cf += 1
+    if len(cf_rows) > cap:
+        try:
+            from .retention import archive_evicted
+            archive_evicted(out, "CF_LEDGER", cf_rows[:-cap])
+        except Exception:
+            pass
     cf_rows = cf_rows[-cap:]
     _write_jsonl(out / CF, cf_rows)
 

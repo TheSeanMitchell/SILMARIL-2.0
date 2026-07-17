@@ -605,15 +605,42 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
     _mtf_bk = ((_mtf.get("books") or {}).get(uc) or {})
     _mtf_fastred = bool(_mtf_bk.get("fast_red"))
     _mtf_syms = {k: (v.get("confluence") or 0) for k, v in (_mtf.get("symbols") or {}).items()}
+    # ── 7.0 loads: the gate, the governor, the maker book, the prediction map ──
+    _gk = (cat.get("geometry") or {}); _g_on = str(_gk.get("mode", "auto")).lower() == "auto"
+    _geo = {}
+    try:
+        _geo = (json.loads((out / "GEOMETRY.json").read_text()).get("by_symbol") or {})
+    except Exception:
+        _geo = {}
+    _sz = {}
+    try:
+        _sz = json.loads((out / "SIZER.json").read_text())
+    except Exception:
+        _sz = {}
+    _sz_mult = float(_sz.get("mult", 1.0)); _sz_halt = _sz_mult <= 0.0
+    _factor_over = bool(((_sz.get("factor") or {}).get("over"))) and book in ("crypto", "aggressive")
+    _mk = (cat.get("maker_entries") or {}); _mk_on = (str(_mk.get("mode", "auto")).lower() == "auto"
+                                                     and book in ("crypto", "aggressive"))
+    _mk_win = float(_mk.get("fill_window_min", 45))
+    _pend_all = {}
+    try:
+        _pend_all = json.loads((out / "MAKER_PENDING.json").read_text())
+    except Exception:
+        _pend_all = {}
+    _pend = _pend_all.get(book) or {}
     _crash_co = {}
     try:
         _crash_co = (json.loads((out / "price_samples.json").read_text()).get("crash_cooloff") or {})
     except Exception:
         _crash_co = {}
+    _pred_map = {}
     _comp_map = {}
     try:
         _cc0 = json.loads((out / "CONFIDENCE_CARDS.json").read_text()).get("cards") or {}
         _comp_map = {k: (v.get("compounder_score") or 0.5) for k, v in _cc0.items()}
+        for _ps0, _pc0 in ((_cc0.get("cards") or {}).items()):
+            _pred_map[_ps0] = ((_pc0.get("layers") or {}).get("master_score")
+                               or _pc0.get("confidence"))
     except Exception:
         _comp_map = {}
     _exp_hold = {}
@@ -804,6 +831,20 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
             try:
                 tr = pbook.trades[-1]
                 tr["exit_reason"] = why
+                # 7.0 CALIBRATION: close the prediction loop (Law 23 — a score that
+                # cannot predict does not get to allocate). pred stamped at entry.
+                try:
+                    _pd7 = pos.get("pred")
+                    if _pd7 is not None:
+                        with open(out / "CALIBRATION_LEDGER.jsonl", "a") as _cf7:
+                            _cf7.write(json.dumps({
+                                "t": now.isoformat(), "sym": sym, "book": book,
+                                "pred": round(float(_pd7), 4),
+                                "outcome": "win" if (tr.get("pnl") or 0) > 0 else "loss",
+                                "net_pct": tr.get("realized_pct"),
+                                "p_star_pct": pos.get("p_star_pct")}) + "\n")
+                except Exception:
+                    pass
                 if _cvf is not None:
                     tr["conv_frac"] = _cvf
                     tr["base_wager_usd"] = _bwu
@@ -993,6 +1034,37 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
     if _slots < len(cands[:MAX_NAMES]):
         actions.append({"act": "SKIP", "sym": f"{len(cands[:MAX_NAMES]) - _slots} name(s)",
                         "why": "position cap %d/%d for %s — concentration law: a new name must beat a held one" % (len(pbook.positions), _poscap, book)})
+    # ── 7.0 MAKER BOOK: resting post-only limits from prior cycles fill or expire ──
+    if _pend:
+        from datetime import timedelta as _td7
+        for _psym in list(_pend.keys()):
+            _po = _pend[_psym]
+            _ppx = [pp for pp in px_of(_psym) if pp]
+            _last = _ppx[-1] if _ppx else None
+            if _last is not None and _last <= float(_po["limit"]) * 1.0005 and _psym not in pbook.positions:
+                _mcost = float(_po.get("cost", 0.004)) * float(_mk.get("maker_cost_frac", 0.6))
+                if pbook.buy(_psym, float(_po["wager"]), float(_po["limit"]), _mcost,
+                             now.isoformat(), target=_po.get("target"), stop=_po.get("stop"),
+                             conviction=_po.get("conviction"), expected=_po.get("expected")):
+                    pbook.positions[_psym]["p_star_pct"] = _po.get("p_star_pct")
+                    pbook.positions[_psym]["p_floor_pct"] = _po.get("p_floor_pct")
+                    pbook.positions[_psym]["pred"] = _po.get("pred")
+                    pbook.positions[_psym]["maker"] = True
+                    if pbook.trades and pbook.trades[-1].get("side") == "BUY":
+                        pbook.trades[-1]["maker_fill"] = True
+                        pbook.trades[-1]["p_star_pct"] = _po.get("p_star_pct")
+                        pbook.trades[-1]["pred"] = _po.get("pred")
+                    actions.append({"act": "FILL", "sym": _psym,
+                                    "why": f"maker limit FILLED @ {_po['limit']} — the price came to us"})
+                _pend.pop(_psym, None)
+            elif str(_po.get("expires", "")) < now.isoformat():
+                actions.append({"act": "SKIP", "sym": _psym,
+                                "why": f"maker limit UNFILLED in {int(_mk_win)}m — no touch, no trade"})
+                _pend.pop(_psym, None)
+    if _sz_halt:
+        actions.append({"act": "SKIP", "sym": "*",
+                        "why": f"SIZER {(_sz.get('state') or 'RED')}: entries halted — "
+                               + "; ".join(_sz.get("breakers") or ["drawdown ladder"])})
     if _crash_co:
         _nowiso = now.isoformat()
         _hot = [c for c in cands if _crash_co.get(c[0]) and _nowiso < str(_crash_co[c[0]])]
@@ -1037,6 +1109,53 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
             _ft = None
         _use_target = float(_ft["target"]) if _ft else target
         _use_stop = max(float(_ft["stop"]), float(fmin or 0)) if _ft else stop_
+        # ── 7.0 FALLING-KNIFE FLOOR-CONFIRM: on a collapsing tape a dip is not a
+        # bargain until the name PRINTS A FLOOR. In a DOWNTREND, require the last
+        # k prints to hold above the window low before any dip-buy (the operator's
+        # July-17 lesson: no bounce exists while the whole market is still falling).
+        _fk = (cat.get("floor_confirm") or {})
+        if (str(_fk.get("mode", "auto")).lower() == "auto"
+                and str(_regime or "").upper().startswith("DOWN")):
+            _fw = [q for q in px_of(sym)[-int(_fk.get("window", 6)):] if q]
+            if len(_fw) >= 3:
+                _fmn = min(_fw)
+                _kk = max(1, int(_fk.get("stabilize_prints", 2)))
+                _tail = _fw[-_kk:]
+                _floor_ok = (all(t2 > _fmn * (1 + float(_fk.get("eps", 0.001))) for t2 in _tail)
+                             and _fw[-1] != _fmn)
+                if not _floor_ok:
+                    actions.append({"act": "SKIP", "sym": sym,
+                                    "why": (f"falling knife — no floor yet (last {_kk} prints must hold "
+                                            f"above the {len(_fw)}-print low; still printing lows)")})
+                    continue
+        # ── 7.0 THE GEOMETRY GATE (the Law of Winnable Trades) ──────────────────
+        _grow = _geo.get(sym) or {}
+        if _g_on:
+            _ratio = float(_gk.get("max_stop_ratio", 1.5))
+            if _use_stop > _use_target * _ratio:
+                _use_stop = _use_target * _ratio        # cap NARROWS risk — never widens (Law 21)
+        _pstar = ((_use_stop + cost) / (_use_target + _use_stop)
+                  if (_use_target + _use_stop) > 0 else None)
+        _pfloor = ((_grow.get("p_floor_pct") or 0) / 100.0
+                   if _grow.get("p_floor_pct") is not None else None)
+        if _g_on and _pstar is not None:
+            if _grow.get("verdict") == "UNTRADEABLE:geometry":
+                actions.append({"act": "SKIP", "sym": sym,
+                                "why": f"UNTRADEABLE:geometry — honest stop {_grow.get('stop_vol_pct')}% "
+                                       f"vs target {_grow.get('target_pct')}% (no geometry can win)"})
+                continue
+            if _pfloor is not None and _pfloor < _pstar + float(_gk.get("evidence_margin", 0.03)):
+                actions.append({"act": "SKIP", "sym": sym,
+                                "why": f"UNTRADEABLE:evidence — needs {round(_pstar*100,1)}% wins, "
+                                       f"proven floor {round(_pfloor*100,1)}% ({_grow.get('evidence')})"})
+                continue
+        if _sz_halt:
+            continue
+        if _factor_over:
+            actions.append({"act": "SKIP", "sym": sym,
+                            "why": f"one-factor law — crypto exposure {((_sz.get('factor') or {}).get('used_pct'))}% "
+                                   f"≥ cap {((_sz.get('factor') or {}).get('cap_pct'))}% (10 alts = 1 bet)"})
+            continue
         net_margin = _use_target - cost         # fraction of the position kept if the target hits, after fees
         # GOLDEN RULE: a close must net >= min_take AFTER fees or we don't take the trade. This also kills
         # the dust bug: when cash is too low to clear the floor we SKIP instead of buying pennies.
@@ -1091,9 +1210,33 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
             actions.append({"act": "SKIP", "sym": sym,
                             "why": "cannot clear $%.2f net (need $%.0f, cash $%.0f)" % (min_take, min_take / net_margin, cap)})
             continue
+        budget = budget * _sz_mult
+        if budget < 25:
+            continue
+        if _mk_on and sym not in _pend and sym not in pbook.positions:
+            from datetime import timedelta as _td8
+            _pend[sym] = {"limit": lp, "wager": budget, "cost": cost,
+                          "target": _use_target, "stop": _use_stop,
+                          "expected": net_margin, "conviction": cv,
+                          "p_star_pct": round((_pstar or 0) * 100, 1) if _pstar else None,
+                          "p_floor_pct": round((_pfloor or 0) * 100, 1) if _pfloor is not None else None,
+                          "pred": _pred_map.get(sym),
+                          "expires": (now + _td8(minutes=_mk_win)).isoformat()}
+            actions.append({"act": "REST", "sym": sym,
+                            "why": f"post-only maker limit @ {lp} ({int(_mk_win)}m) — "
+                                   f"paid the spread or no trade"})
+            continue
         if pbook.buy(sym, budget, lp, cost, now.isoformat(),
                      target=_use_target, stop=_use_stop, conviction=cv, expected=net_margin):
             try:
+                pbook.positions[sym]["p_star_pct"] = (round((_pstar or 0) * 100, 1)
+                                                      if _pstar else None)
+                pbook.positions[sym]["p_floor_pct"] = (round((_pfloor or 0) * 100, 1)
+                                                       if _pfloor is not None else None)
+                pbook.positions[sym]["pred"] = _pred_map.get(sym)
+                if pbook.trades and pbook.trades[-1].get("side") == "BUY":
+                    pbook.trades[-1]["p_star_pct"] = pbook.positions[sym]["p_star_pct"]
+                    pbook.trades[-1]["pred"] = pbook.positions[sym]["pred"]
                 pbook.positions[sym]["entry_regime"] = _regime
                 pbook.positions[sym]["exp_hold_min"] = _exp_hold.get(sym)
                 pbook.positions[sym]["style"] = _style
@@ -1141,6 +1284,12 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
     funnel = {"seen": len(side_marks),
               "entry_warm": sum(1 for s_ in side_marks if s_ in _WARM_SYMS),
               "candidates_after_gates": len(cands), "bought": _bought, "rejections": _rej}
+    try:
+        _pend_all[book] = _pend
+        (out / "MAKER_PENDING.json").write_text(json.dumps(_pend_all, indent=1))
+    except Exception:
+        pass
+
     return {
         "funnel": funnel,
         "decision_trace_live": _dtrace,
@@ -1181,6 +1330,14 @@ def _post_wipe_quiet_left(out: Path) -> float:
 
 
 def live_step(out_dir) -> Dict[str, Any]:
+    # ── 7.0: the gate and the governor refresh BEFORE any side trades (same-cycle truth) ──
+    try:
+        from .geometry import build_geometry as _bg7
+        from .sizer import build_sizer as _bs7
+        _bs7(out_dir)
+        _bg7(out_dir)
+    except Exception:
+        pass
     """One paper-trading cycle for BOTH sides. Persists each book and emits the
     cockpit summary docs/data/paper_sim_live.json."""
     out = Path(out_dir)

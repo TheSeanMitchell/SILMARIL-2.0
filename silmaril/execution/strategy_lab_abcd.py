@@ -57,6 +57,18 @@ SLEEVES = {
           "desc": ("sniper discipline, but every realized profit is VAULTED (non-spendable); "
                    "working capital never exceeds the $10k base — profits are only profits when "
                    "they leave the table")},
+    # ── 7.0 THE STOP-LOSS LABORATORY — two stop philosophies, racing in the open ──
+    "G": {"name": "GEOMETRY SNIPER", "cap": 4, "recycle_h": 48, "ride_winners": True,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": False, "geometry": True,
+          "desc": ("7.0: trades ONLY names the Geometry Gate marks TRADEABLE; stop is CAPPED at "
+                   "1.5× target (p* ≤ ~60% by construction). The 'winnable-math-only' thesis, "
+                   "as its own clickable portfolio — watch it, debug it, judge it")},
+    "H": {"name": "PATIENT REVERT", "cap": 3, "recycle_h": 168, "ride_winners": False,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": False, "patient": True,
+          "desc": ("7.0: the operator's time-edge thesis — ONLY names with proven revert evidence "
+                   "(bounce-reliability ≥0.75 or evidence floor ≥65%), WIDE vol-native stop "
+                   "uncapped, hold up to 7 DAYS for the revert WE KNOW comes. If patience is the "
+                   "edge, this sleeve proves it; if it isn't, this sleeve pays the tuition")},
 }
 
 
@@ -183,6 +195,7 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
                                     "target": 0.04, "stop": 0.05, "style": "STRIKE",
                                     "t": now.isoformat(), "conf": round(conf_map.get(sym, 0.0), 3)}
             bk["trades"].append({"side": "BUY", "sym": sym, "style": "STRIKE", "simulated": True,
+                                 "regime": bk.get("_regime7"),
                                  "wager_usd": round(budget, 2), "mom_h1": mom,
                                  "t": now.isoformat()})
             room -= 1
@@ -211,10 +224,22 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
                 break
             qty = budget / px
             bk["cash"] -= budget
+            # ── 7.0 STOP-LOSS LAB: the sleeve's stop philosophy BINDS at entry ──
+            tgt, stp = 0.05, 0.06
+            _g7 = (bk.get("_geo7") or {}).get(sym) or {}
+            if cfg.get("geometry") and _g7.get("target_pct"):
+                tgt = float(_g7["target_pct"]) / 100.0
+                stp = min(float(_g7.get("stop_used_pct") or (_g7["target_pct"] * 1.5)) / 100.0,
+                          tgt * 1.5)                       # capped: p* ≤ ~60% by construction
+            elif cfg.get("patient") and _g7:
+                tgt = max(0.02, float(_g7.get("target_pct") or 3.0) / 100.0)
+                stp = max(float(_g7.get("stop_vol_pct") or 6.0) / 100.0, tgt * 1.2)  # WIDE, on purpose
             bk["positions"][sym] = {"qty": qty, "entry": px, "cost": cost_of(px),
-                                    "target": 0.05, "stop": 0.06, "style": "MR",
+                                    "target": tgt, "stop": stp, "style": "MR",
                                     "t": now.isoformat(), "conf": round(conf_map.get(sym, 0.0), 3)}
             bk["trades"].append({"side": "BUY", "sym": sym, "style": "MR", "simulated": True,
+                                 "regime": bk.get("_regime7"),
+                                 "target_pct": round(tgt * 100, 2), "stop_pct": round(stp * 100, 2),
                                  "wager_usd": round(budget, 2),
                                  "conf": round(conf_map.get(sym, 0.0), 3), "t": now.isoformat()})
 
@@ -258,6 +283,12 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
     except Exception:
         pass
 
+    _geo = {}
+    try:
+        _geo = (json.loads((out / "GEOMETRY.json").read_text()).get("by_symbol") or {})
+    except Exception:
+        _geo = {}
+    _regimes = (live.get("regimes") or {}) if isinstance(live, dict) else {}
     by_industry: Dict[str, List[Dict[str, Any]]] = {}
     for book in BOOKS:
         b = live.get(book) or {}
@@ -289,7 +320,17 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
         rows = []
         for sk, cfg in SLEEVES.items():
             bk = st["sleeves"][f"{book}:{sk}"]
-            _run_sleeve(cfg, bk, marks, cands, conf_map, fastgreen, surge, strike_pool, cost_of)
+            _cands_sk = cands
+            if cfg.get("geometry"):
+                _cands_sk = [c for c in cands
+                             if (_geo.get(c[0]) or {}).get("verdict") == "TRADEABLE"]
+            elif cfg.get("patient"):
+                _cands_sk = [c for c in cands
+                             if (((cards.get(c[0]) or {}).get("bounce_reliability") or 0) >= 0.75
+                                 or ((_geo.get(c[0]) or {}).get("p_floor_pct") or 0) >= 65)]
+            bk["_geo7"] = {c[0]: _geo.get(c[0]) for c in _cands_sk} if (cfg.get("geometry") or cfg.get("patient")) else None
+            bk["_regime7"] = _regimes.get(book)
+            _run_sleeve(cfg, bk, marks, _cands_sk, conf_map, fastgreen, surge, strike_pool, cost_of)
             eq = _equity(bk, marks) + bk.get("vault_usd", 0.0)
             ret = (eq / START - 1) * 100
             closed = [t for t in bk["trades"] if t["side"] == "SELL"]

@@ -1,114 +1,38 @@
-> **5.3 HAIL MARY (2026-07-15) — THE EVIDENCE ENGINE · the final structural build.** Truth in
-> accounting (a perfect fill reads 100%, forever — T30) · the MASTER BRAIN shadow-trades with
-> verdicts in writing · declared venue economics + the Universe Truth Test · percentile gates ·
-> the Opportunity Graveyard & Counterfactuals · verified-crash lane · four-ledger reconciliation
-> (caught $1,553.80 of wipe residue on its first run) · battery **29 → 41**. Read
-> `SILMARIL_5_3_DIRECTIVE.md`, then freeze for 90 days.
+# SILMARIL 7.0 — THE ACTIVATION
+### A deterministic, self-interrogating trading research platform · GitHub Actions engine · GitHub Pages cockpit
 
-> **5.11 WRAP (2026-07-13)** — data-integrity armor (two-print recorder confirmation ·
-> oscillation quarantine · suspect-vs-verified realized), the **universal Confidence Card**
-> (1050 cards; compounder score tilts live sizing; chart⇄card parity), **per-industry
-> Strategy Labs A–F** (E ADAPTIVE STRIKER · F CASH HARVESTER vault), rhythm-holds, QQQ null,
-> OPEN-TRADE TRUTH honesty line, battery → 29. Start here: `SILMARIL_MASTER_BRIEF.md`, then
-> `5_11_WRAP_LEDGER.md`.
+> **7.0 is the final structural build.** From here, the system evolves by DATA flipping
+> pre-registered knobs (Law 29) — never by code. 90-day validation window → evidence-gated live.
 
-# SILMARIL 5.1 — deterministic paper-trading research platform
-### The root orientation document. Read this file and `DOCS_5_1/` before touching anything; together they replace every legacy directive/audit/install doc (all moved to `attic/docs_pre_5_1/`).
+## What it is
+Five independent $10k paper books (crypto · stock · metal · energy · GEKKO) + honest nulls
+(CASH/SPY/QQQ/HODL/EQW) + a **Master Brain** that shadow-trades only evidence-gated,
+regime-conditional picks and vaults every realized win into a non-spendable USD reserve.
+Every decision — accept, reject, rest, refuse — is written down with its numbers.
 
-**What this is:** a multi-book internal paper simulation (crypto · stock · metal · energy · GEKKO
-probe + 4 benchmark nulls + one WATCHING Master account) that hunts for a real, fee-surviving
-trading edge and refuses to lie about whether it has found one. Deterministic, explainable,
-evidence-governed. **What it is not:** income. The $100–300/day figure is an unproven hope priced
-at zero. **Live-money unlock (untouchable):** 100 out-of-sample trades surviving the gate across
-90 unbroken days.
-
-**Prime doctrine:** Evidence Growth ≥ Feature Growth · realized P&L is the only score ·
-every claim Verified/Rejected forward · no synthetic data (test vectors excepted) ·
-nothing unproven touches a decision (experimental gates) · every book judged Δ-vs-null ·
-root-cause before fix · every squashed bug becomes a permanent tripwire (`scripts/selftest_5_1.py`).
-
-## TABLE OF CONTENTS
-| Doc | What it answers |
-|---|---|
-| `README.md` (this file) | identity, doctrine, and the tab-by-tab UI↔engine checklist |
-| `DOCS_5_1/01_ARCHITECTURE.md` | layers, lanes, books, stores — the machine's shape |
-| `DOCS_5_1/02_PHILOSOPHY.md` | the Laws (1–16 condensed), gates, nulls, honesty rules |
-| `DOCS_5_1/03_ENGINE_PIPELINE.md` | one cycle, step by step, module by module |
-| `DOCS_5_1/04_UI_REFERENCE.md` | every panel → renderer function → store |
-| `DOCS_5_1/05_WIRING_MAP.md` | producer→consumer table for every store |
-| `DOCS_5_1/06_FEATURE_INVENTORY.md` | every feature: COMPLETE / OBSERVE-GATED / RETIRED |
-| `DOCS_5_1/07_REGRESSION_PROTECTION.md` | incident → permanent tripwire mapping |
-| `DOCS_5_1/08_DATA_ROADMAP.md` | feeds, keys, cron-token guidance, expansion order |
-| `DOCS_5_1/09_OPTIMIZATION_ROADMAP.md` | evidence-gated next steps (nothing by date) |
-| `DOCS_5_1/10_PRODUCTION_CHECKLIST.md` | the road to live money, prerequisite by prerequisite |
-| `NOTES_5_1_LEDGER.md` | every 5.1 operator note → what was done about it |
-| `INSTALL_5_1.md` | drag-and-drop install order + first-cycle expectations |
-
-## UI STRUCTURE (5.1 FINAL — six tabs, professional reorg)
-The dashboard is organized by the question a trader asks: **COMMAND** (what's happening now) · **STRATEGY** (what we're doing + the A/B/C/D lab + confidence engine) · **MARKETS** (reading the world) · **FORENSICS** (why each trade + diagnostics) · **HEALTH** (is the machine honest) · **SETTINGS** (controls). See DOCS_5_1/11 (Strategy Lab) and 12 (Confidence Engine).
-
-## THE TAB-BY-TAB CHECKLIST — UI element ↔ engine source (audit 2026-07-11; all lanes live)
-
-### ① COMMAND
-| UI element | Engine source (store ← writer, lane) | Status |
+## The 7.0 organs
+| organ | law | one line |
 |---|---|---|
-| ★ MASTER ACCOUNT (golden, top) | `MASTER_ACCOUNT.json` ← cli master gate, every cycle | WATCHING by design — trades only after the live-money bar; the cost-stack table is a production REHEARSAL of the proven book's gross |
-| Five account buttons + LIVE POSITIONS | `paper_sim_live.json` ← `paper_sim.live_step`, every cycle | 5.1: reordered directly beneath Master (boot JS, graceful no-op); rows now show **net now vs net @ target** + ⚑ AT TARGET only when price ≥ target price |
-| LIVE REGIME + 🪜 MTF LADDER | `REGIME_CLASSIFIER.json` + **`MTF_REGIME.json` ← mtf_regime (5.1B)** | 12 timeframes 15m→30d per industry AND per valuable; confluence + fast_red drive harvest/throttle/override |
-| DENIED THIS CYCLE | `paper_sim_live.json.funnel.rejections` | empty = no vetoes fired that cycle (working, not broken) |
-| FIRST-TRADE READINESS / MASTER ACCEPT-REJECT | `MASTER_ACCOUNT.json.decision_log_tail` | fills as gate evaluates |
-| WIRING AUDIT | `STORE_CONTRACTS.json` ← `store_contracts`, every cycle | content-timestamp freshness (checkout-proof) |
-| UNIVERSE FUNNEL | `paper_sim_live.json.funnel` | "seen" = names with FRESH ticks; census names every exclusion; ccxt waterfall (5.1) grows it |
-| SILMARIL 5.1 — SPINE panel | census/contracts/invariants/utilization/conductor/research-OS/bench stores | UTILIZATION `dep n/m` = **cycles**, labeled so in 5.1 |
-| FINGERPRINTS coverage | `FINGERPRINTS.json` ← fingerprint engine, hourly | grows as feed breadth grows |
-| PROJECT HEALTH / FALLBACK DEPTH | `api_health.json` ← analytics suite **+ 5.1 `health_lights` (keyed lanes)** | key-group zeros fixed: depth computed where the keys actually live |
-| Quick log | `DAILY_JOURNAL.json` ← journal writer, cycle | honest by construction |
+| **Geometry Gate** | 21/22 | p\* = (stop+cost)/(target+stop) vs the Wilson evidence floor — unwinnable math means NO TRADE, in writing |
+| **Maker Book** | — | entries rest as post-only limits; we are PAID the spread or we don't trade |
+| **The Governor** | 24/25 | drawdown ladder ×1.0/×0.5/halt · daily-loss + streak breakers · crypto = ONE bet |
+| **Falling-Knife Floor-Confirm** | — | in a DOWNTREND, no dip-buy until the name PRINTS a floor (the July-17 lesson) |
+| **Graded Confidence** | 23 | Brier + reliability every cycle; a quarantined score loses allocation authority |
+| **The Cell Table** | 29 | conditional expectancy ± CI; SELF-ARMS to gate on the first proven cell |
+| **The Stop-Loss Lab** | 28 | sleeves G (geometry-capped) vs H (patient wide-revert) racing in the open, clickable |
+| **The Interrogator** | — | ~16 questions answered with evidence each cycle → TOWARD/AWAY-from-edge verdict |
+| **Learning Permanence** | 26 | every eviction archives to gzip; DATA_LEDGER audits it — nothing is thrown away |
+| **DSR** | — | the champion's Sharpe, deflated for 316-trial selection bias |
+| **GENESIS** | 30 | registry-driven total reset (learning too); archives sacred |
 
-### ② ARENA
-| UI element | Engine source | Status |
-|---|---|---|
-| CHAMPION TRUTH PANEL | `CHAMPION_GOVERNANCE.json` + `champion_validation.json` | 5.1 adds **CHALLENGER WATCH**: incumbent vs top challenger, gap vs switch-margin, replacement proximity per book |
-| QUADRANT LEADERBOARDS | `strategy_leaderboard_{book}.json` + `champion_{book}.json` | backtest labeled **hypothesis**; 5.1 adds live **forward: surv · n** chip; election runs every cycle on forward survivability (rescue fix) |
-| STRATEGY SURVIVAL LEADERBOARD | `champion_validation.json.strategies` → `#arenaBody` | populated post-rescue (rows are strategies, never books); 5.1 adds book chip |
-| PROMOTION LADDER | governance ladder, validation fallback (5.1) | Sandbox→Incubation(10)→Candidate(25)→Production(50)→Verified(100) |
+## Verification (this build)
+Battery **50/50** · compile sweep **358 files** · UI **node-checked** · every engine executed
+live with printed receipts · BRAIN **25/25 signals wired+fresh**.
 
-### ③ FORENSICS
-| UI element | Engine source | Status |
-|---|---|---|
-| PROJECT SCORECARD | `SCORECARD.json` ← `scorecard.py` **(5.1 full rewrite)** | 7 categories, each a printed FORMULA on a named store — auditable, never flattery |
-| TODAY'S SESSION (black box) | `SESSION_TODAY.json` ← `session_reconstruction`, cycle | alive post-rescue; resets midnight Vegas; all books |
-| SESSION ANATOMY | `SESSION_ANATOMY.json` ← `session_anatomy`, cycle | alive post-rescue |
-| REALITY CHECK | `REALITY_CHECK.json` | live-fee survival of the proven book |
-| DAILY TAKE-HOME | realized per-day minus documented fees | dollars scale with WAGER (a $1.62 win on a $48 wager is +3.7%, not a $1000 risk — rows print the wager) |
-| EDGE CAPTURE | `edge_capture_engine.json` **(5.1 sane universe)** | canonical + fresh ≤24h + one-listing-per-base + \|move\|≤50% — the TON +23824% ghost era is over; emits `pursuable_missed` |
-| CRYPTO EDGE CONCENTRATION | `CRYPTO_CONCENTRATION.json` | twin-safe since canonical-key law |
-| CHAMPION TIMELINE | `CHAMPION_TIMELINE.json` | rotation is live post-rescue; timeline moves when evidence does |
-| PARAMETER-CHAMPION REGISTRY | `PARAMETER_REGISTRY.json` | **decision-driving** (fingerprint fits feed entries/exits), not decoration |
-| HEATSHIELD | `HEATSHIELD.json` ← paper_sim | **5.1: ACTIONABLE** — floor resolver applies the measured winner when n≥60 (knob `heatshield_autotune`, clamped, reversible); gate shows WEIGHTED only while genuinely applied |
+## Run it
+`INSTALL_7_0.md` → install · one daily · selftest 50 · wipe (standard/GENESIS) · 10-min runner · freeze.
 
-### ④ SILMARIL NEWS
-| UI element | Engine source | Status |
-|---|---|---|
-| Video wall | `YT_FEEDS` in index.html | dead Schwab stream replaced (5.1) with a stable 24/7 broadcaster |
-| Headlines + tags | authority/news stores ← feedparser lane | 5.1: anchors link the **direct article URL** when the store carries it |
-| Influence on trading | `NEWS_TRIAL_STATUS.json` + gates board | OBSERVE until the 90-day trial proves hit-rate > coin-flip — research only, never trades |
-
-### ⑤ SETTINGS / SYSTEM BRAIN
-| UI element | Engine source | Status |
-|---|---|---|
-| HEALTH MATRIX | live payload + per-store ages | Peak rhythm now **all industries** (5.1, bounded per class) |
-| TUNABLE KNOBS | `PARAM_CATALOG.json` (edit → commit → next cycle) | 5.1 adds `heatshield_autotune`; `reentry_cooldown`, `_broker_policy` from rescue |
-| EXPERIMENTAL GATES | `FEATURE_GATES_STATUS.json` ← **5.1 `gate_evidence`** | evidence counts are REAL tallies from named stores; the eternal 0/60 era is over |
-| MOVEMENT V | RA/TQ/CALIBRATION/RESEARCH_QUEUE/ECONOMIC_CLOCK + five labs | writers alive post-rescue; rows fill as evidence accrues ("insufficient" is honesty, not breakage) |
-| CONDUCTOR | `CONDUCTOR_STATE.json` + `CONDUCTOR_C1.json` + **`CONDUCTOR_REPORT_CARD.json` (5.1B)** | C0 log → C1 shadow scoring; report card A/B-grades harvest·sizing·stuck·crash-avoidance with pre-registered kills; C2/C3 evidence-locked |
-
-## OPERATIONS IN ONE PARAGRAPH
-Lanes: PULSE (external cron + `*/10` fallback → daily.yml, the trade cycle) · HOURLY (`:07`, heavy pass)
-· ANALYTICS (3×/day deep, heartbeat-stamped) · WEEKLY (backup/scorecard) · SELFTEST (Mon, regression
-battery). All state-writers share the `silmaril-state` concurrency group; pushes rebase `-X theirs`
-with retries. Every store write is atomic; freshness is judged by CONTENT timestamps because git
-checkout resets mtimes. If any lane dies, `STORE_CONTRACTS.json` goes RED and names it within a day.
-Cron token: **fine-grained PAT, no expiration** — full recipe + per-lane endpoints in `CRON_SETUP.md`;
-the workflow TOC lives at `.github/WORKFLOWS_README.md`; set repo variable `EXTERNAL_CRON_ONLY=true`
-to silence every internal timer (reversible). 5.1B adds: regime-flip harvest · fee-clear time ·
-conviction sizing · entry throttle (all knob-gated, all A/B-graded on the Conductor report card).
+## Honesty, on the record
+The edge is **unproven**. 7.0 does not manufacture one — it makes an edge impossible to fake,
+impossible to miss, and cheap to disprove. $100–300/day remains hope, never income, until the
+ledgers say otherwise. `LAWS.md` is the constitution; `SILMARIL_7_0_MASTER_ROADMAP.md` is the map.

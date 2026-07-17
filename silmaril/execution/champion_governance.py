@@ -54,7 +54,69 @@ def build_champion_governance(out_dir) -> Dict[str, Any]:
         sv = (r.get("survivability") or {}).get("score", 0)
         ladder[_tier(r.get("n", 0), sv)].append(r["strategy"])
 
-    payload = {
+    # ── 7.0 DSR: is the champion's rank REAL after 316-trial selection bias? ──
+
+    _dsr = {"verdict": "INSUFFICIENT", "note": "needs >=30 live closed trades",
+
+             "trials": 316, "value": None}
+
+    try:
+
+        import math as _m7, statistics as _st7
+
+        _rets = []
+
+        for _bk7 in ("crypto", "stock", "metal", "energy", "aggressive"):
+
+            try:
+
+                _d7 = json.loads((out / ("paper_book_" + _bk7 + ".json")).read_text())
+
+                for _t7 in _d7.get("trades", []):
+
+                    if _t7.get("side") == "SELL":
+
+                        _rets.append(float(_t7.get("realized_pct") or 0))
+
+            except Exception:
+
+                pass
+
+        _n7 = len(_rets)
+
+        if _n7 >= 30:
+
+            _mu = _st7.fmean(_rets)
+
+            _sd = _st7.pstdev(_rets) or 1e-9
+
+            _sr = _mu / _sd * _m7.sqrt(_n7)
+
+            _nd = _st7.NormalDist()
+
+            _g = 0.5772156649
+
+            _N = 316.0
+
+            _emax = ((1 - _g) * _nd.inv_cdf(1 - 1 / _N)
+
+                     + _g * _nd.inv_cdf(1 - 1 / (_N * 2.718281828)))
+
+            _val = _sr - _emax
+
+            _dsr = {"verdict": "POSITIVE" if _val > 0 else "ZERO_OR_NEGATIVE",
+
+                     "value": round(_val, 3), "raw_sr": round(_sr, 3),
+
+                     "expected_max_null": round(_emax, 3), "n": _n7, "trials": 316,
+
+                     "note": "SR minus expected max of 316 null Sharpes (selection-bias haircut)"}
+
+    except Exception:
+
+        pass
+
+    payload = {"dsr": _dsr,
         "generated_at": _now(),
         "declared_champion": row_for(declared) if declared else None,
         "most_survivable": row_for(most_surv) if most_surv else None,

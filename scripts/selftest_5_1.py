@@ -207,12 +207,12 @@ def t9_version_pin():
     ix = (ROOT / "docs/index.html").read_text()
     # 5.1 FINAL header: brand constant "SILMARIL" + separate verNum "5.1"; no 5.0 anywhere
     ok_h1 = ('id="verHdr"' in ix and ">SILMARIL<" in ix
-             and '<span id="verNum">5.3</span>' in ix and "5.0" not in ix.split("<script")[0])
+             and '<span id="verNum">7.0</span>' in ix and "5.0" not in ix.split("<script")[0])
     ok_no_override = "h.innerHTML='SILMARIL&nbsp;'+m.version" not in ix
     meta = json.loads((ROOT / "docs/data/PROJECT_META.json").read_text())
     vi = (ROOT / ".github/workflows/verify_install.yml").read_text()
-    check("T9 version pin (header constant · meta 5.3 · verify asserts 5.3)",
-          ok_h1 and ok_no_override and meta.get("version") == "5.3" and "v=='5.3'" in vi,
+    check("T9 version pin (header constant · meta 7.0 · verify asserts 7.0)",
+          ok_h1 and ok_no_override and meta.get("version") == "7.0" and "v=='7.0'" in vi,
           f"h1={ok_h1} override_gone={ok_no_override} meta={meta.get('version')}")
 
 
@@ -323,13 +323,14 @@ def t16_fast_band_regime():
 def t17_strategy_lab_sleeves():
     from silmaril.execution.strategy_lab_abcd import SLEEVES, BOOKS
     caps = {k: v["cap"] for k, v in SLEEVES.items()}
-    ok = (set(SLEEVES.keys()) == {"A", "B", "C", "D", "E", "F"}
+    ok = (set(SLEEVES.keys()) >= {"A", "B", "C", "D", "E", "F"}
+          and {"G", "H"} <= set(SLEEVES.keys())                 # 7.0 stop-loss lab
           and caps["A"] == 10                                  # the control
           and caps["D"] <= 3 and SLEEVES["D"]["conf_gate"] > 0  # the sniper
           and SLEEVES["E"]["strike_extra"] == 2                 # adaptive striker
           and SLEEVES["F"]["vault"] is True                     # cash harvester
           and BOOKS == ("crypto", "stock", "metal", "energy"))
-    check("T17 lab v2: A-F sleeves per industry (control·sniper·striker·vault)",
+    check("T17 lab v2: A–H sleeves per industry (control·sniper·striker·vault·geometry·patient)",
           ok, f"caps={caps}")
 
 # ── T18 · UI STRUCTURE: six-tab routing, every section categorized, nothing orphaned ──
@@ -532,12 +533,12 @@ def t29_lab_per_industry():
         check("T29 per-industry lab — code verified (by_industry generates on first cycle)",
               ok_src, "strategy_lab_abcd.py missing v2 structures")
         return
-    ok = (ok_src and set(bi.keys()) == {"crypto", "stock", "metal", "energy"}
-          and all(len(rows) == 6 for rows in bi.values())
-          and all(any(r["sleeve"] == "E" for r in rows) and any(r["sleeve"] == "F" for r in rows)
-                  for rows in bi.values()))
-    check("T29 per-industry lab: 4 industries × A-F incl ADAPTIVE STRIKER + CASH HARVESTER",
-          ok, f"books={sorted(bi.keys())} sizes={[len(v) for v in bi.values()]}")
+    ok = (set(bi.keys()) == {"crypto", "stock", "metal", "energy"}
+          and all(len(rows) >= 8 for rows in bi.values())
+          and all({"G", "H"} <= {r.get("sleeve") for r in rows} for rows in bi.values()))
+    check("T29 per-industry lab: 4 industries × A–H incl GEOMETRY SNIPER + PATIENT REVERT (7.0 stop-lab)",
+          ok_src and ok,
+          f"books={sorted(bi.keys())} sizes={[len(v) for v in bi.values()]}")
 
 # ═════════ 5.3 HAIL MARY TRIPWIRES (T30–T42) — the release that never lies again ═════════
 
@@ -690,8 +691,8 @@ def t39_champion_honesty():
     """M10: role stated; the Hold-timer row tells the rhythm-hold truth (no dead red)."""
     reg = (ROOT / "silmaril/execution/parameter_registry.py").read_text()
     ui = (ROOT / "docs/index.html").read_text()
-    ok = ("rhythm-hold" in reg) and ("ROLE (5.3): ATTRIBUTION" in ui)
-    check("T39 champion honesty: ATTRIBUTION role on panel + rhythm-hold on the registry", ok, "")
+    ok = ("rhythm-hold" in reg) and ("ROLE (7.0): ATTRIBUTION" in ui)
+    check("T39 champion honesty: ATTRIBUTION role (7.0) on panel + rhythm-hold on the registry", ok, "")
 
 
 def t40_fit_quality():
@@ -752,6 +753,109 @@ def t43_fingerprint_coverage():
           ok_src and ok_k and ok_v, f"src={ok_src} knob={ok_k} venue={ok_v}")
 
 
+# ═════════ 7.0 TRIPWIRES (T44–T51) — the activation release ═════════
+
+def t44_geometry_gate():
+    """Law 21/22: p* computed, stops cap not widen, no live pos demands more than its floor."""
+    import json as _json
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok_src = ("UNTRADEABLE:geometry" in sim and "UNTRADEABLE:evidence" in sim
+              and "_pstar" in sim and "never widens" in sim)
+    geo_ok = True
+    try:
+        g = _json.loads((ROOT / "docs/data/GEOMETRY.json").read_text())
+        geo_ok = "counts" in g and "by_symbol" in g and "p_star_pct" in str(g)[:8000]
+    except Exception:
+        pass
+    bad = []
+    try:
+        live = _json.loads((ROOT / "docs/data/paper_sim_live.json").read_text())
+        for bk in ("crypto", "stock", "metal", "energy", "aggressive"):
+            for p0 in (live.get(bk) or {}).get("positions") or []:
+                ps, pf = p0.get("p_star_pct"), p0.get("p_floor_pct")
+                if ps is not None and pf is not None and pf < ps:
+                    bad.append(p0.get("sym"))
+    except Exception:
+        pass
+    check("T44 geometry gate: p* everywhere · abstain-never-distort · no live pos over its floor",
+          ok_src and geo_ok and not bad, f"src={ok_src} store={geo_ok} over_floor={bad[:3]}")
+
+
+def t45_edge_surface():
+    """Cells stand down honestly below min_n; self-arming is a data event, in writing."""
+    src = (ROOT / "silmaril/execution/edge_surface.py").read_text()
+    ok = ("self-arms" in src.lower() or "SELF-ARMING" in src) and "min_cell_n" in src \
+         and "_armed_at" in src and "PROVEN" in src
+    check("T45 edge surface: min-n stand-down + self-arming activation (knob flip, not code)", ok, "")
+
+
+def t46_maker_book():
+    """Post-only resting limits: REST → FILL (paid the spread) or expire with the miss logged."""
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok = ("MAKER_PENDING" in sim and '"REST"' in sim and '"FILL"' in sim
+          and "maker_cost_frac" in sim and "UNFILLED" in sim)
+    check("T46 maker book: resting limits fill on touch or expire — order type is edge", ok, "")
+
+
+def t47_calibration_teeth():
+    """Law 23: quarantine strips gating authority; the Master falls back to raw evidence."""
+    mb = (ROOT / "silmaril/execution/master_account.py").read_text()
+    cal = (ROOT / "silmaril/execution/calibration.py").read_text()
+    ok = ("_cal_q" in mb and "evidence_score" in mb and "QUARANTINED" in cal
+          and "brier" in cal.lower())
+    check("T47 calibration teeth: QUARANTINE → evidence-gated Master (a score that can't predict can't allocate)", ok, "")
+
+
+def t48_sizer_hand():
+    """Law 24/25: ladder mult on every wager (paper+master) · breakers · one-factor law."""
+    import json as _json
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    mb = (ROOT / "silmaril/execution/master_account.py").read_text()
+    ok_src = ("_sz_mult" in sim and "one-factor law" in sim and "_szr_mult" in mb)
+    st_ok = True
+    try:
+        d = _json.loads((ROOT / "docs/data/SIZER.json").read_text())
+        st_ok = d.get("state") in ("GREEN", "AMBER", "RED") and "factor" in d
+    except Exception:
+        pass
+    check("T48 the governor's hand: ladder × every wager · breakers · crypto = one bet",
+          ok_src and st_ok, f"src={ok_src}")
+
+
+def t49_learning_permanence():
+    """Law 26: no eviction without an archive; the data ledger reports it."""
+    ret = (ROOT / "silmaril/execution/retention.py").read_text()
+    disc = (ROOT / "silmaril/execution/discovery.py").read_text()
+    mb = (ROOT / "silmaril/execution/master_account.py").read_text()
+    ok = ("archive_evicted" in ret and "archive_evicted" in disc
+          and "archive_evicted" in mb and "jsonl.gz" in ret)
+    check("T49 learning permanence: evictions archive to gzip before any cap (Law 26)", ok, "")
+
+
+def t50_question_engine():
+    """The Interrogator asks everything and renders a TOWARD/AWAY verdict with numbers."""
+    import json as _json
+    src = (ROOT / "silmaril/execution/question_engine.py").read_text()
+    ok_src = "TOWARD-EDGE" in src and "LEAST evidence" in src
+    ok_d = True
+    try:
+        d = _json.loads((ROOT / "docs/data/QUESTIONS.json").read_text())
+        ok_d = d.get("verdict") in ("TOWARD-EDGE", "HOLDING", "AWAY-FROM-EDGE") \
+               and len(d.get("questions") or []) >= 12
+    except Exception:
+        pass
+    check("T50 the interrogator: ≥12 questions answered with evidence + composite verdict",
+          ok_src and ok_d, "")
+
+
+def t51_genesis():
+    """Law 30: the operator can burn it ALL down — learning too — while archives stay sacred."""
+    wf = (ROOT / ".github/workflows/reset_internal_clean.yml").read_text()
+    ok = ("wipe_mode" in wf and "genesis" in wf and "LEARNING" in wf
+          and "STORE_REGISTRY" in wf)
+    check("T51 genesis wipe: registry-driven total reset, archives untouched (Law 30)", ok, "")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -768,7 +872,9 @@ if __name__ == "__main__":
               t33_venue_contract, t34_harvest_identity, t36_master_decides,
               t37_crash_lane, t38_reconciliation, t39_champion_honesty,
               t40_fit_quality, t41_readiness_numeric, t42_discovery_contract,
-              t43_fingerprint_coverage):
+              t43_fingerprint_coverage, t44_geometry_gate, t45_edge_surface,
+              t46_maker_book, t47_calibration_teeth, t48_sizer_hand,
+              t49_learning_permanence, t50_question_engine, t51_genesis):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

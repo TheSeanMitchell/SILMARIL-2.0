@@ -101,6 +101,43 @@ def _signals(out: Path) -> List[Dict[str, Any]]:
                    "top_crypto": ((d.get("top_confidence_by_class") or {}).get("crypto") or [["—", 0]])[0]},
         "conviction sizing · D-sleeve entry gate · Master brain line")
 
+    sig("GEOMETRY.json", "The Geometry Gate (law of winnable trades)",
+        ["silmaril/execution/geometry.py", "silmaril/execution/paper_sim.py",
+         "silmaril/execution/master_account.py", "silmaril/execution/strategy_lab_abcd.py",
+         "docs/index.html"],
+        lambda d: {"tradeable": (d.get("counts") or {}).get("TRADEABLE"),
+                   "geo_locked": (d.get("counts") or {}).get("UNTRADEABLE:geometry")},
+        "p* vs Wilson floor on every entry · sleeve G's universe")
+
+    sig("SIZER.json", "The Governor's Hand (ladder·breakers·one-factor)",
+        ["silmaril/execution/sizer.py", "silmaril/execution/paper_sim.py",
+         "silmaril/execution/master_account.py", "docs/index.html"],
+        lambda d: {"state": d.get("state"), "mult": d.get("mult"),
+                   "factor_pct": (d.get("factor") or {}).get("used_pct")},
+        "every wager × mult · halts written down")
+
+    sig("CALIBRATION.json", "Graded confidence (Brier·reliability·teeth)",
+        ["silmaril/execution/calibration.py", "silmaril/execution/master_account.py",
+         "docs/index.html"],
+        lambda d: {"status": d.get("status"), "n": d.get("n")},
+        "QUARANTINE strips gating authority (Law 23)")
+
+    sig("EDGE_SURFACE.json", "The Cell Table (conditional expectancy±CI)",
+        ["silmaril/execution/edge_surface.py", "docs/index.html"],
+        lambda d: {"cells": len(d.get("cells") or []), "proven": d.get("proven_cells"),
+                   "mode": d.get("mode")},
+        "self-arms to 'gate' on the first PROVEN cell (7.0 activation)")
+
+    sig("QUESTIONS.json", "The Interrogator (asks everything, in writing)",
+        ["silmaril/execution/question_engine.py", "docs/index.html"],
+        lambda d: {"verdict": d.get("verdict"), "score": (d.get("score") or {})},
+        "TOWARD/AWAY-from-edge composite · every answer carries its number")
+
+    sig("DATA_LEDGER.json", "Learning permanence (Law 26)",
+        ["silmaril/execution/retention.py", "docs/index.html"],
+        lambda d: {"live_mb": d.get("live_mb"), "archive_files": d.get("archive_files")},
+        "evictions compact to archive/*.jsonl.gz — never discarded")
+
     sig("MASTER_LEDGER.json", "MASTER BRAIN verdicts (accept+reject, in writing)",
         ["silmaril/execution/master_account.py", "docs/index.html"],
         lambda d: {"cycles": len(d.get("cycles") or []),
