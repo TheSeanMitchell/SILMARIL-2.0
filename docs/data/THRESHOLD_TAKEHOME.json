@@ -1,35 +1,43 @@
 {
-  "generated_at": "2026-07-18T05:34:17.657149+00:00",
+  "generated_at": "2026-07-18T06:24:23.077991+00:00",
   "status_label": "OBSERVATIONAL \u2014 what we kept after fees, and what different thresholds would yield.",
   "fee_model_bps_round_trip": 54.0,
   "fee_per_1k_trade": 5.4,
   "breakeven_pct_per_trade": 0.54,
   "notional_assumed": 1000.0,
-  "daily_takehome": [],
+  "daily_takehome": [
+    {
+      "day": "2026-07-17",
+      "gross": 2.38,
+      "fees": -3.25,
+      "net_takehome": -0.87,
+      "trips": 1
+    }
+  ],
   "threshold_sweep": {
     "available": true,
     "drop_sweep": [
       {
         "drop_pct": 1.0,
         "bounce_pct": 3.0,
-        "signals": 43,
-        "avg_captured_pct": 0.173,
-        "gross_per_trade": 1.73,
+        "signals": 47,
+        "avg_captured_pct": 0.132,
+        "gross_per_trade": 1.32,
         "fee_per_trade": 5.4,
-        "net_per_trade": -3.67,
-        "total_net_est": -157.84,
+        "net_per_trade": -4.08,
+        "total_net_est": -191.86,
         "clears_fees": false
       },
       {
         "drop_pct": 1.5,
         "bounce_pct": 3.0,
-        "signals": 3,
-        "avg_captured_pct": 0.716,
-        "gross_per_trade": 7.16,
+        "signals": 5,
+        "avg_captured_pct": 0.395,
+        "gross_per_trade": 3.95,
         "fee_per_trade": 5.4,
-        "net_per_trade": 1.76,
-        "total_net_est": 5.27,
-        "clears_fees": true
+        "net_per_trade": -1.45,
+        "total_net_est": -7.23,
+        "clears_fees": false
       }
     ],
     "bounce_sweep": [],
@@ -39,43 +47,63 @@
     {
       "label": "Kraken taker / market order",
       "bps_round_trip": 60.0,
-      "lifetime_net": 0.0,
-      "per_day": []
+      "lifetime_net": -1.23,
+      "per_day": [
+        {
+          "day": "2026-07-17",
+          "net": -1.23
+        }
+      ]
     },
     {
       "label": "our current model",
       "bps_round_trip": 54.0,
-      "lifetime_net": 0.0,
-      "per_day": []
+      "lifetime_net": -0.87,
+      "per_day": [
+        {
+          "day": "2026-07-17",
+          "net": -0.87
+        }
+      ]
     },
     {
       "label": "Kraken maker / limit order",
       "bps_round_trip": 40.0,
-      "lifetime_net": 0.0,
-      "per_day": []
+      "lifetime_net": -0.03,
+      "per_day": [
+        {
+          "day": "2026-07-17",
+          "net": -0.03
+        }
+      ]
     },
     {
       "label": "Binance.US 0.10% flat",
       "bps_round_trip": 20.0,
-      "lifetime_net": 0.0,
-      "per_day": []
+      "lifetime_net": 1.18,
+      "per_day": [
+        {
+          "day": "2026-07-17",
+          "net": 1.18
+        }
+      ]
     }
   ],
   "low_fee_drop_sweep": [
     {
       "drop_pct": 1.0,
-      "signals": 43,
-      "net_per_trade_lowfee": -0.27,
+      "signals": 47,
+      "net_per_trade_lowfee": -0.68,
       "clears_fees": true
     },
     {
       "drop_pct": 1.5,
-      "signals": 3,
-      "net_per_trade_lowfee": 5.16,
+      "signals": 5,
+      "net_per_trade_lowfee": 1.95,
       "clears_fees": true
     }
   ],
-  "gross_total_window": 0.0,
+  "gross_total_window": 2.38,
   "what": "BOX A = real net take-home per day after fees. BOX B = simulated trade-count + net-per-trade after fees at each drop/bounce threshold.",
   "how_to_read": "Every trade must clear 0.54% just to pay its fees. In BOX B, rows where clears_fees is false LOSE money on average \u2014 that's the fat to cut. A higher drop trigger means fewer signals (lower 'signals') but usually a higher net_per_trade \u2014 the 'fewer but deeper' tradeoff, in dollars.",
   "honest_note": "BOX A is real realized history. BOX B is a simulation over real price paths across the top-45 crypto names \u2014 it shows opportunity economics, not a guarantee, and total_net_est assumes a $1k trade per signal (real capital caps how many you can hold at once, so treat totals as an upper sketch and net_per_trade as the honest per-trade truth). Bounce targets here are evaluated against actual forward price paths; they are not yet auto-tuned by trajectory \u2014 that is the judge-mode step."
