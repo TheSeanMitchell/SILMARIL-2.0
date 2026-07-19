@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-07-19T19:38:52.269514+00:00",
+  "generated_at": "2026-07-19T19:48:15.672337+00:00",
   "marks_health": {
     "marked": 884,
     "entry_warm": 884,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.3,
+    "newest_sample_age_min": 0.7,
     "state": "OK",
     "oscillating": 0,
     "oscillating_syms": []
@@ -45,7 +45,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-19T19:38:51.082337+00:00",
+    "generated_at": "2026-07-19T19:48:14.627024+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -53,14 +53,14 @@
     "excluded_count": 6,
     "excluded": [
       {
+        "sym": "MOG-USD",
+        "snapbacks": 3,
+        "max_move_pct": 10.0
+      },
+      {
         "sym": "FLOKI8USDT",
         "snapbacks": 3,
         "max_move_pct": 52.1
-      },
-      {
-        "sym": "MOG-USD",
-        "snapbacks": 2,
-        "max_move_pct": 10.0
       },
       {
         "sym": "ANTUSDT",
@@ -99,31 +99,44 @@
     "funnel": {
       "seen": 342,
       "entry_warm": 342,
-      "candidates_after_gates": 1,
+      "candidates_after_gates": 3,
       "bought": 0,
       "rejections": {
-        "UNTRADEABLE:evidence": 1
+        "UNTRADEABLE:evidence": 2,
+        "immature": 1
       }
     },
     "decision_trace_live": [
       {
+        "sym": "STRK-USD",
+        "dip_pct": -1.7,
+        "conviction": 0.3915,
+        "fate": "candidate"
+      },
+      {
         "sym": "MKR-USD",
         "dip_pct": -0.74,
-        "conviction": 0.1867,
+        "conviction": 0.1866,
+        "fate": "candidate"
+      },
+      {
+        "sym": "MANTA-USD",
+        "dip_pct": -0.55,
+        "conviction": 0.0462,
         "fate": "candidate"
       }
     ],
-    "equity": 10047.19,
+    "equity": 10047.97,
     "cash": 8642.72,
     "realized_pnl": 42.72,
-    "return_pct": 0.47,
+    "return_pct": 0.48,
     "open_positions": 1,
     "positions": [
       {
         "sym": "WLD-USD",
         "qty": 3889.4247,
         "entry": 0.35995,
-        "mark": 0.3611,
+        "mark": 0.3613,
         "t": "2026-07-19T18:05:01.912560+00:00",
         "wager_usd": 1400.0,
         "target": 0.02,
@@ -132,7 +145,7 @@
         "style": null,
         "entry_regime": null,
         "exp_net_usd": 23.45,
-        "upl_pct": 0.32
+        "upl_pct": 0.37
       }
     ],
     "recent_trades": [
@@ -223,17 +236,17 @@
       "rejections": {}
     },
     "decision_trace_live": [],
-    "equity": 9995.08,
+    "equity": 9994.14,
     "cash": 7247.68,
     "realized_pnl": 42.59,
-    "return_pct": -0.05,
+    "return_pct": -0.06,
     "open_positions": 2,
     "positions": [
       {
         "sym": "WLD-USD",
         "qty": 3817.4379,
         "entry": 0.366738,
-        "mark": 0.3611,
+        "mark": 0.3613,
         "t": "2026-07-19T16:35:20.725021+00:00",
         "wager_usd": 1400.0,
         "target": 0.02,
@@ -242,13 +255,13 @@
         "style": "range-play",
         "entry_regime": "SIDEWAYS",
         "exp_net_usd": 23.12,
-        "upl_pct": -1.54
+        "upl_pct": -1.48
       },
       {
         "sym": "ZIL-USD",
         "qty": 515018.1063,
         "entry": 0.002708,
-        "mark": 0.002658,
+        "mark": 0.002655,
         "t": "2026-07-19T17:46:27.599945+00:00",
         "wager_usd": 1394.9,
         "target": 0.02,
@@ -257,7 +270,7 @@
         "style": null,
         "entry_regime": null,
         "exp_net_usd": 23.99,
-        "upl_pct": -1.86
+        "upl_pct": -1.98
       }
     ],
     "recent_trades": [
@@ -381,21 +394,21 @@
     "universe": 0,
     "universe_seen": 0
   },
-  "combined_equity": 40047.19,
+  "combined_equity": 40047.97,
   "combined_realized_pnl": 42.72,
   "backtest_3day_crypto": {
     "universe_total": 1452,
-    "tradeable": 49,
-    "ghosts_excluded": 1403,
+    "tradeable": 50,
+    "ghosts_excluded": 1402,
     "trades": 39,
     "win_rate_pct": 59.0,
-    "mean_net_pct": -0.661,
+    "mean_net_pct": -0.681,
     "exits": {
       "TAKE": 32,
       "STOP": 7,
       "TIMEOUT": 0
     },
-    "equity_after": 9741.97
+    "equity_after": 9734.39
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy). Ghosts excluded; fees = max(0.2%, 2x noise floor). Metal/energy stay empty until their data feed is wired (metals_samples.json / energy_samples.json)."
 }
