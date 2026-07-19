@@ -1,5 +1,9 @@
 name: verify-install
-on: { workflow_dispatch: {} }
+# 7.0 FINAL: read-only install verifier now also runs weekly so drift is caught unattended.
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "15 4 * * 1"
 jobs:
   verify:
     runs-on: ubuntu-latest

@@ -1,3 +1,4 @@
+# 7.0 FINAL: MANUAL BY DESIGN (one-shot July-13 phantom-band retag). Every recurring lane has a timer; this one must not.
 name: integrity backfill (one-shot, 2026-07-13 sawtooth day)
 on:
   workflow_dispatch:
@@ -8,8 +9,14 @@ on:
         default: ""
 permissions:
   contents: write
+# 7.0 FINAL WORKFLOW LAW (operator directive): every lane owns its OWN concurrency group,
+# so NO workflow can ever queue behind, delay, or displace another workflow's runs.
+# cancel-in-progress stays FALSE everywhere: once triggered, a run ALWAYS finishes.
+# Lanes may overlap in time (stacking is fine): the engine's own run_lock guards the
+# trade cycle, atomic_io guards every store write, and each commit step pulls+rebases
+# with retries so parallel pushes merge instead of failing.
 concurrency:
-  group: silmaril-state
+  group: silmaril-oneshot-integrity
   cancel-in-progress: false
 jobs:
   backfill:
@@ -28,4 +35,9 @@ jobs:
           git config user.email "bot@silmaril"
           git add docs/data/paper_book_*.json
           git diff --cached --quiet || git commit -m "integrity backfill: retro-tag 2026-07-13 phantom-band wins as SUSPECT_OSC"
-          git push
+          # 7.0 FINAL: parallel lanes are legal now — pushes rebase+retry, never fail a finished run
+          n=0; until [ $n -ge 5 ]; do
+            git pull --rebase origin main || git rebase --abort || true
+            git push && break
+            n=$((n+1)); sleep $((n*7))
+          done

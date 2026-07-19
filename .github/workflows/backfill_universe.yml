@@ -3,8 +3,14 @@ on:
   schedule:
     - cron: "10 8 * * *"   # nightly gap-fill: daily candles + anything cron gaps missed, in the dead zone
   workflow_dispatch:
+# 7.0 FINAL WORKFLOW LAW (operator directive): every lane owns its OWN concurrency group,
+# so NO workflow can ever queue behind, delay, or displace another workflow's runs.
+# cancel-in-progress stays FALSE everywhere: once triggered, a run ALWAYS finishes.
+# Lanes may overlap in time (stacking is fine): the engine's own run_lock guards the
+# trade cycle, atomic_io guards every store write, and each commit step pulls+rebases
+# with retries so parallel pushes merge instead of failing.
 concurrency:
-  group: silmaril-state
+  group: silmaril-backfill
   cancel-in-progress: false
 
 jobs:
@@ -23,4 +29,9 @@ jobs:
           git config user.name "silmaril-bot"
           git config user.email "bot@silmaril"
           git add -A && git commit -m "2.6.1: full universe + 1y fingerprint backfill" || echo "nothing"
-          git push
+          # 7.0 FINAL: parallel lanes are legal now — pushes rebase+retry, never fail a finished run
+          n=0; until [ $n -ge 5 ]; do
+            git pull --rebase origin main || git rebase --abort || true
+            git push && break
+            n=$((n+1)); sleep $((n*7))
+          done

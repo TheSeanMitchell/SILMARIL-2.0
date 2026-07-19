@@ -1,0 +1,50 @@
+name: Venue Universe (venue truth, daily)
+
+# 7.0 FINAL (Tier 2 / U2): the universe finally means the operator's ACTUAL venues.
+# Fetches live Binance.US / Coinbase / Robinhood listings (keyless, read-only) and
+# writes docs/data/VENUE_UNIVERSE.json. Runs here because the coding sandbox's
+# egress proxy blocks these domains — Actions has open egress.
+#
+# 7.0 FINAL WORKFLOW LAW (operator directive): every lane owns its OWN concurrency group,
+# so NO workflow can ever queue behind, delay, or displace another workflow's runs.
+# cancel-in-progress stays FALSE everywhere: once triggered, a run ALWAYS finishes.
+
+on:
+  schedule:
+    - cron: "25 9 * * *"   # daily, in the dead zone; listings don't change intraday
+  workflow_dispatch:
+
+concurrency:
+  group: silmaril-venues
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fetch venue truth
+        run: python scripts/venue_universe.py
+      - name: Commit
+        run: |
+          git config user.name "silmaril-bot"
+          git config user.email "bot@silmaril"
+          git add docs/data/VENUE_UNIVERSE.json
+          git commit -m "venue truth: daily listings refresh" || echo "no change"
+          # 7.0 FINAL: parallel lanes are legal now — pushes rebase+retry, never fail a finished run
+          n=0; until [ $n -ge 5 ]; do
+            git pull --rebase origin main || git rebase --abort || true
+            git push && break
+            n=$((n+1)); sleep $((n*7))
+          done
