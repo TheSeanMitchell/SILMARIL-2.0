@@ -444,6 +444,12 @@ class PaperBook:
         self.trades: List[Dict[str, Any]] = []
 
     def buy(self, sym, dollars, price, cost, t=None, target=None, stop=None, expected=None, conviction=None):
+        # 7.0 FINAL (T54) — ALREADY-HELD GUARD: the July-17 double-BUY class (SOLUSDT/STRK/VETUSD logged
+        # twice with identical microsecond stamps) happened because a maker-limit fill earlier in the SAME
+        # cycle put the name in positions, then the market-buy path bought it again, overwriting the
+        # position and appending a second BUY row. One book, one position per name, one BUY row. Period.
+        if sym in self.positions:
+            return False
         if price <= 0 or dollars <= 0 or dollars > self.cash + 1e-9:
             return False
         eff = price * (1 + cost / 2.0)
@@ -471,7 +477,26 @@ class PaperBook:
         if conviction is not None:
             trow["conviction"] = conviction
         self.trades.append(trow)
+        self._ledger(trow)
         return True
+
+    def _ledger(self, row):
+        """7.0 FINAL — THE ONE BOOK OF RECORD (Tier 0 / R1). Every LIVE fill is appended, once, by this
+        single writer, to docs/data/LEDGER.jsonl. Every other view (Master, panels, forensics) derives
+        from it and can be diffed against it. Backtests/sims construct PaperBook() without a canon
+        context, so they can NEVER write canon — only _run_side (the live cycle) sets `_canon`."""
+        ctx = getattr(self, "_canon", None)
+        if not ctx:
+            return
+        try:
+            out, bookname = ctx
+            r = dict(row)
+            r["book"] = bookname
+            r["cycle_t"] = _now()
+            with open(Path(out) / "LEDGER.jsonl", "a") as f:
+                f.write(json.dumps(r) + "\n")
+        except Exception:
+            pass
 
     def mark(self, sym, price):
         """Track the high-water mark of a held position so 'left on table' is real, not guessed."""
@@ -518,6 +543,7 @@ class PaperBook:
             srow["best_pct"] = round(best_gross * 100, 3)             # (gross, as it always physically was)
             srow["left_on_table_pct"] = round(max(0.0, best_gross - _exit_gross) * 100, 3)
         self.trades.append(srow)
+        self._ledger(srow)
         del self.positions[sym]
         return pnl
 
@@ -675,6 +701,7 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
     direction = p.get("dir", "mr")
     entry, target, stop_, max_hold = p["entry"], p["target"], p["stop"], p["max_hold_min"]
     pbook = PaperBook.load(out / f"paper_book_{book}.json")
+    pbook._canon = (out, book)   # 7.0 FINAL: LIVE cycle writes the one book of record (LEDGER.jsonl)
     now = datetime.now(timezone.utc)
     side_marks = {s: v for s, v in marks.items() if asset_class(s) == uc}
     actions = []
@@ -851,6 +878,23 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                 tr["champion_entry"] = _champ_entry
                 tr["champion_exit"] = champion
                 tr["champion_changed"] = bool(_champ_entry and champion and _champ_entry != champion)
+                # ── 7.0 FINAL — CHAMPION FORWARD LEDGER (Tier 3 / V2, the "Lickitung forever" fix). ──
+                # The election needs ≥5 FORWARD trades per strategy, but forward evidence used to live
+                # only inside book trade arrays — flattened by every reset, so no strategy could ever
+                # earn promotion. This append-only LEARNING store accumulates every closed trade
+                # across resets; the election reads accumulated history, not the current book.
+                try:
+                    with open(out / "CHAMPION_FORWARD_LEDGER.jsonl", "a") as _fwl:
+                        _fwl.write(json.dumps({
+                            "t": now.isoformat(), "book": book, "sym": sym,
+                            "strategy": _champ_entry or champion,
+                            "entry_t": pos.get("t"), "hold_min": round(hold, 1),
+                            "net_pct": tr.get("realized_pct"), "pnl": tr.get("pnl"),
+                            "fee_pct": tr.get("fee_pct"), "exit_reason": why,
+                            "entry_regime": pos.get("entry_regime"),
+                            "integrity": tr.get("integrity", "ok")}) + "\n")
+                except Exception:
+                    pass
             except Exception:
                 pass
             actions.append({"act": "SELL", "sym": sym, "why": f"{why} {_rzpct:+.1f}%",
@@ -1073,6 +1117,28 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                             "why": "verified-crash cool-off (M8) — real disaster, let it settle"})
         cands = [c for c in cands if c not in _hot]
     for sym, lp, h1, cv in cands[:min(MAX_NAMES, _slots)]:
+        if sym in pbook.positions:   # belt-and-suspenders with the buy() guard (T54): never re-buy a held name
+            continue
+        # ── 7.0 FINAL — CONFIDENCE MATURITY (Tier 4 / T2): "I don't know yet" is the default. ──
+        # A name earns the right to trade with EVIDENCE: either its fingerprint fit carries ≥N resolved
+        # dip events, or its tape shows ≥3 resolved bounce-tries (dip → did it recover). Tape evidence
+        # lives in price_samples.json, which every reset PRESERVES — so after a reset the machine trades
+        # only names it still genuinely knows, instead of going blind the moment the quiet window ends
+        # (the July-17 lesson: 2h of silence, then blind trades on zero forward evidence).
+        # Knob: PARAM_CATALOG.maturity {"mode":"auto","min_fit_events":12} · KILL: mode:"off".
+        # GEKKO (aggressive) is exempt by doctrine — it is the unfitted control probe.
+        _mk7 = (cat.get("maturity") or {})
+        if (str(_mk7.get("mode", "auto")).lower() == "auto"
+                and direction != "mom" and book != "aggressive"):
+            _ftm = _fits.get(sym) or {}
+            _ev7 = int(_ftm.get("dip_samples") or _ftm.get("n") or 0)
+            if _ev7 < int(_mk7.get("min_fit_events", 12)):
+                if _bounce_reliability(px_of(sym)) is None:   # <3 resolved dip→bounce tries on tape
+                    actions.append({"act": "SKIP", "sym": sym,
+                                    "why": ("immature — %d fit events (<%d) and <3 resolved bounce-tries "
+                                            "on tape; earning the right to trade (maturity gate)")
+                                           % (_ev7, int(_mk7.get("min_fit_events", 12)))})
+                    continue
         _t6s = _trajectory_6h(samples.get(sym) or [])
         _style = ("riding-strength" if (_t6s or 0) >= 0.02 else "deep-dip" if (h1 or 0) <= -0.04 else "range-play")
         if book == "stock":

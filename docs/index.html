@@ -456,7 +456,9 @@
 </div></div>
 
 </div><!--/content-->
-<script>var CACHE_BUST=Date.now();
+<script>
+function __pfail(e){try{window.__RFAULTS=window.__RFAULTS||[];var w=String((e&&e.stack)||'').split('\n')[1]||'';var fn=(w.match(/at (\w+)/)||[])[1]||'render';__RFAULTS.push(fn+': '+String((e&&e.message)||e));var el=document.getElementById('renderFaults');if(!el){el=document.createElement('div');el.id='renderFaults';el.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#7a1f1f;color:#ffe1e1;font:10px monospace;padding:3px 8px;z-index:9999;';document.body.appendChild(el);}el.textContent='\u26a0 RENDER FAULTS '+window.__RFAULTS.length+' (broken \u2260 pending \u00b7 7.0 fail-loud) \u2014 '+window.__RFAULTS.slice(-3).join(' \u00b7 ');console.warn('render fault',e);}catch(_){}}
+var CACHE_BUST=Date.now();
 const _NULLSTUB=new Proxy({},{get:(t,k)=>{if(k==='style'||k==='classList'||k==='dataset')return _NULLSTUB;if(k==='innerHTML'||k==='textContent'||k==='value'||k==='className')return '';if(typeof k==='string')return ()=>_NULLSTUB;return undefined;},set:()=>true});
 const $=id=>document.getElementById(id)||_NULLSTUB;  /* 5.1 FINAL: missing ids return a no-op stub so one stale reference can NEVER abort the render loop */
 const f=(n,d=2)=>n==null?'—':(+n).toFixed(d);
@@ -467,7 +469,7 @@ const icon=s=>{const b=s.replace('-USD','').toLowerCase();return `<img class="ic
 async function jget(p){try{return await (await fetch(p+'?_='+Date.now(+("?v="+CACHE_BUST)))).json();}catch(e){return null;}}
 // theme
 function applyTheme(t){document.documentElement.setAttribute('data-theme',t);$('themeBtn').textContent=t==='dark'?'☀ Light':'🌙 Dark';}
-function toggleTheme(){const t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';try{localStorage.setItem('silmaril-theme',t);}catch(e){}applyTheme(t);}
+function toggleTheme(){const t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';try{localStorage.setItem('silmaril-theme',t);}catch(e){__pfail(e)}applyTheme(t);}
 applyTheme((()=>{try{return localStorage.getItem('silmaril-theme')||'light';}catch(e){return 'light';}})());
 // tabs
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
@@ -489,7 +491,7 @@ function T3(x){try{const d=(x instanceof Date)?x:new Date(x);if(isNaN(d))return 
 function T3t(x){try{const d=(x instanceof Date)?x:new Date(x);if(isNaN(d))return String(x);
   const f=tz=>d.toLocaleTimeString('en-US',{timeZone:tz,hour:'2-digit',minute:'2-digit',hour12:false});
   return f('America/Los_Angeles')+'PT·'+f('America/New_York')+'ET·'+d.toISOString().slice(11,16)+'Z';}catch(e){return String(x);}}
-function _updLastUpd(){try{var el=document.getElementById('lastUpd');if(!el)return;var g=window.__lastGen;if(!g){el.textContent='';return;}var m=(Date.now()-new Date(g).getTime())/60000;el.textContent='engine updated '+(m<1?'just now':(m<90?Math.round(m)+'m ago':(m/60).toFixed(1)+'h ago'));}catch(e){}}
+function _updLastUpd(){try{var el=document.getElementById('lastUpd');if(!el)return;var g=window.__lastGen;if(!g){el.textContent='';return;}var m=(Date.now()-new Date(g).getTime())/60000;el.textContent='engine updated '+(m<1?'just now':(m<90?Math.round(m)+'m ago':(m/60).toFixed(1)+'h ago'));}catch(e){__pfail(e)}}
 function renderClock(){_updLastUpd();const now=new Date();
   const vegas=now.toLocaleTimeString('en-US',{timeZone:'America/Los_Angeles',hour:'2-digit',minute:'2-digit',second:'2-digit'});
   const et=new Date(now.toLocaleString('en-US',{timeZone:'America/New_York'}));const day=et.getDay(),mins=et.getHours()*60+et.getMinutes();
@@ -814,12 +816,12 @@ function pnlClass(pnl,pct){
   return v==null?'dim':(v>=0?'pos':'neg');
 }
 function renderMarksHealth(){try{const mh=(typeof LIVE!=='undefined'&&LIVE&&LIVE.marks_health)?LIVE.marks_health:null;const el=$('marksHealth');if(!el)return;if(!mh){el.style.display='none';return;}
-  try{ if(mh.oscillating){ el.style.display='block'; el.innerHTML = '<b class="neg">\u26a0 '+mh.oscillating+' name(s) OSCILLATION-QUARANTINED</b> <span class="dim" style="font-size:9.5px">(two-cluster sawtooth tape \u2014 entries blocked, marks median-smoothed): '+(mh.oscillating_syms||[]).join(', ')+'</span><br>' + el.innerHTML; } }catch(e){}
+  try{ if(mh.oscillating){ el.style.display='block'; el.innerHTML = '<b class="neg">\u26a0 '+mh.oscillating+' name(s) OSCILLATION-QUARANTINED</b> <span class="dim" style="font-size:9.5px">(two-cluster sawtooth tape \u2014 entries blocked, marks median-smoothed): '+(mh.oscillating_syms||[]).join(', ')+'</span><br>' + el.innerHTML; } }catch(e){__pfail(e)}
   const bad=/DEGRADED|STALLED/.test(mh.state||'');const quiet=/QUIET/.test(mh.state||'');
   el.style.display='block';
   el.style.color=bad?'var(--neg)':(quiet?'var(--dim)':'var(--pos)');
   const _rg=(LIVE&&LIVE.regimes)||{};const _rgs=Object.entries(_rg).map(([b,r])=>b+':'+(r==='DOWNTREND'?'\ud83d\udd34':r==='UPTREND'?'\ud83d\udfe2':'\ud83d\udfe1')).join(' ');el.innerHTML='<b>ENGINE PULSE:</b> '+mh.state+(_rgs?(' \u00b7 <b>REGIMES</b> '+_rgs):'')+' · '+mh.marked+' symbols marked · '+mh.entry_warm+' entry-warm · freshest sample '+(mh.newest_sample_age_min!=null?mh.newest_sample_age_min+' min old':'—')+(mh.observed_cadence_min!=null?' · cadence '+mh.observed_cadence_min+'m'+(mh.observed_cadence_min>20?' ⚠ expect ≤15m (fallback cron armed — also fix the external pinger)':' ✔'):'')+((LIVE&&LIVE.gates_influence)?' · gates: '+LIVE.gates_influence.note:'')+(bad?' — positions and exits stay LIVE; only new entries pause. If this persists, GitHub Actions cadence has slowed.':'');
-}catch(e){}}
+}catch(e){__pfail(e)}}
 async function renderMasterDecisions(){try{const d=await jget('data/MASTER_ACCOUNT.json');const el=$('mDecBox');if(!el)return;const rows=(d&&d.decision_log_tail)||[];
   if(!rows.length){el.innerHTML='<div class=dim>no decisions yet this run — the ledger fills every cycle</div>';return;}
   const bks=['crypto','stock','metal','energy'];
@@ -828,9 +830,9 @@ async function renderMasterDecisions(){try{const d=await jget('data/MASTER_ACCOU
     const hl=r.verdict_changed?' style="background:rgba(255,220,0,.07)"':'';
     return '<tr'+hl+'><td class=dim style="font-size:10px;white-space:nowrap">'+t+'</td>'+cells+'<td style="font-size:10px">'+((r.accepted||[]).join(', ')||'<span class=dim>none — stay flat</span>')+'</td></tr>';}).join('');
   el.innerHTML='<table style="font-size:11px"><thead><tr><th>cycle</th><th>crypto</th><th>stock</th><th>metal</th><th>energy</th><th>funded</th></tr></thead><tbody>'+body+'</tbody></table>';
-}catch(e){}}
-async function applyVersion(){try{const nm=$('newsMastSub');if(nm){const now=new Date();const ed=Math.floor((now-new Date(now.getFullYear(),0,0))/86400000);nm.textContent=now.toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'})+' \u00b7 Edition #'+ed;}}catch(e){}
-try{const m=await jget('data/PROJECT_META.json');const b=$('buildStamp');if(b&&m&&m.version)b.textContent='build '+m.version;}catch(e){}}   /* 5.1B: the header is a CONSTANT — meta is a display-only build stamp; the '3.0 ghost' can never possess it again */
+}catch(e){__pfail(e)}}
+async function applyVersion(){try{const nm=$('newsMastSub');if(nm){const now=new Date();const ed=Math.floor((now-new Date(now.getFullYear(),0,0))/86400000);nm.textContent=now.toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'})+' \u00b7 Edition #'+ed;}}catch(e){__pfail(e)}
+try{const m=await jget('data/PROJECT_META.json');const b=$('buildStamp');if(b&&m&&m.version)b.textContent='build '+m.version;}catch(e){__pfail(e)}}   /* 5.1B: the header is a CONSTANT — meta is a display-only build stamp; the '3.0 ghost' can never possess it again */
 /* ---- LIVE MARKET FEED WALL — 3x3, per-tile volume, solo audio, full-screen ---- */
 const YT_FEEDS=[
  {t:'Yahoo Finance',src:'KQp-e_XQnDE'},
@@ -875,9 +877,13 @@ async function renderMV(){try{const el=$('mvBox');if(!el)return;
   if(sp)row('Stock parity audit',sp.status||('rec: '+String(sp.recommendation||'').slice(0,120)+'…'));
   if(cx)row('Complexity ledger',(cx.rows||[]).length+' subsystems · '+cx.mode);
   H+='</tbody></table>';el.innerHTML=H;
-}catch(e){}}
+}catch(e){__pfail(e)}}
+// 7.0 FINAL (H1): the files map was scoped INSIDE renderBrain, so renderQuestions/renderGeometry/
+// renderSizerStrip/renderCalibration/renderDataLedger threw ReferenceError on files.* and their
+// empty catches left 'loading' forever — the Governor/Interrogator/Calibration/Data-Ledger bug.
+// Hoisted to module scope: every render now sees one shared map.
+const files={cat:'data/PARAM_CATALOG.json',gates:'data/FEATURE_GATES_STATUS.json',reg:'data/REGIME_CLASSIFIER.json',ma:'data/MASTER_ACCOUNT.json',lop:'data/LIVE_ORDERS_PREVIEW.json',lbc:'data/strategy_leaderboard_crypto.json',wide:'data/strategy_leaderboard_wide_crypto.json',holds:'data/strategy_leaderboard_holds_crypto.json',trace:'data/DECISION_TRACE.json',news:'data/NEWS_TRIAL_STATUS.json',wipe:'data/WIPE_MARKER.json',pr:'data/PEAK_RHYTHM.json',ov:'data/CHART_OVERLAYS.json',ml:'data/MASTER_LEDGER.json',dv:'data/DISCOVERY.json',vr:'data/VENUE_REALITY.json',rq:'data/RECONCILIATION.json',ge:'data/GEOMETRY.json',sz:'data/SIZER.json',cb:'data/CALIBRATION.json',es:'data/EDGE_SURFACE.json',qe:'data/QUESTIONS.json',dl:'data/DATA_LEDGER.json'};
 async function renderBrain(){const el=$('brainBox');if(!el)return;
-  const files={cat:'data/PARAM_CATALOG.json',gates:'data/FEATURE_GATES_STATUS.json',reg:'data/REGIME_CLASSIFIER.json',ma:'data/MASTER_ACCOUNT.json',lop:'data/LIVE_ORDERS_PREVIEW.json',lbc:'data/strategy_leaderboard_crypto.json',wide:'data/strategy_leaderboard_wide_crypto.json',holds:'data/strategy_leaderboard_holds_crypto.json',trace:'data/DECISION_TRACE.json',news:'data/NEWS_TRIAL_STATUS.json',wipe:'data/WIPE_MARKER.json',pr:'data/PEAK_RHYTHM.json',ov:'data/CHART_OVERLAYS.json',ml:'data/MASTER_LEDGER.json',dv:'data/DISCOVERY.json',vr:'data/VENUE_REALITY.json',rq:'data/RECONCILIATION.json',ge:'data/GEOMETRY.json',sz:'data/SIZER.json',cb:'data/CALIBRATION.json',es:'data/EDGE_SURFACE.json',qe:'data/QUESTIONS.json',dl:'data/DATA_LEDGER.json'};
   const D={};await Promise.all(Object.entries(files).map(([k,u])=>jget(u).then(v=>D[k]=v).catch(()=>D[k]=null)));
   const ageMin=o=>{const g=o&&(o.generated_at||o.wiped_at);if(!g)return null;return (Date.now()-new Date(g).getTime())/60000;};
   const light=(a,w,b)=>a==null?'⚪':a<=w?'🟢':a<=b?'🟡':'🔴';
@@ -916,7 +922,7 @@ async function bnbEligibility(){try{const el=$('bnbWhy');const btn=$('bnbBtn');i
     else probs.push('no equity snapshots yet');}catch(e){probs.push('no equity snapshots yet');}
   if(!probs.length){btn.disabled=false;btn.style.opacity='1';btn.style.cursor='pointer';btn.textContent='Connect Binance.US — ELIGIBLE';el.innerHTML='<span class=pos>Conditions met — the switch lives in PARAM_CATALOG.live_output.</span>';}
   else el.innerHTML='LOCKED: '+probs.join(' \u00b7 ');
-}catch(e){}}
+}catch(e){__pfail(e)}}
 async function renderWarmup(){try{const el=$('warmupPanel');if(!el)return;
   const L=(typeof LIVE!=='undefined'&&LIVE)||{};const mh=L.marks_health||{};
   const warm=mh.entry_warm||0;const need=24;  // strict warmup points
@@ -932,7 +938,7 @@ async function renderWarmup(){try{const el=$('warmupPanel');if(!el)return;
     return '<tr><td><b>'+b.toUpperCase()+'</b></td><td class="'+col+'" style="font-size:11px">'+state+'</td></tr>';}).join('');
   el.innerHTML='<div class="hd" style="font-size:12px">\u23f3 FIRST-TRADE READINESS \u2014 why each book is or isn\u2019t trading right now</div>'
     +'<div class="bd"><table style="font-size:11px"><tbody>'+rows+'</tbody></table></div>';
-}catch(e){}}
+}catch(e){__pfail(e)}}
 async function renderMasterReject(){try{const el=$('masterRejectPanel');if(!el)return;
   const d=await jget('data/MASTER_ACCOUNT.json').catch(()=>null);
   const led=(d&&d.decision_log_tail)||[];
@@ -947,14 +953,14 @@ async function renderMasterReject(){try{const el=$('masterRejectPanel');if(!el)r
   el.innerHTML='<div class="hd" style="font-size:12px">\u2696\ufe0f MASTER ACCEPT / REJECT LEDGER \u2014 confidence vs the 90 gate, every cycle</div>'
     +'<div class="bd"><div class=dim style="font-size:10px;margin-bottom:3px">the Master funds a book ONLY at confidence \u2265 gate AND regime not red. \u2713 = funded \u00b7 number = confidence/gate \u00b7 regime\u2715 = blocked by red tape. This is separate from the four books\u2019 own trading.</div>'
     +'<table style="font-size:11px"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table></div>';
-}catch(e){}}
+}catch(e){__pfail(e)}}
 async function renderFunnel(){try{const el=$('funnelPanel');if(!el)return;const L=(typeof LIVE!=='undefined'&&LIVE)||{};
   const rows=['crypto','stock','metal','energy','aggressive'].map(b=>{const f=((L[b]||{}).funnel)||null;const _lbl=(b==='aggressive'?'🦎 GEKKO':b.toUpperCase());
     if(!f)return '<tr><td><b>'+_lbl+'</b></td><td class=dim>—</td></tr>';
     const rej=Object.entries(f.rejections||{}).map(([k,n])=>k+(n>1?' ×'+n:'')).join(' · ');
     return '<tr><td><b>'+_lbl+'</b></td><td style="font-size:10px">seen '+f.seen+' → warm '+f.entry_warm+' → candidates '+f.candidates_after_gates+' → <b class="'+(f.bought?'pos':'dim')+'">bought '+f.bought+'</b>'+(rej?'<div class=dim>blocked: '+rej+'</div>':'')+'</td></tr>';}).join('');
   el.innerHTML='<div class="hd" style="font-size:12px">🔬 UNIVERSE FUNNEL — scanned → warm → candidates → bought, with every rejection named</div><div class="bd"><table style="font-size:11px"><tbody>'+rows+'</tbody></table></div>';
-}catch(e){}}
+}catch(e){__pfail(e)}}
 async function renderFive(){const el=$('fiveStrip');if(!el)return;
   const bn=await jget('data/BENCH_BOOKS.json'),cs=await jget('data/UNIVERSE_CENSUS.json'),sc=await jget('data/STORE_CONTRACTS.json'),iv=await jget('data/INVARIANTS.json'),ut=await jget('data/CHAMPION_UTILIZATION.json'),cd=await jget('data/CONDUCTOR_STATE.json'),ro=await jget('data/RESEARCH_OS.json'),fpr=await jget('data/FINGERPRINTS.json'),cat=await jget('data/PARAM_CATALOG.json'),mtfS=await jget('data/MTF_REGIME.json'),c1S=await jget('data/CONDUCTOR_C1.json'),rcS=await jget('data/CONDUCTOR_REPORT_CARD.json');
   const L=LIVE||{};const rows=[];
@@ -992,7 +998,7 @@ async function renderGekkoNote(){try{const el=$('gekkoNote');if(!el)return;const
   el.innerHTML='<div class="hd" style="font-size:12px">🦎 GEKKO + JUNE-30 PROFILE — aggression, governed</div><div class="bd" style="font-size:11px">'
    +'<b style="color:#e0b341">GEKKO</b> ('+(g.name||'GEKKO')+') runs a 5th independent $10k book on the crypto universe at <b>'+((g.entry||0.02)*100)+'% dip → +'+((g.target||0.02)*100)+'%</b> — same rails (integrity quarantine · knife veto · heatshield floor · fee-honesty), <b>never Master-funded</b>, excluded from champion governance. It chases the low-hanging fruit AND manufactures execution evidence for the governed books.'
    +'<div class=dim style="margin-top:3px">June-30 profile live on the main crypto book via regime_overrides: SIDEWAYS buys '+((sw.entry||0.03)*100)+'% dips → +'+((sw.target||0.03)*100)+'% (the setting behind the 33/35-win day). The fee-honest engine auto-vetoes anything that can\'t clear round-trip costs.</div></div>';
-}catch(e){}}
+}catch(e){__pfail(e)}}
 async function renderQuarantine(){try{const el=$('quarPanel');if(!el)return;const d=await jget('data/INTEGRITY_QUARANTINE.json').catch(()=>null);
   if(!d){el.innerHTML='';return;}
   const ents=d.entries||[];const hard=ents.filter(e=>e.quarantine);const twins=hard.filter(e=>e.check==='duplicate_symbol');
@@ -1004,7 +1010,7 @@ async function renderQuarantine(){try{const el=$('quarPanel');if(!el)return;cons
       +(twins.length?('<div class=dim style="font-size:10px;margin-top:3px">'+twins.length+' non-canonical twins (e.g. RADUSD vs RAD-USD) auto-quarantined — the canonical name stays fully tradable; the engine never traded these keys. Housekeeping, not a fault.</div>'):'');}
   if(adv)msg+='<div class=dim style="font-size:10px">'+adv+' advisory note(s) (frozen-then-jump ghosts — already excluded by the freshness filter)</div>';
   el.innerHTML='<div class="hd" style="font-size:12px">🧪 DATA INTEGRITY — Law 2: integrity before learning</div><div class="bd">'+msg+'</div>';
-}catch(e){}}
+}catch(e){__pfail(e)}}
 async function renderWiring(){try{const el=$('wiringPanel');if(!el)return;
   // read each system's output file freshness → GREEN wired+fresh, YELLOW stale, GRAY not producing
   const checks=[['Regime classifier','data/REGIME_CLASSIFIER.json',30],['Master gate/ledger','data/MASTER_ACCOUNT.json',30],
@@ -1022,7 +1028,7 @@ async function renderWiring(){try{const el=$('wiringPanel');if(!el)return;
   el.innerHTML='<div class="hd" style="font-size:12px">\ud83d\udd0c WIRING AUDIT \u2014 is every system actually producing fresh output?</div>'
     +'<div class="bd"><div class=dim style="font-size:10px;margin-bottom:3px">\ud83d\udfe2 wired + fresh \u00b7 \ud83d\udfe1 wired but stale \u00b7 \u26aa not producing yet (needs trades/data). This is the "is it actually on?" check for every subsystem.</div>'
     +'<table style="font-size:11px"><tbody>'+rows+'</tbody></table></div>';
-}catch(e){}}
+}catch(e){__pfail(e)}}
 function svgSpark(d,w,h){try{
   var ser=(d.series||[]);if(ser.length<2)return '<div class="dim" style="padding:20px">tape too thin</div>';
   var ts=ser.map(function(r){return new Date(r[0]).getTime();});
@@ -1135,41 +1141,41 @@ async function renderBrain(){try{
       +opens.map(function(d){var u=(d.mark&&d.entry)?((d.mark/d.entry-1)*100):null;
         return '<div style="background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px"><div style="display:flex;justify-content:space-between;font-size:11px"><b>'+d.sym.replace('-USD','')+'</b><span class="dim">'+(d.book||'')+'</span><b class="'+((u||0)>=0?'pos':'neg')+'">'+(u!=null?(u>=0?'+':'')+u.toFixed(2)+'%':'')+'</b></div>'+svgSpark(d,250,100)+'</div>';}).join('')+'</div>';}
   }
-}catch(e){}}
+}catch(e){__pfail(e)}}
 
 async function openSleeve(bk,sk){try{const d=await jget('data/STRATEGY_LAB.json');const sv=(d.sleeves||{})[bk+':'+sk]||{};const tr=(sv.trades||[]).slice(-60).reverse();
   $('modal').style.display='block';$('modalTitle').innerHTML='\ud83e\uddea '+bk.toUpperCase()+' \u00b7 sleeve '+sk+' \u2014 full ledger (simulated)';
   $('modalThesis').textContent='every synthetic trade, timestamped \u2014 the transparency law (M6). wipe_epoch '+(d.wipe_epoch||'\u2014')+' \u00b7 trades since wipe '+(sv.trades?sv.trades.length:0);
   $('chartHost').innerHTML='<table><thead><tr><th>when (UTC)</th><th>side</th><th>sym</th><th>style</th><th>wager</th><th>pnl</th><th>net%</th><th>why</th></tr></thead><tbody>'
     +(tr.length?tr.map(function(t){return '<tr><td class="dim" style="font-size:9px">'+String(t.t||'').replace('T',' ').slice(0,19)+'</td><td>'+t.side+'</td><td>'+t.sym+'</td><td>'+(t.style||'')+'</td><td>'+(t.wager_usd?('$'+t.wager_usd):'')+'</td><td class="'+((t.pnl||0)>=0?'pos':'neg')+'">'+(t.pnl!=null?('$'+t.pnl):'')+'</td><td>'+(t.realized_pct!=null?t.realized_pct+'%':'')+'</td><td class="dim" style="font-size:9px">'+(t.why||'')+' \u00b7 simulated</td></tr>';}).join(''):'<tr><td colspan="8" class="dim">no trades yet \u2014 gates armed, pool pending</td></tr>')
-    +'</tbody></table>';$('mStats').textContent='';}catch(e){}}
+    +'</tbody></table>';$('mStats').textContent='';}catch(e){__pfail(e)}}
 async function renderQuestions(){try{const el=$('questBody');if(!el)return;const d=await jget(files.qe);if(!d){el.textContent='first cycle pending';return;}
   const col={PASS:'pos',WATCH:'',FAIL:'neg',PENDING:'dim'};const sc=d.score||{};
   el.innerHTML='<div style="margin-bottom:8px"><b style="font-size:14px;color:'+(d.verdict==='TOWARD-EDGE'?'#00b894':(d.verdict==='AWAY-FROM-EDGE'?'#d63031':'#fdcb6e'))+'">'+d.verdict+'</b> · '+(sc.pass||0)+'✓ '+(sc.watch||0)+'~ '+(sc.fail||0)+'✗ '+(sc.pending||0)+'…</div>'
    +'<table><tbody>'+(d.questions||[]).map(function(q){return '<tr><td style="width:16px" class="'+(col[q.status]||'')+'"><b>'+(q.status==='PASS'?'✓':q.status==='FAIL'?'✗':q.status==='WATCH'?'~':'…')+'</b></td><td style="font-size:10px">'+q.q+'</td><td class="dim" style="font-size:9px">'+q.evidence+'</td></tr>';}).join('')+'</tbody></table>'
-   +'<div class="dim" style="font-size:9px;margin-top:6px">every answer carries its number — the composite decides TOWARD or AWAY. Nothing here trades; everything here judges.</div>';}catch(e){}}
+   +'<div class="dim" style="font-size:9px;margin-top:6px">every answer carries its number — the composite decides TOWARD or AWAY. Nothing here trades; everything here judges.</div>';}catch(e){__pfail(e)}}
 async function renderGeometry(){try{const el=$('geoBody');if(!el)return;const d=await jget(files.ge);if(!d){el.textContent='first cycle pending';return;}
   const c=d.counts||{};
   el.innerHTML='<div style="margin-bottom:6px"><b class="pos">'+(c.TRADEABLE||0)+' TRADEABLE</b> · <span class="neg">'+(c['UNTRADEABLE:geometry']||0)+' geometry-locked</span> · <span class="neg">'+(c['UNTRADEABLE:evidence']||0)+' evidence-short</span> · <span class="dim">'+(c['STAND-DOWN']||0)+' stand-down</span> — of '+(d.n||0)+' fitted names</div>'
    +((d.most_winnable&&d.most_winnable.length)?('<table><thead><tr><th>most winnable now</th><th>p* (needs)</th><th>floor (proven)</th><th>gap</th><th>evidence</th></tr></thead><tbody>'+d.most_winnable.map(function(r){var gap=((r.p_floor_pct||0)-(r.p_star_pct||0)).toFixed(1);return '<tr><td><b>'+r.sym+'</b></td><td>'+r.p_star_pct+'%</td><td class="pos">'+r.p_floor_pct+'%</td><td class="pos">+'+gap+'</td><td class="dim" style="font-size:9px">'+r.evidence+'</td></tr>';}).join('')+'</tbody></table>'):'')
-   +'<div class="dim" style="font-size:9px;margin-top:6px">p* = (stop+fee)/(target+stop) — the win rate a trade DEMANDS. floor = Wilson bound of proven wins (own record ∪ cluster prior, weight stated). If the math demands more than the evidence delivers, the trade does not happen (Laws 21/22). Sleeve G trades ONLY this list.</div>';}catch(e){}}
+   +'<div class="dim" style="font-size:9px;margin-top:6px">p* = (stop+fee)/(target+stop) — the win rate a trade DEMANDS. floor = Wilson bound of proven wins (own record ∪ cluster prior, weight stated). If the math demands more than the evidence delivers, the trade does not happen (Laws 21/22). Sleeve G trades ONLY this list.</div>';}catch(e){__pfail(e)}}
 async function renderSizerStrip(){try{const el=$('szBody');if(!el)return;const d=await jget(files.sz);if(!d){el.textContent='first cycle pending';return;}
   const f=d.factor||{};const clr=d.state==='GREEN'?'#00b894':(d.state==='AMBER'?'#fdcb6e':'#d63031');
   el.innerHTML='<b style="color:'+clr+';font-size:13px">'+d.state+'</b> · wager ×<b>'+d.mult+'</b> · drawdown <b class="'+((d.dd_pct||0)>=0?'pos':'neg')+'">'+d.dd_pct+'%</b> (peak $'+(d.peak||'—')+') · today <b class="'+((d.realized_today||0)>=0?'pos':'neg')+'">$'+d.realized_today+'</b> · streak '+(d.streak_losses||0)+'L'
    +' · crypto-factor <b class="'+(f.over?'neg':'pos')+'">'+(f.used_pct||0)+'%/'+(f.cap_pct||0)+'%</b>'+(f.over?' <b class="neg">ONE-FACTOR LAW: new crypto adds refused</b>':'')
    +((d.breakers&&d.breakers.length)?('<div class="neg" style="font-size:10px;margin-top:4px">⛔ '+d.breakers.join(' · ')+'</div>'):'')
-   +'<div class="dim" style="font-size:9px;margin-top:4px">'+((d.ladder||{}).GREEN||'')+' │ '+((d.ladder||{}).AMBER||'')+' │ '+((d.ladder||{}).RED||'')+' — pre-registered, no discretion (Law 24)</div>';}catch(e){}}
+   +'<div class="dim" style="font-size:9px;margin-top:4px">'+((d.ladder||{}).GREEN||'')+' │ '+((d.ladder||{}).AMBER||'')+' │ '+((d.ladder||{}).RED||'')+' — pre-registered, no discretion (Law 24)</div>';}catch(e){__pfail(e)}}
 async function renderCalibration(){try{const el=$('calBody');if(!el)return;const d=await jget(files.cb);if(!d){el.textContent='first cycle pending';return;}
   const stc=d.status==='CALIBRATED'?'pos':(d.status==='QUARANTINED'?'neg':'dim');
   el.innerHTML='<div><b class="'+stc+'" style="font-size:13px">'+(d.status||'UNPROVEN')+'</b> · n='+(d.n||0)+(d.brier!=null?(' · Brier <b>'+d.brier+'</b> (coin-flip 0.25)'):'')+(d.worst_decile_error!=null?(' · worst decile err '+d.worst_decile_error):'')+'</div>'
    +((d.deciles&&d.deciles.length)?('<table style="margin-top:4px"><thead><tr><th>we said</th><th>we won</th><th>n</th><th>|err|</th></tr></thead><tbody>'+d.deciles.map(function(r){return '<tr><td>'+r.said_pct+'%</td><td>'+r.won_pct+'%</td><td>'+r.n+'</td><td class="'+((r.abs_err||0)>0.2?'neg':'')+'">'+(r.abs_err!=null?r.abs_err:'—')+'</td></tr>';}).join('')+'</tbody></table>'):'<div class="dim" style="font-size:10px;margin-top:4px">'+(d.note||'fills as predicted trades close')+'</div>')
-   +'<div class="dim" style="font-size:9px;margin-top:6px">'+(d.teeth||'QUARANTINE strips gating authority (Law 23)')+'</div>';}catch(e){}}
+   +'<div class="dim" style="font-size:9px;margin-top:6px">'+(d.teeth||'QUARANTINE strips gating authority (Law 23)')+'</div>';}catch(e){__pfail(e)}}
 async function renderDataLedger(){try{const el=$('dlBody');if(!el)return;const d=await jget(files.dl);if(!d){el.textContent='first cycle pending';return;}
   el.innerHTML='<div>live <b>'+(d.live_stores||0)+'</b> stores · <b>'+(d.live_mb||0)+' MB</b> — archive <b>'+(d.archive_files||0)+'</b> files · <b>'+(d.archive_mb||0)+' MB</b> (gzip)</div>'
    +'<div class="dim" style="font-size:9px;margin-top:4px">top: '+((d.top_stores||[]).slice(0,6).map(function(x){return x.name+' '+x.kb+'kb';}).join(' · '))+'</div>'
-   +'<div class="dim" style="font-size:9px;margin-top:4px">'+(d.law_26||'')+' — small repo = COMPRESSED history, never discarded.</div>';}catch(e){}}
+   +'<div class="dim" style="font-size:9px;margin-top:4px">'+(d.law_26||'')+' — small repo = COMPRESSED history, never discarded.</div>';}catch(e){__pfail(e)}}
 async function renderDSR(){try{const el=$('dsrLine');if(!el)return;const g=await jget('data/CHAMPION_GOVERNANCE.json');const d=(g||{}).dsr;if(!d)return;
-  el.innerHTML=' · DSR (selection-bias haircut, '+(d.trials||316)+' trials): <b class="'+(d.verdict==='POSITIVE'?'pos':(d.verdict==='INSUFFICIENT'?'dim':'neg'))+'">'+(d.value!=null?d.value:d.verdict)+'</b>'+(d.raw_sr!=null?(' (raw SR '+d.raw_sr+', null-max '+d.expected_max_null+', n='+d.n+')'):' — '+(d.note||''));}catch(e){}}
+  el.innerHTML=' · DSR (selection-bias haircut, '+(d.trials||316)+' trials): <b class="'+(d.verdict==='POSITIVE'?'pos':(d.verdict==='INSUFFICIENT'?'dim':'neg'))+'">'+(d.value!=null?d.value:d.verdict)+'</b>'+(d.raw_sr!=null?(' (raw SR '+d.raw_sr+', null-max '+d.expected_max_null+', n='+d.n+')'):' — '+(d.note||''));}catch(e){__pfail(e)}}
 async function renderMasterBrainPanel(){try{const el=$('mbrainBody');if(!el)return;const ma=await jget('data/MASTER_ACCOUNT.json');const ml=await jget('data/MASTER_LEDGER.json');
   const cy=(ml&&ml.cycles&&ml.cycles.length)?ml.cycles[ml.cycles.length-1]:null;
   let H='<div style="margin-bottom:8px"><b style="font-size:15px">$'+(ma.equity!=null?ma.equity.toFixed(2):'—')+'</b> <span class="'+((ma.return_pct||0)>=0?'pos':'neg')+'">'+((ma.return_pct||0)>=0?'+':'')+(ma.return_pct||0)+'%</span> · <b class="pos">USD RESERVE $'+((ma.usd_reserve||0).toFixed(2))+'</b> (vaulted, non-spendable) · '+(ma.status||'')+' · '+(ma.trades_count||0)+' closed'+(ma.win_rate_pct!=null?(' ('+ma.win_rate_pct+'% win)'):'')+'</div>';
@@ -1179,14 +1185,14 @@ async function renderMasterBrainPanel(){try{const el=$('mbrainBody');if(!el)retu
       +(acc.length?acc.map(function(x){return '<b>'+x.sym+'</b> '+x.why;}).join('<br>'):((b.rejected_top&&b.rejected_top[0])?('<span class="dim">'+b.rejected_top[0].sym+': '+b.rejected_top[0].why+'</span>'):'<span class="dim">no fresh candidates</span>'))
       +(b.struck?('<br><b class="pos">⚡ STRIKE '+b.struck+'</b>'):'')+'</td></tr>';}).join('')+'</tbody></table>';}
   H+='<div class="dim" style="font-size:9px;margin-top:6px">every verdict — accept AND reject — lands in MASTER_LEDGER.json + MASTER_DECISION_LEDGER.jsonl. gate = top-'+(100-((await jget('data/PARAM_CATALOG.json')).master_brain||{}).gate_pct||20)+'% percentile of live card scores (Law 18). KILL: master_brain.mode:"off".</div>';
-  el.innerHTML=H;}catch(e){}}
+  el.innerHTML=H;}catch(e){__pfail(e)}}
 async function renderDiscovery(){try{const el=$('discBody');if(!el)return;const d=await jget('data/DISCOVERY.json');if(!d){el.textContent='first cycle pending';return;}
   const g=d.graveyard||{},c=d.counterfactual||{};
   el.innerHTML='<div><b>GRAVEYARD</b> '+(g.buried_total||0)+' buried · '+(g.resolved_this_cycle||0)+' resolved this cycle'
    +((g.top_missed_by_reason&&g.top_missed_by_reason.length)?('<table style="margin-top:4px"><thead><tr><th>rejection reason</th><th>n</th><th>avg would-have (gross, +24h)</th></tr></thead><tbody>'+g.top_missed_by_reason.map(function(r){return '<tr><td style="font-size:9.5px">'+r.reason+'</td><td>'+r.n+'</td><td class="'+(r.avg_would_gross_pct>=0?'pos':'neg')+'">'+r.avg_would_gross_pct+'%</td></tr>';}).join('')+'</tbody></table>'):'<span class="dim"> · resolutions mature at +24h/+7d</span>')
    +'</div><div style="margin-top:8px"><b>COUNTERFACTUAL</b> '+(c.trades_analyzed||0)+' trades shadowed · limit-at-target vs actual: <b class="'+((c.avg_delta_limit_vs_actual_pct||0)>=0?'pos':'neg')+'">'+(c.avg_delta_limit_vs_actual_pct!=null?c.avg_delta_limit_vs_actual_pct+'%':'—')+'</b> · held+4h vs actual: <b class="'+((c.avg_delta_held4h_vs_actual_pct||0)>=0?'pos':'neg')+'">'+(c.avg_delta_held4h_vs_actual_pct!=null?c.avg_delta_held4h_vs_actual_pct+'%':'—')+'</b></div>'
-   +'<div class="dim" style="font-size:9px;margin-top:6px">the Master learns POLICY, not trades — every alternate is computed from the recorded tape, never synthesized. KILL: discovery.mode:"off".</div>';}catch(e){}}
-async function renderStrategyLab(){try{const el=$('slabBody');if(!el)return;try{const _ml=await jget('data/MASTER_LEDGER.json');window.__MLED=(_ml&&_ml.cycles&&_ml.cycles.length)?_ml.cycles[_ml.cycles.length-1]:null;}catch(e){}
+   +'<div class="dim" style="font-size:9px;margin-top:6px">the Master learns POLICY, not trades — every alternate is computed from the recorded tape, never synthesized. KILL: discovery.mode:"off".</div>';}catch(e){__pfail(e)}}
+async function renderStrategyLab(){try{const el=$('slabBody');if(!el)return;try{const _ml=await jget('data/MASTER_LEDGER.json');window.__MLED=(_ml&&_ml.cycles&&_ml.cycles.length)?_ml.cycles[_ml.cycles.length-1]:null;}catch(e){__pfail(e)}
   const d=await jget('data/STRATEGY_LAB.json');
   if(!d||!d.by_industry){el.textContent='lab initializing\u2026';return;}
   var order=['crypto','stock','metal','energy'];
@@ -1197,7 +1203,7 @@ async function renderStrategyLab(){try{const el=$('slabBody');if(!el)return;try{
     +'<table><thead><tr><th>sleeve</th><th>cap</th><th>return</th><th>\u0394 vs HODL</th><th>vault</th><th>harvest view (work \u2502 reserve)</th><th>open/closed</th><th>win%</th><th>max DD</th></tr></thead><tbody>'
     +rows.map(function(r){var dv=r.delta_vs_hodl;return '<tr style="cursor:pointer" onclick="openSleeve(\''+bk+'\',\''+r.sleeve+'\')"><td><b>'+r.sleeve+'</b> '+r.name+'<div class="dim" style="font-size:8.5px;max-width:340px">'+r.desc+'</div></td><td>'+r.cap+(r.sleeve==='E'?'+2\u26a1':'')+'</td><td class="'+(r.return_pct>=0?'pos':'neg')+'">'+(r.return_pct>=0?'+':'')+r.return_pct+'%</td><td>'+(dv==null?'\u2014':('<span class="'+(dv>=0?'pos':'neg')+'">'+(dv>=0?'+':'')+dv+'%</span>'))+'</td><td>'+(r.vault_usd?('<b class="pos">$'+r.vault_usd.toFixed(2)+'</b>'):'\u2014')+'</td><td class="dim" style="font-size:9px">'+(r.harvest_view?('$'+r.harvest_view.working_usd.toFixed(0)+' \u2502 <b class="pos">$'+r.harvest_view.reserve_usd.toFixed(2)+'</b>'):'\u2014')+'</td><td>'+r.open+'/'+r.closed+'</td><td>'+(r.win_rate==null?'\u2014':r.win_rate+'%')+'</td><td class="neg">'+r.max_dd_pct+'%</td></tr>';}).join('')
     +'</tbody></table>';}).join('');
-}catch(e){}}
+}catch(e){__pfail(e)}}
 
 async function renderConfidence(){try{const el=$('confBody');if(!el)return;const d=await jget('data/CONFIDENCE_ENGINE.json');if(!d||!d.by_symbol){el.textContent='confidence engine warming…';return;}
   const rl=(d.rhythm_tradeable_leaders||[]).slice(0,10).map(function(x){return '<tr><td><b>'+x[0].replace('-USD','')+'</b></td><td class="pos">'+(x[1]*100).toFixed(0)+'%</td><td>'+(x[2]?Math.round(x[2])+'m':'\u2014')+'</td><td>'+(x[3]||0).toFixed(1)+'%</td></tr>';}).join('');
@@ -1209,7 +1215,7 @@ async function renderConfidence(){try{const el=$('confBody');if(!el)return;const
     +'<table><thead><tr><th>name</th><th>rhythm</th><th>cycle</th><th>swing</th></tr></thead><tbody>'+rl+'</tbody></table>'
     +'<div style="font-weight:700;font-size:11px;margin:10px 0 4px">TOP CONFIDENCE BY CLASS</div>'+classRows
     +'<div class="dim" style="font-size:9.5px;margin-top:8px">each component earns its weight forward \u2014 high confidence is a hypothesis until the record proves it wins more.</div>';
-}catch(e){}}
+}catch(e){__pfail(e)}}
 async function renderRegimePanel(){try{const d=await jget('data/REGIME_CLASSIFIER.json');const el=$('regimePanel');if(!el||!d||!d.by_book)return;
   const dot=r=>r==='UPTREND'?'\ud83d\udfe2':r==='DOWNTREND'?'\ud83d\udd34':r==='NO DATA'?'\u26aa':'\ud83d\udfe1';
   const sgn=v=>v==null?'\u2014':(v>=0?'+':'')+v+'%';
@@ -1227,7 +1233,7 @@ async function renderRegimePanel(){try{const d=await jget('data/REGIME_CLASSIFIE
   el.innerHTML='<div class="hd" style="font-size:12px">\ud83e\udde0 LIVE REGIME \u2014 intraday-only, multi-timeframe (updates every cycle)</div>'
     +'<div class="bd"><div class=dim style="font-size:10px;margin-bottom:3px">headline = 6h intraday trend \u00b7 1h = fast shift trigger \u00b7 daily-backfill candles excluded (the bug that made green days read red)</div>'
     +'<table style="font-size:11px"><tbody>'+rows+'</tbody></table></div>';
-}catch(e){}}
+}catch(e){__pfail(e)}}
 async function renderDeniedPanel(){try{const el=$('deniedPanel');if(!el)return;
   const bks=['crypto','stock','metal','energy'];const L=(typeof LIVE!=='undefined'&&LIVE)||{};
   const rows=[];
@@ -1239,10 +1245,10 @@ async function renderDeniedPanel(){try{const el=$('deniedPanel');if(!el)return;
   el.innerHTML='<div class="hd" style="font-size:12px">\ud83d\udeab DENIED THIS CYCLE \u2014 what the engine looked at and refused, in plain words</div>'
     +'<div class="bd"><div class=dim style="font-size:10px;margin-bottom:3px">the honest reasons from the live 4-book engine (falling-knife veto, regime gate, floor, stock long-term law, etc). Empty = it acted on everything it saw.</div>'
     +'<table style="font-size:11px"><tbody>'+rows.join('')+'</tbody></table></div>';
-}catch(e){}}
+}catch(e){__pfail(e)}}
 async function renderEngStrip(){try{const el=$('engStrip');if(!el)return;
   const cat=await jget('data/PARAM_CATALOG.json').catch(()=>({}));
-  let regs={};try{const _rc=await jget('data/REGIME_CLASSIFIER.json');regs=(_rc&&_rc.by_book)||{};}catch(e){}
+  let regs={};try{const _rc=await jget('data/REGIME_CLASSIFIER.json');regs=(_rc&&_rc.by_book)||{};}catch(e){__pfail(e)}
   const bks=['crypto','stock','metal','energy'];
   const CH={};await Promise.all(bks.map(b=>jget('data/champion_'+b+'.json').then(v=>CH[b]=v).catch(()=>CH[b]=null)));
   el.innerHTML=bks.map(b=>{const c=CH[b]||{};const lp=c.live_params||{};const fm=((cat.floor_min||{})[b]||0);
@@ -1255,7 +1261,7 @@ async function renderEngStrip(){try{const el=$('engStrip');if(!el)return;
       +' \u00b7 gate '+gate+(blocked?' <b style="color:var(--neg)">\u2192 NEW ENTRIES BLOCKED (A/B logging)</b>':'')
       +tf+' <span class=dim>('+(c.champion||'no champion yet')+')</span>';
   }).join('<br>');
-}catch(e){}}
+}catch(e){__pfail(e)}}
 var _mlogPage=0, _mlogData=null;
 function _mlogRender(){const d=_mlogData;if(!d||!d.trades){$('mlogBox').innerHTML='<div class=dim>no data</div>';return;}
   const ps=d.page_size||100, pages=Math.max(1,Math.ceil(d.trades.length/ps));
@@ -1441,7 +1447,7 @@ function renderReady(cv){
     $('readyFill').style.width='2%';
     jget(files.wipe).then(function(_w){try{if(_w&&_w.wiped_at){var _dd=Math.max(0,Math.floor((Date.now()-new Date(_w.wiped_at).getTime())/86400000));
       rl.innerHTML='<b>0/100</b> forward trades · <b>'+_dd+'/90</b> unbroken days — score <b>0</b> (fills as the champion validates)';
-      $('readyFill').style.width=Math.max(2,Math.round(_dd/90*50))+'%';}}catch(e){}});return;}
+      $('readyFill').style.width=Math.max(2,Math.round(_dd/90*50))+'%';}}catch(e){__pfail(e)}});return;}
   const row=(cv.strategies||[]).find(r=>r.strategy===cv.declared_champion)||{},sv=row.survivability||{},n=row.n||0;
   const NUM=x=>(typeof x==='number'&&isFinite(x))?x:0;   /* 5.11: post-wipe nulls → NaN score → 'READINESS NaN%'. Every metric is now numeric-or-zero. */
   const tradeGate=Math.min(n/100,1);
@@ -1524,21 +1530,21 @@ async function renderForensics(){
     const rows=Object.entries(b.by_regime||{}).filter(([m,v])=>v.overall).sort((a,c)=>a[1].overall.avg_ret_pct-c[1].overall.avg_ret_pct).map(([m,v])=>`<tr><td>${m}</td><td>${v.overall.trades}</td><td class="${v.overall.avg_ret_pct>=0?'pos':'neg'}">${v.overall.avg_ret_pct>=0?'+':''}${v.overall.avg_ret_pct}%</td><td>${v.overall.win_pct}%</td></tr>`).join('');
     html+=`<div class="dim" style="font-size:11px;margin-top:6px">◆ ${bk.toUpperCase()} — now: <b>${cr.market}</b>/${cr.vol} (trend ${cr.trend_24h_pct}%, breadth ${cr.breadth_up_pct}%)</div>
       <table><thead><tr><th>Regime at entry</th><th>Trades</th><th>Avg return</th><th>Win%</th></tr></thead><tbody>${rows||'<tr><td colspan=4 class=dim>accumulating</td></tr>'}</tbody></table>`;}
-    $('regimeBox').innerHTML=html;}}catch(e){}
+    $('regimeBox').innerHTML=html;}}catch(e){__pfail(e)}
   try{const oa=await jget('data/OPPORTUNITY_AUDIT.json');if(oa&&oa.books){const fr=(bk)=>{const b=oa.books[bk]||{},f=b.funnel||{};return `<tr><td>${bk.toUpperCase()}</td><td>${b.universe}</td><td class="${f.discovered_qualified>0?'pos':'dim'}">${f.discovered_qualified}</td><td>${f.tradeable_now}</td><td>${f.rejected_capacity}</td><td>${f.rejected_not_fresh}</td><td>${f.ignored_insufficient_drop}</td></tr>`;};
     const ex=oa.examples||{};const exRows=Object.keys(ex).filter(k=>ex[k].decision!=='not_in_universe').map(k=>`<div class="note">${k}: <b>${ex[k].decision}</b> — ${ex[k].reason}</div>`).join('');
-    $('oppAudit').innerHTML=`<table><thead><tr><th>Book</th><th>Universe</th><th>Qualified</th><th>Tradeable</th><th>Capacity-cut</th><th>Not fresh</th><th>No drop</th></tr></thead><tbody>${fr('crypto')}${fr('stock')}</tbody></table><div class="note" style="margin-top:6px"><b>Sample "why did we miss":</b></div>${exRows}`;}}catch(e){}
+    $('oppAudit').innerHTML=`<table><thead><tr><th>Book</th><th>Universe</th><th>Qualified</th><th>Tradeable</th><th>Capacity-cut</th><th>Not fresh</th><th>No drop</th></tr></thead><tbody>${fr('crypto')}${fr('stock')}</tbody></table><div class="note" style="margin-top:6px"><b>Sample "why did we miss":</b></div>${exRows}`;}}catch(e){__pfail(e)}
   try{const ef=await jget('data/EXIT_FORENSICS.json');if(ef&&ef.overall){const o=ef.overall,bb=ef.by_book||{};
     const bookRow=(n,a)=>a&&a.closed_trades?`<tr><td>${n}</td><td>${a.closed_trades}</td><td class="${a.avg_post_exit_leak_pct>1?'neg':'pos'}">${a.avg_post_exit_leak_pct}%</td><td>${a.execution_failures}</td><td>${a.thesis_failures}</td></tr>`:'';
     const cc=ef.exit_class_by_book||{};const chips=(bk)=>{const c=cc[bk]||{};return `${bk.toUpperCase()}: <span class=pos>${c.GOOD_EXIT||0} good</span> · ${c.EARLY_EXIT||0} early · ${c.LATE_EXIT||0} late · <span class=neg>${c.CATASTROPHIC_EXIT||0} catastrophic</span>`;};
     $('exitForensics').innerHTML=`<div class="val" style="font-size:15px">avg post-exit leak <span class="${o.avg_post_exit_leak_pct>1?'neg':'pos'}">${o.avg_post_exit_leak_pct}%</span> · exit quality ${o.avg_exit_quality}</div>
       <table><thead><tr><th>Book</th><th>Closed</th><th>Leak</th><th>Sold early</th><th>Thesis wrong</th></tr></thead><tbody>${bookRow('CRYPTO',bb.crypto)}${bookRow('STOCK',bb.stock)}</tbody></table>
-      <div class="note">${(bb.crypto||{}).verdict?'CRYPTO: '+(bb.crypto).verdict:''}</div><div class="note">${(bb.stock||{}).verdict?'STOCK: '+(bb.stock).verdict:''}</div><div class="note">Exit grades — ${chips('crypto')}</div><div class="note">${chips('stock')}</div>`;}}catch(e){}
+      <div class="note">${(bb.crypto||{}).verdict?'CRYPTO: '+(bb.crypto).verdict:''}</div><div class="note">${(bb.stock||{}).verdict?'STOCK: '+(bb.stock).verdict:''}</div><div class="note">Exit grades — ${chips('crypto')}</div><div class="note">${chips('stock')}</div>`;}}catch(e){__pfail(e)}
   try{const sr=await jget('data/STOCK_RECOVERY_ANALYSIS.json');if(sr&&sr.books){const row=(bk)=>{const d=(sr.books[bk]||{}).by_drawdown_depth||{};return [3,5,7,10].map(x=>{const c=d[x+'pct']||{};return `<td>${c.recovery_rate_pct==null?'—':c.recovery_rate_pct+'%'}${c.median_hours_to_recover!=null?'<br><span class=dim>'+c.median_hours_to_recover+'h</span>':''}</td>`;}).join('');};
     $('stockRecovery').innerHTML=`<div class="val" style="font-size:14px">${sr.headline||''}</div>
       <table><thead><tr><th>Recovery rate / median time</th><th>3%</th><th>5%</th><th>7%</th><th>10%</th></tr></thead>
       <tbody><tr><td>STOCK</td>${row('stock')}</tr><tr><td>CRYPTO</td>${row('crypto')}</tr></tbody></table>
-      <div class="note">${sr.censoring_note||''}</div>`;}}catch(e){}
+      <div class="note">${sr.censoring_note||''}</div>`;}}catch(e){__pfail(e)}
   const ec=await jget('data/edge_capture_engine.json');
   if(ec){$('capHead').innerHTML=`<span class="${ec.PRIMARY_KPI_portfolio_capture_pct>0?'pos':'neg'}">${ec.PRIMARY_KPI_portfolio_capture_pct}%</span> <span class="dim" style="font-size:12px">of available edge captured</span>`;
     $('capMiss').innerHTML=(ec.biggest_misses||[]).slice(0,8).map(r=>`<tr><td>${r.ticker}</td><td class="pos">+${r.available_move_pct}%</td><td class="${r.capture_pct>0?'pos':'neg'}">${r.capture_pct}%</td></tr>`).join('');}
@@ -1591,7 +1597,7 @@ async function openChart(sym,entry,mark){CSYM=sym;CE=entry;CM=mark;CH=0;$('modal
   $('modalThesis').textContent=(P
     ?`this position: bought at $${(+entry).toFixed(4)} (${P.style||'MR'}, born in ${P.entry_regime||'?'}); ITS OWN target +${(window._CT*100).toFixed(2)}% ($${(entry*(1+window._CT)).toFixed(4)}); stop −${(window._CS*100).toFixed(1)}% ($${(entry*(1-window._CS)).toFixed(4)}); exits on target/stop only (timeouts off).`
     :`MR thesis: bought ~3% dip at $${(+entry).toFixed(4)}; target +${(window._CT*100).toFixed(0)}% ($${(entry*(1+window._CT)).toFixed(4)}); stop −${(window._CS*100).toFixed(0)}% ($${(entry*(1-window._CS)).toFixed(4)}); ~${Math.round(_hold)}m timeout→market.`);
-  $('chartHost').textContent='loading price history (one-time)…';if(!PRICES){PRICES=await jget('data/price_samples.json');try{const _M=await jget('data/metals_samples.json');if(_M&&_M.samples)Object.assign(PRICES.samples||{},_M.samples);}catch(e){}try{const _E=await jget('data/energy_samples.json');if(_E&&_E.samples)Object.assign(PRICES.samples||{},_E.samples);}catch(e){}try{const _X=await jget('data/ccxt_samples.json');if(_X&&_X.samples)Object.assign(PRICES.samples||{},_X.samples);}catch(e){}}drawChart();}
+  $('chartHost').textContent='loading price history (one-time)…';if(!PRICES){PRICES=await jget('data/price_samples.json');try{const _M=await jget('data/metals_samples.json');if(_M&&_M.samples)Object.assign(PRICES.samples||{},_M.samples);}catch(e){__pfail(e)}try{const _E=await jget('data/energy_samples.json');if(_E&&_E.samples)Object.assign(PRICES.samples||{},_E.samples);}catch(e){__pfail(e)}try{const _X=await jget('data/ccxt_samples.json');if(_X&&_X.samples)Object.assign(PRICES.samples||{},_X.samples);}catch(e){__pfail(e)}}drawChart();}
 function drawChart(){const s=(PRICES&&PRICES.samples)?PRICES.samples[CSYM]:null;
   if(!s||!s.length){const CC=(window.__SIL_CARDS||{})[CSYM]||{};
     $('chartHost').innerHTML='<div style="padding:14px;line-height:1.7"><b>'+CSYM+'</b> — no intraday series on file yet.<br>'
@@ -1627,13 +1633,13 @@ tr.after(th);
   ot.innerHTML=base+'</span></div>';
   jget('data/CONDUCTOR_REPORT_CARD.json').then(function(rc){try{var ig=rc&&rc.realized_profit&&rc.realized_profit.integrity;if(!ig)return;
     ot.innerHTML=base+' Data-integrity: <b class="'+(ig.suspect_trades?'neg':'pos')+'">'+ig.suspect_trades+' suspect trade(s) \u00b7 $'+Number(ig.suspect_usd).toFixed(2)+'</b> \u2192 verified realized <b>$'+Number(ig.verified_realized_usd).toFixed(2)+'</b>.</span></div>';
-  }catch(e){}});
-}catch(e){}})();
+  }catch(e){__pfail(e)}});
+}catch(e){__pfail(e)}})();
 jget('data/THRESHOLD_TAKEHOME.json').then(function(d){var r=((d&&d.daily_takehome)||[])[0];var el=document.getElementById('cmdTakehome');if(!el)return;
 if(r){var net=(r.net!=null?r.net:r.net_usd)||0,gr=(r.gross!=null?r.gross:r.gross_usd)||0,fe=(r.fees!=null?r.fees:r.fees_usd)||0;
 el.innerHTML='<b class="'+(net>=0?'pos':'neg')+'" style="font-size:18px">'+(net>=0?'+$':'-$')+Math.abs(net).toFixed(2)+'</b> net kept today \u00b7 gross '+(gr>=0?'+':'')+'$'+(+gr).toFixed(2)+' \u00b7 fees $'+(+fe).toFixed(2)+' <span class="dim">(full table on FORENSICS)</span>';}
 else{el.textContent='no closed trades yet today';}}).catch(function(){});}
-}catch(e){}})();
+}catch(e){__pfail(e)}})();
 /* ── 5.1B: PWA — install as a real desktop/mobile app (GitHub Pages friendly) ── */
 let _pwaEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_pwaEvt=e;});
 function pwaInstall(){if(_pwaEvt){_pwaEvt.prompt();_pwaEvt=null;}else{alert('Chrome/Edge: browser menu \u2192 Install app.\niPhone/iPad: Share \u2192 Add to Home Screen.\nRuns standalone; always shows the live data.');}}
@@ -1641,12 +1647,12 @@ if('serviceWorker' in navigator){try{
   // 5.1 FINAL self-heal: the old v51b SW cached the HTML shell cache-first and
   // trapped users on the old UI. Update on every load so a new SW takes over ASAP,
   // and when a new worker activates, reload ONCE so the fresh page is shown.
-  navigator.serviceWorker.register('sw.js').then(function(reg){ try{reg.update();}catch(e){} });
+  navigator.serviceWorker.register('sw.js').then(function(reg){ try{reg.update();}catch(e){__pfail(e)} });
   var _reloaded=false;
   navigator.serviceWorker.addEventListener('controllerchange',function(){
     if(_reloaded)return; _reloaded=true; location.reload();
   });
-}catch(e){}}
+}catch(e){__pfail(e)}}
 /* 5.1 FINAL: category routing init - untagged content children belong to COMMAND */
 (function(){try{
   var kids=document.querySelectorAll('#content > section, #content > div');
@@ -1661,7 +1667,7 @@ if('serviceWorker' in navigator){try{
   // activate COMMAND by default (runs the router once so only cmd shows)
   var first=document.querySelector('#mainTabs button[data-p=cmd]');
   if(first)first.click();
-}catch(e){}})();
+}catch(e){__pfail(e)}})();
 load();setInterval(load,60000);
 </script>  <script src="silmaril_chart.js"></script>
 </body></html>

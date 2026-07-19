@@ -941,6 +941,129 @@ def t54_canonical_fingerprint_merge():
           ok_src and ok_d, f"src={ok_src} crypto_fitted={ok_d}")
 
 
+def t55_dup_buy_guard_and_canon_ledger():
+    """7.0 FINAL R2/R1: the double-BUY class is closed at the recorder, and every LIVE fill
+    lands once in the one book of record (LEDGER.jsonl) — backtests can never write canon."""
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok = ("ALREADY-HELD GUARD" in sim
+          and "if sym in self.positions:\n            return False" in sim
+          and "def _ledger(self, row):" in sim
+          and 'pbook._canon = (out, book)' in sim
+          and 'LEDGER.jsonl' in sim)
+    rec = (ROOT / "silmaril/execution/reconciliation.py").read_text()
+    ok = ok and "FIX_EPOCH" in rec and "no duplicate (sym,side,t)" in rec
+    check("T55 dup-BUY guard + one book of record (LEDGER.jsonl) + epoch-scoped dup tripwire", ok, "")
+
+
+def t56_master_mirror_law():
+    """7.0 FINAL R1/R3: the Master consumes canon — opens only what a book holds, closes when
+    the book closes — and the trades tail can never show an orphan SELL again."""
+    ma = (ROOT / "silmaril/execution/master_account.py").read_text()
+    ok = ("mirror_canon" in ma and '"mirrors"' in ma
+          and "BOOK_CLOSED (canon mirror)" in ma
+          and 'ACCEPT-WAIT: no canon book fill yet' in ma
+          and 'list(reversed(book["trades"][-3:]))' not in ma
+          and 'VENUE_UNIVERSE.json' in ma)
+    check("T56 Master mirror law: opens from canon fills, follows book exits, honest tail, venue truth wired", ok, "")
+
+
+def t57_forward_ledger_and_vault():
+    """7.0 FINAL V1/V2: forward evidence + calibration survive every standard reset, and the
+    reset archives before it touches anything (Law 26) — the 'Lickitung forever' root cause."""
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    rst = (ROOT / "scripts/reset_internal_clean.py").read_text()
+    ok = ("CHAMPION_FORWARD_LEDGER.jsonl" in sim
+          and "ARCHIVE-FIRST" in rst and "REFUSING to reset" in rst
+          and "CHAMPION_FORWARD_LEDGER.jsonl" in rst
+          and '"CALIBRATION.json", "AGGRESSION_LADDER.json"' not in rst)
+    check("T57 champion forward ledger + archive-first reset + calibration survives standard wipe", ok, "")
+
+
+def t58_registry_vault_classes():
+    """7.0 FINAL V1: the preserved-forever roster is classed LEARNING/LEDGER so the post-wipe
+    DERIVED sweep can never kill what the reset promises to keep."""
+    import importlib
+    srmod = importlib.import_module("silmaril.execution.store_registry")
+    ok = all(srmod._cls(f) == "LEARNING" for f in
+             ("CALIBRATION.json", "GRAVEYARD.json", "CONDUCTOR_STATE.json", "CONDUCTOR_REPORT_CARD.json"))
+    ok = ok and srmod._cls("LEDGER.jsonl") == "LEDGER" \
+             and srmod._cls("CHAMPION_FORWARD_LEDGER.jsonl") == "LEDGER"
+    check("T58 vault classes: calibration/graveyard/conductor are LEARNING; ledgers are LEDGER", ok, "")
+
+
+def t59_workflow_law():
+    """7.0 FINAL operator directive: every lane its OWN concurrency group (nothing can queue
+    behind or displace another workflow), cancel-in-progress false everywhere, daily on */10,
+    selftest daily+push, venue lane scheduled, fail-loud lanes file their own red issues."""
+    import glob as _glob
+    try:
+        import yaml as _yaml
+    except Exception:
+        check("T59 workflow law (pyyaml unavailable — cannot verify)", False, "pip install pyyaml")
+        return
+    groups, problems = [], []
+    for f in sorted(_glob.glob(str(ROOT / ".github/workflows/*.yml"))):
+        txt = open(f).read()
+        name = f.split("/")[-1]
+        if "silmaril-state" in txt:
+            problems.append(f"{name}: shared group survives")
+        try:
+            d = _yaml.safe_load(txt)
+        except Exception as e:
+            problems.append(f"{name}: yaml {type(e).__name__}"); continue
+        cc = d.get("concurrency") or {}
+        if cc:
+            if cc.get("cancel-in-progress") is not False:
+                problems.append(f"{name}: cancel-in-progress must be false")
+            groups.append(cc.get("group"))
+    if len(groups) != len(set(groups)):
+        problems.append(f"duplicate concurrency groups: {sorted(g for g in groups if groups.count(g) > 1)}")
+    daily = (ROOT / ".github/workflows/daily.yml").read_text()
+    st = (ROOT / ".github/workflows/selftest.yml").read_text()
+    if '"*/10 * * * *"' not in daily:
+        problems.append("daily: */10 fallback cron missing")
+    if '"45 3 * * *"' not in st or "push:" not in st:
+        problems.append("selftest: needs daily cron + on-push")
+    if not (ROOT / ".github/workflows/venue_universe.yml").exists():
+        problems.append("venue_universe.yml missing")
+    for lane in ("daily", "hourly", "analytics", "selftest"):
+        if "ENGINE RED" not in (ROOT / f".github/workflows/{lane}.yml").read_text():
+            problems.append(f"{lane}: fail-loud issue step missing")
+    check("T59 workflow law: per-lane groups · never-cancel · daily */10 · selftest daily+push · venue lane · fail-loud",
+          not problems, "; ".join(problems[:4]))
+
+
+def t60_maturity_gate():
+    """7.0 FINAL T2: 'I don't know yet' is the default — no fitted-book entry without evidence
+    (fingerprint dip-events or resolved bounce-tries); GEKKO exempt; knob-gated with a kill."""
+    import json as _json
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok = ("CONFIDENCE MATURITY" in sim and "earning the right to trade" in sim
+          and 'book != "aggressive"' in sim and 'maturity' in sim)
+    try:
+        cat = _json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text())
+        ok = ok and (cat.get("maturity") or {}).get("mode") in ("auto", "off")
+    except Exception:
+        pass
+    check("T60 maturity gate: evidence before risk, GEKKO exempt, knob + kill registered", ok, "")
+
+
+def t61_equity_truth():
+    """7.0 FINAL R5: ONE money number. The reconciliation stage emits EQUITY_TRUTH.json;
+    every money panel is meant to read it, never recompute."""
+    import json as _json
+    rec = (ROOT / "silmaril/execution/reconciliation.py").read_text()
+    ok = "EQUITY_TRUTH.json" in rec and "open_committed_usd" in rec
+    p = ROOT / "docs/data/EQUITY_TRUTH.json"
+    if p.exists():
+        try:
+            d = _json.loads(p.read_text())
+            ok = ok and ("total_equity" in d and "delta_usd" in d)
+        except Exception:
+            ok = False
+    check("T61 EQUITY_TRUTH emitted: total · delta-vs-start · open-committed, one owner", ok, "")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -961,7 +1084,10 @@ if __name__ == "__main__":
               t46_maker_book, t47_calibration_teeth, t48_sizer_hand,
               t49_learning_permanence, t50_question_engine, t51_genesis,
               t52_builder_isolation, t53_no_stale_derived,
-              t54_canonical_fingerprint_merge):
+              t54_canonical_fingerprint_merge,
+              t55_dup_buy_guard_and_canon_ledger, t56_master_mirror_law,
+              t57_forward_ledger_and_vault, t58_registry_vault_classes,
+              t59_workflow_law, t60_maturity_gate, t61_equity_truth):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

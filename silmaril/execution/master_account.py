@@ -77,6 +77,17 @@ def build_master_account(out_dir) -> Dict[str, Any]:
 
     cards = (_load(out, "CONFIDENCE_CARDS.json").get("cards") or {})
     live = _load(out, "paper_sim_live.json")
+    # ── 7.0 FINAL — MASTER CONSUMES CANON (Tier 0 / R1). ────────────────────────
+    # The July-18 finding: the Master ran a PARALLEL simulation (its own picks —
+    # MOG/DYDX/GALA — while the crypto book bought SOL/ZEC/VET), so the "one real
+    # account" and the books never had to agree. With mirror_canon "auto" (default),
+    # the Master may only OPEN a position that a real book actually holds — its rows
+    # become a distilled, tagged subset of canon fills — and it force-closes when the
+    # source book closes. One fact, one owner. KILL: master_brain.mirror_canon:"off".
+    _mirror = str(kb.get("mirror_canon", "auto")).lower() == "auto"
+    _bkpos: Dict[str, Dict[str, Any]] = {}
+    for _bk7 in BOOKS + ("aggressive",):
+        _bkpos[_bk7] = (_load(out, f"paper_book_{_bk7}.json").get("positions") or {})
     mtf_books = (_load(out, "MTF_REGIME.json").get("books") or {})
     lab_bi = (_load(out, "STRATEGY_LAB.json").get("by_industry") or {})
     _geo = (_load(out, "GEOMETRY.json").get("by_symbol") or {})
@@ -87,6 +98,12 @@ def build_master_account(out_dir) -> Dict[str, Any]:
     listed_union = set()
     for l in (_load(out, "VENUES.json").get("listed") or {}).values():
         listed_union |= set(l)
+    # 7.0 FINAL (U2): VENUE TRUTH joins the gate — live Binance.US/Coinbase/Robinhood
+    # listings fetched daily in Actions. The Master's "listed on a target venue" test
+    # now means the operator's REAL venues, not a static list.
+    for _vs, _vv in (_load(out, "VENUE_UNIVERSE.json").get("symbols") or {}).items():
+        if (_vv.get("venue_count") or 0) > 0:
+            listed_union.add(_vs)
 
     # ── state (survives cycles; honors the wipe) ─────────────────────────────
     st = _load(out, "MASTER_ACCOUNT.json", {})
@@ -139,11 +156,16 @@ def build_master_account(out_dir) -> Dict[str, Any]:
             "simulated": True, "t": _iso()})
         del book["positions"][sym]
 
-    def _buy(sym: str, bk: str, px_raw: float, why: str, style: str, card: Dict[str, Any]):
+    def _buy(sym: str, bk: str, px_raw: float, why: str, style: str, card: Dict[str, Any],
+             mirror: Optional[Dict[str, Any]] = None):
         cost = _cost_for(sym, px_raw)
         budget = min(book["cash"] * 0.25, 2500.0) * _szr_mult
         if budget < 50 or px_raw <= 0:
             return False
+        # canon mirror: entry provenance = the REAL book fill (raw basis), never a private price
+        if mirror:
+            _mc = float(mirror.get("cost", cost))
+            px_raw = float(mirror["entry"]) / (1.0 + _mc / 2.0)
         eff = px_raw * (1 + cost / 2.0)
         qty = budget / eff
         book["cash"] -= budget
@@ -152,10 +174,14 @@ def build_master_account(out_dir) -> Dict[str, Any]:
             "qty": qty, "entry": eff, "cost": cost, "book": bk, "style": style,
             "target": round(tgt, 4), "stop": 0.05,
             "exp_hold_min": card.get("expected_hold_min"), "t": _iso(), "hw": 0.0}
-        book["trades"].append({"side": "BUY", "sym": sym, "book": bk, "why": why,
-                               "wager_usd": round(budget, 2), "style": style,
-                               "target_pct": round(tgt * 100, 3), "simulated": True,
-                               "t": _iso()})
+        trow = {"side": "BUY", "sym": sym, "book": bk, "why": why,
+                "wager_usd": round(budget, 2), "style": style,
+                "target_pct": round(tgt * 100, 3), "simulated": True,
+                "t": _iso()}
+        if mirror:
+            book["positions"][sym]["mirrors"] = {"book": bk, "entry_t": mirror.get("t")}
+            trow["mirrors"] = {"book": bk, "entry_t": mirror.get("t")}
+        book["trades"].append(trow)
         return True
 
     # ── EXITS first (marks from cards' fresh last_px) ────────────────────────
@@ -163,6 +189,12 @@ def build_master_account(out_dir) -> Dict[str, Any]:
         pos = book["positions"][sym]
         c = cards.get(sym) or {}
         px = c.get("last_px")
+        # 7.0 FINAL canon-mirror exit: if the source book no longer holds this name, the Master
+        # closes with it (at the book's exit reality, not a private mark). Master ⊆ books, always.
+        if _mirror and pos.get("mirrors") and sym not in (_bkpos.get(pos.get("book")) or {}):
+            _px7 = px or (pos["entry"] / (1 + pos.get("cost", 0.004) / 2.0))
+            _sell(sym, _px7, "BOOK_CLOSED (canon mirror)")
+            continue
         if not px:
             continue
         raw_entry = pos["entry"] / (1 + pos.get("cost", 0.004) / 2.0)
@@ -256,7 +288,15 @@ def build_master_account(out_dir) -> Dict[str, Any]:
                              "why": f"top-{int(100-gate_pct)}% ({sc:.3f}≥{cut:.3f}) · "
                                     f"hold {c.get('expected_hold_min')}m · revert-evidence OK"})
             if live_mode:
-                _buy(sym, bk, c["last_px"], accepted[-1]["why"], "MR", c)
+                if _mirror:
+                    _src = (_bkpos.get(bk) or {}).get(sym) or (_bkpos.get("aggressive") or {}).get(sym)
+                    if _src:
+                        _buy(sym, bk, c["last_px"], accepted[-1]["why"] + " · mirrors canon fill",
+                             "MR", c, mirror=_src)
+                    else:
+                        accepted[-1]["why"] += " · ACCEPT-WAIT: no canon book fill yet (mirror law)"
+                else:
+                    _buy(sym, bk, c["last_px"], accepted[-1]["why"], "MR", c)
 
         struck = None
         if live_mode and shift and bool(kb.get("strike_on_shift", True)):
@@ -266,9 +306,13 @@ def build_master_account(out_dir) -> Dict[str, Any]:
                             key=lambda x: -((x[1].get("momentum") or {}).get("h1") or 0))
             if movers:
                 s0, c0 = movers[0]
-                if _buy(s0, bk, c0["last_px"],
-                        f"⚡ UPTREND shift — striking {s0} h1 +{(c0.get('momentum') or {}).get('h1')}%",
-                        "STRIKE", c0):
+                _src0 = ((_bkpos.get(bk) or {}).get(s0)
+                         or (_bkpos.get("aggressive") or {}).get(s0)) if _mirror else None
+                if _mirror and not _src0:
+                    pass   # verdict noted below; no private fill under the mirror law
+                elif _buy(s0, bk, c0["last_px"],
+                          f"⚡ UPTREND shift — striking {s0} h1 +{(c0.get('momentum') or {}).get('h1')}%",
+                          "STRIKE", c0, mirror=_src0):
                     struck = s0
 
         top = (accepted[0] if accepted else
@@ -358,7 +402,14 @@ def build_master_account(out_dir) -> Dict[str, Any]:
         "live_status": ("SHADOW-TRADING" if live_mode else "WATCHING"),
         "live_trades_count": len(closed),
         "champion": "EVIDENCE-GATED (5.3) — top-percentile card + revert-proof, per book",
-        "live_trades_tail": list(reversed(book["trades"][-3:])),
+        # 7.0 FINAL (R3): the old raw [-3:] tail showed orphan SELLs whose BUYs had scrolled off
+        # ("sold GALA but never bought it"). The tail now tells only complete stories: closed
+        # round-trips (SELL rows, pnl attached — a matched BUY is implied and real) and BUYs that
+        # are genuinely still open. Pairing can never look broken again.
+        "live_trades_tail": (lambda _tr, _pos: [r for r in reversed(_tr)
+                             if r.get("side") == "SELL"
+                             or (r.get("side") == "BUY" and r.get("sym") in _pos)][:3]
+                             )(book["trades"], book["positions"]),
         "decision_log_tail": list(reversed(md[-3:])),
         "what": ("5.3 MASTER BRAIN: shadow-trades its own $10k from evidence-gated picks "
                  "(percentile gate · revert-evidence · venue-listed · regime-liquid), strikes "

@@ -30,6 +30,15 @@ LEARNING = {
     "metals_samples.json", "energy_samples.json", "REGIME_CLASSIFIER.json",
     "momentum_chain.json", "source_rankings.json", "fees_truth.json", "agent_beliefs.json",
     "DAILY_BASELINE.json", "RESEARCH_OS.json", "KRAKEN_SPREAD.json",
+    # ── 7.0 FINAL (Tier 3 / V1): the vault leak, closed. These were classed DERIVED, so the
+    # post-wipe "stale-derived sweep" (cli) deleted them right after a reset even though the
+    # reset script PROMISED they were preserved forever — the exact wired-but-contradicted
+    # failure class. Calibration is the machine's memory of its own honesty; the graveyard is
+    # what it learned from what it did NOT do; conductor state is 807 logged decisions toward
+    # C1/C2. None of that is a "derived view." All now survive a standard wipe by class.
+    "CALIBRATION.json", "GRAVEYARD.json", "CONDUCTOR_STATE.json", "CONDUCTOR_REPORT_CARD.json",
+    "knowledge_graph.json", "RESEARCH_QUEUE.json", "ROTATION_HYPOTHESES.json",
+    "CENSUS_ROSTER.json", "INVARIANTS_STATE.json",
 }
 STATE_HINTS = ("paper_book_", "BENCH_BOOKS", "STRATEGY_LAB", "MASTER_ACCOUNT",
                "MASTER_DECISIONS", "MASTER_LEDGER", "CHAMPION_GOVERNANCE", "champion_",

@@ -20,6 +20,29 @@ BASELINE = 10000.0
 CLEAN_BOOK = {"cash": BASELINE, "positions": {}, "realized_pnl": 0.0, "trades": []}
 
 def main():
+    # ── 7.0 FINAL — ARCHIVE-FIRST (Law 26: archived, never discarded). ────────────────
+    # Before ANY store is flattened or deleted, everything the reset will touch — plus
+    # every append-only ledger — is copied to archive/<UTC-stamp>/ in the same commit.
+    # A reset that cannot archive REFUSES to run. Nothing is ever simply gone again.
+    import shutil
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ")
+    ARCH = DATA.parent.parent / "archive" / f"reset_{stamp}"
+    to_archive = (list(DATA.glob("paper_book_*.json"))
+                  + [DATA / f for f in ("MASTER_ACCOUNT.json", "MASTER_DECISIONS.json",
+                                        "snapshot_history.jsonl", "LEDGER.jsonl",
+                                        "CHAMPION_FORWARD_LEDGER.jsonl",
+                                        "CALIBRATION.json", "CALIBRATION_LEDGER.jsonl",
+                                        "SESSION_TODAY.json", "DECISION_TRACE.json")])
+    try:
+        ARCH.mkdir(parents=True, exist_ok=True)
+        kept = 0
+        for src in to_archive:
+            if src.exists():
+                shutil.copy2(src, ARCH / src.name); kept += 1
+        print(f"  ARCHIVED {kept} store(s) -> {ARCH} (Law 26 — reset refuses to run without this)")
+    except Exception as e:
+        print(f"  ARCHIVE FAILED ({e}) — REFUSING to reset. Nothing was touched.")
+        raise SystemExit(1)
     n = 0
     for p in list(DATA.glob("paper_book_*.json")):
         p.write_text(json.dumps(CLEAN_BOOK, indent=2)); n += 1
@@ -38,7 +61,10 @@ def main():
               "sweep_protection.json",
               "decision_ledger.json", "agent_portfolios.json", "alpaca_paper_state.json",
               "alpaca_h3_state.json", "alpaca_h5_state.json", "capital_flow.json", "paper_book_aggressive.json",
-              "CALIBRATION.json", "AGGRESSION_LADDER.json", "WEEKLY_SCORECARD.json",
+              # 7.0 FINAL (V1): CALIBRATION.json REMOVED from this delete list. "When we said X%, did we
+              # win X%" is LEARNING, not a derived view — a standard reset must never burn the machine's
+              # memory of its own honesty. (CALIBRATION_LEDGER.jsonl was already preserved; now both are.)
+              "AGGRESSION_LADDER.json", "WEEKLY_SCORECARD.json",
               "STOCK_PARITY_AUDIT.json", "INTEGRITY_QUARANTINE.json", "ECONOMIC_CLOCK.json",
               "COMPLEXITY_LEDGER.json",
               "BENCH_BOOKS.json", "STORE_CONTRACTS.json", "UNIVERSE_CENSUS.json",
@@ -56,7 +82,7 @@ def main():
     print("  wrote WIPE_MARKER.json (true post-wipe quiet period starts now)")
     # PRESERVED on purpose: price_samples.json (graphs + fingerprints), favicon caches, per-asset data.
     print("  PRESERVED: price_samples.json (graphs/fingerprints) + favicons — dashboard will NOT go blank")
-    print("PRESERVED FOREVER: EVOLUTION_LEDGER.jsonl · RESEARCH_QUEUE.json · REGIME_COMBOS.jsonl · DAILY_BASELINE.json · knowledge_graph.json · ROTATION_HYPOTHESES.json · RESEARCH_OS.json · CONDUCTOR_LEDGER.jsonl · CONDUCTOR_STATE.json · REGIME_EXIT_AB.jsonl · CONDUCTOR_REPORT_CARD.json · STRATEGY_LAB.json · CONFIDENCE_ENGINE.json · CENSUS_ROSTER.json · INVARIANTS_STATE.json (long-memory, survives every wipe)")
+    print("PRESERVED FOREVER: EVOLUTION_LEDGER.jsonl · RESEARCH_QUEUE.json · REGIME_COMBOS.jsonl · DAILY_BASELINE.json · knowledge_graph.json · ROTATION_HYPOTHESES.json · RESEARCH_OS.json · CONDUCTOR_LEDGER.jsonl · CONDUCTOR_STATE.json · REGIME_EXIT_AB.jsonl · CONDUCTOR_REPORT_CARD.json · STRATEGY_LAB.json · CONFIDENCE_ENGINE.json · CENSUS_ROSTER.json · INVARIANTS_STATE.json · LEDGER.jsonl (the one book of record) · CHAMPION_FORWARD_LEDGER.jsonl (election evidence — the champion can finally evolve) · CALIBRATION.json + CALIBRATION_LEDGER.jsonl (the machine's memory of its own honesty) (long-memory, survives every wipe)")
     print("CLEAN. Books pristine at $10k; all graph/fingerprint/favicon history intact.")
 
 if __name__ == "__main__":
