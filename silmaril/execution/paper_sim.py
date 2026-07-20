@@ -214,6 +214,31 @@ SNAPBACK_MIN = 1          # this many snap-backs in the recent window = corrupt 
 SPIKE_WINDOW = 60
 
 
+
+def _traj_win(samples_rows, hours):
+    """7.0 ONE-UNIVERSE: multi-window trajectory (the ZIL/WLD lesson). Returns (pct, basis) over
+    the window — basis 'intraday' from live prints (T00 backfill filtered, doctrine), else
+    'daily' from backfill closes as a VETO-ONLY fallback (daily data may block, never trigger).
+    MKR won +$42 in 15m with 8/12/24h up-windows; WLD/ZIL were bought into multi-day decline —
+    mean reversion wants oversold-in-a-range, never free-fall across every window."""
+    from datetime import datetime as _dt, timezone as _tz
+    try:
+        nowt = _dt.now(_tz.utc)
+        cut = hours * 3600
+        intr = [(t, p) for t, p in samples_rows if p and p > 0 and "T00:00:00" not in t
+                and (nowt - _dt.fromisoformat(t)).total_seconds() <= cut]
+        if len(intr) >= 4 and (nowt - _dt.fromisoformat(intr[0][0])).total_seconds() >= cut * 0.6:
+            f, l = intr[0][1], intr[-1][1]
+            return ((l / f - 1.0) if f > 0 else None, "intraday")
+        daily = [(t, p) for t, p in samples_rows if p and p > 0 and "T00:00:00" in t
+                 and (nowt - _dt.fromisoformat(t)).total_seconds() <= cut + 26 * 3600]
+        if len(daily) >= 2:
+            f, l = daily[0][1], daily[-1][1]
+            return ((l / f - 1.0) if f > 0 else None, "daily")
+    except Exception:
+        pass
+    return (None, None)
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -702,6 +727,45 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
     entry, target, stop_, max_hold = p["entry"], p["target"], p["stop"], p["max_hold_min"]
     pbook = PaperBook.load(out / f"paper_book_{book}.json")
     pbook._canon = (out, book)   # 7.0 FINAL: LIVE cycle writes the one book of record (LEDGER.jsonl)
+    # ── 7.0 ONE-UNIVERSE RIVER (read side): the workshop's resolved outcomes count as maturity
+    # evidence for the REAL books — what the sleeves learn matures names for production.
+    _lab7: Dict[str, int] = {}
+    try:
+        for _ln7 in (out / "LAB_OUTCOMES.jsonl").read_text().splitlines()[-5000:]:
+            try:
+                _r7 = json.loads(_ln7)
+                _lab7[_r7.get("sym")] = _lab7.get(_r7.get("sym"), 0) + 1
+            except Exception:
+                continue
+    except Exception:
+        pass
+    # ── 7.0 NEWS PULSE (operator directive: news in the decision path). Per-symbol pulse from
+    # news_history.json (last 48h, live rows only — backfilled excluded). Default SHADOW: every
+    # candidate's pulse logs to NEWS_TILT_AB.jsonl; mode "on" applies a capped conviction tilt.
+    # KILL: news_tilt.mode "off". No synthetic sentiment: null-sent rows carry heat only.
+    _np7: Dict[str, tuple] = {}
+    try:
+        from datetime import timedelta as _td7
+        _cut7 = (datetime.now(timezone.utc) - _td7(hours=48)).strftime("%Y-%m-%d")
+        _nh7 = json.loads((out / "news_history.json").read_text())
+        for _sym7, _rows7 in (_nh7 or {}).items():
+            if not isinstance(_rows7, list):
+                continue
+            _live7 = [r for r in _rows7 if isinstance(r, dict) and not r.get("backfilled")
+                      and str(r.get("date", "")) >= _cut7]
+            if _live7:
+                _sents7 = [r["sent"] for r in _live7 if r.get("sent") is not None]
+                _np7[_sym7] = (len(_live7), (sum(_sents7) / len(_sents7)) if _sents7 else None)
+    except Exception:
+        pass
+    try:
+        write_json_atomic(out / "NEWS_PULSE_STATUS.json", {
+            "generated_at": datetime.now(timezone.utc).isoformat(), "book": book,
+            "mode": str(((cat.get("news_tilt") or {}).get("mode", "shadow"))).lower(),
+            "symbols_with_pulse_48h": len(_np7),
+            "what": "news is IN the decision path: every sized candidate's pulse logs to NEWS_TILT_AB.jsonl (shadow); knob news_tilt.mode 'on' applies a capped tilt"})
+    except Exception:
+        pass
     now = datetime.now(timezone.utc)
     side_marks = {s: v for s, v in marks.items() if asset_class(s) == uc}
     actions = []
@@ -1132,14 +1196,38 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                 and direction != "mom" and book != "aggressive"):
             _ftm = _fits.get(sym) or {}
             _ev7 = int(_ftm.get("dip_samples") or _ftm.get("n") or 0)
-            if _ev7 < int(_mk7.get("min_fit_events", 12)):
+            _lb7 = int(_lab7.get(sym, 0))
+            if (_ev7 < int(_mk7.get("min_fit_events", 12))
+                    and _lb7 < int(_mk7.get("min_lab_outcomes", 3))):
                 if _bounce_reliability(px_of(sym)) is None:   # <3 resolved dip→bounce tries on tape
                     actions.append({"act": "SKIP", "sym": sym,
-                                    "why": ("immature — %d fit events (<%d) and <3 resolved bounce-tries "
-                                            "on tape; earning the right to trade (maturity gate)")
-                                           % (_ev7, int(_mk7.get("min_fit_events", 12)))})
+                                    "why": ("immature — %d fit events (<%d) · %d workshop outcomes (<%d) "
+                                            "· <3 resolved bounce-tries; the sleeves are maturing this "
+                                            "name now (one-universe river)")
+                                           % (_ev7, int(_mk7.get("min_fit_events", 12)),
+                                              _lb7, int(_mk7.get("min_lab_outcomes", 3)))})
                     continue
         _t6s = _trajectory_6h(samples.get(sym) or [])
+        # ── 7.0 TRAJECTORY VETO (the ZIL/WLD lesson — EVERY book, GEKKO included). A dip inside
+        # an up/flat larger trajectory (MKR: 8/12/24h up → +$42 in 15m) is a buy; a name down
+        # across 24h AND 72h is free-fall and may only fill after printing a floor (3
+        # non-decreasing live prints). Knob: trajectory_veto {mode,t24,t72} · KILL: mode "off".
+        _tvk = (cat.get("trajectory_veto") or {})
+        if str(_tvk.get("mode", "auto")).lower() == "auto" and direction != "mom":
+            _p24, _b24 = _traj_win(samples.get(sym) or [], 24)
+            _p72, _b72 = _traj_win(samples.get(sym) or [], 72)
+            if (_p24 is not None and _p72 is not None
+                    and _p24 <= float(_tvk.get("t24", -0.02))
+                    and _p72 <= float(_tvk.get("t72", -0.04))):
+                _fl7 = [p for _, p in (samples.get(sym) or [])[-3:] if p and p > 0]
+                _floor7 = len(_fl7) == 3 and _fl7[0] <= _fl7[1] <= _fl7[2]
+                if not _floor7:
+                    actions.append({"act": "SKIP", "sym": sym,
+                                    "why": ("trajectory — down %.1f%%/24h (%s) · %.1f%%/72h (%s), no "
+                                            "floor printed; free-fall is not a dip (needs an MKR-style "
+                                            "up-window or 3 rising prints)")
+                                           % (_p24 * 100, _b24, _p72 * 100, _b72)})
+                    continue
         _style = ("riding-strength" if (_t6s or 0) >= 0.02 else "deep-dip" if (h1 or 0) <= -0.04 else "range-play")
         if book == "stock":
             lt = _longterm_up(samples.get(sym) or [], int(cat.get("stock_longterm_min_days", 60)))
@@ -1253,6 +1341,21 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                 _ce_score = None
             if _ce_score is not None:
                 _conf = float(_ce_score)
+            # ── 7.0 NEWS PULSE — shadow-log every sized candidate; tilt only when mode='on' ──
+            _nk7 = (cat.get("news_tilt") or {})
+            _nmode7 = str(_nk7.get("mode", "shadow")).lower()
+            _heat7, _sent7 = _np7.get(sym, (0, None))
+            if _nmode7 != "off" and (_heat7 or _sent7 is not None):
+                try:
+                    with open(out / "NEWS_TILT_AB.jsonl", "a") as _nf7:
+                        _nf7.write(json.dumps({"t": now.isoformat(), "sym": sym, "book": book,
+                                               "heat_48h": _heat7, "sent": _sent7, "mode": _nmode7,
+                                               "conf_before": round(float(_conf), 4)}) + "\n")
+                except Exception:
+                    pass
+                if _nmode7 == "on" and _sent7 is not None:
+                    _mt7 = float(_nk7.get("max_tilt", 0.10))
+                    _conf = float(_conf) * (1.0 + max(-_mt7, min(_mt7, float(_sent7) * _mt7)))
             try:
                 _ck = (cat.get("compounder") or {})
                 if str(_ck.get("mode", "auto")).lower() == "auto":

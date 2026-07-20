@@ -121,6 +121,14 @@ def _equity(bk: Dict[str, Any], marks: Dict[str, float]) -> float:
     return bk["cash"] + held
 
 
+# ── 7.0 ONE-UNIVERSE RIVER (operator directive): the workshop feeds the books. ──
+# Every sleeve close appends a resolved outcome to LAB_OUTCOMES.jsonl; the real books'
+# maturity gate COUNTS these, so what the sleeves learn matures names for production.
+# The sleeves already trade the books' own candidate stream (decision_trace_live) —
+# this closes the return river: candidates flow down, resolved evidence flows back up.
+_RIVER = {"out": None, "sleeve": None, "book": None}
+
+
 def _sell(bk: Dict[str, Any], sym: str, price: float, why: str, vault: bool):
     pos = bk["positions"].get(sym)
     if not pos or price <= 0:
@@ -138,6 +146,18 @@ def _sell(bk: Dict[str, Any], sym: str, price: float, why: str, vault: bool):
                          "realized_pct": round((eff / pos["entry"] - 1) * 100, 3) if pos["entry"] > 0 else 0,
                          "style": pos.get("style", "MR"),
                          "t": _now().isoformat()})
+    try:  # ONE-UNIVERSE RIVER: resolved workshop outcome → shared evidence ledger
+        if _RIVER.get("out"):
+            with open(Path(_RIVER["out"]) / "LAB_OUTCOMES.jsonl", "a") as _rf:
+                _rf.write(json.dumps({
+                    "t": _now().isoformat(), "sym": sym,
+                    "book": _RIVER.get("book"), "sleeve": _RIVER.get("sleeve"),
+                    "why": why, "pnl": round(pnl, 2),
+                    "net_pct": round((eff / pos["entry"] - 1) * 100, 3) if pos["entry"] > 0 else 0,
+                    "win": pnl > 0, "style": pos.get("style", "MR"),
+                    "source": "strategy_lab"}) + "\n")
+    except Exception:
+        pass
     del bk["positions"][sym]
 
 
@@ -330,7 +350,9 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                                  or ((_geo.get(c[0]) or {}).get("p_floor_pct") or 0) >= 65)]
             bk["_geo7"] = {c[0]: _geo.get(c[0]) for c in _cands_sk} if (cfg.get("geometry") or cfg.get("patient")) else None
             bk["_regime7"] = _regimes.get(book)
+            _RIVER.update({"out": str(out), "sleeve": sk, "book": book})
             _run_sleeve(cfg, bk, marks, _cands_sk, conf_map, fastgreen, surge, strike_pool, cost_of)
+            _RIVER.update({"out": None})
             eq = _equity(bk, marks) + bk.get("vault_usd", 0.0)
             ret = (eq / START - 1) * 100
             closed = [t for t in bk["trades"] if t["side"] == "SELL"]
@@ -369,5 +391,46 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                   "profits when they leave the table). Judged on compounding, never win rate; "
                   "kill after 40 closed if trailing that industry's A.")
     write_json_atomic(out / STORE, st)
+    # ── 7.0 ONE-UNIVERSE: publish the river summary + the CHAMPION SLEEVE spotlight ──
+    try:
+        _per, _tot, _24 = {}, 0, 0
+        _cut = (_now() - __import__("datetime").timedelta(hours=24)).isoformat()
+        _lp = out / "LAB_OUTCOMES.jsonl"
+        if _lp.exists():
+            for _ln in _lp.read_text().splitlines()[-5000:]:
+                try:
+                    _r = json.loads(_ln)
+                except Exception:
+                    continue
+                _tot += 1
+                if str(_r.get("t", "")) >= _cut:
+                    _24 += 1
+                _e = _per.setdefault(_r.get("sym"), {"n": 0, "wins": 0})
+                _e["n"] += 1
+                _e["wins"] += 1 if _r.get("win") else 0
+        _spot, _sbook = None, None
+        for _bk2, _rows2 in by_industry.items():
+            for _r2 in _rows2:
+                if (_r2.get("closed") or 0) >= 3 and _r2.get("delta_vs_hodl") is not None:
+                    if _spot is None or _r2["delta_vs_hodl"] > _spot["delta_vs_hodl"]:
+                        _spot, _sbook = dict(_r2), _bk2
+        if _spot is None:   # pre-null-data fallback: best return with >=1 close
+            for _bk2, _rows2 in by_industry.items():
+                for _r2 in _rows2:
+                    if (_r2.get("closed") or 0) >= 1:
+                        if _spot is None or _r2["return_pct"] > _spot["return_pct"]:
+                            _spot, _sbook = dict(_r2), _bk2
+        if _spot is not None:
+            _spot["book"] = _sbook
+        write_json_atomic(out / "LAB_EVIDENCE.json", {
+            "generated_at": _now().isoformat(),
+            "resolved_total": _tot, "resolved_24h": _24,
+            "per_symbol": {k: v for k, v in sorted(_per.items(), key=lambda kv: -kv[1]["n"])[:200]},
+            "spotlight": _spot,
+            "what": ("ONE UNIVERSE: sleeves trade the books' own candidates; every sleeve close lands "
+                     "here as a resolved outcome that COUNTS toward the real books' maturity gate. "
+                     "spotlight = best sleeve by delta-vs-HODL (>=3 closes; Law 10), the leader to cheer.")})
+    except Exception:
+        pass
     _lead = {bk: (rows[0]["sleeve"] if rows else "-") for bk, rows in by_industry.items()}
     return {"summary": f"strategy lab v2: leaders {_lead} · 24 sleeves across 4 industries"}

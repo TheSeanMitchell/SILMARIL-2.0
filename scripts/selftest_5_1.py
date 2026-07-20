@@ -1038,7 +1038,8 @@ def t60_maturity_gate():
     (fingerprint dip-events or resolved bounce-tries); GEKKO exempt; knob-gated with a kill."""
     import json as _json
     sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
-    ok = ("CONFIDENCE MATURITY" in sim and "earning the right to trade" in sim
+    ok = ("CONFIDENCE MATURITY" in sim
+          and ("earning the right to trade" in sim or "one-universe river" in sim)
           and 'book != "aggressive"' in sim and 'maturity' in sim)
     try:
         cat = _json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text())
@@ -1064,6 +1065,85 @@ def t61_equity_truth():
     check("T61 EQUITY_TRUTH emitted: total · delta-vs-start · open-committed, one owner", ok, "")
 
 
+def t62_one_universe_river():
+    """7.0 ONE-UNIVERSE: sleeve closes flow into LAB_OUTCOMES.jsonl and the real books' maturity
+    gate COUNTS them — the workshop matures names for production. The 'alternate universe' is dead."""
+    lab = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok = ("LAB_OUTCOMES.jsonl" in lab and "_RIVER" in lab and "LAB_EVIDENCE.json" in lab
+          and "LAB_OUTCOMES.jsonl" in sim and "_lab7" in sim and "min_lab_outcomes" in sim)
+    check("T62 one-universe river: sleeves → LAB_OUTCOMES → books' maturity gate + LAB_EVIDENCE/spotlight", ok, "")
+
+
+def t63_trajectory_veto():
+    """7.0 ZIL/WLD lesson: multi-window free-fall may not fill without a printed floor — every
+    book, GEKKO included; MKR-style up-window dips pass."""
+    import json as _json
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok = ("def _traj_win" in sim and "TRAJECTORY VETO" in sim
+          and "free-fall is not a dip" in sim and 'direction != "mom"' in sim)
+    try:
+        cat = _json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text())
+        ok = ok and (cat.get("trajectory_veto") or {}).get("mode") in ("auto", "off")
+    except Exception:
+        pass
+    check("T63 trajectory veto: 24h+72h free-fall blocked for ALL books unless a floor prints (knob+kill)", ok, "")
+
+
+def t64_news_in_decision_path():
+    """7.0 operator directive: news pulses through the decision path — every sized candidate
+    logs to NEWS_TILT_AB (shadow); knob 'on' applies a capped tilt; status published for the UI."""
+    import json as _json
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok = ("NEWS_TILT_AB.jsonl" in sim and "news_tilt" in sim and "NEWS_PULSE_STATUS.json" in sim
+          and "_np7" in sim)
+    try:
+        cat = _json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text())
+        ok = ok and (cat.get("news_tilt") or {}).get("mode") in ("shadow", "on", "off")
+    except Exception:
+        pass
+    check("T64 news pulse wired: shadow A/B log on every sized candidate + status + knob/kill", ok, "")
+
+
+def t65_health_reads_authority():
+    """7.0: the health panel reads fresh api_health.json (the matrix snapshot lied 0/3 for a day)."""
+    html = (ROOT / "docs/index.html").read_text()
+    ok = ("const d=await jget('data/api_health.json')" in html and "matrix" in html
+          and "staleTag" in html)
+    check("T65 health panel reads authoritative api_health.json (matrix stale-tagged, never trusted blind)", ok, "")
+
+
+def t66_modal_contract():
+    """7.0: ONE modal contract — every opener rebuilds the box (close button always exists),
+    Esc + backdrop close, no display-mode split."""
+    html = (ROOT / "docs/index.html").read_text()
+    ok = ("__resetModalBox" in html and html.count("__resetModalBox();") >= 4
+          and "__closeModal" in html and "Escape" in html
+          and "style.display='flex'" not in html)
+    check("T66 modal contract: 4 openers reset the box · Esc/backdrop/✕ close · one display mode", ok, "")
+
+
+def t67_portals_and_spotlight():
+    """7.0 operator directive: colorful account portals on BOTH tabs + the CHAMPION SLEEVE
+    spotlight (Δ-vs-HODL leader) with the one-universe river line."""
+    html = (ROOT / "docs/index.html").read_text()
+    ok = ("quadrantsCmd" in html and "renderSleeveSpotlight" in html
+          and "sleeveSpot" in html and "CHAMPION SLEEVE" in html
+          and "'quadrants','quadrantsCmd'" in html)
+    check("T67 portals on Command+Markets + CHAMPION SLEEVE spotlight (workshop-labeled, click-through)", ok, "")
+
+
+def t68_readiness_truth():
+    """7.0 truth pass: FIRST-TRADE READINESS states the REAL reason (closed/quiet/immature/veto/
+    gated) — never 'waiting for a dip' while candidates exist; GEKKO gets a row; river+news footer."""
+    html = (ROOT / "docs/index.html").read_text()
+    ok = ("MARKET CLOSED —" in html and "OBSERVE — earning evidence" in html
+          and "VETOED —" in html and "ONE-UNIVERSE RIVER" in html
+          and "NEWS PULSE in the decision path" in html
+          and "ARMED — waiting for a qualifying dip" not in html)
+    check("T68 readiness truth: real funnel reasons on every book incl GEKKO + river/news footers", ok, "")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -1087,7 +1167,10 @@ if __name__ == "__main__":
               t54_canonical_fingerprint_merge,
               t55_dup_buy_guard_and_canon_ledger, t56_master_mirror_law,
               t57_forward_ledger_and_vault, t58_registry_vault_classes,
-              t59_workflow_law, t60_maturity_gate, t61_equity_truth):
+              t59_workflow_law, t60_maturity_gate, t61_equity_truth,
+              t62_one_universe_river, t63_trajectory_veto, t64_news_in_decision_path,
+              t65_health_reads_authority, t66_modal_contract, t67_portals_and_spotlight,
+              t68_readiness_truth):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

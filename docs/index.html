@@ -197,6 +197,9 @@
 <div id="content">
   <div id="alerts"></div>
   <section data-cat="cmd" style="margin-bottom:10px">
+    <div class="quads" id="quadrantsCmd"></div>
+    <div id="sleeveSpotCmd" style="margin:8px 0"></div>
+
     <div class="master-card" onclick="openMaster()">
       <div style="color:#d4af37;font-size:13px;letter-spacing:2px;font-weight:bold">MASTER ACCOUNT</div>
       <div class="master-eq" id="mcEq">$10,000.00</div>
@@ -216,6 +219,7 @@
     <div id="quarPanel" style="margin:6px 0"></div>
     <div id="gekkoNote" style="margin:6px 0"></div>
     <div class="quads" id="quadrants"></div>
+    <div id="sleeveSpot" style="margin:8px 0"></div>
     <div id="scanStatus" class="dim" style="font-size:11px;margin-top:8px;padding:7px;border:1px dashed var(--line)">scanning…</div>
     <div class="note">All four books are live and independent — own universe, own arena, own champion, own $10k (crypto 24/7 · stocks NYSE sessions · metals 24/5 · energy daily). Champions elected per book by forward survivability; the WIDE 280-grid sweeps 3×/day; quiet books still learn every cycle (fingerprints, rhythm, backtests) while waiting for a qualified setup.</div>
   </div></section>
@@ -274,7 +278,8 @@
 <section data-cat="brain"><div class="hd">🔮 DR. STRANGE — SELF-GRADED PROJECTIONS · its own career record feeds the gate</div><div class="bd"><div id="drPanel" class="dim">loading…</div></div></section>
 <section data-cat="brain"><div class="hd">📁 SYMBOL DOSSIER — everything the system knows about one name: rhythm, peaks, ETA, likelihoods, trajectory</div><div class="bd"><div id="dossierPanel" class="dim">loading…</div></div></section>
 <section data-cat="brain"><div class="hd">👁 ALL CHARTS, ONE EYESHOT — every open position with entry · target · stop overlaid</div><div class="bd"><div id="eyeshotGrid" class="dim">no open positions yet — fills the moment a book buys</div></div></section>
-<section data-cat="strategy"><div class="hd">🧪 STRATEGY LAB — A / B / C / D discipline race (which position management compounds?)</div><div class="bd"><div id="slabBody" class="dim">loading…</div></div></section>
+<section data-cat="strategy"><div class="hd">🧪 STRATEGY LAB — A / B / C / D discipline race (which position management compounds?)</div><div class="bd"><div id="slabBody" class="dim">loading…</div>
+    <div class="dim" style="font-size:9px;margin:4px 0 8px">🌊 ONE UNIVERSE — sleeves trade the BOOKS’ own candidate stream; every close flows back as maturity evidence (LAB_OUTCOMES) and the leader steers Master policy. Probes, not funded — the five books + Master are the money.</div></div></section>
 <section data-cat="strategy"><div class="hd">🎯 CONFIDENCE ENGINE — the unified prediction score (every signal, one number)</div><div class="bd"><div id="confBody" class="dim">loading…</div></div></section>
 <section data-cat="strategy"><div class="hd">👑 CHAMPION TRUTH PANEL — who's champion, why, and what blocks promotion</div><div class="bd"><div class="dim" style="font-size:10px;margin-bottom:6px"><b>ROLE (7.0): ATTRIBUTION.</b> <span id="dsrLine" class="dim"></span><br> Fingerprints drive every fitted name; the champion is the fallback strategist for unfitted ones and the label forensics attributes by. Rotation machinery stays (anti-flip-flop), the title stops overclaiming.</div>
     <div class="note"><b>Answers:</b> why this champion · is it the survivability leader · which tier · what promotion needs · what's blocking. No guessing.</div>
@@ -332,7 +337,8 @@
     <div id="masterBox">loading…</div></div></section>
   <section data-cat="forensics"><div class="hd">🛡 HEATSHIELD — heat-tolerance what-if (default ON · -5% floor)</div><div class="bd"><div class="dim" style="font-size:10px;margin-bottom:6px"><b>SIMULATED — not real trades.</b> These rows replay the SAME entry signals across the recorded tape under two stop policies. They populate from cycle one because they need price history, not fills. Your real book is the ACCOUNT card; this is the what-if that argues for the floor.</div>
     <div class="note"><b>What:</b> replays the SAME entry signals under the tight stop vs the -5% HEATSHIELD floor on real intraday price history. <b>Why:</b> mean-reversion winners often dip below a tight stop before bouncing — this proves whether sitting through more heat nets more after fees. <b>Action:</b> if Δ stays positive over the week, keep HEATSHIELD on; if negative, flip it off.</div>
-    <div id="heatBox">accumulating signals…</div></div></section>
+    <div id="heatBox">accumulating signals…</div>
+    <div class="dim" style="font-size:9px;margin:4px 0 8px">⚠ backtest replay on PRESERVED price history — not live trades since reset; these numbers legitimately survive wipes (the replay is the point).</div></div></section>
   <section data-cat="forensics"><div class="hd">💱 FEE SCENARIOS — same trades, different venue/order type</div><div class="bd">
     <div class="note"><b>What:</b> our exact realized trades, re-charged at real 2026 fee rates for different venues and order types. <b>Why:</b> order type and venue are the biggest lever we have — limit (maker) orders and a low-flat venue can multiply take-home with no change to the edge. <span class="dim">OBSERVATIONAL.</span></div>
     <div id="feeScenBox">loading…</div></div></section>
@@ -452,11 +458,34 @@
 <div id="modal"><div id="modalBox"><button id="modalClose" onclick="document.getElementById('modal').style.display='none'">CLOSE ✕</button>
   <div id="modalTitle" style="font-size:17px;font-weight:bold"></div><div id="modalThesis" class="note"></div>
   <div class="ctrls" id="mIv" style="margin:6px 0"><button data-h="24">1D</button><button data-h="72">3D</button><button data-h="168">1W</button><button data-h="0" class="on">ALL</button></div>
-  <div id="chartHost" style="border:1px solid var(--line);padding:4px">loading…</div><div id="mStats" class="note"></div>
+  <div i
+async function renderSleeveSpotlight(){try{
+  const ev=await jget('data/LAB_EVIDENCE.json').catch(()=>null);
+  let sp=ev&&ev.spotlight;
+  if(!sp){const sl=await jget('data/STRATEGY_LAB.json').catch(()=>null);const bi=(sl&&sl.by_industry)||{};
+    for(const bk in bi){for(const r of bi[bk]){if((r.closed||0)>=1&&(!sp||((r.delta_vs_hodl??r.return_pct)>(sp.delta_vs_hodl??sp.return_pct)))){sp=Object.assign({book:bk},r);}}}}
+  const river=ev?('\ud83c\udf0a river: <b>'+(ev.resolved_total||0)+'</b> workshop outcomes ('+(ev.resolved_24h||0)+' in 24h) feed the books\u2019 maturity gate'):'';
+  const html= sp? ('<div class="quad" onclick="openSleeve(\''+sp.book+'\',\''+sp.sleeve+'\')" style="cursor:pointer;border-top:5px solid #d4af37;background:linear-gradient(180deg,rgba(212,175,55,.10),transparent)">'
+   +'<div class="quad-h" style="color:#d4af37">\ud83c\udfc6 CHAMPION SLEEVE \u2014 '+String(sp.book||'').toUpperCase()+':'+sp.sleeve+' '+(sp.name||'')+'</div>'
+   +'<div class="quad-eq '+((sp.return_pct||0)>=0?'pos':'neg')+'">$'+(sp.equity!=null?Number(sp.equity).toFixed(2):'\u2014')+'</div>'
+   +'<div class="quad-sub">'+((sp.return_pct||0)>=0?'+':'')+(sp.return_pct||0)+'% \u00b7 \u0394 vs HODL '+(sp.delta_vs_hodl==null?'\u2014':((sp.delta_vs_hodl>=0?'+':'')+sp.delta_vs_hodl+'%'))+' \u00b7 vault $'+Number(sp.vault_usd||0).toFixed(2)+'</div>'
+   +'<div class="quad-champ">'+(sp.open||0)+' open \u00b7 '+(sp.closed||0)+' closed \u00b7 win '+(sp.win_rate==null?'\u2014':sp.win_rate+'%')+'</div>'
+   +'<div class="quad-st">STRATEGY LAB \u00b7 workshop probe (not funded) \u00b7 leads Master policy \u00b7 one universe: trades the books\u2019 own candidates</div>'
+   +'<div style="font-size:9px;opacity:.7;margin-top:4px">'+river+'</div></div>') : ('<div class="dim" style="font-size:10px">\ud83c\udfc6 champion sleeve \u2014 first closes pending; '+river+'</div>');
+  ['sleeveSpot','sleeveSpotCmd'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML=html;});
+}catch(e){__pfail(e)}}
+d="chartHost" style="border:1px solid var(--line);padding:4px">loading…</div><div id="mStats" class="note"></div>
 </div></div>
 
 </div><!--/content-->
 <script>
+function __modalSkel(){return '<button id="modalClose" onclick="__closeModal()">CLOSE \u2715</button>'+'<div id="modalTitle" style="font-size:17px;font-weight:bold"></div><div id="modalThesis" class="note"></div>'+'<div class="ctrls" id="mIv" style="margin:6px 0"><button data-h="24" onclick="__miv(this)">1D</button><button data-h="72" onclick="__miv(this)">3D</button><button data-h="168" onclick="__miv(this)">1W</button><button data-h="0" class="on" onclick="__miv(this)">ALL</button></div>'+'<div id="chartHost" style="border:1px solid var(--line);padding:4px">loading\u2026</div><div id="mStats" class="note"></div>'+'<div class="dim" style="font-size:9px;margin-top:6px">closed-market names render last-session daily candles \u2014 sparse straight lines are REAL backfill data, not simulation; intraday resumes at the next open.</div>';}
+function __resetModalBox(){var b=document.getElementById('modalBox');if(b)b.innerHTML=__modalSkel();}
+function __closeModal(){var m=document.getElementById('modal');if(m)m.style.display='none';}
+function __miv(b){document.querySelectorAll('#mIv button').forEach(x=>x.classList.remove('on'));b.classList.add('on');CH=+b.dataset.h;try{drawChart();}catch(e){__pfail(e)}}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')__closeModal();});
+window.addEventListener('load',()=>{var m=document.getElementById('modal');if(m)m.addEventListener('click',e=>{if(e.target===m)__closeModal();});});
+
 function __pfail(e){try{window.__RFAULTS=window.__RFAULTS||[];var w=String((e&&e.stack)||'').split('\n')[1]||'';var fn=(w.match(/at (\w+)/)||[])[1]||'render';__RFAULTS.push(fn+': '+String((e&&e.message)||e));var el=document.getElementById('renderFaults');if(!el){el=document.createElement('div');el.id='renderFaults';el.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#7a1f1f;color:#ffe1e1;font:10px monospace;padding:3px 8px;z-index:9999;';document.body.appendChild(el);}el.textContent='\u26a0 RENDER FAULTS '+window.__RFAULTS.length+' (broken \u2260 pending \u00b7 7.0 fail-loud) \u2014 '+window.__RFAULTS.slice(-3).join(' \u00b7 ');console.warn('render fault',e);}catch(_){}}
 var CACHE_BUST=Date.now();
 const _NULLSTUB=new Proxy({},{get:(t,k)=>{if(k==='style'||k==='classList'||k==='dataset')return _NULLSTUB;if(k==='innerHTML'||k==='textContent'||k==='value'||k==='className')return '';if(typeof k==='string')return ()=>_NULLSTUB;return undefined;},set:()=>true});
@@ -511,7 +540,7 @@ async function load(){
   // each render is isolated: a bad/missing field in one panel can never blank the rest
   const safe=(fn,name)=>{try{fn();}catch(e){console.error(name,e);}};
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
-  safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov,ch),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
+  safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderSleeveSpotlight(),'sspot'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov,ch),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderPos('aggressive',$('posAggressive')),'posG'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
   safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderMasterBrainPanel(),'mbp'); safe(()=>renderDiscovery(),'disc'); safe(()=>renderQuestions(),'quest'); safe(()=>renderGeometry(),'geo'); safe(()=>renderSizerStrip(),'szr'); safe(()=>renderCalibration(),'calib'); safe(()=>renderDataLedger(),'dled'); safe(()=>renderDSR(),'dsr'); safe(()=>renderEngStrip(),'estrip'); safe(()=>renderMTFLadder(),'mtfl'); safe(()=>renderBrain(),'brain'); safe(()=>renderStrategyLab(),'slab'); safe(()=>renderConfidence(),'conf'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>renderWarmup(),'warm'); safe(()=>renderMasterReject(),'mrej'); safe(()=>renderWiring(),'wire'); safe(()=>renderFunnel(),'fun'); safe(()=>renderQuarantine(),'quar'); safe(()=>renderGekkoNote(),'gekko'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>renderMV(),'mv'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority'); safe(()=>renderFive(),'five');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
@@ -839,7 +868,7 @@ const YT_FEEDS=[
  {t:'Bloomberg Business',src:'QB5BNdBFujE'},
  {t:'SP500 Live',src:'R6sB7NJm9LI'},
  {t:'Gold & Silver Live (XAU/XAG)',src:'wJvRPbLvUig'},
- {t:'CNBC (latest lives)',src:'videoseries?list=PLDt0J62yU45sN1rBmNiSRr12acZBnPAZy',pl:true},
+ {t:'CNBC-TV18',src:'1_Ih0JYmkjI'},   // operator swap: youtube.com/@CNBC-TV18 · watch?v=1_Ih0JYmkjI
  {t:'Sky News (24/7 live)',src:'w9uJg68CV4g'},   // 5.1: Schwab stream went dark — replaced with a stable 24/7 broadcaster
 ];   // 5.1B: feeds 7–9 removed by operator directive — stale streams have no home here
 function ytCmd(i,func,args){const f=document.getElementById('ytf'+i);if(f&&f.contentWindow)f.contentWindow.postMessage(JSON.stringify({event:'command',func:func,args:args||[]}),'*');}
@@ -928,16 +957,26 @@ async function renderWarmup(){try{const el=$('warmupPanel');if(!el)return;
   const warm=mh.entry_warm||0;const need=24;  // strict warmup points
   // first-trade readiness = warmup done AND a qualifying dip AND (for hard-gate books) regime not red
   const regs=(L.regimes)||{};
-  const rows=['crypto','stock','metal','energy'].map(b=>{const r=regs[b]||'—';
-    const pos=((L[b]||{}).positions||[]).length;
+  const pq=(L.post_wipe_quiet||{});
+  const rows=['crypto','stock','metal','energy','aggressive'].map(b=>{const r=regs[b==='aggressive'?'crypto':b]||'—';
+    const B=(L[b]||{});const pos=(B.positions||[]).length;const fun=B.funnel||{};const rej=fun.rejections||{};
+    const cands=fun.candidates_after_gates||0;const imm=rej.immature||0;const traj=rej.trajectory||0;
     let state,col;
     if(pos>0){state='TRADING — '+pos+' open';col='pos';}
+    else if(B.skipped){state='MARKET CLOSED — '+(((B.why||'').replace(/^market closed[^A-Za-z0-9]*/i,''))||'resumes at next session open (weekend/holiday)');col='dim';}
+    else if(pq.active){state='QUIET — '+Math.ceil(pq.minutes_left||0)+'m left in the post-wipe settle window';col='dim';}
     else if(r==='DOWNTREND'){state='HELD BACK — regime red (gate blocks new entries)';col='neg';}
+    else if(imm>0){state='OBSERVE — earning evidence · '+imm+' candidate(s) immature (needs fit-events / bounce-tries / 3 workshop outcomes — the sleeves are maturing them via the one-universe river)';col='#d4af37';}
+    else if(traj>0){state='VETOED — '+traj+' candidate(s) in multi-window free-fall (trajectory veto: dips buy, collapses wait for a floor)';col='neg';}
+    else if(cands>0){state='GATED — '+cands+' candidate(s) held: '+Object.keys(rej).slice(0,3).join(' · ');col='#d4af37';}
     else if(warm<need){const _mr=(LIVE&&LIVE.marks_health&&LIVE.marks_health.warm_rule)||('need '+need+' pts');state='WARMING UP — '+warm+' pts of live context · rule: '+_mr;col='dim';}
-    else{state='ARMED — waiting for a qualifying dip in '+r;col='#d4af37';}
-    return '<tr><td><b>'+b.toUpperCase()+'</b></td><td class="'+col+'" style="font-size:11px">'+state+'</td></tr>';}).join('');
+    else{state='ARMED — no qualifying dip in '+r+' right now (scanner live)';col='#d4af37';}
+    return '<tr><td><b>'+(b==='aggressive'?'🦎 GEKKO':b.toUpperCase())+'</b></td><td class="'+col+'" style="font-size:11px">'+state+'</td></tr>';}).join('');
+  let foot='';
+  try{const ev=await jget('data/LAB_EVIDENCE.json');if(ev)foot+='<div class="dim" style="font-size:10px;margin-top:4px">\ud83c\udf0a ONE-UNIVERSE RIVER: '+(ev.resolved_total||0)+' resolved workshop outcomes ('+(ev.resolved_24h||0)+' in 24h) count toward maturity \u00b7 lab leaders steer Master policy</div>';}catch(e){}
+  try{const np=await jget('data/NEWS_PULSE_STATUS.json');if(np)foot+='<div class="dim" style="font-size:10px">\ud83d\udcf0 NEWS PULSE in the decision path: mode <b>'+(np.mode||'shadow')+'</b> \u00b7 '+(np.symbols_with_pulse_48h||0)+' names with live 48h pulse \u00b7 every sized candidate logs to NEWS_TILT_AB</div>';}catch(e){}
   el.innerHTML='<div class="hd" style="font-size:12px">\u23f3 FIRST-TRADE READINESS \u2014 why each book is or isn\u2019t trading right now</div>'
-    +'<div class="bd"><table style="font-size:11px"><tbody>'+rows+'</tbody></table></div>';
+    +'<div class="bd"><table style="font-size:11px"><tbody>'+rows+'</tbody></table>'+foot+'</div>';
 }catch(e){__pfail(e)}}
 async function renderMasterReject(){try{const el=$('masterRejectPanel');if(!el)return;
   const d=await jget('data/MASTER_ACCOUNT.json').catch(()=>null);
@@ -1143,7 +1182,7 @@ async function renderBrain(){try{
   }
 }catch(e){__pfail(e)}}
 
-async function openSleeve(bk,sk){try{const d=await jget('data/STRATEGY_LAB.json');const sv=(d.sleeves||{})[bk+':'+sk]||{};const tr=(sv.trades||[]).slice(-60).reverse();
+async function openSleeve(bk,sk){try{__resetModalBox();const d=await jget('data/STRATEGY_LAB.json');const sv=(d.sleeves||{})[bk+':'+sk]||{};const tr=(sv.trades||[]).slice(-60).reverse();
   $('modal').style.display='block';$('modalTitle').innerHTML='\ud83e\uddea '+bk.toUpperCase()+' \u00b7 sleeve '+sk+' \u2014 full ledger (simulated)';
   $('modalThesis').textContent='every synthetic trade, timestamped \u2014 the transparency law (M6). wipe_epoch '+(d.wipe_epoch||'\u2014')+' \u00b7 trades since wipe '+(sv.trades?sv.trades.length:0);
   $('chartHost').innerHTML='<table><thead><tr><th>when (UTC)</th><th>side</th><th>sym</th><th>style</th><th>wager</th><th>pnl</th><th>net%</th><th>why</th></tr></thead><tbody>'
@@ -1275,9 +1314,14 @@ async function renderMasterLog(){_mlogData=await jget('data/MASTER_LOG.json');_m
 async function renderCompound(){const d=await jget('data/COMPOUNDING_PROJECTION.json');if(!d||!d.projection_on_recent3_avg){$('compoundBox').innerHTML='<div class=dim>need \u22652 days of snapshots to project</div>';return;}
   const rows=d.projection_on_recent3_avg.map(r=>{const cred=r.credibility==='credible'?'':r.credibility==='speculative'?' <span class=dim>(speculative)</span>':' <span class=dim>(illustrative)</span>';const op=r.credibility==='credible'?'':'opacity:.6';return `<tr style="${op}"><td>${r.horizon}${cred}</td><td class="${r.projected_gain_linear>=0?'pos':'neg'}">$${r.projected_equity_linear.toLocaleString()}</td><td class="${r.projected_gain_linear>=0?'pos':'neg'}">${r.projected_gain_linear>=0?'+':''}$${r.projected_gain_linear.toLocaleString()}</td></tr>`;}).join('');
   $('compoundBox').innerHTML=`<div class="dim" style="margin-bottom:4px">equity now <b>$${d.current_equity.toLocaleString()}</b> \u00b7 running avg <b>$${d.avg_daily_usd_recent3}/day</b> (last 3d) \u00b7 all-time $${d.avg_daily_usd_all}/day \u00b7 from ${d.observed_days} days</div><table style="font-size:11px"><thead><tr><th>horizon</th><th>projected equity</th><th>gain</th></tr></thead><tbody>${rows}</tbody></table><div class="note" style="font-size:10px;color:var(--neg)">${d.honest_note}</div>`;}
-async function renderHealthMatrix(){const d=await jget('data/HEALTH_MATRIX.json');if(!d){return;}
+async function renderHealthMatrix(){
+  // 7.0: reads AUTHORITATIVE api_health.json (fresh every cycle) — the matrix snapshot froze keyless
+  // and lied 0/3 gray. Feeds lights still come from the matrix, stale-tagged when trailing.
+  const d=await jget('data/api_health.json');if(!d){return;}
+  const m=await jget('data/HEALTH_MATRIX.json').catch(()=>null);
+  let staleTag='';try{if(m&&m.generated_at&&d.generated_at){const lag=(new Date(d.generated_at)-new Date(m.generated_at))/60000;if(lag>30)staleTag=' <span class=neg>\u26a0 matrix '+Math.round(lag)+'m stale</span>';}}catch(e){}
   const dot=s=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴',GRAY:'⚪'}[s]||'⚪');
-  const feeds=(d.feeds||[]).map(f=>{if(/LEGACY/i.test(f.name||'')){f=Object.assign({},f,{status:'GRAY',detail:'retired — unused Alpaca legacy, not a fault'});}return f;}).map(f=>`<span style="white-space:nowrap">${dot(f.status)} ${f.name} <span class=dim>${f.detail}</span></span>`).join(' &nbsp;·&nbsp; ');
+  const feeds=((m&&m.feeds)||[]).map(f=>{if(/LEGACY/i.test(f.name||'')){f=Object.assign({},f,{status:'GRAY',detail:'retired — unused Alpaca legacy, not a fault'});}return f;}).map(f=>`<span style="white-space:nowrap">${dot(f.status)} ${f.name} <span class=dim>${f.detail}</span></span>`).join(' &nbsp;·&nbsp; ');
   const kg=((d.key_groups&&d.key_groups.length)?d.key_groups:null)===null?'<span class="dim">awaiting first keyed-lane health beat (writes every cycle from daily/hourly)</span>':(d.key_groups||[]).map(k=>`<span style="white-space:nowrap" title="${(k.all||[]).join(', ')}">${dot(k.status)} ${k.need} <span class=dim>${k.providers_active}/${k.providers_total} sources</span></span>`).join(' &nbsp;·&nbsp; ');
   const fr=d.freshness||{},pr=d.prices||{},nw=d.news||{};
   const cp=d.cron_pressure||{},provs=cp.providers||{};
@@ -1285,7 +1329,7 @@ async function renderHealthMatrix(){const d=await jget('data/HEALTH_MATRIX.json'
   const stg=d.storage||{};
   const dcd=(d.domain_clocks||{}).domains||{};const clocks=Object.entries(dcd).map(([n,v])=>`${n} ${v&&v.open?'🟢open':'⚪closed'}`).join(' · ');
   $('healthMatrix').innerHTML=`
-    <div class="hd" style="font-size:13px">🩺 PROJECT HEALTH — ${d.summary||''}</div>
+    <div class="hd" style="font-size:13px">🩺 PROJECT HEALTH — ${d.summary||(m&&m.summary)||d.overall||''}${staleTag}</div>
     <div style="font-size:11px;padding:6px 0;line-height:1.9"><b>FEEDS:</b> ${feeds}</div>
     <div style="font-size:11px;padding:4px 0;line-height:1.9"><b>DATA-SOURCE FALLBACK DEPTH</b> (want 2+ each): ${kg}</div>
     <div style="font-size:11px;padding:4px 0;color:var(--dim)">
@@ -1341,9 +1385,9 @@ async function openMaster(){
   if(mtr.length){H+='<table style="font-size:10px"><tbody>'+mtr.map(function(x){var pl=(x.pnl!=null)?('<span class="'+(x.pnl>=0?'pos':'neg')+'">'+(x.pnl>=0?'+$':'-$')+Math.abs(x.pnl).toFixed(2)+'</span>'):'';return '<tr><td>'+(x.side||'')+'</td><td>'+(x.sym||'')+'</td><td>'+pl+'</td><td class=dim style="font-size:9px">'+(x.t?new Date(x.t).toLocaleString():'')+'</td></tr>';}).join('')+'</tbody></table>';}
   else{H+='<div class=dim style="font-size:11px">no closed master trades yet \u2014 they appear here the moment a funded quadrant closes one (fresh wipe = empty is honest)</div>';}
   if(d.honest_note)H+='<div class=dim style="font-size:11px;margin-top:10px;font-style:italic">'+d.honest_note+'</div>';
-  const box=$('modalBox');
-  box.innerHTML='<button id="modalClose" onclick="document.getElementById(\''+'modal'+'\').style.display=\''+'none'+'\'" style="position:absolute;top:8px;right:8px">CLOSE \u2715</button><div style="padding:6px 2px">'+H+'</div>';
-  $('modal').style.display='flex';
+  __resetModalBox();$('mIv').style.display='none';
+  $('chartHost').innerHTML='<div style="padding:6px 2px">'+H+'</div>';
+  $('modal').style.display='block';
 }
 async function openQuadrant(bk){
   const NM={crypto:'CRYPTO',stock:'STOCKS',metal:'METALS',energy:'ENERGY',aggressive:'\ud83e\udd8e GEKKO'}[bk]||bk.toUpperCase();
@@ -1409,19 +1453,19 @@ async function openQuadrant(bk){
       H+='<tr><td>'+(sd==='BUY'?'▲ BUY':'▼ SELL')+'</td><td style="color:'+COL+'">'+sy+'</td><td>$'+f(pr,4)+'</td><td class="'+(pl>=0?'pos':'neg')+'">'+(pl!=null?'$'+f(pl):'—')+'</td><td class="dim">'+tm+'</td></tr>';});
     H+='</table>';} else H+='<div class="dim" style="font-size:11px">no trades yet</div>';
 
-  const box=$('modalBox');
-  box.innerHTML='<button id="modalClose" onclick="document.getElementById(\'modal\').style.display=\'none\'" style="position:absolute;top:8px;right:8px">CLOSE ✕</button><div style="padding:6px 2px">'+H+'</div>';
-  $('modal').style.display='flex';
+  __resetModalBox();$('mIv').style.display='none';
+  $('chartHost').innerHTML='<div style="padding:6px 2px">'+H+'</div>';
+  $('modal').style.display='block';
 }
 function renderQuadrants(cv){const L=LIVE||{};
   const meta={crypto:{n:'CRYPTO',col:'#a855f7'},stock:{n:'STOCKS',col:'#2f74ff'},metal:{n:'METALS',col:'#b9bcc4'},energy:{n:'ENERGY',col:'#22b07d'},aggressive:{n:'\ud83e\udd8e GEKKO',col:'#e0b341'}};
-  $('quadrants').innerHTML=['crypto','stock','metal','energy','aggressive'].map(bk=>{const b=L[bk]||{},champ=L['champion_'+bk]||(bk==='aggressive'?((b.equity!=null)?'GEKKO 2%\u21922% profile':null):null);
+  const __qh7=['crypto','stock','metal','energy','aggressive'].map(bk=>{const b=L[bk]||{},champ=L['champion_'+bk]||(bk==='aggressive'?((b.equity!=null)?'GEKKO 2%\u21922% profile':null):null);
     const eq=b.equity!=null?b.equity:10000,r=b.return_pct||0,o=b.open_positions||0;
     const st=champ?'TRADING':(b.equity!=null?'READY · awaiting data feed':'—'),m=meta[bk],mh=getMarketHours(bk==='aggressive'?'crypto':bk);
     return `<div class="quad" onclick="openQuadrant('${bk}')" style="cursor:pointer;border-top:5px solid ${m.col}"><div class="quad-h" style="color:${m.col}">${m.n} · ${mh.name}</div>`+
       `<div class="quad-eq ${r>0?'pos':r<0?'neg':''}">$${f(eq)}</div>`+
       `<div class="quad-sub">${sg(r)}% · ${o} open</div>`+
-      `<div class="quad-champ">champ: ${champ||'—'}</div><div class="quad-st" title="${mh.msg}">${st}</div><div style="font-size:9px;opacity:.55;margin-top:4px;color:${m.col}">click → portfolio &amp; decisions ↗</div></div>`;}).join('');}
+      `<div class="quad-champ">champ: ${champ||'—'}</div><div class="quad-st" title="${mh.msg}">${st}</div><div style="font-size:9px;opacity:.55;margin-top:4px;color:${m.col}">click → portfolio &amp; decisions ↗</div></div>`;}).join('');['quadrants','quadrantsCmd'].forEach(_i7=>{const _e7=document.getElementById(_i7);if(_e7)_e7.innerHTML=__qh7;});}
 function renderAcct(L){if(!L)return;
   const quads=['crypto','stock','metal','energy'],meta={crypto:{n:'CRYPTO',abbr:'C'},stock:{n:'STOCK',abbr:'S'},metal:{n:'METAL',abbr:'M'},energy:{n:'ENERGY',abbr:'E'}};
   let rows=[['ALL 4 BOOKS (independent) · total equity','$'+f(L.combined_equity),''],['SUM REALIZED P&L (4 separate books)','$'+f(L.combined_realized_pnl),(L.combined_realized_pnl>=0?'pos':'neg')]];
@@ -1585,7 +1629,7 @@ async function renderAuthority(){const a=await jget('data/authority_events.json'
 }
 // ticker chart modal (our own chart system)
 let PRICES=null,CSYM=null,CE=0,CM=0,CH=0;
-async function openChart(sym,entry,mark){CSYM=sym;CE=entry;CM=mark;CH=0;$('modal').style.display='block';
+async function openChart(sym,entry,mark){__resetModalBox();CSYM=sym;CE=entry;CM=mark;CH=0;$('modal').style.display='block';
   $('modalTitle').innerHTML=icon(sym)+sym+' · SILMARIL view';
   // 2026-07-10: use the OPEN POSITION's own fitted target/stop when one exists —
   // the modal previously drew the CHAMPION's lines (e.g. +3%) even when the
