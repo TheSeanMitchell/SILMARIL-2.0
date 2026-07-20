@@ -4,6 +4,9 @@ on:
   workflow_dispatch: {}
   schedule:
     - cron: "15 4 * * 1"
+concurrency:
+  group: silmaril-verify
+  cancel-in-progress: true   # 7.0.1: read-only lane, newest wins
 jobs:
   verify:
     runs-on: ubuntu-latest

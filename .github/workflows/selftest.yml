@@ -2,12 +2,27 @@ name: selftest (regression battery)
 # 5.1 — every historical bug is a permanent tripwire. Read-only; no state writes;
 # runs weekly and on demand. A red run here means an old ghost is trying to return.
 on:
-  # 7.0 FINAL: a red battery must never wait six days to be seen — daily + every push.
+  # 7.0.1 ROOT CAUSE of the stacking + red selftests: the engine commits DATA every ~10 min;
+  # unfiltered 'push' fired the battery on every one of those commits — dozens of stacked runs/hour,
+  # racing a half-written tree, red from noise not from real regressions. Now: push runs ONLY when
+  # CODE changes; data commits never trigger it. Daily schedule + manual dispatch remain.
   push:
     branches: [ main ]
+    paths:
+      - 'silmaril/**'
+      - 'scripts/**'
+      - 'docs/index.html'
+      - 'docs/silmaril_chart.js'
+      - 'docs/data/PARAM_CATALOG.json'
+      - 'docs/data/STORE_REGISTRY.json'
+      - 'requirements.txt'
+      - '.github/workflows/**'
   schedule:
     - cron: "45 3 * * *"
   workflow_dispatch:
+concurrency:
+  group: silmaril-selftest
+  cancel-in-progress: true    # 7.0.1: newest code wins; stale racers are cancelled, never stacked
 permissions:
   contents: read
   issues: write   # 7.0 FINAL: the lane files its own 🔴 ENGINE RED issue on failure
@@ -27,9 +42,11 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            try {
             const title = '🔴 ENGINE RED — selftest lane failing';
             const body = `Run failed: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\nLane: selftest · ${new Date().toISOString()}\nThe machine reports its own faults now (7.0 fail-loud law). Close this issue after the lane is green again.`;
             const open = await github.rest.issues.listForRepo({owner: context.repo.owner, repo: context.repo.repo, state: 'open', labels: 'engine-red'});
             const hit = open.data.find(i => i.title === title);
             if (hit) { await github.rest.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: hit.number, body}); }
             else { await github.rest.issues.create({owner: context.repo.owner, repo: context.repo.repo, title, body, labels: ['engine-red']}); }
+            } catch(e) { core.warning('fail-reporter itself failed: '+e.message); }  // 7.0.1: the reporter can never mask the real red
