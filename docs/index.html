@@ -459,6 +459,18 @@
   <div id="modalTitle" style="font-size:17px;font-weight:bold"></div><div id="modalThesis" class="note"></div>
   <div class="ctrls" id="mIv" style="margin:6px 0"><button data-h="24">1D</button><button data-h="72">3D</button><button data-h="168">1W</button><button data-h="0" class="on">ALL</button></div>
   <div i
+
+d="chartHost" style="border:1px solid var(--line);padding:4px">loading…</div><div id="mStats" class="note"></div>
+</div></div>
+
+</div><!--/content-->
+<script>
+function __modalSkel(){return '<button id="modalClose" onclick="__closeModal()">CLOSE \u2715</button>'+'<div id="modalTitle" style="font-size:17px;font-weight:bold"></div><div id="modalThesis" class="note"></div>'+'<div class="ctrls" id="mIv" style="margin:6px 0"><button data-h="24" onclick="__miv(this)">1D</button><button data-h="72" onclick="__miv(this)">3D</button><button data-h="168" onclick="__miv(this)">1W</button><button data-h="0" class="on" onclick="__miv(this)">ALL</button></div>'+'<div id="chartHost" style="border:1px solid var(--line);padding:4px">loading\u2026</div><div id="mStats" class="note"></div>'+'<div class="dim" style="font-size:9px;margin-top:6px">closed-market names render last-session daily candles \u2014 sparse straight lines are REAL backfill data, not simulation; intraday resumes at the next open.</div>';}
+function __resetModalBox(){var b=document.getElementById('modalBox');if(b)b.innerHTML=__modalSkel();}
+function __closeModal(){var m=document.getElementById('modal');if(m)m.style.display='none';}
+function __miv(b){document.querySelectorAll('#mIv button').forEach(x=>x.classList.remove('on'));b.classList.add('on');CH=+b.dataset.h;try{drawChart();}catch(e){__pfail(e)}}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')__closeModal();});
+window.addEventListener('load',()=>{var m=document.getElementById('modal');if(m)m.addEventListener('click',e=>{if(e.target===m)__closeModal();});});
 async function renderSleeveSpotlight(){try{
   const ev=await jget('data/LAB_EVIDENCE.json').catch(()=>null);
   let sp=ev&&ev.spotlight;
@@ -474,17 +486,7 @@ async function renderSleeveSpotlight(){try{
    +'<div style="font-size:9px;opacity:.7;margin-top:4px">'+river+'</div></div>') : ('<div class="dim" style="font-size:10px">\ud83c\udfc6 champion sleeve \u2014 first closes pending; '+river+'</div>');
   ['sleeveSpot','sleeveSpotCmd'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML=html;});
 }catch(e){__pfail(e)}}
-d="chartHost" style="border:1px solid var(--line);padding:4px">loading…</div><div id="mStats" class="note"></div>
-</div></div>
 
-</div><!--/content-->
-<script>
-function __modalSkel(){return '<button id="modalClose" onclick="__closeModal()">CLOSE \u2715</button>'+'<div id="modalTitle" style="font-size:17px;font-weight:bold"></div><div id="modalThesis" class="note"></div>'+'<div class="ctrls" id="mIv" style="margin:6px 0"><button data-h="24" onclick="__miv(this)">1D</button><button data-h="72" onclick="__miv(this)">3D</button><button data-h="168" onclick="__miv(this)">1W</button><button data-h="0" class="on" onclick="__miv(this)">ALL</button></div>'+'<div id="chartHost" style="border:1px solid var(--line);padding:4px">loading\u2026</div><div id="mStats" class="note"></div>'+'<div class="dim" style="font-size:9px;margin-top:6px">closed-market names render last-session daily candles \u2014 sparse straight lines are REAL backfill data, not simulation; intraday resumes at the next open.</div>';}
-function __resetModalBox(){var b=document.getElementById('modalBox');if(b)b.innerHTML=__modalSkel();}
-function __closeModal(){var m=document.getElementById('modal');if(m)m.style.display='none';}
-function __miv(b){document.querySelectorAll('#mIv button').forEach(x=>x.classList.remove('on'));b.classList.add('on');CH=+b.dataset.h;try{drawChart();}catch(e){__pfail(e)}}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')__closeModal();});
-window.addEventListener('load',()=>{var m=document.getElementById('modal');if(m)m.addEventListener('click',e=>{if(e.target===m)__closeModal();});});
 
 function __pfail(e){try{window.__RFAULTS=window.__RFAULTS||[];var w=String((e&&e.stack)||'').split('\n')[1]||'';var fn=(w.match(/at (\w+)/)||[])[1]||'render';__RFAULTS.push(fn+': '+String((e&&e.message)||e));var el=document.getElementById('renderFaults');if(!el){el=document.createElement('div');el.id='renderFaults';el.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#7a1f1f;color:#ffe1e1;font:10px monospace;padding:3px 8px;z-index:9999;';document.body.appendChild(el);}el.textContent='\u26a0 RENDER FAULTS '+window.__RFAULTS.length+' (broken \u2260 pending \u00b7 7.0 fail-loud) \u2014 '+window.__RFAULTS.slice(-3).join(' \u00b7 ');console.warn('render fault',e);}catch(_){}}
 var CACHE_BUST=Date.now();
@@ -533,6 +535,15 @@ function renderHealth(){const L=LIVE||{};const el=document.getElementById('healt
 async function load(){
   try{ if(!window.__SIL_CARDS){ const _cc = await jget('data/CONFIDENCE_CARDS.json'); window.__SIL_CARDS = (_cc&&_cc.cards)||{}; window.__SIL_CARDS_META = {n:(_cc&&_cc.n_cards)||0, leaders:(_cc&&_cc.compounder_leaders)||[]}; } }catch(e){ window.__SIL_CARDS = window.__SIL_CARDS||{}; }
   LIVE=await jget('data/paper_sim_live.json');
+  // 7.0.1 RESET-TRUTH BANNER: if a wipe is newer than the live snapshot, or the snapshot is the
+  // reset's own seed, say so at the top instead of letting stale panels impersonate a live engine.
+  try{const wm=await jget('data/WIPE_MARKER.json');let bn=document.getElementById('resetBanner');
+    if(!bn){bn=document.createElement('div');bn.id='resetBanner';bn.style.cssText='display:none;margin:6px 0;padding:7px 10px;border:1px solid #d4af37;color:#d4af37;font-size:11px;font-weight:bold;letter-spacing:.4px;';const hostEl=document.querySelector('main')||document.body;hostEl.insertBefore(bn,hostEl.firstChild);}
+    const wt=wm&&wm.wiped_at?new Date(wm.wiped_at):null;const lt=LIVE&&LIVE.generated_at?new Date(LIVE.generated_at):null;
+    if(LIVE&&LIVE.seeded_by_reset){bn.style.display='block';bn.textContent='\ud83d\udd04 FRESH RESET \u2014 quiet window active \u00b7 first real engine cycle pending \u00b7 every panel below restarts from zero (this is correct, not broken)';}
+    else if(wt&&lt&&wt>lt){bn.style.display='block';bn.textContent='\ud83d\udd04 RESET DETECTED \u2014 the engine has not cycled since the wipe; numbers below are PRE-RESET ghosts for a few more minutes';}
+    else if(bn){bn.style.display='none';}
+  }catch(e){__pfail(e)}
   const cv=await jget('data/champion_validation.json'), gov=await jget('data/CHAMPION_GOVERNANCE.json'), st=await jget('data/CHAMPION_STATUS.json'), ch=await jget('data/champion.json');
   BOOKS.crypto=await jget('data/paper_book_crypto.json'); BOOKS.stock=await jget('data/paper_book_stock.json');
   if(LIVE&&LIVE.champion_live_params){EXIT.t=LIVE.champion_live_params.target;EXIT.s=LIVE.champion_live_params.stop;EXIT.h=LIVE.champion_live_params.max_hold_min;}
@@ -540,9 +551,12 @@ async function load(){
   // each render is isolated: a bad/missing field in one panel can never blank the rest
   const safe=(fn,name)=>{try{fn();}catch(e){console.error(name,e);}};
   if(!LIVE&&!cv){$('alerts').innerHTML='<div class="alert">Data not loaded yet — if this persists, the cycle may not have run. Pull to refresh.</div>';}
-  safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderSleeveSpotlight(),'sspot'); safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov,ch),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
+  safe(()=>renderQuadrants(),'quadrants'); safe(()=>renderSleeveSpotlight(),'sspot');
+  // 7.0.1 LOADING SWEEPER: any panel a wipe left orphaned resolves to an honest pending state
+  // instead of sitting on 'loading…' until its analytics lane happens to run again.
+  try{document.querySelectorAll('div,td,span').forEach(el=>{if(el.children.length===0&&el.textContent.trim()==='loading\u2026'){el.textContent='\u23f3 first cycle pending \u2014 this store rebuilds on the next engine/analytics run';el.classList.add('dim');}});}catch(e){__pfail(e)} safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov,ch),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderPos('aggressive',$('posAggressive')),'posG'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderMasterBrainPanel(),'mbp'); safe(()=>renderDiscovery(),'disc'); safe(()=>renderQuestions(),'quest'); safe(()=>renderGeometry(),'geo'); safe(()=>renderSizerStrip(),'szr'); safe(()=>renderCalibration(),'calib'); safe(()=>renderDataLedger(),'dled'); safe(()=>renderDSR(),'dsr'); safe(()=>renderEngStrip(),'estrip'); safe(()=>renderMTFLadder(),'mtfl'); safe(()=>renderBrain(),'brain'); safe(()=>renderStrategyLab(),'slab'); safe(()=>renderConfidence(),'conf'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>renderWarmup(),'warm'); safe(()=>renderMasterReject(),'mrej'); safe(()=>renderWiring(),'wire'); safe(()=>renderFunnel(),'fun'); safe(()=>renderQuarantine(),'quar'); safe(()=>renderGekkoNote(),'gekko'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>renderMV(),'mv'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority'); safe(()=>renderFive(),'five');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderMasterBrainPanel(),'mbp'); safe(()=>renderDiscovery(),'disc'); safe(()=>renderQuestions(),'quest'); safe(()=>renderGeometry(),'geo'); safe(()=>renderSizerStrip(),'szr'); safe(()=>renderCalibration(),'calib'); safe(()=>renderDataLedger(),'dled'); safe(()=>renderDSR(),'dsr'); safe(()=>renderEngStrip(),'estrip'); safe(()=>{if(typeof renderMTFLadder==='function')renderMTFLadder();},'mtfl'); safe(()=>renderBrain(),'brain'); safe(()=>renderStrategyLab(),'slab'); safe(()=>renderConfidence(),'conf'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>renderWarmup(),'warm'); safe(()=>renderMasterReject(),'mrej'); safe(()=>renderWiring(),'wire'); safe(()=>renderFunnel(),'fun'); safe(()=>renderQuarantine(),'quar'); safe(()=>renderGekkoNote(),'gekko'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>renderMV(),'mv'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority'); safe(()=>renderFive(),'five');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -1319,9 +1333,13 @@ async function renderHealthMatrix(){
   // and lied 0/3 gray. Feeds lights still come from the matrix, stale-tagged when trailing.
   const d=await jget('data/api_health.json');if(!d){return;}
   const m=await jget('data/HEALTH_MATRIX.json').catch(()=>null);
-  let staleTag='';try{if(m&&m.generated_at&&d.generated_at){const lag=(new Date(d.generated_at)-new Date(m.generated_at))/60000;if(lag>30)staleTag=' <span class=neg>\u26a0 matrix '+Math.round(lag)+'m stale</span>';}}catch(e){}
+  let staleTag='',_matrixStale=false;try{if(m&&m.generated_at&&d.generated_at){const lag=(new Date(d.generated_at)-new Date(m.generated_at))/60000;if(lag>30){_matrixStale=true;staleTag=' <span class=neg>\u26a0 feeds snapshot '+Math.round(lag)+'m behind \u2014 health shown from live api_health</span>';}}}catch(e){}
   const dot=s=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴',GRAY:'⚪'}[s]||'⚪');
-  const feeds=((m&&m.feeds)||[]).map(f=>{if(/LEGACY/i.test(f.name||'')){f=Object.assign({},f,{status:'GRAY',detail:'retired — unused Alpaca legacy, not a fault'});}return f;}).map(f=>`<span style="white-space:nowrap">${dot(f.status)} ${f.name} <span class=dim>${f.detail}</span></span>`).join(' &nbsp;·&nbsp; ');
+  // 7.0.1: matrix feeds snapshot can freeze in a keyless lane; when it trails the engine >30m,
+  // show LIVE provider groups from api_health so the panel never looks dead while the engine is fine.
+  const feeds=(!_matrixStale && (m&&m.feeds&&m.feeds.length))
+    ? (m.feeds.map(f=>{if(/LEGACY/i.test(f.name||'')){f=Object.assign({},f,{status:'GRAY',detail:'retired — unused Alpaca legacy, not a fault'});}return f;}).map(f=>`<span style="white-space:nowrap">${dot(f.status)} ${f.name} <span class=dim>${f.detail||''}</span></span>`).join(' &nbsp;·&nbsp; '))
+    : (((d.key_groups||[]).map(g=>`<span style="white-space:nowrap">${dot(g.status)} ${g.need} <span class=dim>${g.providers_active}/${g.providers_total} live</span></span>`).join(' &nbsp;·&nbsp; '))||'<span class="dim">awaiting first health beat</span>');
   const kg=((d.key_groups&&d.key_groups.length)?d.key_groups:null)===null?'<span class="dim">awaiting first keyed-lane health beat (writes every cycle from daily/hourly)</span>':(d.key_groups||[]).map(k=>`<span style="white-space:nowrap" title="${(k.all||[]).join(', ')}">${dot(k.status)} ${k.need} <span class=dim>${k.providers_active}/${k.providers_total} sources</span></span>`).join(' &nbsp;·&nbsp; ');
   const fr=d.freshness||{},pr=d.prices||{},nw=d.news||{};
   const cp=d.cron_pressure||{},provs=cp.providers||{};
@@ -1329,7 +1347,7 @@ async function renderHealthMatrix(){
   const stg=d.storage||{};
   const dcd=(d.domain_clocks||{}).domains||{};const clocks=Object.entries(dcd).map(([n,v])=>`${n} ${v&&v.open?'🟢open':'⚪closed'}`).join(' · ');
   $('healthMatrix').innerHTML=`
-    <div class="hd" style="font-size:13px">🩺 PROJECT HEALTH — ${d.summary||(m&&m.summary)||d.overall||''}${staleTag}</div>
+    <div class="hd" style="font-size:13px">🩺 PROJECT HEALTH — ${(_matrixStale?d.overall:'')||d.summary||(m&&m.summary)||d.overall||''}${staleTag}</div>
     <div style="font-size:11px;padding:6px 0;line-height:1.9"><b>FEEDS:</b> ${feeds}</div>
     <div style="font-size:11px;padding:4px 0;line-height:1.9"><b>DATA-SOURCE FALLBACK DEPTH</b> (want 2+ each): ${kg}</div>
     <div style="font-size:11px;padding:4px 0;color:var(--dim)">
@@ -1650,15 +1668,20 @@ function drawChart(){const s=(PRICES&&PRICES.samples)?PRICES.samples[CSYM]:null;
       +'</div>';$('mStats').textContent='';return;}
   const now=Date.now();let rows=s.map(r=>[new Date(r[0]).getTime(),r[1]]).filter(r=>r[1]>0);if(CH>0)rows=rows.filter(r=>r[0]>=now-CH*3600000);
   if(rows.length<2){$('chartHost').textContent='not enough points in window';return;}
-  const W=820,H=300,pad=44,xs=rows.map(r=>r[0]),ys=rows.map(r=>r[1]),tgt=CE*(1+EXIT.t),stp=CE*(1-EXIT.s);
-  const ymin=Math.min(...ys,stp),ymax=Math.max(...ys,tgt),yr=(ymax-ymin)||1,xmin=Math.min(...xs),xr=(Math.max(...xs)-xmin)||1;
+  // 7.0.1 NULL-POSITION GUARD (the broken click-in): opening any ticker WITHOUT an open position
+  // passed CE/CM=null → tgt=null → hl(null).toFixed crashed drawChart → chartHost stuck on 'loading…'.
+  // Post-reset that was EVERY ticker. Now non-held names render clean price history.
+  const hasPos=(CE!=null&&isFinite(CE)&&CE>0&&CM!=null&&isFinite(CM)&&CM>0);
+  const W=820,H=300,pad=44,xs=rows.map(r=>r[0]),ys=rows.map(r=>r[1]),tgt=hasPos?CE*(1+EXIT.t):null,stp=hasPos?CE*(1-EXIT.s):null;
+  const ymin=Math.min(...ys,...(hasPos?[stp]:[])),ymax=Math.max(...ys,...(hasPos?[tgt]:[])),yr=(ymax-ymin)||1,xmin=Math.min(...xs),xr=(Math.max(...xs)-xmin)||1;
   const X=t=>pad+(t-xmin)/xr*(W-pad-10),Y=v=>H-pad-(v-ymin)/yr*(H-pad-20);
   const line=rows.map((r,i)=>(i?'L':'M')+X(r[0]).toFixed(1)+' '+Y(r[1]).toFixed(1)).join(' ');
-  const hl=(v,c,l,dash)=>`<line x1="${pad}" y1="${Y(v).toFixed(1)}" x2="${W-10}" y2="${Y(v).toFixed(1)}" stroke="${c}" stroke-width="1.5" ${dash?'stroke-dasharray="5 3"':''}/><text x="${W-12}" y="${(Y(v)-3).toFixed(1)}" text-anchor="end" font-size="11" font-weight="bold" fill="${c}">${l} $${v.toFixed(4)}</text>`;
+  const hl=(v,c,l,dash)=>{if(v==null||!isFinite(v))return'';return `<line x1="${pad}" y1="${Y(v).toFixed(1)}" x2="${W-10}" y2="${Y(v).toFixed(1)}" stroke="${c}" stroke-width="1.5" ${dash?'stroke-dasharray="5 3"':''}/><text x="${W-12}" y="${(Y(v)-3).toFixed(1)}" text-anchor="end" font-size="11" font-weight="bold" fill="${c}">${l} $${v.toFixed(4)}</text>`;};
   $('chartHost').innerHTML=`<svg viewBox="0 0 ${W} ${H}"><rect x="0" y="0" width="${W}" height="${H}" fill="var(--bg)"/><line x1="${pad}" y1="${H-pad}" x2="${W-10}" y2="${H-pad}" stroke="var(--line)"/><line x1="${pad}" y1="20" x2="${pad}" y2="${H-pad}" stroke="var(--line)"/>
-    <rect x="${pad}" y="${Y(tgt).toFixed(1)}" width="${W-pad-10}" height="${(Y(CE)-Y(tgt)).toFixed(1)}" fill="var(--pos)" opacity="0.08"/>
+    ${hasPos?`<rect x="${pad}" y="${Y(tgt).toFixed(1)}" width="${W-pad-10}" height="${(Y(CE)-Y(tgt)).toFixed(1)}" fill="var(--pos)" opacity="0.08"/>`:''}
     <path d="${line}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>
     ${hl(CE,'var(--fg)','ENTRY',true)}${hl(tgt,'var(--pos)','TARGET',false)}${hl(stp,'var(--neg)','STOP',false)}${hl(CM,'var(--accent)','MARK',true)}</svg>`;
+  if(!hasPos){$('mStats').innerHTML='<span class="dim">no open position — price history only (entry/target/stop overlays appear when a book holds this name)</span>';return;}
   const chg=(CM/CE-1)*100;$('mStats').innerHTML=`Live uPL <b class="${cl(chg)}">${sg(chg)}%</b> · to target <b>${f((tgt/CM-1)*100)}%</b> · to stop <b>${f((CM/stp-1)*100)}%</b> · ${rows.length} pts`;
 }
 document.querySelectorAll('#mIv button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#mIv button').forEach(x=>x.classList.remove('on'));b.classList.add('on');CH=+b.dataset.h;drawChart();});

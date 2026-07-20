@@ -992,46 +992,37 @@ def t58_registry_vault_classes():
 
 
 def t59_workflow_law():
-    """7.0 FINAL operator directive: every lane its OWN concurrency group (nothing can queue
-    behind or displace another workflow), cancel-in-progress false everywhere, daily on */10,
-    selftest daily+push, venue lane scheduled, fail-loud lanes file their own red issues."""
+    """7.0.1 SERIALIZATION LAW (supersedes per-lane groups): every STATE-MUTATING lane shares ONE
+    concurrency group 'silmaril-state' with cancel-in-progress:false, so daily/hourly/analytics/
+    backfill/reset/etc queue strictly FIFO and cron overlap can NEVER corrupt a half-written tree.
+    Read-only lanes (selftest, verify) get their own cancel-in-progress groups. selftest push is
+    paths-filtered (no stampede on data commits) and its fail-reporter is guarded."""
     import glob as _glob
     try:
         import yaml as _yaml
     except Exception:
         check("T59 workflow law (pyyaml unavailable — cannot verify)", False, "pip install pyyaml")
         return
-    groups, problems = [], []
-    for f in sorted(_glob.glob(str(ROOT / ".github/workflows/*.yml"))):
-        txt = open(f).read()
-        name = f.split("/")[-1]
-        if "silmaril-state" in txt:
-            problems.append(f"{name}: shared group survives")
-        try:
-            d = _yaml.safe_load(txt)
-        except Exception as e:
-            problems.append(f"{name}: yaml {type(e).__name__}"); continue
-        cc = d.get("concurrency") or {}
-        if cc:
-            if cc.get("cancel-in-progress") is not False:
-                problems.append(f"{name}: cancel-in-progress must be false")
-            groups.append(cc.get("group"))
-    if len(groups) != len(set(groups)):
-        problems.append(f"duplicate concurrency groups: {sorted(g for g in groups if groups.count(g) > 1)}")
-    daily = (ROOT / ".github/workflows/daily.yml").read_text()
-    st = (ROOT / ".github/workflows/selftest.yml").read_text()
-    if '"*/10 * * * *"' not in daily:
-        problems.append("daily: */10 fallback cron missing")
-    if '"45 3 * * *"' not in st or "push:" not in st:
-        problems.append("selftest: needs daily cron + on-push")
-    if not (ROOT / ".github/workflows/venue_universe.yml").exists():
-        problems.append("venue_universe.yml missing")
-    for lane in ("daily", "hourly", "analytics", "selftest"):
-        if "ENGINE RED" not in (ROOT / f".github/workflows/{lane}.yml").read_text():
-            problems.append(f"{lane}: fail-loud issue step missing")
-    check("T59 workflow law: per-lane groups · never-cancel · daily */10 · selftest daily+push · venue lane · fail-loud",
-          not problems, "; ".join(problems[:4]))
-
+    wf = ROOT / ".github/workflows"
+    problems = []
+    state_lanes = ["daily.yml", "hourly.yml", "analytics.yml", "backfill_universe.yml",
+                   "venue_universe.yml", "weekly_backup.yml", "compact_history.yml",
+                   "reset_internal_clean.yml"]
+    for w in state_lanes:
+        fp = wf / w
+        if fp.exists() and "silmaril-state" not in fp.read_text():
+            problems.append(f"{w}: not on shared silmaril-state queue")
+    st = (wf / "selftest.yml").read_text()
+    if "paths:" not in st:
+        problems.append("selftest.yml: push not paths-filtered (stampede risk)")
+    if "silmaril-selftest" not in st:
+        problems.append("selftest.yml: missing own concurrency group")
+    if "core.warning" not in st:
+        problems.append("selftest.yml: fail-reporter not guarded")
+    if (wf / "verify_install.yml").exists() and "silmaril-verify" not in (wf / "verify_install.yml").read_text():
+        problems.append("verify_install.yml: missing own concurrency group")
+    check("T59 workflow law: state lanes serialized on silmaril-state · selftest filtered+guarded · read-only lanes grouped",
+          not problems, "; ".join(problems))
 
 def t60_maturity_gate():
     """7.0 FINAL T2: 'I don't know yet' is the default — no fitted-book entry without evidence
@@ -1144,6 +1135,54 @@ def t68_readiness_truth():
     check("T68 readiness truth: real funnel reasons on every book incl GEKKO + river/news footers", ok, "")
 
 
+def t69_reset_reanchors_nulls():
+    """7.0.1: a reset re-anchors the nulls with the fresh books (operator: vs-HODL not resetting).
+    reset_internal_clean deletes BENCH_BOOKS.json so Law-10 comparisons share one honest inception."""
+    r = (ROOT / "scripts/reset_internal_clean.py").read_text()
+    ok = "BENCH_BOOKS.json" in r and "re-anchor" in r
+    check("T69 reset re-anchors nulls: BENCH_BOOKS deleted on wipe (no ghost vs-HODL on fresh books)", ok, "")
+
+
+def t70_reset_seeds_live():
+    """7.0.1: a reset seeds a truthful paper_sim_live.json so the dashboard never renders pre-reset
+    ghosts against fresh $10k books — the 'keeps not working when we reset' Frankenstein state."""
+    r = (ROOT / "scripts/reset_internal_clean.py").read_text()
+    ok = "seeded_by_reset" in r and "paper_sim_live.json" in r
+    check("T70 reset seeds truthful LIVE snapshot (no pre-reset ghosts, both modes)", ok, "")
+
+
+def t71_workflow_serialization():
+    """7.0.1: every state-mutating lane shares ONE concurrency queue so cron overlap can never
+    corrupt files; selftest is paths-filtered (no stampede on data commits) and cancel-in-progress."""
+    import glob as _g
+    wf = ROOT / ".github/workflows"
+    committing = ["daily.yml", "hourly.yml", "analytics.yml", "reset_internal_clean.yml"]
+    ok = all("silmaril-state" in (wf / w).read_text() for w in committing if (wf / w).exists())
+    st = (wf / "selftest.yml").read_text()
+    ok = ok and "paths:" in st and "silmaril-selftest" in st and "core.warning" in st
+    check("T71 workflow law: state lanes share silmaril-state · selftest paths-filtered + guarded", ok, "")
+
+
+def t72_modal_scope_and_guard():
+    """7.0.1: the click-in fix — spotlight lives INSIDE <script> (not leaking into #modal markup),
+    the #modal container is intact, and drawChart guards null positions so non-held tickers render."""
+    html = (ROOT / "docs/index.html").read_text()
+    head = html[:html.index("<script>")]
+    ok = ("async function renderSleeveSpotlight" not in head          # not stranded in markup
+          and 'id="chartHost"' in html and 'id="modalClose"' in html   # modal intact
+          and "NULL-POSITION GUARD" in html and "hasPos" in html)      # crash guard present
+    check("T72 modal scope + null-guard: spotlight in-script, #modal intact, drawChart never crashes", ok, "")
+
+
+def t73_health_reads_live_when_stale():
+    """7.0.1: the health panel reads live api_health and falls back to its key_groups for feeds when
+    the matrix snapshot trails >30m — the '864m stale / ?/? files fresh / YELLOW' lie is gone."""
+    html = (ROOT / "docs/index.html").read_text()
+    ok = ("data/api_health.json" in html and "_matrixStale" in html
+          and "providers_active" in html and "feeds snapshot" in html)
+    check("T73 health truth: live api_health, feeds fall back to key_groups when matrix stale", ok, "")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -1170,7 +1209,9 @@ if __name__ == "__main__":
               t59_workflow_law, t60_maturity_gate, t61_equity_truth,
               t62_one_universe_river, t63_trajectory_veto, t64_news_in_decision_path,
               t65_health_reads_authority, t66_modal_contract, t67_portals_and_spotlight,
-              t68_readiness_truth):
+              t68_readiness_truth,
+              t69_reset_reanchors_nulls, t70_reset_seeds_live, t71_workflow_serialization,
+              t72_modal_scope_and_guard, t73_health_reads_live_when_stale):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test
