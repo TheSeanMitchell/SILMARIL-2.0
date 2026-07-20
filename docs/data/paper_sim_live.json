@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-07-20T06:09:46.237770+00:00",
+  "generated_at": "2026-07-20T07:22:47.795822+00:00",
   "marks_health": {
     "marked": 886,
     "entry_warm": 886,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.3,
-    "state": "QUIET after wipe \u2014 62 min left (by design)",
+    "newest_sample_age_min": 0.8,
+    "state": "OK",
     "oscillating": 0,
     "oscillating_syms": []
   },
@@ -39,18 +39,18 @@
   },
   "timeout_exit": false,
   "post_wipe_quiet": {
-    "active": true,
-    "minutes_left": 62.9,
+    "active": false,
+    "minutes_left": 0.0,
     "note": "engine intentionally quiet after a wipe \u2014 no trades until the window elapses, so the clean run starts from a known baseline"
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-20T06:09:43.342808+00:00",
+    "generated_at": "2026-07-20T07:22:44.602898+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
     "window": 60,
-    "excluded_count": 8,
+    "excluded_count": 7,
     "excluded": [
       {
         "sym": "MOG-USD",
@@ -61,11 +61,6 @@
         "sym": "FLOKI8USDT",
         "snapbacks": 3,
         "max_move_pct": 52.1
-      },
-      {
-        "sym": "QTUMUSDT",
-        "snapbacks": 2,
-        "max_move_pct": 18.9
       },
       {
         "sym": "TUSDT",
@@ -107,11 +102,13 @@
   },
   "crypto": {
     "funnel": {
-      "seen": 0,
-      "entry_warm": 0,
+      "seen": 344,
+      "entry_warm": 344,
       "candidates_after_gates": 0,
       "bought": 0,
-      "rejections": {}
+      "rejections": {
+        "regime DOWNTREND + gate=hard \u2192 7 blocked": 1
+      }
     },
     "decision_trace_live": [],
     "equity": 10000.0,
@@ -121,13 +118,13 @@
     "open_positions": 0,
     "positions": [],
     "recent_trades": [],
-    "tradeable_universe": 0,
-    "universe_seen": 0
+    "tradeable_universe": 54,
+    "universe_seen": 344
   },
   "stock": {
     "funnel": {
-      "seen": 0,
-      "entry_warm": 0,
+      "seen": 524,
+      "entry_warm": 524,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {}
@@ -141,12 +138,12 @@
     "positions": [],
     "recent_trades": [],
     "tradeable_universe": 0,
-    "universe_seen": 0
+    "universe_seen": 524
   },
   "aggressive": {
     "funnel": {
-      "seen": 0,
-      "entry_warm": 0,
+      "seen": 344,
+      "entry_warm": 344,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {}
@@ -159,14 +156,14 @@
     "open_positions": 0,
     "positions": [],
     "recent_trades": [],
-    "tradeable_universe": 0,
-    "universe_seen": 0,
+    "tradeable_universe": 54,
+    "universe_seen": 344,
     "display_name": "GEKKO"
   },
   "metal": {
     "funnel": {
-      "seen": 0,
-      "entry_warm": 0,
+      "seen": 12,
+      "entry_warm": 12,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {}
@@ -180,12 +177,12 @@
     "positions": [],
     "recent_trades": [],
     "tradeable_universe": 0,
-    "universe_seen": 0
+    "universe_seen": 12
   },
   "energy": {
     "funnel": {
-      "seen": 0,
-      "entry_warm": 0,
+      "seen": 6,
+      "entry_warm": 6,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {}
@@ -199,23 +196,23 @@
     "positions": [],
     "recent_trades": [],
     "tradeable_universe": 0,
-    "universe_seen": 0
+    "universe_seen": 6
   },
   "combined_equity": 40000.0,
   "combined_realized_pnl": 0.0,
   "backtest_3day_crypto": {
     "universe_total": 1452,
-    "tradeable": 58,
-    "ghosts_excluded": 1394,
+    "tradeable": 57,
+    "ghosts_excluded": 1395,
     "trades": 45,
     "win_rate_pct": 57.8,
-    "mean_net_pct": -0.751,
+    "mean_net_pct": -0.756,
     "exits": {
       "TAKE": 35,
       "STOP": 10,
       "TIMEOUT": 0
     },
-    "equity_after": 9663.95
+    "equity_after": 9661.7
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy). Ghosts excluded; fees = max(0.2%, 2x noise floor). Metal/energy stay empty until their data feed is wired (metals_samples.json / energy_samples.json)."
 }
