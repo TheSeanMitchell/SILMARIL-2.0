@@ -1203,6 +1203,23 @@ def t75_health_and_wiring_labels():
     check("T75 health/wiring labels: no false matrix-stale alarm · Wide Arena cadence labeled", ok, "")
 
 
+def t76_quantization_quarantine():
+    """7.0.1: the oscillation detector catches EXTREME quantization (a sub-penny name collapsed to
+    <=3 discrete values — the MOG-USD sawtooth that the median-gap path missed via the m1=0 blind
+    spot). Per-cycle data-quality quarantine, NOT a graveyard — the name trades when price resolves."""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT))
+    try:
+        from silmaril.execution.paper_sim import _osc_ratio as _o
+    except Exception as e:
+        check("T76 quantization quarantine (import failed)", False, str(e)); return
+    mog = [1e-7, 1.1e-7, 1.1e-7, 1e-7, 1.1e-7, 1e-7, 1.1e-7, 1.1e-7, 1e-7, 1.1e-7, 1e-7, 1.1e-7, 1.1e-7, 1e-7]
+    healthy = [100 + (i % 7) * 0.31 - (i % 3) * 0.17 for i in range(20)]
+    stable = [1.0] * 14
+    ok = (_o(mog) is True and _o(healthy) is False and _o(stable) is False)
+    check("T76 quantization: two-cluster sawtooth quarantined; healthy + pinned-flat names untouched", ok, "")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -1232,7 +1249,8 @@ if __name__ == "__main__":
               t68_readiness_truth,
               t69_reset_reanchors_nulls, t70_reset_seeds_live, t71_workflow_serialization,
               t72_modal_scope_and_guard, t73_health_reads_live_when_stale,
-              t74_header_and_portals, t75_health_and_wiring_labels):
+              t74_header_and_portals, t75_health_and_wiring_labels,
+              t76_quantization_quarantine):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

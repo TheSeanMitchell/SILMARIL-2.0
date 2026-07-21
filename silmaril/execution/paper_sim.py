@@ -360,11 +360,28 @@ _LAST_OSC: set = set()
 def _osc_ratio(pxs) -> bool:
     """5.11 WRAP oscillation detector: an alternating two-cluster series (the
     stale-source sawtooth) has |p[i]-p[i-2]| tiny vs |p[i]-p[i-1]|. ratio<0.35
-    with a real step size = quarantine. Immune to genuine trends and chop."""
+    with a real step size = quarantine. Immune to genuine trends and chop.
+
+    7.0.1 QUANTIZATION FIX (the MOG-USD sawtooth): a sub-penny name whose feed has so few
+    significant figures that the whole window is only 2-3 discrete values (MOG at
+    1.0e-7 / 1.1e-7 — a 10% quantum step that is pure rounding noise, not a real move).
+    The median-gap path MISSED this: when consecutive prints are often identical, m1
+    computed to 0 and the old code bailed 'return False', letting the most extreme
+    sawtooth of all through undetected. Now: <=3 distinct values across a full window IS
+    the two-cluster signature by definition. Healthy coins show 15-20 distinct values in
+    20 points, so this can never catch a real mover. This is a per-cycle DATA-QUALITY
+    quarantine (mark-smoothing + SUSPECT_OSC tag), NOT a graveyard: the name trades freely
+    again the moment its price grows into a resolvable range."""
     try:
         px = [float(x) for x in pxs][-20:]
         if len(px) < 12:
             return False
+        # 7.0.1: extreme quantization — a window collapsed to <=3 distinct values is a
+        # two/three-cluster sawtooth on its face (the m1=0 blind spot). Require a real
+        # relative spread so a genuinely pinned-flat stablecoin isn't quarantined.
+        _distinct = sorted(set(px))
+        if len(_distinct) <= 3 and px[-1] > 0 and (_distinct[-1] - _distinct[0]) / px[-1] > 0.01:
+            return True
         d1 = sorted(abs(px[i] - px[i - 1]) for i in range(1, len(px)))
         d2 = sorted(abs(px[i] - px[i - 2]) for i in range(2, len(px)))
         m1 = d1[len(d1) // 2]
