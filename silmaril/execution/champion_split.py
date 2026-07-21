@@ -69,6 +69,43 @@ def build_champion_split(out_dir) -> Dict[str, Any]:
         _rk = {}
     _min_tr = int(_rk.get("min_trades", 5) or 5)
     _margin = float(_rk.get("switch_margin", 15) or 15)
+    # ── 7.0.1 REGIME-CONDITIONAL CHAMPION (operator: "switch to a momentum one" — the whole point
+    # of the Pokemon system). Root cause of idle metal/energy: the leaderboard pool is ~282 MR vs
+    # ~12 MOM, so the survivability rank almost always crowns a mean-reversion strategy — which then
+    # sits waiting for a DIP that never comes in an UPTREND book. Fix: read each book's live regime
+    # and, when trending, prefer the best strategy whose DIRECTION matches the trend (dir='mom' in an
+    # up/downtrend) over the overall MR winner. SIDEWAYS keeps mean-reversion (its home regime). This
+    # is family-preference at selection time, not a new strategy — MOM already competes in the arena.
+    # Knob: PARAM_CATALOG.regime_champion {mode:"auto"|"off"}. KILL: "off" restores pure rank.
+    try:
+        _rc = (json.loads((out / "PARAM_CATALOG.json").read_text()).get("regime_champion") or {})
+    except Exception:
+        _rc = {}
+    _rc_mode = str(_rc.get("mode", "auto")).lower()
+    try:
+        _live_regimes = json.loads((out / "paper_sim_live.json").read_text()).get("regimes", {}) or {}
+    except Exception:
+        _live_regimes = {}
+
+    def _regime_pref_dir(bk: str):
+        """Which strategy DIRECTION fits this book's live regime right now.
+        UPTREND/DOWNTREND → 'mom' (trend-following); SIDEWAYS/unknown → 'mr' (mean-reversion).
+        Returns None when the feature is off (→ pure survivability rank, the old behavior)."""
+        if _rc_mode == "off":
+            return None
+        reg = str(_live_regimes.get(bk, "")).upper()
+        if "UP" in reg or "DOWN" in reg:
+            return "mom"
+        return "mr"
+
+    def _best_by_dir(board_rows, want_dir, min_n):
+        """Best trusted strategy whose dir matches want_dir, by mean net edge, with a real sample."""
+        cands = [r for r in board_rows
+                 if r.get("dir") == want_dir and (r.get("trades") or 0) >= min_n
+                 and r.get("mean_net_pct") is not None]
+        if not cands:
+            return None
+        return max(cands, key=lambda r: r["mean_net_pct"])
     results = {"crypto": crypto}
     for bk in [b for b in _BOOKS if b != "crypto"]:
         lb = _load(out, f"strategy_leaderboard_{bk}.json")
@@ -76,6 +113,19 @@ def build_champion_split(out_dir) -> Dict[str, Any]:
         prev = _load(out, f"champion_{bk}.json"); prev_name = prev.get("champion")
         cand, cand_net = bt.get("strategy"), bt.get("mean_net_pct")
         board = {r["strategy"]: r for r in lb.get("leaderboard", [])}
+        # 7.0.1: regime override — if the book is trending and the default winner fights the trend
+        # (an MR champion in an uptrend), swap to the best trend-matching strategy from the SAME arena.
+        _pref = _regime_pref_dir(bk)
+        _regime_note = ""
+        if _pref is not None and cand:
+            _cur_dir = (board.get(cand) or {}).get("dir")
+            if _cur_dir != _pref:
+                _swap = _best_by_dir(lb.get("leaderboard", []), _pref, max(3, _min_tr - 2))
+                if _swap:
+                    cand, cand_net = _swap["strategy"], _swap.get("mean_net_pct")
+                    _regime_note = (f" · regime-fit: {bk} is {_live_regimes.get(bk, '?')} → prefer "
+                                    f"{_pref} strategy {cand} over the {_cur_dir} rank-leader "
+                                    f"(the Pokemon switch: right type for the regime)")
         inc_net = (board.get(prev_name) or {}).get("mean_net_pct")
         chosen, why, src = prev_name, f"{bk} champion holds", f"independent {bk} arena (backtest hypothesis, not forward-proven)"
         _fw = sorted((r for r in _cvrows if r.get("book") == bk and r.get("strategy") in STRATEGIES),
@@ -98,13 +148,29 @@ def build_champion_split(out_dir) -> Dict[str, Any]:
             chosen, why = cand, f"initial {bk} champion: {cand} ({cand_net:+.2f}%/trade backtest)" if cand_net is not None else f"initial {bk} champion: {cand}"
         elif cand and cand != prev_name and cand_net is not None and (inc_net is None or cand_net >= inc_net + STOCK_SWITCH_MARGIN):
             chosen, why = cand, f"{bk} arena switch: {cand} {cand_net:+.2f}%/trade"
+        # 7.0.1: FINAL regime-fit override on the backtest-hypothesis path. Once a book has qualifying
+        # FORWARD evidence (the _fl>=_min_tr branch above) that governs and we don't override it — real
+        # forward survival beats a regime heuristic. But while a book is still on its backtest hypothesis
+        # (no live trades yet — exactly metal/energy today), a trending regime must not be handed an MR
+        # champion that will sit idle waiting for a dip. Swap to the trend-matching arena winner.
+        if _pref is not None and not (_fl and _fl.get("n", 0) >= _min_tr):
+            _chosen_dir = (board.get(chosen) or {}).get("dir")
+            if _chosen_dir is not None and _chosen_dir != _pref:
+                _swap2 = _best_by_dir(lb.get("leaderboard", []), _pref, max(3, _min_tr - 2))
+                if _swap2 and _swap2["strategy"] != chosen:
+                    chosen = _swap2["strategy"]
+                    why = (f"{bk} REGIME-FIT: {_live_regimes.get(bk, '?')} regime → {_pref} strategy "
+                           f"{chosen} ({(_swap2.get('mean_net_pct') or 0):+.2f}%/trade) instead of the "
+                           f"{_chosen_dir} rank-leader — the Pokemon switch, right type for the regime")
+                    src = f"regime-conditional ({bk} {_live_regimes.get(bk, '?')}, backtest hypothesis)"
         payload = {"generated_at": _now(), "book": bk, "champion": chosen,
                    "live_params": _params(chosen) if chosen else None,
                    "live_trades": _live_n(bk),
                    "source": src,
                    "reason": why,
+                   "regime": _live_regimes.get(bk),
                    "honest_note": ("Forward-survivability governed once this book has qualifying live trades; "
-                                   "backtest hypothesis until then. "
+                                   "regime-conditional backtest hypothesis until then. "
                                    "Empty until this book has a data feed.")}
         try: write_json_atomic(out / f"champion_{bk}.json", payload)
         except Exception: pass

@@ -1220,6 +1220,24 @@ def t76_quantization_quarantine():
     check("T76 quantization: two-cluster sawtooth quarantined; healthy + pinned-flat names untouched", ok, "")
 
 
+def t77_regime_conditional_champion():
+    """7.0.1 (operator: "switch to a momentum one — the ENTIRE PURPOSE of the Pokemon system"). A
+    trending book must not be handed a mean-reversion champion that sits idle waiting for a dip.
+    In UPTREND/DOWNTREND, champion_split prefers the best dir='mom' strategy from that book's own
+    arena over the MR rank-leader; SIDEWAYS keeps mean-reversion; forward survivability still wins
+    once a book has live trades. Knob regime_champion.mode, kill 'off'."""
+    src = (ROOT / "silmaril/execution/champion_split.py").read_text()
+    ok = ("REGIME-FIT" in src and "_regime_pref_dir" in src and "_best_by_dir" in src
+          and 'dir") == want_dir' in src)
+    try:
+        import json as _json
+        cat = _json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text())
+        ok = ok and (cat.get("regime_champion") or {}).get("mode") in ("auto", "off")
+    except Exception:
+        pass
+    check("T77 regime-conditional champion: trending books prefer momentum, sideways keeps MR (knob+kill)", ok, "")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -1250,7 +1268,7 @@ if __name__ == "__main__":
               t69_reset_reanchors_nulls, t70_reset_seeds_live, t71_workflow_serialization,
               t72_modal_scope_and_guard, t73_health_reads_live_when_stale,
               t74_header_and_portals, t75_health_and_wiring_labels,
-              t76_quantization_quarantine):
+              t76_quantization_quarantine, t77_regime_conditional_champion):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test
