@@ -1183,6 +1183,26 @@ def t73_health_reads_live_when_stale():
     check("T73 health truth: live api_health, feeds fall back to key_groups when matrix stale", ok, "")
 
 
+def t74_header_and_portals():
+    """7.0.1 cleanup: header build-stamp only shows when it differs from the version (no 'build 7.0'
+    doubling); the four INDUSTRY books are the top portals (GEKKO is a crypto sleeve, not a peer)."""
+    html = (ROOT / "docs/index.html").read_text()
+    ok = ("String(m.version)!==String(vn)" in html
+          and "['crypto','stock','metal','energy'].map(bk=>" in html
+          and "GEKKO is a crypto SLEEVE" in html)
+    check("T74 header/portals: no doubled build stamp · 4-up industry portals · GEKKO at sleeve rank", ok, "")
+
+
+def t75_health_and_wiring_labels():
+    """7.0.1 cleanup: the health panel reads live api_health with no false stale-matrix alarm (matrix
+    age is a cache detail, not a fault); the Wide Arena is labeled as a 3x/day sweep, not a live feed."""
+    html = (ROOT / "docs/index.html").read_text()
+    ok = ("matrix is only a feeds-detail cache" in html
+          and "staleTag=' <span class=neg>\\u26a0 feeds snapshot" not in html
+          and "sweeps 3\\u00d7/day, not live" in html)
+    check("T75 health/wiring labels: no false matrix-stale alarm · Wide Arena cadence labeled", ok, "")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -1211,7 +1231,8 @@ if __name__ == "__main__":
               t65_health_reads_authority, t66_modal_contract, t67_portals_and_spotlight,
               t68_readiness_truth,
               t69_reset_reanchors_nulls, t70_reset_seeds_live, t71_workflow_serialization,
-              t72_modal_scope_and_guard, t73_health_reads_live_when_stale):
+              t72_modal_scope_and_guard, t73_health_reads_live_when_stale,
+              t74_header_and_portals, t75_health_and_wiring_labels):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

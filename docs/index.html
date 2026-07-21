@@ -875,7 +875,7 @@ async function renderMasterDecisions(){try{const d=await jget('data/MASTER_ACCOU
   el.innerHTML='<table style="font-size:11px"><thead><tr><th>cycle</th><th>crypto</th><th>stock</th><th>metal</th><th>energy</th><th>funded</th></tr></thead><tbody>'+body+'</tbody></table>';
 }catch(e){__pfail(e)}}
 async function applyVersion(){try{const nm=$('newsMastSub');if(nm){const now=new Date();const ed=Math.floor((now-new Date(now.getFullYear(),0,0))/86400000);nm.textContent=now.toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'})+' \u00b7 Edition #'+ed;}}catch(e){__pfail(e)}
-try{const m=await jget('data/PROJECT_META.json');const b=$('buildStamp');if(b&&m&&m.version)b.textContent='build '+m.version;}catch(e){__pfail(e)}}   /* 5.1B: the header is a CONSTANT — meta is a display-only build stamp; the '3.0 ghost' can never possess it again */
+try{const m=await jget('data/PROJECT_META.json');const b=$('buildStamp');const vn=($('verNum')||{}).textContent||'';if(b&&m&&m.version&&String(m.version)!==String(vn).trim())b.textContent='build '+m.version;else if(b)b.textContent='';}catch(e){__pfail(e)}}   /* 5.1B: the header is a CONSTANT — meta is a display-only build stamp; the '3.0 ghost' can never possess it again */
 /* ---- LIVE MARKET FEED WALL — 3x3, per-tile volume, solo audio, full-screen ---- */
 const YT_FEEDS=[
  {t:'Yahoo Finance',src:'KQp-e_XQnDE'},
@@ -1068,7 +1068,7 @@ async function renderWiring(){try{const el=$('wiringPanel');if(!el)return;
   // read each system's output file freshness → GREEN wired+fresh, YELLOW stale, GRAY not producing
   const checks=[['Regime classifier','data/REGIME_CLASSIFIER.json',30],['Master gate/ledger','data/MASTER_ACCOUNT.json',30],
     ['Decision trace','data/DECISION_TRACE.json',30],['Chart overlays','data/CHART_OVERLAYS.json',30],
-    ['Wide arena (drop/bounce)','data/strategy_leaderboard_wide_crypto.json',1560],['Hourly arena','data/strategy_leaderboard_crypto.json',120],
+    ['Wide arena (drop/bounce · sweeps 3\u00d7/day, not live)','data/strategy_leaderboard_wide_crypto.json',1560],['Hourly arena','data/strategy_leaderboard_crypto.json',120],
     ['Peak rhythm','data/PEAK_RHYTHM.json',120],['Regime A/B proof','data/REGIME_AB_STATUS.json',1560],
     ['Feature gates','data/FEATURE_GATES_STATUS.json',1560],['News trial','data/NEWS_TRIAL_STATUS.json',1560],
     ['Handoff preview','data/LIVE_ORDERS_PREVIEW.json',30],['Fee/heatshield sweep','data/HEATSHIELD.json',1560]];
@@ -1333,7 +1333,7 @@ async function renderHealthMatrix(){
   // and lied 0/3 gray. Feeds lights still come from the matrix, stale-tagged when trailing.
   const d=await jget('data/api_health.json');if(!d){return;}
   const m=await jget('data/HEALTH_MATRIX.json').catch(()=>null);
-  let staleTag='',_matrixStale=false;try{if(m&&m.generated_at&&d.generated_at){const lag=(new Date(d.generated_at)-new Date(m.generated_at))/60000;if(lag>30){_matrixStale=true;staleTag=' <span class=neg>\u26a0 feeds snapshot '+Math.round(lag)+'m behind \u2014 health shown from live api_health</span>';}}}catch(e){}
+  let staleTag='',_matrixStale=false;try{if(m&&m.generated_at&&d.generated_at){const lag=(new Date(d.generated_at)-new Date(m.generated_at))/60000;if(lag>30){_matrixStale=true;/* 7.0.1: panel reads LIVE api_health; the matrix is only a feeds-detail cache, so its age is not a health fault — no scary badge, feeds just fall back to live provider groups below */}}}catch(e){}
   const dot=s=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴',GRAY:'⚪'}[s]||'⚪');
   // 7.0.1: matrix feeds snapshot can freeze in a keyless lane; when it trails the engine >30m,
   // show LIVE provider groups from api_health so the panel never looks dead while the engine is fine.
@@ -1477,7 +1477,11 @@ async function openQuadrant(bk){
 }
 function renderQuadrants(cv){const L=LIVE||{};
   const meta={crypto:{n:'CRYPTO',col:'#a855f7'},stock:{n:'STOCKS',col:'#2f74ff'},metal:{n:'METALS',col:'#b9bcc4'},energy:{n:'ENERGY',col:'#22b07d'},aggressive:{n:'\ud83e\udd8e GEKKO',col:'#e0b341'}};
-  const __qh7=['crypto','stock','metal','energy','aggressive'].map(bk=>{const b=L[bk]||{},champ=L['champion_'+bk]||(bk==='aggressive'?((b.equity!=null)?'GEKKO 2%\u21922% profile':null):null);
+  // 7.0.1 PORTAL GRID FIX (operator): the four INDUSTRY books are the top-line portals — a clean
+  // 4-up row, evenly spaced. GEKKO is a crypto SLEEVE, not an industry peer, so it lives in the
+  // crypto sleeve layer + the Champion Sleeve spotlight, not up here (also removes the '2 crypto
+  // accounts in the portals' redundancy). One universe, correct hierarchy.
+  const __qh7=['crypto','stock','metal','energy'].map(bk=>{const b=L[bk]||{},champ=L['champion_'+bk]||null;
     const eq=b.equity!=null?b.equity:10000,r=b.return_pct||0,o=b.open_positions||0;
     const st=champ?'TRADING':(b.equity!=null?'READY · awaiting data feed':'—'),m=meta[bk],mh=getMarketHours(bk==='aggressive'?'crypto':bk);
     return `<div class="quad" onclick="openQuadrant('${bk}')" style="cursor:pointer;border-top:5px solid ${m.col}"><div class="quad-h" style="color:${m.col}">${m.n} · ${mh.name}</div>`+
