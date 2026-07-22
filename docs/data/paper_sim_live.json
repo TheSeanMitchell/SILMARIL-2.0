@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-22T07:59:12.423766+00:00",
+  "generated_at": "2026-07-22T07:48:52.265702+00:00",
   "marks_health": {
     "marked": 885,
     "entry_warm": 885,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
     "newest_sample_age_min": 1.0,
     "state": "OK",
-    "oscillating": 24,
+    "oscillating": 29,
     "oscillating_syms": [
       "1000REKTUSDT",
       "1INCH-USD",
@@ -15,11 +15,11 @@
       "APEUSDT",
       "ARKM-USD",
       "BATUSDT",
+      "CHZ-USD",
+      "DOTUSDT",
       "ILVUSDT",
-      "IOTAUSDT",
-      "NEARUSD",
-      "NEIROUSDT",
-      "ONEUSDT"
+      "INJUSDT",
+      "KAVAUSDT"
     ]
   },
   "equity_market": {
@@ -58,7 +58,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-22T07:59:09.025987+00:00",
+    "generated_at": "2026-07-22T07:48:48.868464+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -66,14 +66,14 @@
     "excluded_count": 7,
     "excluded": [
       {
+        "sym": "MOG-USD",
+        "snapbacks": 3,
+        "max_move_pct": 10.0
+      },
+      {
         "sym": "FLOKI8USDT",
         "snapbacks": 3,
         "max_move_pct": 52.1
-      },
-      {
-        "sym": "MOG-USD",
-        "snapbacks": 2,
-        "max_move_pct": 10.0
       },
       {
         "sym": "ANTUSDT",
@@ -116,18 +116,26 @@
   "crypto": {
     "funnel": {
       "seen": 343,
-      "entry_warm": 319,
-      "candidates_after_gates": 0,
+      "entry_warm": 314,
+      "candidates_after_gates": 1,
       "bought": 0,
       "rejections": {
-        "regime DOWNTREND + gate=hard \u2192 8 blocked": 1
+        "regime DOWNTREND + gate=hard \u2192 10 blocked": 1,
+        "immature": 1
       }
     },
-    "decision_trace_live": [],
-    "equity": 9884.38,
-    "cash": 5801.87,
-    "realized_pnl": 0.0,
-    "return_pct": -1.16,
+    "decision_trace_live": [
+      {
+        "sym": "HBAR-USD",
+        "dip_pct": -0.36,
+        "conviction": 0.0298,
+        "fate": "candidate"
+      }
+    ],
+    "equity": 9939.41,
+    "cash": 5825.83,
+    "realized_pnl": 28.83,
+    "return_pct": -0.61,
     "open_positions": 3,
     "positions": [
       {
@@ -149,7 +157,7 @@
         "sym": "SUSHI-USD",
         "qty": 8325.3266,
         "entry": 0.168162,
-        "mark": 0.1658,
+        "mark": 0.1657,
         "t": "2026-07-21T15:15:47.947767+00:00",
         "wager_usd": 1400.0,
         "target": 0.02,
@@ -158,25 +166,63 @@
         "style": null,
         "entry_regime": null,
         "exp_net_usd": 20.73,
-        "upl_pct": -1.4
+        "upl_pct": -1.46
       },
       {
-        "sym": "INJ-USD",
-        "qty": 263.6866,
-        "entry": 5.302254,
-        "mark": 5.181,
-        "t": "2026-07-21T15:46:08.698131+00:00",
-        "wager_usd": 1398.13,
+        "sym": "JTO-USD",
+        "qty": 2235.1018,
+        "entry": 0.627714,
+        "mark": 0.6255,
+        "t": "2026-07-22T05:03:04.366277+00:00",
+        "wager_usd": 1403.01,
         "target": 0.02,
         "stop": 0.03,
-        "conviction": 0.0764,
+        "conviction": 0.2691,
         "style": null,
         "entry_regime": null,
-        "exp_net_usd": 22.46,
-        "upl_pct": -2.29
+        "exp_net_usd": 21.24,
+        "upl_pct": -0.35
       }
     ],
     "recent_trades": [
+      {
+        "side": "BUY",
+        "sym": "JTO-USD",
+        "qty": 2235.101826,
+        "price": 0.627714,
+        "t": "2026-07-22T05:03:04.366277+00:00",
+        "wager_usd": 1403.01,
+        "target_pct": 2.0,
+        "stop_pct": 3.0,
+        "expected_move_pct": 1.514,
+        "conviction": 0.2691,
+        "maker_fill": true,
+        "p_star_pct": 69.7,
+        "pred": null
+      },
+      {
+        "side": "SELL",
+        "sym": "INJ-USD",
+        "integrity": "ok",
+        "qty": 263.686605,
+        "price": 5.411603,
+        "pnl": 28.83,
+        "realized_pct": 2.062,
+        "t": "2026-07-22T04:24:20.609864+00:00",
+        "wager_usd": 1398.13,
+        "fee_pct": 0.236,
+        "realized_gross_pct": 2.304,
+        "target_pct": 2.0,
+        "target_net_pct": 1.759,
+        "pct_of_goal": 117.2,
+        "stop_pct": 3.0,
+        "best_pct": 2.304,
+        "left_on_table_pct": 0.0,
+        "exit_reason": "TAKE",
+        "champion_entry": null,
+        "champion_exit": "MR_patient_d3",
+        "champion_changed": false
+      },
       {
         "side": "BUY",
         "sym": "INJ-USD",
@@ -223,7 +269,7 @@
         "pred": null
       }
     ],
-    "tradeable_universe": 55,
+    "tradeable_universe": 57,
     "universe_seen": 343
   },
   "stock": {
@@ -285,23 +331,23 @@
   "aggressive": {
     "funnel": {
       "seen": 343,
-      "entry_warm": 319,
+      "entry_warm": 314,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {}
     },
     "decision_trace_live": [],
-    "equity": 9778.08,
-    "cash": 3074.08,
-    "realized_pnl": -38.62,
-    "return_pct": -2.22,
+    "equity": 9780.33,
+    "cash": 3071.57,
+    "realized_pnl": -41.12,
+    "return_pct": -2.2,
     "open_positions": 5,
     "positions": [
       {
         "sym": "TIA-USD",
         "qty": 3836.0561,
         "entry": 0.364958,
-        "mark": 0.3601,
+        "mark": 0.36,
         "t": "2026-07-21T14:21:27.486811+00:00",
         "wager_usd": 1400.0,
         "target": 0.02,
@@ -310,13 +356,13 @@
         "style": null,
         "entry_regime": null,
         "exp_net_usd": 22.13,
-        "upl_pct": -1.33
+        "upl_pct": -1.36
       },
       {
         "sym": "INJ-USD",
         "qty": 261.6184,
         "entry": 5.351305,
-        "mark": 5.181,
+        "mark": 5.18,
         "t": "2026-07-21T14:21:27.486811+00:00",
         "wager_usd": 1400.0,
         "target": 0.02,
@@ -325,13 +371,13 @@
         "style": null,
         "entry_regime": null,
         "exp_net_usd": 22.5,
-        "upl_pct": -3.18
+        "upl_pct": -3.2
       },
       {
         "sym": "PENDLE-USD",
         "qty": 847.9101,
         "entry": 1.647403,
-        "mark": 1.576,
+        "mark": 1.577,
         "t": "2026-07-21T15:46:11.562220+00:00",
         "wager_usd": 1396.85,
         "target": 0.02,
@@ -340,7 +386,7 @@
         "style": null,
         "entry_regime": null,
         "exp_net_usd": 21.14,
-        "upl_pct": -4.33
+        "upl_pct": -4.27
       },
       {
         "sym": "NEAR-USD",
@@ -361,7 +407,7 @@
         "sym": "ONDO-USD",
         "qty": 3481.845,
         "entry": 0.40033,
-        "mark": 0.39949,
+        "mark": 0.4008,
         "t": "2026-07-21T17:30:19.892173+00:00",
         "wager_usd": 1393.89,
         "target": 0.02,
@@ -370,7 +416,7 @@
         "style": null,
         "entry_regime": null,
         "exp_net_usd": 21.95,
-        "upl_pct": -0.21
+        "upl_pct": 0.12
       }
     ],
     "recent_trades": [
@@ -379,19 +425,19 @@
         "sym": "ZEC-USD",
         "integrity": "ok",
         "qty": 2.587949,
-        "price": 511.742359,
-        "pnl": -71.95,
-        "realized_pct": -5.153,
-        "t": "2026-07-22T07:37:20.094742+00:00",
+        "price": 510.773671,
+        "pnl": -74.45,
+        "realized_pct": -5.332,
+        "t": "2026-07-22T07:28:00.673121+00:00",
         "wager_usd": 1396.31,
         "fee_pct": 0.264,
-        "realized_gross_pct": -4.901,
+        "realized_gross_pct": -5.081,
         "target_pct": 2.0,
         "target_net_pct": 1.731,
-        "pct_of_goal": -297.7,
+        "pct_of_goal": -308.1,
         "stop_pct": 3.0,
         "best_pct": 0.132,
-        "left_on_table_pct": 5.034,
+        "left_on_table_pct": 5.214,
         "exit_reason": "STOP",
         "champion_entry": null,
         "champion_exit": "GEKKO",
@@ -526,7 +572,7 @@
         "pred": null
       }
     ],
-    "tradeable_universe": 55,
+    "tradeable_universe": 57,
     "universe_seen": 343,
     "display_name": "GEKKO"
   },
@@ -534,20 +580,11 @@
     "funnel": {
       "seen": 12,
       "entry_warm": 12,
-      "candidates_after_gates": 1,
+      "candidates_after_gates": 0,
       "bought": 0,
-      "rejections": {
-        "immature": 1
-      }
+      "rejections": {}
     },
-    "decision_trace_live": [
-      {
-        "sym": "XPD",
-        "dip_pct": -0.42,
-        "conviction": 0.035,
-        "fate": "candidate"
-      }
-    ],
+    "decision_trace_live": [],
     "equity": 10000.0,
     "cash": 10000.0,
     "realized_pnl": 0.0,
@@ -577,21 +614,21 @@
     "tradeable_universe": 3,
     "universe_seen": 6
   },
-  "combined_equity": 39887.35,
-  "combined_realized_pnl": 0.0,
+  "combined_equity": 39942.38,
+  "combined_realized_pnl": 28.83,
   "backtest_3day_crypto": {
     "universe_total": 1452,
-    "tradeable": 57,
-    "ghosts_excluded": 1395,
-    "trades": 76,
-    "win_rate_pct": 69.7,
-    "mean_net_pct": -0.039,
+    "tradeable": 59,
+    "ghosts_excluded": 1393,
+    "trades": 79,
+    "win_rate_pct": 70.9,
+    "mean_net_pct": 0.066,
     "exits": {
-      "TAKE": 62,
+      "TAKE": 65,
       "STOP": 14,
       "TIMEOUT": 0
     },
-    "equity_after": 9965.49
+    "equity_after": 10047.54
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy). Ghosts excluded; fees = max(0.2%, 2x noise floor). Metal/energy stay empty until their data feed is wired (metals_samples.json / energy_samples.json)."
 }
