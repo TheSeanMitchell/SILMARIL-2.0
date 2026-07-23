@@ -249,8 +249,10 @@
     <table><thead><tr><th>Sym</th><th>Entry → Now</th><th>uPL%</th><th>Hold</th><th>◄ stop ·· target ►</th></tr></thead><tbody id="posMetal"></tbody></table>
     <div class="dim" style="font-size:11px;margin-top:8px">◆ ENERGY</div>
     <table><thead><tr><th>Sym</th><th>Entry → Now</th><th>uPL%</th><th>Hold</th><th>◄ stop ·· target ►</th></tr></thead><tbody id="posEnergy"></tbody></table>
-    <div class="dim" style="font-size:11px;margin-top:10px;color:#e0b341">🦎 GEKKO — aggressive probe (crypto 24/7 · same rails, lower thresholds · NEVER Master-funded)</div>
-    <table><thead><tr><th>Sym</th><th>Entry → Now</th><th>uPL%</th><th>Hold</th><th>◄ stop ·· target ►</th></tr></thead><tbody id="posAggressive"></tbody></table>
+    <!-- 7.0.2: GEKKO is a crypto SLEEVE competing for weight inside the crypto book, not a 5th
+         industry account. Its positions live in the STRATEGY tab with the other sleeves; the
+         COMMAND tab shows the four industry books only. (host kept hidden so renderPos is safe) -->
+    <tbody id="posAggressive" style="display:none"></tbody>
   </div></section>
   <section data-cat="cmd"><div class="hd">🧾 RECENT TRADES — all books (hover/tap any symbol for its chart)</div><div class="bd">
     <div class="dim" style="font-size:11px">◆ CRYPTO</div>
@@ -261,8 +263,7 @@
     <table><thead><tr><th>Trade</th><th>Px</th><th>P&L</th><th>When</th></tr></thead><tbody id="trMetal"></tbody></table>
     <div class="dim" style="font-size:11px;margin-top:8px">◆ ENERGY</div>
     <table><thead><tr><th>Trade</th><th>Px</th><th>P&L</th><th>When</th></tr></thead><tbody id="trEnergy"></tbody></table>
-    <div class="dim" style="font-size:11px;margin-top:8px;color:#e0b341">🦎 GEKKO (aggressive probe)</div>
-    <table><thead><tr><th>Trade</th><th>Px</th><th>P&L</th><th>When</th></tr></thead><tbody id="trAggressive"></tbody></table>
+    <tbody id="trAggressive" style="display:none"></tbody>
   </div></section>
 <!--/page-->
 
@@ -472,18 +473,38 @@ function __miv(b){document.querySelectorAll('#mIv button').forEach(x=>x.classLis
 document.addEventListener('keydown',e=>{if(e.key==='Escape')__closeModal();});
 window.addEventListener('load',()=>{var m=document.getElementById('modal');if(m)m.addEventListener('click',e=>{if(e.target===m)__closeModal();});});
 async function renderSleeveSpotlight(){try{
+  // 7.0.2 (operator: "we need this for each industry, not just crypto"). One gold badge PER BOOK,
+  // showing that book's leading sleeve AND whether it has actually been promoted into the book's
+  // live discipline (the pyramid's second rung). Click any badge to open that sleeve's ledger.
   const ev=await jget('data/LAB_EVIDENCE.json').catch(()=>null);
-  let sp=ev&&ev.spotlight;
-  if(!sp){const sl=await jget('data/STRATEGY_LAB.json').catch(()=>null);const bi=(sl&&sl.by_industry)||{};
-    for(const bk in bi){for(const r of bi[bk]){if((r.closed||0)>=1&&(!sp||((r.delta_vs_hodl??r.return_pct)>(sp.delta_vs_hodl??sp.return_pct)))){sp=Object.assign({book:bk},r);}}}}
+  const sl=await jget('data/STRATEGY_LAB.json').catch(()=>null);
+  const pr=await jget('data/SLEEVE_PROMOTION.json').catch(()=>null);
+  const bi=(sl&&sl.by_industry)||{};
   const river=ev?('\ud83c\udf0a river: <b>'+(ev.resolved_total||0)+'</b> workshop outcomes ('+(ev.resolved_24h||0)+' in 24h) feed the books\u2019 maturity gate'):'';
-  const html= sp? ('<div class="quad" onclick="openSleeve(\''+sp.book+'\',\''+sp.sleeve+'\')" style="cursor:pointer;border-top:5px solid #d4af37;background:linear-gradient(180deg,rgba(212,175,55,.10),transparent)">'
-   +'<div class="quad-h" style="color:#d4af37">\ud83c\udfc6 CHAMPION SLEEVE \u2014 '+String(sp.book||'').toUpperCase()+':'+sp.sleeve+' '+(sp.name||'')+'</div>'
-   +'<div class="quad-eq '+((sp.return_pct||0)>=0?'pos':'neg')+'">$'+(sp.equity!=null?Number(sp.equity).toFixed(2):'\u2014')+'</div>'
-   +'<div class="quad-sub">'+((sp.return_pct||0)>=0?'+':'')+(sp.return_pct||0)+'% \u00b7 \u0394 vs HODL '+(sp.delta_vs_hodl==null?'\u2014':((sp.delta_vs_hodl>=0?'+':'')+sp.delta_vs_hodl+'%'))+' \u00b7 vault $'+Number(sp.vault_usd||0).toFixed(2)+'</div>'
-   +'<div class="quad-champ">'+(sp.open||0)+' open \u00b7 '+(sp.closed||0)+' closed \u00b7 win '+(sp.win_rate==null?'\u2014':sp.win_rate+'%')+'</div>'
-   +'<div class="quad-st">STRATEGY LAB \u00b7 workshop probe (not funded) \u00b7 leads Master policy \u00b7 one universe: trades the books\u2019 own candidates</div>'
-   +'<div style="font-size:9px;opacity:.7;margin-top:4px">'+river+'</div></div>') : ('<div class="dim" style="font-size:10px">\ud83c\udfc6 champion sleeve \u2014 first closes pending; '+river+'</div>');
+  const books=['crypto','stock','metal','energy'];
+  const cards=books.map(bk=>{
+    const rows=bi[bk]||[];
+    let best=null;
+    rows.forEach(r=>{const s=(r.delta_vs_hodl!=null?r.delta_vs_hodl:r.return_pct);
+      const bs=best?(best.delta_vs_hodl!=null?best.delta_vs_hodl:best.return_pct):null;
+      if((r.closed||0)>=1&&(best===null||s>bs))best=r;});
+    const P=((pr&&pr.books)||{})[bk]||{};
+    let tag,tagCol;
+    if(P.status==='PROMOTED'){tag='\u2b06 PROMOTED into the '+bk+' book';tagCol='#39d353';}
+    else if(P.status==='NO_POSITIVE_SLEEVE'){tag='not promoted \u2014 workshop under water';tagCol='#ff6b6b';}
+    else if(P.status==='WAITING'){tag='waiting \u2014 needs '+(pr&&pr.min_closes||3)+'+ closed trades';tagCol='#9aa4b8';}
+    else {tag='observing';tagCol='#9aa4b8';}
+    if(!best) return '<div class="quad" style="border-top:5px solid #55555588"><div class="quad-h" style="color:#9aa4b8">\ud83c\udfc6 '+bk.toUpperCase()+' \u2014 no graded sleeve yet</div><div class="quad-st" style="color:'+tagCol+'">'+tag+'</div></div>';
+    const dn=(best.delta_vs_hodl==null?'\u2014':((best.delta_vs_hodl>=0?'+':'')+best.delta_vs_hodl+'%'));
+    return '<div class="quad" onclick="openSleeve(\''+bk+'\',\''+best.sleeve+'\')" style="cursor:pointer;border-top:5px solid #d4af37;background:linear-gradient(180deg,rgba(212,175,55,.10),transparent)">'
+      +'<div class="quad-h" style="color:#d4af37">\ud83c\udfc6 '+bk.toUpperCase()+' \u00b7 '+best.sleeve+' '+(best.name||'')+'</div>'
+      +'<div class="quad-eq '+((best.return_pct||0)>=0?'pos':'neg')+'">$'+(best.equity!=null?Number(best.equity).toFixed(2):'\u2014')+'</div>'
+      +'<div class="quad-sub">'+((best.return_pct||0)>=0?'+':'')+(best.return_pct||0)+'% \u00b7 \u0394 vs null '+dn+'</div>'
+      +'<div class="quad-champ">'+(best.open||0)+' open \u00b7 '+(best.closed||0)+' closed \u00b7 win '+(best.win_rate==null?'\u2014':best.win_rate+'%')+'</div>'
+      +'<div class="quad-st" style="color:'+tagCol+';font-weight:700">'+tag+'</div></div>';
+  }).join('');
+  const html='<div class="quads">'+cards+'</div>'
+    +'<div class="dim" style="font-size:9px;margin-top:4px">CHAMPION SLEEVE PER INDUSTRY \u2014 the workshop leader for each book, and whether its discipline has been promoted upstairs. '+river+'</div>';
   ['sleeveSpot','sleeveSpotCmd'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML=html;});
 }catch(e){__pfail(e)}}
 
@@ -582,7 +603,10 @@ async function renderIntrabar(){const d=await jget('data/INTRABAR_AUDIT.json');i
 async function renderThresh(){const d=await jget('data/THRESHOLD_SHADOW.json');if(!d||!d.by_threshold)return;const rows=Object.entries(d.by_threshold).map(([k,v])=>`<tr style="${k==='3.0pct'?'font-weight:bold':''}"><td>${k.replace('pct','%')}${k==='3.0pct'?' (live)':''}</td><td>${v.setups}</td><td class="pos">${v.avg_forward_best_pct==null?'—':'+'+v.avg_forward_best_pct+'%'}</td><td>${v.pct_recovered_1pct==null?'—':v.pct_recovered_1pct+'%'}</td></tr>`).join('');$('threshBox').innerHTML=`<table><thead><tr><th>trigger</th><th>setups</th><th>avg recovery</th><th>≥1% recovered</th></tr></thead><tbody>${rows}</tbody></table><div class="note">Best avg recovery: ${d.best_by_recovery||'—'}. Tighter trigger = fewer but stronger setups.</div>`;}
 async function renderZero(){const d=await jget('data/ZERO_PNL_AUDIT.json');if(!d||!d.by_book)return;let h='';for(const bk of ['crypto','stock']){const b=d.by_book[bk];if(!b)continue;h+=`<div class="note">${bk.toUpperCase()}: ${b.zero_pnl_trades}/${b.total_trades} flat (${b.zero_pnl_rate_pct}%) · ${b.causes.flat_timeout} timed-out-flat · ${b.causes.tiny_move} tiny-move${b.avg_hold_min_of_zero?' · avg hold '+b.avg_hold_min_of_zero+'min':''}</div>`;}$('zeroBox').innerHTML=h;}
 async function renderTrace(){const d=await jget('data/DECISION_TRACE.json');if(!d||!d.traces)return;const rb=d.exit_reason_breakdown||{};const chips=Object.entries(rb).map(([k,v])=>`<span class="dim">${k}: <b>${v}</b></span>`).join(' · ');const rows=d.traces.slice(0,12).map(c=>`<tr><td>${c.sym}</td><td>${pokeInline(c.strategy)}${c.is_book_champion?' ⭐':''}</td><td class="${c.outcome==='WIN'?'pos':c.outcome==='LOSS'?'neg':'dim'}">${c.outcome}</td><td>${c.exit.realized_pct>=0?'+':''}${c.exit.realized_pct}%</td><td class="dim">${c.exit.reason}</td><td class="dim">${c.exit.hold_min!=null?c.exit.hold_min+'m':''}</td></tr>`).join('');$('traceBox').innerHTML=`<div style="font-size:11px;padding:4px 0">exit reasons: ${chips}</div><table><thead><tr><th>sym</th><th>strategy</th><th>outcome</th><th>P&L</th><th>exit reason</th><th>hold</th></tr></thead><tbody>${rows}</tbody></table>`;}
-async function renderRouter(){const d=await jget('data/CAPITAL_ROUTER_EXPLAINED.json');if(!d||!d.allocations)return;const rows=d.allocations.map(a=>`<tr><td>${pokeInline(a.strategy)}</td><td><b>${a.weight_pct}%</b></td><td>${a.allocated!=null?'$'+Math.round(a.allocated):'—'}</td><td class="${(a.realized_pnl||0)>=0?'pos':'neg'}">${a.realized_pnl!=null?(a.realized_pnl>=0?'+':'')+'$'+Math.round(a.realized_pnl):'—'}</td><td class="dim">${a.survivability!=null?'surv '+a.survivability:''}</td></tr>`).join('');$('routerBox').innerHTML=`<table><thead><tr><th>strategy</th><th>weight</th><th>allocated</th><th>realized</th><th></th></tr></thead><tbody>${rows}</tbody></table><div class="note"><b>${d.verdict}</b> — champion-weighted edge ${d.champion_weighted_edge_pct}% vs equal-weight ${d.equal_weighted_edge_pct}%.</div>`;}
+async function renderRouter(){const d=await jget('data/CAPITAL_ROUTER_EXPLAINED.json');if(!d)return;
+  // 7.0.2: allocations:[] is TRUTHY in JS, so the old guard passed and painted an empty table —
+  // the 'broken, shows nothing' panel. Say why it is empty instead of showing a blank frame.
+  if(!Array.isArray(d.allocations)||!d.allocations.length){$('routerBox').innerHTML='<div class="dim" style="font-size:11px">no allocations yet \u2014 the router weights strategies that have <b>closed, fee-paid</b> trades; nothing has cleared that bar since the last reset. '+(d.verdict?('<br>current read: <b>'+d.verdict+'</b>'):'')+'</div>';return;}const rows=d.allocations.map(a=>`<tr><td>${pokeInline(a.strategy)}</td><td><b>${a.weight_pct}%</b></td><td>${a.allocated!=null?'$'+Math.round(a.allocated):'—'}</td><td class="${(a.realized_pnl||0)>=0?'pos':'neg'}">${a.realized_pnl!=null?(a.realized_pnl>=0?'+':'')+'$'+Math.round(a.realized_pnl):'—'}</td><td class="dim">${a.survivability!=null?'surv '+a.survivability:''}</td></tr>`).join('');$('routerBox').innerHTML=`<table><thead><tr><th>strategy</th><th>weight</th><th>allocated</th><th>realized</th><th></th></tr></thead><tbody>${rows}</tbody></table><div class="note"><b>${d.verdict}</b> — champion-weighted edge ${d.champion_weighted_edge_pct}% vs equal-weight ${d.equal_weighted_edge_pct}%.</div>`;}
 async function renderSector(){const d=await jget('data/SECTOR_RECOVERY.json');if(!d)return;if(d.status==='awaiting_sector_data'){$('sectorBox').innerHTML=`<div class="note">⏳ Ready & wired — awaiting sector cache. ${d.stock_trades_available} stock trades queued. ${d.action}</div>`;return;}const rows=Object.entries(d.by_sector||{}).map(([s,v])=>`<tr><td>${s}</td><td>${v.trades}</td><td class="${v.expectancy_pct>=0?'pos':'neg'}">${v.expectancy_pct>=0?'+':''}${v.expectancy_pct}%</td><td>${v.win_pct}%</td></tr>`).join('');$('sectorBox').innerHTML=`<table><thead><tr><th>sector</th><th>trades</th><th>expectancy</th><th>win%</th></tr></thead><tbody>${rows}</tbody></table><div class="note">best: <b>${d.best_sector||'—'}</b> · worst: <b>${d.worst_sector||'—'}</b></div>`;}
 async function renderChampTruth(){const g=await jget('data/CHAMPION_GOVERNANCE.json');if(!g){$('champTruthBox').innerHTML='<div class=dim>no governance data</div>';return;}
   const dc=g.declared_champion||{},ms=g.most_survivable||{},pt=g.promotion_thresholds||{},pl=g.promotion_ladder||{};
@@ -1197,9 +1221,28 @@ async function renderBrain(){try{
 }catch(e){__pfail(e)}}
 
 async function openSleeve(bk,sk){try{__resetModalBox();const d=await jget('data/STRATEGY_LAB.json');const sv=(d.sleeves||{})[bk+':'+sk]||{};const tr=(sv.trades||[]).slice(-60).reverse();
-  $('modal').style.display='block';$('modalTitle').innerHTML='\ud83e\uddea '+bk.toUpperCase()+' \u00b7 sleeve '+sk+' \u2014 full ledger (simulated)';
-  $('modalThesis').textContent='every synthetic trade, timestamped \u2014 the transparency law (M6). wipe_epoch '+(d.wipe_epoch||'\u2014')+' \u00b7 trades since wipe '+(sv.trades?sv.trades.length:0);
-  $('chartHost').innerHTML='<table><thead><tr><th>when (UTC)</th><th>side</th><th>sym</th><th>style</th><th>wager</th><th>pnl</th><th>net%</th><th>why</th></tr></thead><tbody>'
+  $('modal').style.display='block';$('modalTitle').innerHTML='\ud83e\uddea '+bk.toUpperCase()+' \u00b7 sleeve '+sk+' \u2014 full ledger';
+  // 7.0.2 TRANSPARENCY (operator: "TARGET · simulated — what does this mean? Are these synthetic
+  // trades on fake data? I hope not."). Answer, stated plainly in the panel: the PRICES are real
+  // (the same live tape the books trade); "simulated" means the FILL is a paper fill in a probe
+  // book that holds no capital. Not fake data — an unfunded hand played on real prices.
+  $('modalThesis').innerHTML='<b>real prices, paper fills.</b> This sleeve trades the same live tape as the funded books; '
+    +'\u201csimulated\u201d means the fill is booked in an unfunded probe, never with real capital \u2014 it is not synthetic price data. '
+    +'wipe_epoch '+(d.wipe_epoch||'\u2014')+' \u00b7 trades since wipe '+(sv.trades?sv.trades.length:0);
+  // 7.0.2: the sleeve's OPEN book, with entry \u2192 mark and the same \u25c4stop\u00b7\u00b7target\u25ba bar as COMMAND.
+  var _op=sv.positions||{}, _opK=Object.keys(_op), _openHtml='';
+  if(_opK.length){
+    _openHtml='<div style="font-weight:800;margin:4px 0">OPEN POSITIONS ('+_opK.length+')</div>'
+      +'<table style="font-size:11px;width:100%"><thead><tr><th>sym</th><th>qty</th><th>entry \u2192 now</th><th>uPL%</th><th style="width:30%">\u25c4 stop \u00b7\u00b7 target \u25ba</th></tr></thead><tbody>'
+      +_opK.map(function(s){var q=_op[s]||{};var ep=q.entry||q.entry_price||0;var mk=(q.mark!=null?q.mark:ep);
+        var up=(ep>0?(mk/ep-1)*100:0);
+        return '<tr><td>'+s+'</td><td>'+f(q.qty||0,4)+'</td><td class="dim" style="font-size:10px">$'+f(ep,4)+' \u2192 $'+f(mk,4)+'</td>'
+          +'<td class="'+(up>=0?'pos':'neg')+'">'+(up>=0?'+':'')+f(up,2)+'%</td>'
+          +'<td>'+__posBar({entry:ep,mark:mk,target:q.target,stop:q.stop,upl_pct:up})+'</td></tr>';}).join('')
+      +'</tbody></table>';
+  } else _openHtml='<div class="dim" style="font-size:11px">no open positions in this sleeve right now</div>';
+  $('chartHost').innerHTML=_openHtml+'<div style="font-weight:800;margin:10px 0 4px">CLOSED / ALL TRADES</div>'
+    +'<table><thead><tr><th>when (UTC)</th><th>side</th><th>sym</th><th>style</th><th>wager</th><th>pnl</th><th>net%</th><th>why</th></tr></thead><tbody>'
     +(tr.length?tr.map(function(t){return '<tr><td class="dim" style="font-size:9px">'+String(t.t||'').replace('T',' ').slice(0,19)+'</td><td>'+t.side+'</td><td>'+t.sym+'</td><td>'+(t.style||'')+'</td><td>'+(t.wager_usd?('$'+t.wager_usd):'')+'</td><td class="'+((t.pnl||0)>=0?'pos':'neg')+'">'+(t.pnl!=null?('$'+t.pnl):'')+'</td><td>'+(t.realized_pct!=null?t.realized_pct+'%':'')+'</td><td class="dim" style="font-size:9px">'+(t.why||'')+' \u00b7 simulated</td></tr>';}).join(''):'<tr><td colspan="8" class="dim">no trades yet \u2014 gates armed, pool pending</td></tr>')
     +'</tbody></table>';$('mStats').textContent='';}catch(e){__pfail(e)}}
 async function renderQuestions(){try{const el=$('questBody');if(!el)return;const d=await jget(files.qe);if(!d){el.textContent='first cycle pending';return;}
@@ -1337,6 +1380,10 @@ async function renderHealthMatrix(){
   const dot=s=>({GREEN:'🟢',YELLOW:'🟡',RED:'🔴',GRAY:'⚪'}[s]||'⚪');
   // 7.0.1: matrix feeds snapshot can freeze in a keyless lane; when it trails the engine >30m,
   // show LIVE provider groups from api_health so the panel never looks dead while the engine is fine.
+  // 7.0.2: api_health can ship with key_groups EMPTY when a keyed lane was cancelled mid-cycle
+  // (the workflow-cancellation bug). Fall back to the matrix's groups so the panel shows real
+  // provider depth instead of "awaiting first health beat" while the engine is actually fine.
+  if((!d.key_groups||!d.key_groups.length)&&m&&m.key_groups&&m.key_groups.length)d.key_groups=m.key_groups;
   const feeds=(!_matrixStale && (m&&m.feeds&&m.feeds.length))
     ? (m.feeds.map(f=>{if(/LEGACY/i.test(f.name||'')){f=Object.assign({},f,{status:'GRAY',detail:'retired — unused Alpaca legacy, not a fault'});}return f;}).map(f=>`<span style="white-space:nowrap">${dot(f.status)} ${f.name} <span class=dim>${f.detail||''}</span></span>`).join(' &nbsp;·&nbsp; '))
     : (((d.key_groups||[]).map(g=>`<span style="white-space:nowrap">${dot(g.status)} ${g.need} <span class=dim>${g.providers_active}/${g.providers_total} live</span></span>`).join(' &nbsp;·&nbsp; '))||'<span class="dim">awaiting first health beat</span>');
@@ -1347,7 +1394,7 @@ async function renderHealthMatrix(){
   const stg=d.storage||{};
   const dcd=(d.domain_clocks||{}).domains||{};const clocks=Object.entries(dcd).map(([n,v])=>`${n} ${v&&v.open?'🟢open':'⚪closed'}`).join(' · ');
   $('healthMatrix').innerHTML=`
-    <div class="hd" style="font-size:13px">🩺 PROJECT HEALTH — ${(_matrixStale?d.overall:'')||d.summary||(m&&m.summary)||d.overall||''}${staleTag}</div>
+    <div class="hd" style="font-size:13px">🩺 PROJECT HEALTH — ${(_matrixStale?d.overall:'')||d.summary||(m&&m.summary)||d.overall||''}${(String(d.overall||'').toLowerCase()==='impaired'&&(!d.key_groups||!d.key_groups.length))?' <span class=dim style="font-size:10px">(impaired = the keyed lane has not published provider depth yet; prices/news below are live)</span>':''}${staleTag}</div>
     <div style="font-size:11px;padding:6px 0;line-height:1.9"><b>FEEDS:</b> ${feeds}</div>
     <div style="font-size:11px;padding:4px 0;line-height:1.9"><b>DATA-SOURCE FALLBACK DEPTH</b> (want 2+ each): ${kg}</div>
     <div style="font-size:11px;padding:4px 0;color:var(--dim)">
@@ -1426,9 +1473,23 @@ async function openQuadrant(bk){
       ? rawPos.map(q=>({k:(q.sym||q.ticker||'\u2014'),q}))
       : Object.keys(rawPos).map(k=>({k,q:rawPos[k]||{}}));
   H+='<div style="font-weight:800;margin:8px 0 4px;border-bottom:1px solid #ffffff22">OPEN POSITIONS ('+posRows.length+')</div>';
-  if(posRows.length){H+='<table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="opacity:.6"><td>ticker</td><td>qty</td><td>entry</td><td>cost</td></tr>';
+  // 7.0.2 FULL DETAIL EVERYWHERE: the portal now carries the same truth as the main page —
+  // entry, live mark, uPL% and the ◄stop··target► bar. Live marks are merged in from LIVE[bk]
+  // so the marker moves here exactly as it does on COMMAND.
+  if(posRows.length){H+='<table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="opacity:.6"><td>ticker</td><td>qty</td><td>entry → now</td><td>uPL%</td><td>hold</td><td style="width:34%">\u25c4 stop \u00b7\u00b7 target \u25ba</td></tr>';
+    const _lp=((LIVE&&LIVE[bk]&&LIVE[bk].positions)||[]);
     posRows.forEach(pr=>{const q=pr.q||{};const qty=q.qty||q.quantity||0,ep=q.entry_price||q.entry||q.price||0;
-      H+='<tr><td style="color:'+COL+'">'+pr.k+'</td><td>'+f(qty,4)+'</td><td>$'+f(ep,4)+'</td><td>$'+f(qty*ep)+'</td></tr>';});
+      const lv=_lp.find(z=>String(z.sym||'')===String(pr.k))||{};
+      const mark=(lv.mark!=null?lv.mark:(q.mark!=null?q.mark:ep));
+      const upl=(lv.upl_pct!=null?lv.upl_pct:(ep>0?(mark/ep-1)*100:0));
+      const hm=(lv.t?Math.round((Date.now()-new Date(lv.t))/60000):(lv.hold_min!=null?lv.hold_min:null));
+      const holdTxt=(hm==null?'\u2014':(hm>=60?(hm/60).toFixed(1)+'h':hm+'m'));
+      const barP={entry:ep,mark:mark,target:(lv.target!=null?lv.target:null),stop:(lv.stop!=null?lv.stop:null),upl_pct:upl};
+      H+='<tr><td style="color:'+COL+'">'+pr.k+'</td><td>'+f(qty,4)+'</td>'
+        +'<td class="dim" style="font-size:10px">$'+f(ep,4)+' \u2192 $'+f(mark,4)+'</td>'
+        +'<td class="'+(upl>=0?'pos':'neg')+'">'+(upl>=0?'+':'')+f(upl,2)+'%</td>'
+        +'<td class="dim" style="font-size:10px">'+holdTxt+'</td>'
+        +'<td>'+__posBar(barP)+'</td></tr>';});
     H+='</table>';}
   else H+='<div class="dim" style="font-size:11px">no open positions right now (in warmup or no qualifying dip)</div>';
 
@@ -1449,9 +1510,21 @@ async function openQuadrant(bk){
   const traces=(trace.traces||[]).filter(t=>_cls(String(t.ticker||t.sym||''))===bk).slice(-10).reverse();
   H+='<div style="font-weight:800;margin:14px 0 4px;border-bottom:1px solid #ffffff22">RECENT EXITS — why trades closed</div>';
   if(trace.exit_reason_breakdown)H+='<div class="dim" style="font-size:11px;margin-bottom:4px">'+Object.entries(trace.exit_reason_breakdown).map(([k,v])=>k+': '+v).join(' · ')+'</div>';
-  if(traces.length){H+='<table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="opacity:.6"><td>ticker</td><td>exit reason</td><td>pnl</td></tr>';
-    traces.forEach(t=>{const tk=t.ticker||t.sym||'—',rs=t.exit_reason||t.reason||'—',pl=t.pnl??t.realized??0;
-      H+='<tr><td style="color:'+COL+'">'+tk+'</td><td style="opacity:.85">'+rs+'</td><td class="'+(pl>=0?'pos':'neg')+'">$'+f(pl)+'</td></tr>';});
+  if(traces.length){H+='<table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="opacity:.6"><td>ticker</td><td>entry → exit</td><td>exit reason</td><td>result</td><td>hold</td></tr>';
+    // 7.0.2 EXIT-DETAIL FIX: DECISION_TRACE stores the close under t.exit{realized_pct,reason,price,
+    // hold_min} and the name under t.sym. The old row read t.pnl/t.realized/t.exit_reason — all
+    // undefined — so every portal printed "$0.00" next to a real -$76.26 loss. Now it shows the
+    // true entry price, exit price, %, reason and hold, everywhere trades are listed.
+    traces.forEach(t=>{const X=t.exit||{},E=t.entry||{};
+      const tk=t.sym||t.ticker||'—', rs=X.reason||t.exit_reason||'—';
+      const pct=(X.realized_pct!=null?X.realized_pct:null);
+      const cls=(pct==null?'dim':(pct>=0?'pos':'neg'));
+      const hold=(X.hold_min!=null?(X.hold_min>=60?(X.hold_min/60).toFixed(1)+'h':X.hold_min+'m'):'—');
+      H+='<tr><td style="color:'+COL+'">'+tk+'</td>'
+        +'<td class="dim" style="font-size:10px">$'+f(E.price,4)+' → $'+f(X.price,4)+'</td>'
+        +'<td style="opacity:.85">'+rs+'</td>'
+        +'<td class="'+cls+'">'+(pct==null?'—':(pct>=0?'+':'')+pct+'%')+'</td>'
+        +'<td class="dim" style="font-size:10px">'+hold+'</td></tr>';});
     H+='</table>';} else H+='<div class="dim" style="font-size:11px">no exits recorded yet</div>';
 
   // MASTER GATE — real accept/reject for THIS book, every cycle (no legacy sgov/alpaca counters)
@@ -1523,6 +1596,22 @@ function renderReady(cv){
   $('readyFill').style.width=score+'%';$('readyLab').textContent='READINESS '+score+'%  (gated by trade count)';
   $('readySubs').innerHTML=[['Out-of-sample trades →100 (the gate)',tradeGate,n+'/100']].concat(q).map(g=>`<div style="display:flex;gap:8px;align-items:center;margin:3px 0"><span style="flex:0 0 50%;font-size:11px">${g[0]}</span><div class="met" style="flex:1;height:18px"><div class="fill" style="width:${Math.round(g[1]*100)}%"></div><div class="lab">${g[2]}</div></div></div>`).join('');
 }
+// ── 7.0.2 SHARED POSITION BAR (operator: "every place open trade data is shown a live bar graph
+// needs to be shown like we have on the main page"). One builder, used by the main page, the
+// account portals and the sleeve ledgers — so detail can never diverge between views again.
+function __posBar(p){try{
+  const tgt=(p.target!=null?(p.target<1?p.entry*(1+p.target):p.target):p.entry*(1+EXIT.t));
+  const stop=(p.stop!=null?(p.stop<1?p.entry*(1-p.stop):p.stop):p.entry*(1-EXIT.s));
+  const rng=Math.max(1e-9,tgt-stop);
+  const mark=(p.mark!=null?p.mark:p.entry);
+  const mk=Math.max(0,Math.min(100,(mark-stop)/rng*100));
+  const en=Math.max(0,Math.min(100,(p.entry-stop)/rng*100));
+  const up=((p.upl_pct!=null?p.upl_pct:(mark/p.entry-1)*100))>=0;
+  return '<div style="position:relative;height:13px;border-radius:7px;background:linear-gradient(90deg,#4a1620 0%,#23201a 50%,#0f3320 100%);box-shadow:inset 0 0 4px #0008">'
+    +'<div style="position:absolute;left:'+en+'%;top:-3px;bottom:-3px;width:2px;background:#9aa4b8" title="entry $'+f(p.entry,4)+'"></div>'
+    +'<div style="position:absolute;left:calc('+mk+'% - 5px);top:0;font-size:12px;line-height:13px;color:'+(up?'#39d353':'#ff6b6b')+'" title="now $'+f(mark,4)+'">\u25be</div></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:8px;opacity:.6"><span>\u25c4 $'+f(stop,4)+'</span><span>$'+f(tgt,4)+' \u25ba</span></div>';
+}catch(e){return '';}}
 function renderPos(bk,host){const L=LIVE&&LIVE[bk]?LIVE[bk]:{},pos=L.positions||[];
   if(!pos.length){host.innerHTML=`<tr><td colspan="5" class="dim">${bk==='stock'?'no stock positions — fires only during US market hours':'waiting for an oversold name · warmup needs ~2h live data'}</td></tr>`;return;}
   host.innerHTML=pos.map(p=>{

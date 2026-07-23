@@ -243,7 +243,17 @@
    "metal": 0.01,
    "energy": 0.02
   },
-  "_what": "5.11 ACTIVATION: per-name entry = clamp(k\u00b7\u03c31h, class floor, min(class cap, regime base)); \u03c31h = robust MAD of the name's ACTUAL trailing-1h moves (48h window). Custom-fits EVERY trade to the name's own pulse \u2014 quiet markets and quiet INDUSTRIES (the frozen metal/energy books) still surface their own outliers. Never looser than the floor, never demands more than the regime base. mode:'off' restores blanket thresholds. KILL: if vol-native entries lose to fingerprint entries after 60 closed (report card), turn off."
+  "_what": "5.11 ACTIVATION: per-name entry = clamp(k\u00b7\u03c31h, class floor, min(class cap, regime base)); \u03c31h = robust MAD of the name's ACTUAL trailing-1h moves (48h window). Custom-fits EVERY trade to the name's own pulse \u2014 quiet markets and quiet INDUSTRIES (the frozen metal/energy books) still surface their own outliers. Never looser than the floor, never demands more than the regime base. mode:'off' restores blanket thresholds. KILL: if vol-native entries lose to fingerprint entries after 60 closed (report card), turn off.",
+  "target": {
+   "mode": "auto",
+   "k_target": 1.0,
+   "fee_multiple": 2.0,
+   "books": [
+    "metal",
+    "energy"
+   ],
+   "_note": "7.0.2 GOLD FIX: target = clamp(the move this name actually reaches over the intended hold, fee_multiple x round-trip cost, champion base target). Metal/energy inherited crypto-shaped +5% targets they could never reach \u2014 the reason metal had zero trades. Scoped to metal+energy so working crypto/stock are untouched. A name whose reachable move cannot pay its round trip is skipped honestly. KILL: mode 'off'."
+  }
  },
  "position_caps": {
   "crypto": 10,
@@ -358,5 +368,22 @@
  "regime_champion": {
   "mode": "auto",
   "_note": "7.0.1: regime-conditional champion. In UPTREND/DOWNTREND a book prefers the best momentum (dir=mom) strategy from its own arena over the mean-reversion rank-leader (which would sit idle waiting for a dip). SIDEWAYS keeps mean-reversion. Forward survivability still overrides once a book has live trades. KILL: mode off = pure rank."
+ },
+ "sleeve_promotion": {
+  "mode": "auto",
+  "min_closes": 3,
+  "switch_margin_pct": 0.75,
+  "_note": "7.0.2 THE PYRAMID: each industry book adopts the DISCIPLINE (position cap, recycle horizon) of the best sleeve in its own workshop, judged on REAL closed trades vs the null. Sleeve behaviour is never altered, only selected. Losing workshops promote nobody. KILL: mode 'off'."
+ },
+ "fee_class": {
+  "mode": "auto",
+  "floor": {
+   "crypto": 0.002,
+   "aggressive": 0.002,
+   "stock": 0.0006,
+   "metal": 0.0006,
+   "energy": 0.0006
+  },
+  "_note": "7.0.2 PER-CLASS FEE FLOOR (round-trip fraction). Crypto UNCHANGED at 0.2% (Binance.US/Coinbase taker ~0.1%/side). US equities/ETFs are commission-free; true cost is spread+slippage (GLD spread ~0.003%), so 0.06% is still several times conservative. The old single 0.2% global floor made gold mathematically untradeable (GLD reaches only ~0.22% at any horizon vs a 0.4% bar) \u2014 that was why metal never traded. Modeled fees remain a hypothesis until real broker fills validate them. KILL: mode 'off'."
  }
 }

@@ -3591,6 +3591,9 @@ Reply in 3-5 bullets, no preamble.
                           ("conductor C1 shadow scoring", "conductor_c1.build_conductor_c1"),
                           ("conductor report card (A/B honesty)", "conductor_report_card.build_conductor_report_card"),
                           ("strategy lab A/B/C/D", "strategy_lab_abcd.build_strategy_lab"),
+                          # 7.0.2 PYRAMID RUNG 2 — must run AFTER the lab: the workshop's best
+                          # sleeve hands its discipline up to its industry book.
+                          ("sleeve promotion (workshop → book)", "sleeve_promotion.build_sleeve_promotion"),
                           ("geometry gate (law of winnable trades)", "geometry.build_geometry"),
                           ("sizer (ladder·breakers·one-factor)", "sizer.build_sizer"),
                           ("calibration (graded confidence)", "calibration.build_calibration"),

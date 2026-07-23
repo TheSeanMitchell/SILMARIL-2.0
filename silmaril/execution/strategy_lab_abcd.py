@@ -383,6 +383,12 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
 
     st["generated_at"] = _now().isoformat()
     st["by_industry"] = by_industry
+    # 7.0.2 PYRAMID: publish each sleeve's DISCIPLINE so sleeve_promotion can hand the
+    # winner's playbook up to its industry book. Read-only export — sleeve behaviour is
+    # never altered by this, only made legible upstairs (operator: "only want the best of
+    # them selected for use, do not alter their behavior").
+    st["sleeves_def"] = {k: {kk: vv for kk, vv in v.items() if kk != "desc"}
+                         for k, v in SLEEVES.items()}
     st["scoreboard"] = by_industry.get("crypto", [])
     st["what"] = ("per-industry A–F discipline race: same entries per industry, differing ONLY in "
                   "position management. A = the control (current live behavior). E = ADAPTIVE "

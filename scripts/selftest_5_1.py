@@ -1005,13 +1005,13 @@ def t59_workflow_law():
         return
     wf = ROOT / ".github/workflows"
     problems = []
-    state_lanes = ["daily.yml", "hourly.yml", "analytics.yml", "backfill_universe.yml",
-                   "venue_universe.yml", "weekly_backup.yml", "compact_history.yml",
-                   "reset_internal_clean.yml"]
-    for w in state_lanes:
-        fp = wf / w
-        if fp.exists() and "silmaril-state" not in fp.read_text():
-            problems.append(f"{w}: not on shared silmaril-state queue")
+    # 7.0.2 SUPERSEDED: the shared 'silmaril-state' queue was the cause of the cancellations
+    # (GitHub keeps only ONE pending run per group, so the 10-min daily kept killing queued
+    # hourly/analytics). Lane INDEPENDENCE is now the law and T78 enforces it; here we only
+    # assert that no lane has been left on the old shared queue.
+    for fp in wf.glob("*.yml"):
+        if "silmaril-state" in fp.read_text():
+            problems.append(f"{fp.name}: still on the retired shared silmaril-state queue")
     st = (wf / "selftest.yml").read_text()
     if "paths:" not in st:
         problems.append("selftest.yml: push not paths-filtered (stampede risk)")
@@ -1156,11 +1156,11 @@ def t71_workflow_serialization():
     corrupt files; selftest is paths-filtered (no stampede on data commits) and cancel-in-progress."""
     import glob as _g
     wf = ROOT / ".github/workflows"
-    committing = ["daily.yml", "hourly.yml", "analytics.yml", "reset_internal_clean.yml"]
-    ok = all("silmaril-state" in (wf / w).read_text() for w in committing if (wf / w).exists())
+    # 7.0.2: independence replaced the shared queue (see T78) — assert the retirement, not the queue.
+    ok = not any("silmaril-state" in f.read_text() for f in wf.glob("*.yml"))
     st = (wf / "selftest.yml").read_text()
     ok = ok and "paths:" in st and "silmaril-selftest" in st and "core.warning" in st
-    check("T71 workflow law: state lanes share silmaril-state · selftest paths-filtered + guarded", ok, "")
+    check("T71 workflow law: shared queue retired · selftest paths-filtered + guarded", ok, "")
 
 
 def t72_modal_scope_and_guard():
@@ -1238,6 +1238,94 @@ def t77_regime_conditional_champion():
     check("T77 regime-conditional champion: trending books prefer momentum, sideways keeps MR (knob+kill)", ok, "")
 
 
+def t78_workflow_independence():
+    """7.0.2 (operator: "deep analytics and hourly are getting canceled out by the daily"). GitHub
+    keeps only ONE pending run per concurrency group, so a shared group + a 10-min daily silently
+    cancelled every queued hourly/analytics run. Every lane must own its group."""
+    import glob as _g
+    wf = ROOT / ".github/workflows"
+    shared = [f.split("/")[-1] for f in _g.glob(str(wf / "*.yml")) if "silmaril-state" in open(f).read()]
+    groups = {}
+    for f in _g.glob(str(wf / "*.yml")):
+        import re as _re
+        m = _re.search(r"group:\s*(\S+)", open(f).read())
+        if m:
+            groups.setdefault(m.group(1), []).append(f.split("/")[-1])
+    dupes = {g: v for g, v in groups.items() if len(v) > 1}
+    ok = (not shared) and (not dupes)
+    check("T78 workflow independence: every lane owns its concurrency group (no cross-cancellation)",
+          ok, f"shared={shared} dupes={dupes}")
+
+
+def t79_sleeve_promotion_pyramid():
+    """7.0.2 THE PYRAMID, RUNG 2: the best sleeve in a book's own workshop hands its discipline up to
+    that book. Promotion needs real closed trades and positive expectancy; a losing workshop promotes
+    nobody. Sleeve behaviour is never altered — only selected (operator's explicit instruction)."""
+    import json as _json
+    src = (ROOT / "silmaril/execution/sleeve_promotion.py")
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    lab = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
+    cli = (ROOT / "silmaril/cli.py").read_text()
+    ok = (src.exists() and "promoted_discipline" in sim and "sleeves_def" in lab
+          and "sleeve_promotion.build_sleeve_promotion" in cli)
+    try:
+        cat = _json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text())
+        ok = ok and (cat.get("sleeve_promotion") or {}).get("mode") in ("auto", "off")
+    except Exception:
+        pass
+    check("T79 pyramid rung 2: winning sleeve's discipline promoted to its book (knob + kill)", ok, "")
+
+
+def t80_trade_detail_everywhere():
+    """7.0.2 (operator: "every place open trade data is shown a live bar graph needs to be shown").
+    One shared bar builder feeds the main page, the account portals and the sleeve ledgers, and the
+    portal exit table reads the REAL close (t.exit.realized_pct) instead of printing $0.00."""
+    html = (ROOT / "docs/index.html").read_text()
+    ok = ("function __posBar(" in html
+          and "X.realized_pct" in html
+          and "entry \u2192 exit" in html or "entry → exit" in html)
+    ok = ok and "t.pnl??t.realized??0" not in html.replace(" ", "")
+    check("T80 trade detail everywhere: shared live bar + true exit price/%/reason in every view", ok, "")
+
+
+def t81_per_industry_badges_and_gekko_rank():
+    """7.0.2: a CHAMPION SLEEVE badge for EVERY industry (not just crypto), each showing whether that
+    sleeve has been promoted; and GEKKO drops off COMMAND — it is a crypto sleeve, not a 5th book."""
+    html = (ROOT / "docs/index.html").read_text()
+    ok = ("SLEEVE_PROMOTION.json" in html and "PROMOTED into the" in html
+          and "const books=['crypto','stock','metal','energy']" in html
+          and 'id="posAggressive" style="display:none"' in html)
+    check("T81 per-industry champion badges + GEKKO at sleeve rank on COMMAND", ok, "")
+
+
+def t82_fee_truth_and_reachable_targets():
+    """7.0.2 THE GOLD FIX: per-asset-class fee floors (crypto unchanged; US ETFs commission-free) and
+    vol-native targets sized to what a name actually reaches. One global 0.2% floor made GLD/IAU
+    mathematically untradeable, which is why the metal book never traded."""
+    import json as _json
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok = ("def _reachable_move" in sim and "def _vol_native_target" in sim
+          and "fee_class" in sim and "book: str = None" in sim)
+    try:
+        cat = _json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text())
+        fc = cat.get("fee_class") or {}
+        ok = ok and fc.get("mode") in ("auto", "off")
+        ok = ok and float((fc.get("floor") or {}).get("crypto", 0)) == 0.002   # crypto untouched
+        ok = ok and float((fc.get("floor") or {}).get("metal", 1)) < 0.002     # ETFs cheaper
+        ok = ok and (cat.get("vol_native", {}).get("target") or {}).get("mode") in ("auto", "off")
+    except Exception:
+        ok = False
+    check("T82 fee truth + reachable targets: gold tradeable, crypto fee model unchanged (knob+kill)", ok, "")
+
+
+def t83_no_target_guard():
+    """7.0.2 SPCX post-mortem: SPCX opened with "target +None%" when the stock champion's params were
+    incomplete, then rode 123.28 -> 116.56 with no defined exit-up. A trade without a target is a hope."""
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok = "NO-TARGET GUARD" in sim and "_no_target_fallback" in sim
+    check("T83 no-target guard: a position can never open without a real target and stop", ok, "")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -1268,7 +1356,10 @@ if __name__ == "__main__":
               t69_reset_reanchors_nulls, t70_reset_seeds_live, t71_workflow_serialization,
               t72_modal_scope_and_guard, t73_health_reads_live_when_stale,
               t74_header_and_portals, t75_health_and_wiring_labels,
-              t76_quantization_quarantine, t77_regime_conditional_champion):
+              t76_quantization_quarantine, t77_regime_conditional_champion,
+              t78_workflow_independence, t79_sleeve_promotion_pyramid, t80_trade_detail_everywhere,
+              t81_per_industry_badges_and_gekko_rank, t82_fee_truth_and_reachable_targets,
+              t83_no_target_guard):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

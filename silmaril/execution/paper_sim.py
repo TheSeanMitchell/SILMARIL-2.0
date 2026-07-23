@@ -107,6 +107,74 @@ def _vol_native_entry(rows, cls, base_entry, knob):
     fl = float(((knob or {}).get("floor") or {}).get(cls, _VN_FLOOR.get(cls, 0.01)))
     cp = float(((knob or {}).get("cap") or {}).get(cls, _VN_CAP.get(cls, 0.04)))
     return max(fl, min(k * sig, cp, float(base_entry)))
+def _reachable_move(rows, hold_h):
+    """Robust estimate of how far a name actually travels over `hold_h` hours, taken from its own
+    tape. Uses the median absolute move across real (non-backfill) prints spanning ~that horizon,
+    so it works on instruments whose 1h pair-sampler is empty (gold stops printing when the metals
+    session closes, which is exactly why _vol_sigma1h returns None for GLD). Returns None if thin."""
+    try:
+        from datetime import datetime as _dt, timezone as _tz
+        pts = []
+        for t_, p_ in (rows or []):
+            if not p_ or "T00:00:00" in str(t_):
+                continue
+            try:
+                ts = _dt.fromisoformat(str(t_).replace("Z", "+00:00"))
+                pts.append(((ts if ts.tzinfo else ts.replace(tzinfo=_tz.utc)).timestamp(), float(p_)))
+            except Exception:
+                continue
+        if len(pts) < 12:
+            return None
+        pts.sort()
+        span = max(1.0, float(hold_h)) * 3600.0
+        moves, j = [], 0
+        for i in range(len(pts)):
+            ti, pi = pts[i]
+            while j < i and pts[j][0] < ti - span:
+                j += 1
+            if j < i and pts[j][1] > 0:
+                moves.append(abs(pi / pts[j][1] - 1.0))
+        # Drop dead-flat pairs: a metals ETF repeats the same print all night while its session is
+        # closed, and those zeros swamped the percentile (GLD measured 0.000% reachable and every
+        # name got skipped). A closed market is not evidence about how far a name travels.
+        moves = [m for m in moves if m > 1e-9]
+        if len(moves) < 8:
+            return None
+        moves.sort()
+        return moves[int(len(moves) * 0.6)]        # 60th pct: a move it makes often, not a record
+    except Exception:
+        return None
+
+
+def _vol_native_target(rows, book, base_target, cost, hold_h, knob):
+    """7.0.2 THE GOLD FIX. Entry was already vol-scaled, but the TARGET was not — so the metal book
+    ran a crypto-shaped +5% target on GLD, an instrument that moves ~0.19%/hour. It could never hit
+    target, so the trade was never worth taking and metal sat at zero trades for days, exactly as
+    the operator kept reporting.
+
+    Now the target is what the name actually reaches over the intended hold, floored by fees:
+        target = clamp(reachable(hold), fee_multiple x round-trip cost, base_target)
+    If the reachable move cannot pay for its own round trip, return None — the caller skips the
+    name honestly instead of booking a mathematically-doomed trade.
+
+    SCOPE: applied only to the books listed in the knob (default metal+energy). Crypto and stock
+    keep their existing behaviour untouched — the operator's working sleeves are not to be altered.
+    KILL: vol_native.target.mode = "off"."""
+    tk = (knob or {}).get("target") or {}
+    if str(tk.get("mode", "auto")).lower() != "auto":
+        return base_target
+    if book not in (tk.get("books") or ["metal", "energy"]):
+        return base_target
+    reach = _reachable_move(rows, hold_h)
+    if reach is None:
+        return base_target
+    floor = float(cost or 0.0) * float(tk.get("fee_multiple", 2.0))
+    want = float(tk.get("k_target", 1.0)) * reach
+    if want < floor:
+        return None                      # cannot clear its own round trip — skip, do not force
+    return max(floor, min(want, float(base_target)))
+
+
 # GOLDEN RULE — book-specific minimum post-fee take-home per trade (USD). A close must net at least this
 # much AFTER fees or the trade is not taken; positions are sized UP so the target clears it. This also
 # kills the dust-position bug (no more $0.01 buys from leftover cash). Tunable per book: raise toward 5.00
@@ -312,8 +380,32 @@ def is_tradeable(prices: List[float]) -> bool:
     return freshness(prices) >= MIN_FRESHNESS and not _feed_unreliable(prices)
 
 
-def round_trip_cost(prices: List[float]) -> float:
-    return max(MIN_COST, 2.0 * noise_floor(prices))
+def round_trip_cost(prices: List[float], book: str = None) -> float:
+    """7.0.2 PER-CLASS FEE TRUTH — the real reason gold never traded.
+
+    MIN_COST was one global 0.2% round-trip floor applied to every book (the source comment already
+    conceded "stocks tight; crypto wider" but the code never split them). Gold ETFs reach only
+    ~0.22% over ANY horizon, so a 2x0.2% bar made GLD/IAU permanently unprofitable by arithmetic —
+    the metal book was mathematically forbidden from trading, which is exactly what the operator
+    kept seeing.
+
+    US equity/ETF reality: commission-free at every retail broker, so the true round trip is spread
+    plus slippage — GLD's spread is ~0.003%. The class floor below is still several times that, so
+    it stays conservative. Crypto is UNCHANGED (Binance.US/Coinbase taker ~0.1%/side).
+
+    HONESTY NOTE: lowering a cost floor makes results look better, which is the dangerous direction.
+    These are pre-registered, defensible numbers, knob-tunable, and they must be re-validated against
+    real broker fills at live handoff — modeled fees are a hypothesis until a real ticket proves them.
+    KILL: PARAM_CATALOG.fee_class.mode = "off" restores the single global floor."""
+    floor = MIN_COST
+    if book:
+        try:
+            fk = (_catalog() or {}).get("fee_class") or {}
+            if str(fk.get("mode", "auto")).lower() == "auto":
+                floor = float((fk.get("floor") or {}).get(book, MIN_COST))
+        except Exception:
+            floor = MIN_COST
+    return max(floor, 2.0 * noise_floor(prices))
 
 
 def feed_integrity(samples: Dict[str, List]) -> Dict[str, Any]:
@@ -741,7 +833,30 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
     else:
         p = {"dir": "mr", "entry": DROP, "target": BOUNCE, "stop": STOP, "max_hold_min": MAX_HOLD_MIN}
     direction = p.get("dir", "mr")
+    # ── 7.0.2 THE PYRAMID, RUNG 2 — the book adopts the winning sleeve's DISCIPLINE. ──────────
+    # Operator's law: sleeves feed the books, books feed the Master. The workshop was winning
+    # (crypto H PATIENT REVERT +2.46% at a 100% close-rate) while the book ran an unrelated grid
+    # champion. Now the best sleeve — judged on REAL closed trades vs the null — hands its
+    # position-management hand upstairs: how many names it holds, and how long it will wait.
+    # Entry signal and sleeve behaviour are untouched. KILL: sleeve_promotion.mode "off".
+    _promo = {}
+    try:
+        from .sleeve_promotion import promoted_discipline as _pd7
+        _promo = _pd7(out, book) or {}
+    except Exception:
+        _promo = {}
     entry, target, stop_, max_hold = p["entry"], p["target"], p["stop"], p["max_hold_min"]
+    # ── 7.0.2 NO-TARGET GUARD (the SPCX post-mortem). SPCX was entered with "target +None%" —
+    # the stock champion's params were incomplete that cycle, so the position opened with no
+    # defined exit-up and simply rode 123.28 → 116.56 (-5.45%) over 23 hours. A trade without a
+    # target is not a trade, it is a hope. Fall back to the book default and say so loudly.
+    if target is None or not (float(target) > 0):
+        target = BOUNCE
+        _no_target_fallback = True
+    else:
+        _no_target_fallback = False
+    if stop_ is None or not (float(stop_) > 0):
+        stop_ = STOP
     pbook = PaperBook.load(out / f"paper_book_{book}.json")
     pbook._canon = (out, book)   # 7.0 FINAL: LIVE cycle writes the one book of record (LEDGER.jsonl)
     # ── 7.0 ONE-UNIVERSE RIVER (read side): the workshop's resolved outcomes count as maturity
@@ -997,6 +1112,14 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         target = float(_ovr0.get("target", target))
         stop_ = max(float(_ovr0.get("stop", stop_)), float(_fmin0 or 0))
         max_hold = float(_ovr0.get("max_hold_min", max_hold))
+    # 7.0.2: the promoted sleeve's patience governs the hold clock. H PATIENT REVERT waits up to
+    # 7 days for the revert it has evidence for; a recycle-horizon sleeve cuts dead capital sooner.
+    # This is the single lever that would have changed the MKR loss (book held 1023m into -5.14%).
+    if _promo.get("recycle_h"):
+        try:
+            max_hold = float(_promo["recycle_h"]) * 60.0
+        except Exception:
+            pass
 
     # ENTRIES. Momentum buys strength. Mean-reversion now fits a CUSTOM strategy to EACH valuable from
     # its own chart (fingerprint): a name is a candidate only when it has dipped to ~its OWN typical
@@ -1155,6 +1278,15 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                             "why": "regime throttle — 15m·30m·1h all red; new entries capped to %d this cycle" % _cap_red})
             cands = cands[:_cap_red]
     _poscap = int((cat.get("position_caps") or {}).get(book, MAX_NAMES))
+    # 7.0.2: promoted sleeve discipline (_promo) is resolved earlier, before the override block.
+    if _promo.get("cap"):
+        _poscap = int(_promo["cap"])
+    # 7.0.2 GOLD FIX: scale the champion target to what THIS book's names can actually reach.
+    # Metal/energy inherit crypto-shaped targets from the strategy grid; a +5% target on gold is
+    # unreachable, so the book never trades. Vol-native targets make slow books tradeable while the
+    # fee floor keeps them honest (a name that cannot clear its round trip is skipped, not forced).
+    _vnt_knob = (cat.get("vol_native") or {})
+    _vnt_on = str(((_vnt_knob.get("target") or {}).get("mode", "auto"))).lower() == "auto"
     _slots = max(0, _poscap - len(pbook.positions))   # cap governs TOTAL open, not per-cycle
     if _slots < len(cands[:MAX_NAMES]):
         actions.append({"act": "SKIP", "sym": f"{len(cands[:MAX_NAMES]) - _slots} name(s)",
@@ -1258,7 +1390,7 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                 actions.append({"act": "SKIP", "sym": sym,
                                 "why": "falling knife — %.1f%% over 6h, no bounce (veto at %.0f%%)" % (t6 * 100, knife * 100)})
                 continue
-        cost = round_trip_cost(px_of(sym))
+        cost = round_trip_cost(px_of(sym), book)
         # 5.3 VENUE LAYER — declared fee + measured spread + CAPPED slippage (noise demoted).
         # The proxy that drifted 1.494%→0.450% on ONDO in 24h can never set economics again.
         try:
