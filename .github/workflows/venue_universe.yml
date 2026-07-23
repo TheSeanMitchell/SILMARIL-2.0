@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: silmaril-state   # 7.0.1: ALL state-mutating lanes share ONE queue — strict FIFO, zero overlap, zero corrupt-file risk
+  group: silmaril-venues   # 7.0.2: OWN lane group. A shared group let only ONE run stay pending, so the 10-min daily kept cancelling queued hourly/analytics. Independent lanes never cancel each other; state safety = run_lock + atomic writes + rebase-retry push.
   cancel-in-progress: false
 
 permissions:
