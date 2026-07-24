@@ -9,7 +9,7 @@ name: Compact Git History (storage cure)
 # with retries so parallel pushes merge instead of failing.
 concurrency:
   group: silmaril-compact   # 7.0.2: OWN lane group. A shared group let only ONE run stay pending, so the 10-min daily kept cancelling queued hourly/analytics. Independent lanes never cancel each other; state safety = run_lock + atomic writes + rebase-retry push.
-  cancel-in-progress: true    # 7.0.3: SAME lane only — a newer run of THIS workflow replaces an older one (operator's rule). Cross-lane overlap is prevented by the SERIAL LANE LOCK step, which never cancels anyone.
+  cancel-in-progress: false   # 7.0.5 CRITICAL: a RUNNING cycle is NEVER killed. 7.0.3 set this true and the */10 daily cron then cancelled its own 12-13 min run on every tick — the cycle could never finish. GitHub still supersedes a PENDING run when a newer one arrives, which is the 'newest wins' rule applied to the queue instead of to live work.
 
 # THE 733MB PROBLEM, SOLVED PERMANENTLY (June 12, 2026).
 # The worktree is ~85MB; the other ~650MB is .git history — the compound
@@ -51,11 +51,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -uo pipefail
-          LANES="daily.yml hourly.yml analytics.yml backfill_universe.yml venue_universe.yml weekly_backup.yml compact_history.yml reset_internal_clean.yml integrity_backfill.yml remap_keys.yml cleanup_5_11.yml selftest.yml"
+          LANES="daily.yml hourly.yml analytics.yml venue_universe.yml selftest.yml"
           ME="${{ github.run_id }}"
           MINE="${{ github.workflow }}"
           MY_START="$(date -u +%s)"
           WAITED=0
+          MAX_WAIT=600   # 7.0.5: fair-share cap. A busy daily must never starve hourly/analytics.
           while :; do
             BUSY=""
             for L in $LANES; do
@@ -71,6 +72,11 @@ jobs:
             done
             if [ -z "$BUSY" ]; then
               echo "lane clear after ${WAITED}s — proceeding"; break
+            fi
+            if [ "$WAITED" -ge "${MAX_WAIT:-600}" ]; then
+              echo "waited ${WAITED}s for $BUSY — proceeding anyway (fairness cap)."
+              echo "state stays safe on atomic writes + cli run_lock + rebase-retry push."
+              break
             fi
             echo "waiting ${WAITED}s: $BUSY holds the state lane…"
             sleep 15; WAITED=$((WAITED+15))
