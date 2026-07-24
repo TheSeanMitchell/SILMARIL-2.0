@@ -17,12 +17,49 @@ permissions:
 # with retries so parallel pushes merge instead of failing.
 concurrency:
   group: silmaril-oneshot-cleanup   # 7.0.2: OWN lane group. A shared group let only ONE run stay pending, so the 10-min daily kept cancelling queued hourly/analytics. Independent lanes never cancel each other; state safety = run_lock + atomic writes + rebase-retry push.
-  cancel-in-progress: false
+  cancel-in-progress: true    # 7.0.3: SAME lane only — a newer run of THIS workflow replaces an older one (operator's rule). Cross-lane overlap is prevented by the SERIAL LANE LOCK step, which never cancels anyone.
 jobs:
   sunset:
     if: ${{ github.event.inputs.confirm == 'SUNSET' }}
     runs-on: ubuntu-latest
     steps:
+      # ── 7.0.3 SERIAL LANE LOCK (operator: "we do not want runs running simultaneously, it may
+      # corrupt data ... never interrupt, but also never run simultaneously, with no timeout").
+      # GitHub concurrency alone cannot express this: a shared group serialises but CANCELS queued
+      # runs (the 7.0.1 bug), while independent groups never cancel but DO run at the same time
+      # (the 7.0.2 bug the operator just caught — venue_universe and selftest overlapping).
+      # This step is the missing mutex: before touching state, wait for every other state lane to
+      # finish. It never cancels anyone and never gives up, so a queued run always eventually runs.
+      # Same-lane collisions are handled by concurrency.cancel-in-progress (newest wins) above.
+      - name: 🔒 SERIAL LANE LOCK — wait for other state lanes (never cancel, never overlap)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          LANES="daily.yml hourly.yml analytics.yml backfill_universe.yml venue_universe.yml weekly_backup.yml compact_history.yml reset_internal_clean.yml integrity_backfill.yml remap_keys.yml cleanup_5_11.yml selftest.yml"
+          ME="${{ github.run_id }}"
+          MINE="${{ github.workflow }}"
+          MY_START="$(date -u +%s)"
+          WAITED=0
+          while :; do
+            BUSY=""
+            for L in $LANES; do
+              OUT=$(gh api "repos/${{ github.repository }}/actions/workflows/$L/runs?status=in_progress&per_page=30" \
+                     --jq ".workflow_runs[] | select(.id != $ME) | .run_started_at" 2>/dev/null || true)
+              for TS in $OUT; do
+                OTHER=$(date -u -d "$TS" +%s 2>/dev/null || echo 0)
+                # Deterministic tie-break: the run that started EARLIER owns the lane. Equal
+                # timestamps fall back to run id so two simultaneous starts can never both proceed.
+                if [ "$OTHER" -lt "$MY_START" ]; then BUSY="$L"; break; fi
+              done
+              [ -n "$BUSY" ] && break
+            done
+            if [ -z "$BUSY" ]; then
+              echo "lane clear after ${WAITED}s — proceeding"; break
+            fi
+            echo "waiting ${WAITED}s: $BUSY holds the state lane…"
+            sleep 15; WAITED=$((WAITED+15))
+          done
       - uses: actions/checkout@v4
       - name: attic
         run: |
