@@ -1472,6 +1472,20 @@ async function openQuadrant(bk){
   const posRows = Array.isArray(rawPos)
       ? rawPos.map(q=>({k:(q.sym||q.ticker||'\u2014'),q}))
       : Object.keys(rawPos).map(k=>({k,q:rawPos[k]||{}}));
+  // 7.0.3 CAPITAL TRUTH in the click-in: the same three numbers as the card, so the portal can
+  // never tell a different story than the tile that opened it. equity = committed + vault + free.
+  (function(){var _c=__capital(b);
+    H+='<div style="font-weight:800;margin:10px 0 4px;border-bottom:1px solid #ffffff22">WHERE THE MONEY IS</div>'
+      +'<table style="width:100%;font-size:11px;border-collapse:collapse">'
+      +'<tr><td>\ud83d\udd12 vaulted (never redeployed)</td><td style="text-align:right" class="'+(_c.vault>0?'pos':'dim')+'"><b>$'+f(_c.vault)+'</b></td></tr>'
+      +'<tr><td>\ud83d\udcbc committed to '+_c.open+' open trade'+(_c.open===1?'':'s')+'</td><td style="text-align:right"><b>$'+f(_c.committed)+'</b></td></tr>'
+      +'<tr><td>\ud83d\udcb5 free to deploy</td><td style="text-align:right" class="dim">$'+f(_c.free)+'</td></tr>'
+      +'<tr style="border-top:1px solid #ffffff22"><td><b>equity</b></td><td style="text-align:right"><b>$'+f(_c.equity)+'</b></td></tr>'
+      +'</table>'
+      +'<div class="dim" style="font-size:9px;margin-top:3px">'
+      +(_c.vault>0?'vaulted profit is non-spendable — it has left the table for good.'
+                  :'this book redeploys realized profit (realized $'+f(_c.realized)+'). Turn on PARAM_CATALOG.book_harvest to vault a slice of every win instead.')
+      +'</div>';})();
   H+='<div style="font-weight:800;margin:8px 0 4px;border-bottom:1px solid #ffffff22">OPEN POSITIONS ('+posRows.length+')</div>';
   // 7.0.2 FULL DETAIL EVERYWHERE: the portal now carries the same truth as the main page —
   // entry, live mark, uPL% and the ◄stop··target► bar. Live marks are merged in from LIVE[bk]
@@ -1560,7 +1574,9 @@ function renderQuadrants(cv){const L=LIVE||{};
     return `<div class="quad" onclick="openQuadrant('${bk}')" style="cursor:pointer;border-top:5px solid ${m.col}"><div class="quad-h" style="color:${m.col}">${m.n} · ${mh.name}</div>`+
       `<div class="quad-eq ${r>0?'pos':r<0?'neg':''}">$${f(eq)}</div>`+
       `<div class="quad-sub">${sg(r)}% · ${o} open</div>`+
-      `<div class="quad-champ">champ: ${champ||'—'}</div><div class="quad-st" title="${mh.msg}">${st}</div><div style="font-size:9px;opacity:.55;margin-top:4px;color:${m.col}">click → portfolio &amp; decisions ↗</div></div>`;}).join('');['quadrants','quadrantsCmd'].forEach(_i7=>{const _e7=document.getElementById(_i7);if(_e7)_e7.innerHTML=__qh7;});}
+      `<div class="quad-champ">champ: ${champ||'—'}</div>`+
+      __capitalLine(__capital(b))+
+      `<div class="quad-st" title="${mh.msg}">${st}</div><div style="font-size:9px;opacity:.55;margin-top:4px;color:${m.col}">click → portfolio &amp; decisions ↗</div></div>`;}).join('');['quadrants','quadrantsCmd'].forEach(_i7=>{const _e7=document.getElementById(_i7);if(_e7)_e7.innerHTML=__qh7;});}
 function renderAcct(L){if(!L)return;
   const quads=['crypto','stock','metal','energy'],meta={crypto:{n:'CRYPTO',abbr:'C'},stock:{n:'STOCK',abbr:'S'},metal:{n:'METAL',abbr:'M'},energy:{n:'ENERGY',abbr:'E'}};
   let rows=[['ALL 4 BOOKS (independent) · total equity','$'+f(L.combined_equity),''],['SUM REALIZED P&L (4 separate books)','$'+f(L.combined_realized_pnl),(L.combined_realized_pnl>=0?'pos':'neg')]];
@@ -1612,6 +1628,35 @@ function __posBar(p){try{
     +'<div style="position:absolute;left:calc('+mk+'% - 5px);top:0;font-size:12px;line-height:13px;color:'+(up?'#39d353':'#ff6b6b')+'" title="now $'+f(mark,4)+'">\u25be</div></div>'
     +'<div style="display:flex;justify-content:space-between;font-size:8px;opacity:.6"><span>\u25c4 $'+f(stop,4)+'</span><span>$'+f(tgt,4)+' \u25ba</span></div>';
 }catch(e){return '';}}
+// ── 7.0.3 CAPITAL TRUTH (operator: "every industry portal should ALWAYS show its harvest USD that
+// won't be spent AND how much it has locked up in open trades"). One builder so the card, the
+// portal click-in and any future view can never disagree about where the money is.
+//   COMMITTED = live mark value of open positions (capital at risk right now)
+//   VAULT     = reserve_usd, non-spendable harvested profit (real for Master/Sleeve F; the books
+//               only vault when book_harvest is switched on — until then this is honestly $0)
+//   FREE      = equity - committed - vault (what the book can still deploy)
+// These three ALWAYS sum to equity, so nothing is double-counted as both banked and in play.
+function __capital(b){
+  const eq=(b&&b.equity!=null)?+b.equity:0;
+  let committed=0;
+  const pos=(b&&b.positions)||[];
+  if(Array.isArray(pos)){pos.forEach(p=>{const q=+(p.qty||0),mk=+((p.mark!=null?p.mark:p.entry)||0);committed+=q*mk;});}
+  else if(pos&&typeof pos==='object'){Object.keys(pos).forEach(k=>{const p=pos[k]||{};const q=+(p.qty||0),mk=+((p.mark!=null?p.mark:p.entry)||0);committed+=q*mk;});}
+  const vault=+((b&&(b.reserve_usd!=null?b.reserve_usd:b.usd_reserve))||0);
+  const free=Math.max(0,eq-committed-vault);
+  return {equity:eq,committed:committed,vault:vault,free:free,
+          realized:+((b&&b.realized_pnl)||0),open:(Array.isArray(pos)?pos.length:Object.keys(pos||{}).length)};
+}
+function __capitalLine(c){
+  const vTxt=(c.vault>0)
+    ? '<b class="pos">$'+f(c.vault)+'</b> vaulted'
+    : ('<span title="the books redeploy realized profit; switch PARAM_CATALOG.book_harvest on to vault it">$0 vaulted</span>'
+       +(c.realized?(' <span class="dim">(realized $'+f(c.realized)+' redeployed)</span>'):''));
+  return '<div style="font-size:9.5px;opacity:.85;margin-top:3px;line-height:1.5">'
+    +'\ud83d\udd12 '+vTxt+'<br>'
+    +'\ud83d\udcbc <b>$'+f(c.committed)+'</b> in '+c.open+' open trade'+(c.open===1?'':'s')
+    +' \u00b7 <span class="dim">$'+f(c.free)+' free</span></div>';
+}
 function renderPos(bk,host){const L=LIVE&&LIVE[bk]?LIVE[bk]:{},pos=L.positions||[];
   if(!pos.length){host.innerHTML=`<tr><td colspan="5" class="dim">${bk==='stock'?'no stock positions — fires only during US market hours':'waiting for an oversold name · warmup needs ~2h live data'}</td></tr>`;return;}
   host.innerHTML=pos.map(p=>{

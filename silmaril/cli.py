@@ -3594,6 +3594,8 @@ Reply in 3-5 bullets, no preamble.
                           # 7.0.2 PYRAMID RUNG 2 — must run AFTER the lab: the workshop's best
                           # sleeve hands its discipline up to its industry book.
                           ("sleeve promotion (workshop → book)", "sleeve_promotion.build_sleeve_promotion"),
+                          # 7.0.3: publish the itemised, venue-sourced cost model every cycle.
+                          ("fee model (real venue costs)", "fee_model.build_fee_model"),
                           ("geometry gate (law of winnable trades)", "geometry.build_geometry"),
                           ("sizer (ladder·breakers·one-factor)", "sizer.build_sizer"),
                           ("calibration (graded confidence)", "calibration.build_calibration"),

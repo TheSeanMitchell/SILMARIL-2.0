@@ -286,7 +286,12 @@
   "harvest_frac": 1.0,
   "_what": "5.3 M7: the Master SHADOW-TRADES its own $10k from evidence-gated picks (top gate_pct percentile of live card scores), strikes within one cycle on a fast-band UPTREND shift, refuses long-hold setups (expected hold > max), and vaults harvest_frac of every realized win as non-spendable USD reserve. KILL: mode:'off' \u2192 pure WATCHING.",
   "mirror_canon": "auto",
-  "_mirror_canon_note": "7.0 FINAL R1: auto = Master may only open/keep positions a real book holds (canon subset, tagged mirrors). KILL: \"off\" restores the legacy parallel sim."
+  "_mirror_canon_note": "7.0 FINAL R1: auto = Master may only open/keep positions a real book holds (canon subset, tagged mirrors). KILL: \"off\" restores the legacy parallel sim.",
+  "allow_aggressive_mirror": false,
+  "mirror_max_age_min": 45,
+  "reentry_cooldown_min": 180,
+  "require_promoted_sleeve": true,
+  "_note_703": "7.0.3 MASTER REPAIR: (1) allow_aggressive_mirror False \u2014 GEKKO NEVER funds the Master (the old fallback produced 11 ADA-USD trades and a 0% win rate from ONE GEKKO probe position; the crypto book never traded ADA). (2) mirror_max_age_min 45 \u2014 never join a book trade already in flight; the Master books the book's entry basis retroactively, so a stale join inherits the drawdown without capturing the entry. (3) reentry_cooldown_min 180 \u2014 no re-buying a name straight after closing it (the churn loop). (4) require_promoted_sleeve True \u2014 a quadrant funds the Master only once its own workshop promoted a sleeve on real closed trades."
  },
  "crash_lane": {
   "mode": "auto",
@@ -385,5 +390,21 @@
    "energy": 0.0006
   },
   "_note": "7.0.2 PER-CLASS FEE FLOOR (round-trip fraction). Crypto UNCHANGED at 0.2% (Binance.US/Coinbase taker ~0.1%/side). US equities/ETFs are commission-free; true cost is spread+slippage (GLD spread ~0.003%), so 0.06% is still several times conservative. The old single 0.2% global floor made gold mathematically untradeable (GLD reaches only ~0.22% at any horizon vs a 0.4% bar) \u2014 that was why metal never traded. Modeled fees remain a hypothesis until real broker fills validate them. KILL: mode 'off'."
+ },
+ "fee_model": {
+  "mode": "auto",
+  "book_venue": {
+   "crypto": "binance_us",
+   "aggressive": "binance_us",
+   "stock": "us_equity",
+   "metal": "us_equity",
+   "energy": "us_equity"
+  },
+  "_note": "7.0.3 REAL FEES: cost = published venue commission (in+out) + US regulatory on sells + spread MEASURED from our own tape + slippage scaled by regime and trade style. Replaces the 7.0.2 per-class 'floor' guess. Set book_venue.crypto to 'coinbase_adv' to see the honest 1.20%/round-trip picture if trading Coinbase Advanced instead of Binance.US \u2014 venue choice dominates crypto edge at this size. KILL: mode 'off' falls back to the class floor."
+ },
+ "book_harvest": {
+  "mode": "off",
+  "frac": 0.0,
+  "_note": "7.0.3 BOOK HARVEST \u2014 the operator's law that 'profits are only real when flat'. When mode is 'auto', a slice (frac) of every WINNING close moves into reserve_usd: non-spendable, never redeployed, out of the market for good. The portal cards and click-ins render it as 'vaulted'. DEFAULT OFF because this is a genuine strategy trade-off, not a bug fix: vaulting locks in gains but shrinks the capital that compounds, so it is the operator's call. Suggested first setting: mode 'auto', frac 0.25 (bank a quarter of every win). Master and Sleeve F already vault on their own rules and are unaffected by this knob."
  }
 }

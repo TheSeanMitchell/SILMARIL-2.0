@@ -73,6 +73,12 @@ def build_master_account(out_dir) -> Dict[str, Any]:
     out = Path(out_dir)
     cat = _load(out, "PARAM_CATALOG.json")
     kb = cat.get("master_brain") or {}
+    # 7.0.3: which quadrants have a workshop that actually earned its way up (see sleeve_promotion).
+    _promo_books = {}
+    try:
+        _promo_books = (json.loads((out / "SLEEVE_PROMOTION.json").read_text()).get("books") or {})
+    except Exception:
+        _promo_books = {}
     live_mode = str(kb.get("mode", "auto")).lower() == "auto"
 
     cards = (_load(out, "CONFIDENCE_CARDS.json").get("cards") or {})
@@ -154,6 +160,8 @@ def build_master_account(out_dir) -> Dict[str, Any]:
             "realized_gross_pct": round((px_raw / raw_entry - 1) * 100, 3),
             "fee_pct": round(cost * 100, 3), "style": pos.get("style", "MR"),
             "simulated": True, "t": _iso()})
+        # 7.0.3: remember when we left a name so the cooldown can stop churn re-entries.
+        book.setdefault("_recent_exits", {})[sym] = _iso()
         del book["positions"][sym]
 
     def _buy(sym: str, bk: str, px_raw: float, why: str, style: str, card: Dict[str, Any],
@@ -277,6 +285,17 @@ def build_master_account(out_dir) -> Dict[str, Any]:
                 why_no = "regime veto — Master stays liquid in a downtrend"
             elif len(held_bk) + len(accepted) >= max_open:
                 why_no = f"open cap {max_open}/{max_open} — liquidity law"
+            # ── 7.0.3 MASTER FIX 4 — INDUSTRY WEIGHTING (operator: "the master account should be
+            # getting the best of the best once the accounts have at least 2 good sleeves to draw
+            # from"). A quadrant may fund the Master only once its OWN workshop has promoted a
+            # sleeve on real closed trades. A book whose sleeves are under water does not get to
+            # hand its trades to the one account that rehearses live money.
+            # KILL: master_brain.require_promoted_sleeve false.
+            if not why_no and bool(kb.get("require_promoted_sleeve", True)):
+                _pb = (_promo_books.get(bk) or {})
+                if _pb.get("status") != "PROMOTED":
+                    why_no = (f"quadrant not proven — {bk} workshop has no promoted sleeve yet "
+                              f"({_pb.get('status') or 'WAITING'}); the Master funds proven books only")
             if why_no:
                 if len(rejected) < 3:
                     rejected.append({"sym": sym, "score": round(sc, 3), "why": why_no})
@@ -289,10 +308,54 @@ def build_master_account(out_dir) -> Dict[str, Any]:
                                     f"hold {c.get('expected_hold_min')}m · revert-evidence OK"})
             if live_mode:
                 if _mirror:
-                    _src = (_bkpos.get(bk) or {}).get(sym) or (_bkpos.get("aggressive") or {}).get(sym)
-                    if _src:
+                    # ── 7.0.3 MASTER FIX 1: GEKKO NEVER FUNDS THE MASTER. ──────────────────
+                    # The old fallback mirrored the aggressive probe when the governed book did not
+                    # hold the name. That is exactly how the Master ended up with 11 ADA-USD trades
+                    # and a 0% win rate: the crypto book never traded ADA at all — GEKKO did, once —
+                    # and the Master churned that single probe position into six losing round trips.
+                    # GEKKO is documented "NEVER Master-funded" everywhere in this repo; now the code
+                    # agrees with the doctrine. Only the GOVERNED book for this quadrant can source a
+                    # mirror. KILL: master_brain.allow_aggressive_mirror true (not recommended).
+                    _src = (_bkpos.get(bk) or {}).get(sym)
+                    if _src is None and bool(kb.get("allow_aggressive_mirror", False)):
+                        _src = (_bkpos.get("aggressive") or {}).get(sym)
+                    # 7.0.3 MASTER FIX 2 — FRESHNESS GATE: the Master takes a book's entry basis
+                    # retroactively, so joining a position the book opened hours ago books a fill at
+                    # a stale price and then exits at today's — it inherits the whole drawdown while
+                    # capturing none of the entry. Only mirror a position the book opened RECENTLY.
+                    _fresh_ok, _fresh_why = True, ""
+                    _mx_age = float(kb.get("mirror_max_age_min", 45) or 45)
+                    try:
+                        _sat = _src.get("t") if _src else None
+                        if _sat:
+                            _age = (datetime.now(timezone.utc)
+                                    - datetime.fromisoformat(str(_sat))).total_seconds() / 60.0
+                            if _age > _mx_age:
+                                _fresh_ok = False
+                                _fresh_why = (f" · SKIP: book opened this {_age:.0f}m ago (> {_mx_age:.0f}m) "
+                                              f"— the Master does not join a trade already in flight")
+                    except Exception:
+                        pass
+                    # 7.0.3 MASTER FIX 3 — RE-ENTRY COOLDOWN: after a mirror close, the same name was
+                    # re-accepted on the very next cycle (it is still top-20%), so the Master paid the
+                    # round-trip fee again and again on one probe position. One cooldown ends that.
+                    _cd = float(kb.get("reentry_cooldown_min", 180) or 180)
+                    try:
+                        _last = (book.get("_recent_exits") or {}).get(sym)
+                        if _last:
+                            _since = (datetime.now(timezone.utc)
+                                      - datetime.fromisoformat(str(_last))).total_seconds() / 60.0
+                            if _since < _cd:
+                                _fresh_ok = False
+                                _fresh_why = (f" · SKIP: closed this name {_since:.0f}m ago "
+                                              f"(cooldown {_cd:.0f}m) — no churn re-entry")
+                    except Exception:
+                        pass
+                    if _src and _fresh_ok:
                         _buy(sym, bk, c["last_px"], accepted[-1]["why"] + " · mirrors canon fill",
                              "MR", c, mirror=_src)
+                    elif _src and not _fresh_ok:
+                        accepted[-1]["why"] += _fresh_why
                     else:
                         accepted[-1]["why"] += " · ACCEPT-WAIT: no canon book fill yet (mirror law)"
                 else:
@@ -385,6 +448,11 @@ def build_master_account(out_dir) -> Dict[str, Any]:
         "status": ("SHADOW-TRADING" if live_mode else "WATCHING"),
         "equity": round(equity, 2), "cash": round(book["cash"], 2),
         "usd_reserve": round(book.get("reserve_usd", 0.0), 2),
+        # 7.0.3: the dashboard reads realized_pnl/reserve_usd; publish BOTH spellings so the
+        # "★ MASTER ACCOUNT — production rehearsal" panel stops rendering blank.
+        "reserve_usd": round(float(book.get("reserve_usd", 0.0)), 2),
+        "realized_pnl": round(sum(float(t.get("pnl") or 0) for t in book.get("trades", [])
+                                  if t.get("side") == "SELL"), 2),
         "return_pct": round((equity / SEED - 1) * 100, 3),
         "open_positions": len(book["positions"]),
         "trades_count": len(closed), "wins": wins,

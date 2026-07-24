@@ -380,7 +380,7 @@ def is_tradeable(prices: List[float]) -> bool:
     return freshness(prices) >= MIN_FRESHNESS and not _feed_unreliable(prices)
 
 
-def round_trip_cost(prices: List[float], book: str = None) -> float:
+def round_trip_cost(prices: List[float], book: str = None, style: str = "MR") -> float:
     """7.0.2 PER-CLASS FEE TRUTH — the real reason gold never traded.
 
     MIN_COST was one global 0.2% round-trip floor applied to every book (the source comment already
@@ -397,6 +397,21 @@ def round_trip_cost(prices: List[float], book: str = None) -> float:
     These are pre-registered, defensible numbers, knob-tunable, and they must be re-validated against
     real broker fills at live handoff — modeled fees are a hypothesis until a real ticket proves them.
     KILL: PARAM_CATALOG.fee_class.mode = "off" restores the single global floor."""
+    # 7.0.3: the cost is now COMPOSED from published venue schedules + a spread measured on our own
+    # tape + a regime/style-scaled slippage allowance (see fee_model.py). The old per-class "floor"
+    # was a guess wearing a number; this is accounting. The noise floor still applies as a hard
+    # minimum so a name whose own tick noise exceeds modelled cost can never look free to trade.
+    if book:
+        try:
+            from .fee_model import round_trip as _rt7
+            _cat7 = _catalog() or {}
+            _fk7 = _cat7.get("fee_model") or {}
+            if str(_fk7.get("mode", "auto")).lower() == "auto":
+                _reg7 = str(((_cat7.get("_live_regimes") or {}) or {}).get(book, "SIDEWAYS"))
+                _c7 = _rt7(prices, book, style, _reg7, _fk7)["total"]
+                return max(_c7, 2.0 * noise_floor(prices))
+        except Exception:
+            pass
     floor = MIN_COST
     if book:
         try:
@@ -575,6 +590,7 @@ class PaperBook:
         self.cash = float(cash)
         self.positions: Dict[str, Dict[str, Any]] = {}
         self.realized_pnl = 0.0
+        self.reserve_usd = 0.0      # 7.0.3: harvested, non-spendable profit (book_harvest)
         self.trades: List[Dict[str, Any]] = []
 
     def buy(self, sym, dollars, price, cost, t=None, target=None, stop=None, expected=None, conviction=None):
@@ -647,6 +663,22 @@ class PaperBook:
         pnl = proceeds - pos["qty"] * pos["entry"]
         self.cash += proceeds
         self.realized_pnl += pnl
+        # ── 7.0.3 BOOK HARVEST (operator's law: "profits are only real when flat"). On a WINNING
+        # close, move a slice of the profit into reserve_usd — non-spendable, never redeployed, out
+        # of the market for good. The portal cards and click-ins read this as "vaulted".
+        # DEFAULT OFF (frac 0.0): vaulting is a real strategy trade-off, not a bug fix — it locks in
+        # gains but shrinks the capital that compounds, so it is the operator's call, not mine.
+        # Set PARAM_CATALOG.book_harvest {mode:"auto", frac:0.25} to bank a quarter of every win.
+        try:
+            _hk = (_catalog() or {}).get("book_harvest") or {}
+            if pnl > 0 and str(_hk.get("mode", "off")).lower() == "auto":
+                _hf = max(0.0, min(1.0, float(_hk.get("frac", 0.0))))
+                if _hf > 0:
+                    _v = pnl * _hf
+                    self.cash -= _v
+                    self.reserve_usd = round(float(getattr(self, "reserve_usd", 0.0)) + _v, 2)
+        except Exception:
+            pass
         realized_pct = (eff / pos["entry"] - 1) if pos["entry"] > 0 else 0.0
         srow = {"side": "SELL", "sym": sym, "integrity": ("SUSPECT_OSC" if sym in _LAST_OSC else "ok"),
                 "qty": round(pos["qty"], 6), "price": round(eff, 6),
@@ -688,6 +720,7 @@ class PaperBook:
     def save(self, path):
         Path(path).write_text(json.dumps({
             "cash": self.cash, "realized_pnl": self.realized_pnl,
+            "reserve_usd": round(float(getattr(self, "reserve_usd", 0.0)), 2),
             "positions": self.positions, "trades": self.trades[-800:],
             "updated_at": _now()}, indent=2))
 
@@ -697,6 +730,7 @@ class PaperBook:
             d = json.loads(Path(path).read_text())
             b = cls(d.get("cash", cash))
             b.realized_pnl = d.get("realized_pnl", 0.0)
+            b.reserve_usd = float(d.get("reserve_usd", 0.0) or 0.0)   # 7.0.3: vault survives cycles
             b.positions = d.get("positions", {})
             b.trades = d.get("trades", [])
             return b
@@ -1614,6 +1648,8 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         "equity": round(eq, 2),
         "cash": round(pbook.cash, 2),
         "realized_pnl": round(pbook.realized_pnl, 2),
+        # 7.0.3: the portal cards + click-ins render this as "vaulted" (non-spendable harvest).
+        "reserve_usd": round(float(getattr(pbook, "reserve_usd", 0.0)), 2),
         "return_pct": round((eq / START_CASH - 1) * 100, 2),
         "open_positions": len(pbook.positions),
         "positions": [{"sym": s, "qty": round(p["qty"], 4), "entry": round(p["entry"], 6),

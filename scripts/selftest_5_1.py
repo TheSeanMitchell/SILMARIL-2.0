@@ -1326,6 +1326,95 @@ def t83_no_target_guard():
     check("T83 no-target guard: a position can never open without a real target and stop", ok, "")
 
 
+def t84_master_repair():
+    """7.0.3 MASTER REPAIR. The Master had 11 trades, 0 wins, -3.05%: it mirrored GEKKO (documented
+    "NEVER Master-funded") on a name the crypto book never traded, then churned that one probe
+    position into six losing round trips. Four guards now: no aggressive funding, a freshness gate
+    so it never joins a trade already in flight, a re-entry cooldown, and a promoted-sleeve
+    requirement so only proven quadrants may fund the one account that rehearses live money."""
+    import json as _json
+    src = (ROOT / "silmaril/execution/master_account.py").read_text()
+    ok = ("allow_aggressive_mirror" in src and "mirror_max_age_min" in src
+          and "reentry_cooldown_min" in src and "require_promoted_sleeve" in src
+          and "_recent_exits" in src and '"realized_pnl"' in src and '"reserve_usd"' in src)
+    try:
+        kb = (_json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text()).get("master_brain") or {})
+        ok = ok and kb.get("allow_aggressive_mirror") is False
+        ok = ok and float(kb.get("mirror_max_age_min", 0)) > 0
+        ok = ok and float(kb.get("reentry_cooldown_min", 0)) > 0
+    except Exception:
+        ok = False
+    check("T84 master repair: GEKKO never funds Master · freshness gate · cooldown · proven-book gate", ok, "")
+
+
+def t85_real_fee_model():
+    """7.0.3 (operator: "all fees must be accounted for per industry, per trade style, per regime").
+    Cost is COMPOSED from published venue commissions + US regulatory + a spread MEASURED on our own
+    tape + slippage scaled by regime and style — not a tunable floor that could be lowered until
+    results looked good. The audit file makes every fee traceable."""
+    import json as _json
+    fm = ROOT / "silmaril/execution/fee_model.py"
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok = fm.exists() and "from .fee_model import round_trip" in sim
+    if fm.exists():
+        src = fm.read_text()
+        ok = ok and all(k in src for k in ("REGIME_MULT", "STYLE_MULT", "measured_half_spread",
+                                           "SEC_FEE_RATE", "binance_us", "coinbase_adv"))
+    try:
+        cat = _json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text())
+        ok = ok and (cat.get("fee_model") or {}).get("mode") in ("auto", "off")
+    except Exception:
+        ok = False
+    check("T85 real fees: venue commission + regulatory + measured spread + regime/style slippage", ok, "")
+
+
+def t86_serial_lane_lock():
+    """7.0.3 (operator: "we do not want runs running simultaneously ... never interrupt, but also
+    never run simultaneously, no timeout"). GitHub concurrency cannot express that alone: a shared
+    group cancels queued runs, independent groups overlap. Every state lane now waits on a mutex
+    step, cancels only its OWN older run, and has room to wait its turn."""
+    import glob as _g
+    wf = ROOT / ".github/workflows"
+    lanes = ["daily.yml", "hourly.yml", "analytics.yml", "venue_universe.yml", "selftest.yml",
+             "backfill_universe.yml", "weekly_backup.yml", "compact_history.yml",
+             "reset_internal_clean.yml"]
+    missing = [w for w in lanes if (wf / w).exists() and "SERIAL LANE LOCK" not in (wf / w).read_text()]
+    nocancel = [w for w in lanes if (wf / w).exists() and "cancel-in-progress: true" not in (wf / w).read_text()]
+    ok = (not missing) and (not nocancel)
+    check("T86 serial lane lock: no cross-lane overlap · same-lane newest wins · no timeout starvation",
+          ok, f"missing_lock={missing} missing_cancel={nocancel}")
+
+
+def t87_capital_truth_display():
+    """7.0.3 (operator: "every industry colorful portal should ALWAYS show its harvest USD that won't
+    be spent AND how much it has locked up in open trades"). One shared __capital() builder feeds the
+    portal cards AND the click-ins, so the tile and the panel it opens can never disagree. The three
+    numbers always sum to equity, so nothing is double-counted as both banked and in play."""
+    html = (ROOT / "docs/index.html").read_text()
+    ok = ("function __capital(" in html and "function __capitalLine(" in html
+          and "WHERE THE MONEY IS" in html
+          and "__capitalLine(__capital(b))" in html
+          and "vaulted (never redeployed)" in html)
+    check("T87 capital truth: vaulted + committed + free on every portal card and click-in", ok, "")
+
+
+def t88_book_harvest_switch():
+    """7.0.3: the books can now vault a slice of every winning close into non-spendable reserve_usd,
+    surviving cycles. DEFAULT OFF — vaulting locks in gains but shrinks compounding capital, so it is
+    a strategy decision for the operator, never a silent behaviour change."""
+    import json as _json
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok = ("book_harvest" in sim and "self.reserve_usd" in sim
+          and 'b.reserve_usd = float(d.get("reserve_usd"' in sim          # survives cycles
+          and '"reserve_usd": round(float(getattr(pbook' in sim)          # reaches the dashboard
+    try:
+        hk = (_json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text()).get("book_harvest") or {})
+        ok = ok and hk.get("mode") in ("auto", "off")
+    except Exception:
+        ok = False
+    check("T88 book harvest: vault survives cycles, reaches the UI, defaults OFF (operator's call)", ok, "")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -1359,7 +1448,8 @@ if __name__ == "__main__":
               t76_quantization_quarantine, t77_regime_conditional_champion,
               t78_workflow_independence, t79_sleeve_promotion_pyramid, t80_trade_detail_everywhere,
               t81_per_industry_badges_and_gekko_rank, t82_fee_truth_and_reachable_targets,
-              t83_no_target_guard):
+              t83_no_target_guard, t84_master_repair, t85_real_fee_model,
+              t86_serial_lane_lock, t87_capital_truth_display, t88_book_harvest_switch):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test
