@@ -88,6 +88,55 @@ def main():
         {"wiped_at": datetime.now(timezone.utc).isoformat(),
          "note": "engine stays quiet for QUIET_AFTER_WIPE_MIN minutes after this timestamp"}, indent=2))
     print("  wrote WIPE_MARKER.json (true post-wipe quiet period starts now)")
+    # ── 7.0.5 DERIVED SWEEP (closes the "+$71.60 ghost" class for good). A wipe cleared the LEDGER
+    # and STATE stores but left DERIVED ones (CONFIDENCE_CARDS, BRAIN_WIRING, CAPITAL_ROUTER_EXPLAINED,
+    # CONDUCTOR_C1 ...) sitting on the disk with pre-wipe timestamps. Panels then rendered numbers
+    # computed from a book that no longer exists — the exact ghost the operator kept catching. Every
+    # DERIVED store older than the wipe is now deleted; each one rebuilds on the next cycle from the
+    # fresh books, so nothing is lost and nothing survives that shouldn't.
+    # ── 7.0.5 SLEEVE RESET (operator: "not sure if the internal reset is programmed to reset the
+    # sleeves too — it probably should"). It should, and now it does. The sleeves ARE $10k books;
+    # leaving them at their old equity while the four industry books restart at $10k means the
+    # workshop and the books are measured from different epochs — sleeve returns look like +8% next
+    # to a book at 0.00%, and sleeve_promotion then hands a book a decision built on pre-wipe
+    # evidence. Deleting the store makes every sleeve restart at $10k alongside the books; the lab
+    # rebuilds all of them on the next cycle. Strategy DEFINITIONS live in code and are untouched —
+    # only the paper books reset.
+    _lab = DATA / "STRATEGY_LAB.json"
+    if _lab.exists():
+        _lab.unlink()
+        print("  deleted STRATEGY_LAB.json — all sleeves restart at $10k with the books (one epoch)")
+    for _labf in ("LAB_OUTCOMES.jsonl", "LAB_EVIDENCE.json", "SLEEVE_PROMOTION.json"):
+        _lp = DATA / _labf
+        if _lp.exists():
+            _lp.unlink()
+            print(f"  deleted {_labf} — workshop evidence restarts with the sleeves it describes")
+    try:
+        _reg = json.loads((DATA / "STORE_REGISTRY.json").read_text()).get("stores", {})
+        _wiped = datetime.now(timezone.utc).isoformat()
+        _swept = []
+        # NEVER sweep these: the registry classes them DERIVED, but they are CONFIG and INPUTS —
+        # deleting PARAM_CATALOG would wipe every knob and kill the engine. (Caught by the
+        # fresh-tree harness the first time this sweep ran: it removed PARAM_CATALOG.json and
+        # PROJECT_META.json and nine tripwires went red at once.)
+        _NEVER_SWEEP = {"PARAM_CATALOG.json", "PROJECT_META.json", "STORE_REGISTRY.json",
+                        "VENUE_UNIVERSE.json", "WIPE_MARKER.json"}
+        for _fn, _cls in _reg.items():
+            if _cls != "DERIVED" or _fn in _NEVER_SWEEP:
+                continue
+            _fp = DATA / _fn
+            if not _fp.exists():
+                continue
+            try:
+                _g = json.loads(_fp.read_text()).get("generated_at")
+            except Exception:
+                _g = None
+            if _g is None or str(_g) < str(_wiped):
+                _fp.unlink()
+                _swept.append(_fn)
+        print(f"  swept {len(_swept)} stale DERIVED store(s) — no panel can render pre-wipe ghosts")
+    except Exception as _e:
+        print(f"  WARN: DERIVED sweep failed ({_e}) — panels may show pre-wipe numbers until next cycle")
     # ── 7.0.1 THE POST-RESET GHOST FIX (operator: "keeps not working when we reset, genesis or not"). ──
     # Root cause: this script wiped a dozen stores but never touched paper_sim_live.json, so the
     # dashboard kept rendering the PRE-reset snapshot (old positions, old funnel, old "waiting for a
@@ -121,7 +170,7 @@ def main():
         print(f"  WARN: live seed failed ({_e}) — dashboard may show pre-reset ghosts until first cycle")
     # PRESERVED on purpose: price_samples.json (graphs + fingerprints), favicon caches, per-asset data.
     print("  PRESERVED: price_samples.json (graphs/fingerprints) + favicons — dashboard will NOT go blank")
-    print("PRESERVED FOREVER: EVOLUTION_LEDGER.jsonl · RESEARCH_QUEUE.json · REGIME_COMBOS.jsonl · DAILY_BASELINE.json · knowledge_graph.json · ROTATION_HYPOTHESES.json · RESEARCH_OS.json · CONDUCTOR_LEDGER.jsonl · CONDUCTOR_STATE.json · REGIME_EXIT_AB.jsonl · CONDUCTOR_REPORT_CARD.json · STRATEGY_LAB.json · CONFIDENCE_ENGINE.json · CENSUS_ROSTER.json · INVARIANTS_STATE.json · LEDGER.jsonl (the one book of record) · CHAMPION_FORWARD_LEDGER.jsonl (election evidence — the champion can finally evolve) · CALIBRATION.json + CALIBRATION_LEDGER.jsonl (the machine's memory of its own honesty) (long-memory, survives every wipe)")
+    print("PRESERVED FOREVER: EVOLUTION_LEDGER.jsonl · RESEARCH_QUEUE.json · REGIME_COMBOS.jsonl · DAILY_BASELINE.json · knowledge_graph.json · ROTATION_HYPOTHESES.json · RESEARCH_OS.json · CONDUCTOR_LEDGER.jsonl · CONDUCTOR_STATE.json · REGIME_EXIT_AB.jsonl · CONDUCTOR_REPORT_CARD.json · CONFIDENCE_ENGINE.json · CENSUS_ROSTER.json · INVARIANTS_STATE.json · LEDGER.jsonl (the one book of record) · CHAMPION_FORWARD_LEDGER.jsonl (election evidence — the champion can finally evolve) · CALIBRATION.json + CALIBRATION_LEDGER.jsonl (the machine's memory of its own honesty) (long-memory, survives every wipe)")
     print("CLEAN. Books pristine at $10k; all graph/fingerprint/favicon history intact.")
 
 if __name__ == "__main__":

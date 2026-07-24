@@ -1375,14 +1375,17 @@ def t86_serial_lane_lock():
     step, cancels only its OWN older run, and has room to wait its turn."""
     import glob as _g
     wf = ROOT / ".github/workflows"
-    lanes = ["daily.yml", "hourly.yml", "analytics.yml", "venue_universe.yml", "selftest.yml",
-             "backfill_universe.yml", "weekly_backup.yml", "compact_history.yml",
-             "reset_internal_clean.yml"]
+    # 7.0.5: the operator runs five lanes (daily, analytics, hourly, selftest, venue) and leaves the
+    # rest off after a wipe. Assert the law on the lanes that actually run.
+    lanes = ["daily.yml", "hourly.yml", "analytics.yml", "venue_universe.yml", "selftest.yml"]
+    # 7.0.5: the same-lane "newest wins" rule moved to the QUEUE (GitHub supersedes a pending run)
+    # after cancel-in-progress:true was found murdering the daily's own 12-13 min cycle every 10
+    # minutes. T92 now owns that law; T86 asserts the lock itself and its no-starvation timeout.
     missing = [w for w in lanes if (wf / w).exists() and "SERIAL LANE LOCK" not in (wf / w).read_text()]
-    nocancel = [w for w in lanes if (wf / w).exists() and "cancel-in-progress: true" not in (wf / w).read_text()]
-    ok = (not missing) and (not nocancel)
-    check("T86 serial lane lock: no cross-lane overlap · same-lane newest wins · no timeout starvation",
-          ok, f"missing_lock={missing} missing_cancel={nocancel}")
+    notimeout = [w for w in lanes if (wf / w).exists() and "timeout-minutes: 350" not in (wf / w).read_text()]
+    ok = (not missing) and (not notimeout)
+    check("T86 serial lane lock present on every state lane · no timeout starvation",
+          ok, f"missing_lock={missing} missing_timeout={notimeout}")
 
 
 def t87_capital_truth_display():

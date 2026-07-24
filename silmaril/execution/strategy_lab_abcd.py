@@ -63,6 +63,31 @@ SLEEVES = {
           "desc": ("7.0: trades ONLY names the Geometry Gate marks TRADEABLE; stop is CAPPED at "
                    "1.5× target (p* ≤ ~60% by construction). The 'winnable-math-only' thesis, "
                    "as its own clickable portfolio — watch it, debug it, judge it")},
+    # ── 7.0.5 THE EXPANSION BENCH (operator: "create a new sleeve specially made for [metals], then
+    # apply that sleeve to the rest of the industries just to see if it performs ... a scalable format
+    # for expanding sleeves"). Every sleeve is exactly two things: a CANDIDATE FILTER (which names it
+    # will look at) and a DISCIPLINE (how it holds them). Adding a sleeve is one dict entry plus, if
+    # it needs a new filter, one clause in the filter block below. They run on ALL FOUR books
+    # automatically, so a metals idea is tested against crypto/stock/energy for free.
+    "I": {"name": "VOLATILITY HUNTER", "cap": 4, "recycle_h": 72, "ride_winners": True,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": False, "min_edge_ratio": 3.0,
+          "desc": ("7.0.5 THE METAL ANSWER: only names whose OWN reachable move is >=3x their "
+                   "round-trip cost. Gold fails this (it travels 0.22% against a 0.11% round trip, "
+                   "so fees eat half the move and the geometry demands an 80% win rate); silver and "
+                   "the miners pass. Instead of forcing a quiet book to trade, this sleeve simply "
+                   "refuses names whose arithmetic cannot pay — and takes the ones that can")},
+    "J": {"name": "TREND RIDER", "cap": 4, "recycle_h": 96, "ride_winners": True,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": False, "trend_only": True,
+          "desc": ("7.0.5 PLAY IT LIKE A NORMAL TRADER: not a mean-reversion gimmick — buy the "
+                   "PULLBACK inside a confirmed uptrend (24h AND 72h trajectory positive) and ride "
+                   "the winner instead of selling into a fixed target. The dip is the entry, the "
+                   "trend is the thesis. If trend-following beats revert on any book, this proves it")},
+    "K": {"name": "POSITION TRADER", "cap": 2, "recycle_h": 336, "ride_winners": True,
+          "conf_gate": 0.55, "strike_extra": 0, "vault": False, "patient": True,
+          "desc": ("7.0.5 LOW-TURNOVER, LONG-HORIZON: two names maximum, highest conviction only, "
+                   "held up to 14 DAYS. Every round trip costs 0.2-0.4%, so churn is the quiet "
+                   "killer; this sleeve pays that toll as few times as possible and lets time do "
+                   "the work. The control against every fast strategy in the bench")},
     "H": {"name": "PATIENT REVERT", "cap": 3, "recycle_h": 168, "ride_winners": False,
           "conf_gate": 0.0, "strike_extra": 0, "vault": False, "patient": True,
           "desc": ("7.0: the operator's time-edge thesis — ONLY names with proven revert evidence "
@@ -309,6 +334,44 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
     except Exception:
         _geo = {}
     _regimes = (live.get("regimes") or {}) if isinstance(live, dict) else {}
+    # ── 7.0.5 EXPANSION-BENCH INPUTS — measured on our own tape, never assumed. ──────────────
+    # _reach[sym]  = how far this name actually travels over a day (feeds VOLATILITY HUNTER)
+    # _cost7[sym]  = its real round-trip cost from the venue-routed fee model
+    # _trend[sym]  = multi-window trajectory; >0 means 24h AND 72h are up (feeds TREND RIDER)
+    _reach, _trend, _cost7 = {}, {}, {}
+    try:
+        from .paper_sim import _reachable_move as _rm7, _traj_win as _tw7, round_trip_cost as _rtc7
+        _samp = {}
+        for _fn in ("price_samples.json", "metals_samples.json", "energy_samples.json"):
+            try:
+                _samp.update(json.loads((out / _fn).read_text()).get("samples", {}))
+            except Exception:
+                pass
+        for _s7, _rows7 in _samp.items():
+            try:
+                _r = _rm7(_rows7, 24)
+                if _r:
+                    _reach[_s7] = _r
+                _p24, _ = _tw7(_rows7, 24)
+                _p72, _ = _tw7(_rows7, 72)
+                _trend[_s7] = 1 if (_p24 is not None and _p72 is not None
+                                    and _p24 > 0 and _p72 > 0) else 0
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    def _cost_for_sym(sym, book):
+        """Real round-trip cost for THIS name on the venue that would fill it."""
+        if sym in _cost7:
+            return _cost7[sym]
+        try:
+            from .paper_sim import round_trip_cost as _rtc
+            _px = [p for _t, p in (_samp.get(sym) or []) if p and p > 0]
+            _cost7[sym] = _rtc(_px, book) if _px else None
+        except Exception:
+            _cost7[sym] = None
+        return _cost7[sym]
     by_industry: Dict[str, List[Dict[str, Any]]] = {}
     for book in BOOKS:
         b = live.get(book) or {}
@@ -341,7 +404,25 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
         for sk, cfg in SLEEVES.items():
             bk = st["sleeves"][f"{book}:{sk}"]
             _cands_sk = cands
-            if cfg.get("geometry"):
+            if cfg.get("min_edge_ratio"):
+                # 7.0.5 VOLATILITY HUNTER: keep only names whose own reachable move clears their own
+                # round-trip cost by the required multiple. This is the honest reply to "why won't
+                # gold trade" — it will, the day its move is worth its fees, and not before.
+                _mer = float(cfg["min_edge_ratio"])
+                _keep = []
+                for c in cands:
+                    _sym = c[0]
+                    _rm = _reach.get(_sym)
+                    _cst = _cost_for_sym(_sym, book)
+                    if _rm and _cst and _cst > 0 and (_rm / _cst) >= _mer:
+                        _keep.append(c)
+                _cands_sk = _keep
+            elif cfg.get("trend_only"):
+                # 7.0.5 TREND RIDER: a dip is only an entry if the larger trajectory is UP. Buying
+                # the pullback inside an uptrend is what a normal trader does; buying every dip is
+                # what a gimmick does.
+                _cands_sk = [c for c in cands if (_trend.get(c[0]) or 0) > 0]
+            elif cfg.get("geometry"):
                 _cands_sk = [c for c in cands
                              if (_geo.get(c[0]) or {}).get("verdict") == "TRADEABLE"]
             elif cfg.get("patient"):
