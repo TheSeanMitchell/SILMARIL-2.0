@@ -1870,6 +1870,67 @@ async function __graphBrain(sym){
     }catch(e){}
   }catch(e){__pfail(e)}
 }
+
+// ── 7.0.6a SOURCE OVERLAY (operator: "literally overlaid, on top of it... like tracing paper").
+// Every feed that prices this name is drawn ON the same axes, in its own colour, so a disagreement
+// between sources is visible as two lines separating rather than hidden inside one averaged line.
+// Nothing here is synthetic: each line is one provider's actual prints.
+window.__SRC_CACHE=window.__SRC_CACHE||{};
+async function __overlaySources(sym){
+  try{
+    const host=document.getElementById('chartHost'); if(!host)return;
+    const svg=host.querySelector('svg'); if(!svg)return;
+    const feeds=[['data/price_samples.json','primary','#4da3ff'],
+                 ['data/ccxt_samples.json','ccxt','#c98bff'],
+                 ['data/metals_samples.json','metals','#ffd166'],
+                 ['data/energy_samples.json','energy','#ff8fab']];
+    const series=[];
+    for(const [path,lab,col] of feeds){
+      if(window.__SRC_CACHE[path]===undefined){
+        window.__SRC_CACHE[path]=await jget(path).catch(()=>null);
+      }
+      const d=window.__SRC_CACHE[path];
+      const rows=(d&&d.samples)?d.samples[sym]:null;
+      if(rows&&rows.length>3)series.push({lab:lab,col:col,rows:rows});
+    }
+    if(series.length<2)return;               // nothing to trace against
+    // reuse the drawn viewBox so the overlay lands exactly on the existing axes
+    const vb=(svg.getAttribute('viewBox')||'0 0 820 300').split(/\s+/).map(Number);
+    const W=vb[2],H=vb[3],pad=44;
+    const now=Date.now();
+    let all=[];
+    series.forEach(s=>{s.pts=s.rows.map(r=>[new Date(r[0]).getTime(),+r[1]]).filter(r=>r[1]>0);
+      if(CH>0)s.pts=s.pts.filter(r=>r[0]>=now-CH*3600000); all=all.concat(s.pts);});
+    if(all.length<4)return;
+    const xs=all.map(r=>r[0]),ys=all.map(r=>r[1]);
+    const xmin=Math.min(...xs),xr=(Math.max(...xs)-xmin)||1;
+    const ymin=Math.min(...ys),yr=(Math.max(...ys)-ymin)||1;
+    const X=t=>pad+(t-xmin)/xr*(W-pad-10), Y=v=>H-28-(v-ymin)/yr*(H-58);
+    let g='<g id="srcOverlay" opacity="0.85">';
+    series.forEach(s=>{
+      if(s.pts.length<2)return;
+      const d=s.pts.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ');
+      g+='<path d="'+d+'" fill="none" stroke="'+s.col+'" stroke-width="1.1" stroke-dasharray="4 3"/>';
+    });
+    // legend + live spread between the newest print of each feed
+    const lasts=series.map(s=>({lab:s.lab,col:s.col,px:s.pts.length?s.pts[s.pts.length-1][1]:null})).filter(z=>z.px);
+    let lx=pad+4;
+    lasts.forEach(z=>{
+      g+='<rect x="'+lx+'" y="6" width="8" height="3" fill="'+z.col+'"/>'
+        +'<text x="'+(lx+11)+'" y="10" font-size="8" fill="'+z.col+'">'+z.lab+'</text>';
+      lx+=Math.max(46,(z.lab.length*5)+22);
+    });
+    if(lasts.length>1){
+      const ps=lasts.map(z=>z.px), spread=(Math.max(...ps)/Math.min(...ps)-1)*100;
+      g+='<text x="'+(W-12)+'" y="10" text-anchor="end" font-size="8" fill="'
+        +(spread<=0.5?'#39d353':'#ff6b6b')+'">source spread '+spread.toFixed(3)+'%'
+        +(spread<=0.5?' (agree)':' — DISAGREE')+'</text>';
+    }
+    g+='</g>';
+    const oldg=svg.querySelector('#srcOverlay'); if(oldg)oldg.remove();
+    svg.insertAdjacentHTML('beforeend',g);
+  }catch(e){__pfail(e)}
+}
 function drawChart(){const s=(PRICES&&PRICES.samples)?PRICES.samples[CSYM]:null;
   if(!s||!s.length){const CC=(window.__SIL_CARDS||{})[CSYM]||{};
     $('chartHost').innerHTML='<div style="padding:14px;line-height:1.7"><b>'+CSYM+'</b> — no intraday series on file yet.<br>'
@@ -1896,6 +1957,7 @@ function drawChart(){const s=(PRICES&&PRICES.samples)?PRICES.samples[CSYM]:null;
   // and sourced from CHART_INTEL.json — the SAME file the entry gate consults, so what you see is
   // literally what the engine decided on. If this panel says DOWNTREND, the gate refused the buy.
   __graphBrain(CSYM);
+  __overlaySources(CSYM);
   if(!hasPos){$('mStats').innerHTML='<span class="dim">no open position — price history only (entry/target/stop overlays appear when a book holds this name)</span>';return;}
   const chg=(CM/CE-1)*100;$('mStats').innerHTML=`Live uPL <b class="${cl(chg)}">${sg(chg)}%</b> · to target <b>${f((tgt/CM-1)*100)}%</b> · to stop <b>${f((CM/stp-1)*100)}%</b> · ${rows.length} pts`;
 }

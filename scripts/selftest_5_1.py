@@ -1492,16 +1492,25 @@ def t95_graph_brain_reads_structure():
 
 
 def t96_graph_gate_wired():
-    """7.0.6: the entry gate consults the SAME file the UI renders, so the chart and the engine can
-    never disagree. Receipt on the 2026-07-24 tape: blocks MRVL (-7.04%), AMAT (-5.51%), RUNE and
-    ENA (-3.52%) while still taking SMCI (+4.15%) — the stock book's day goes -$100.62 to +$57.27."""
+    """7.0.6a: the entry gate consults the SAME file the UI renders, so the chart and the engine can
+    never disagree. VALIDATED POINT-IN-TIME (tape truncated to each entry moment — an earlier claim
+    of mine used the full tape and was therefore look-ahead-contaminated and wrong):
+        2026-07-23 session  +173.76 -> +248.21   (blocks ZEC-USD -74.45)
+        2026-07-24 session  -175.14 -> -193.01   (blocks AMD +17.87)
+        combined, 20 trades   -1.38 ->  +55.20
+    Honest limit: 2 blocked trades out of 20. The sign is right and the rule is defensible a priori,
+    but it is not statistically proven at this sample size."""
     import json as _json
     sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
     cli = (ROOT / "silmaril/cli.py").read_text()
     html = (ROOT / "docs/index.html").read_text()
+    ci = (ROOT / "silmaril/execution/chart_intel.py").read_text()
     ok = ("THE GRAPH GATE" in sim and "from .chart_intel import analyze" in sim
           and "chart_intel.build_chart_intel" in cli
-          and "__graphBrain" in html and "CHART_INTEL.json" in html)
+          and "__graphBrain" in html and "CHART_INTEL.json" in html
+          and "__overlaySources" in html                      # tracing-paper source overlay
+          and "correction of my own overreach" in ci          # the wide rules stay removed
+          and "len(down_windows) >= 6" not in ci)
     try:
         cat = _json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text())
         ok = ok and (cat.get("graph_gate") or {}).get("mode") in ("auto", "off")

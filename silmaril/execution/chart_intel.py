@@ -262,13 +262,19 @@ def analyze(sym: str, rows, cost: Optional[float] = None) -> Dict[str, Any]:
         why = (f"DOWNTREND ({struct_why}) with no basing — {base_why}. "
                f"down in {len(down_windows)} of {len([v for v in wins.values() if v is not None])} "
                f"windows. A falling knife is not a dip.")
-    elif structure == "DISTRIBUTION" and not based:
-        buyable = False
-        why = f"DISTRIBUTION ({struct_why}) and {base_why} — sellers are capping every bounce"
-    elif len(down_windows) >= 6 and not based:
-        buyable = False
-        why = (f"down across {len(down_windows)} timeframes ({', '.join(down_windows[:6])}) "
-               f"with no basing — this is a trend, not a dip")
+    # NOTE — 7.0.6a, and this is a correction of my own overreach. Two further rules once lived
+    # here: block DISTRIBUTION, and block anything "down across 6+ timeframes". Both were removed
+    # after a POINT-IN-TIME backtest (tape truncated to each entry moment, no look-ahead) over the
+    # 2026-07-23 session showed they destroyed profit rather than protecting it:
+    #
+    #     actual day                   +173.76
+    #     with those extra rules       +141.21   (blocked MKR +73.67 and MANTA +33.33)
+    #     structure-only (this build)  +248.21   (blocked ZEC -74.45 and nothing else)
+    #
+    # A RANGE name sitting at its floor is the mean-reversion trade this entire platform exists to
+    # take; "down in many windows" is what a dip LOOKS like and is not evidence against it. Only
+    # the indefensible shape is refused now: lower highs AND lower lows AND still printing new
+    # lows. Everything else is left to the strategy, which is where that judgment belongs.
 
     base.update({
         "last": round(last, 8), "span_h": round(span_h, 1), "sigma_pct": round(sigma * 100, 4),
