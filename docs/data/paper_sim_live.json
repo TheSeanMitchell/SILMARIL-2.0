@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-24T05:17:21.731428+00:00",
+  "generated_at": "2026-07-24T05:28:21.078743+00:00",
   "marks_health": {
     "marked": 885,
     "entry_warm": 885,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.8,
+    "newest_sample_age_min": 0.5,
     "state": "OK",
-    "oscillating": 19,
+    "oscillating": 14,
     "oscillating_syms": [
       "APEUSDT",
       "ARKM-USD",
@@ -14,12 +14,12 @@
       "ICPUSD",
       "ICPUSDT",
       "IOTAUSDT",
-      "JUP-USD",
       "MOG-USD",
       "ONDOUSDT",
       "OP-USD",
-      "PAXGUSDT",
-      "PROMUSDT"
+      "STRK-USD",
+      "UNIUSD",
+      "UNIUSDT"
     ]
   },
   "equity_market": {
@@ -58,7 +58,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-24T05:17:19.061051+00:00",
+    "generated_at": "2026-07-24T05:28:18.313653+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -67,7 +67,7 @@
     "excluded": [
       {
         "sym": "MOG-USD",
-        "snapbacks": 4,
+        "snapbacks": 5,
         "max_move_pct": 10.0
       },
       {
@@ -111,36 +111,31 @@
   "crypto": {
     "funnel": {
       "seen": 343,
-      "entry_warm": 324,
-      "candidates_after_gates": 4,
+      "entry_warm": 329,
+      "candidates_after_gates": 3,
       "bought": 0,
       "rejections": {
-        "immature": 4
+        "UNTRADEABLE:geometry": 1,
+        "immature": 2
       }
     },
     "decision_trace_live": [
       {
-        "sym": "ENA-USD",
-        "dip_pct": -0.88,
-        "conviction": 0.0736,
+        "sym": "BAL-USD",
+        "dip_pct": -2.75,
+        "conviction": 0.3545,
         "fate": "candidate"
       },
       {
         "sym": "WAVES-USD",
-        "dip_pct": -0.36,
-        "conviction": 0.03,
+        "dip_pct": -0.41,
+        "conviction": 0.0341,
         "fate": "candidate"
       },
       {
         "sym": "RUNE-USD",
-        "dip_pct": -0.35,
-        "conviction": 0.0289,
-        "fate": "candidate"
-      },
-      {
-        "sym": "BNB-USD",
         "dip_pct": -0.34,
-        "conviction": 0.028,
+        "conviction": 0.0284,
         "fate": "candidate"
       }
     ],
@@ -152,7 +147,7 @@
     "open_positions": 0,
     "positions": [],
     "recent_trades": [],
-    "tradeable_universe": 59,
+    "tradeable_universe": 57,
     "universe_seen": 343
   },
   "stock": {
@@ -178,12 +173,21 @@
   "aggressive": {
     "funnel": {
       "seen": 343,
-      "entry_warm": 324,
-      "candidates_after_gates": 0,
+      "entry_warm": 329,
+      "candidates_after_gates": 1,
       "bought": 0,
-      "rejections": {}
+      "rejections": {
+        "UNTRADEABLE:geometry": 1
+      }
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "BAL-USD",
+        "dip_pct": -2.75,
+        "conviction": 0.3545,
+        "fate": "candidate"
+      }
+    ],
     "equity": 10000.0,
     "cash": 10000.0,
     "realized_pnl": 0.0,
@@ -192,7 +196,7 @@
     "open_positions": 0,
     "positions": [],
     "recent_trades": [],
-    "tradeable_universe": 59,
+    "tradeable_universe": 57,
     "universe_seen": 343,
     "display_name": "GEKKO"
   },
@@ -220,11 +224,20 @@
     "funnel": {
       "seen": 6,
       "entry_warm": 6,
-      "candidates_after_gates": 0,
+      "candidates_after_gates": 1,
       "bought": 0,
-      "rejections": {}
+      "rejections": {
+        "immature": 1
+      }
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "NATGAS",
+        "dip_pct": -0.48,
+        "conviction": 0.0398,
+        "fate": "candidate"
+      }
+    ],
     "equity": 10000.0,
     "cash": 10000.0,
     "realized_pnl": 0.0,
@@ -240,17 +253,17 @@
   "combined_realized_pnl": 0.0,
   "backtest_3day_crypto": {
     "universe_total": 1452,
-    "tradeable": 61,
-    "ghosts_excluded": 1391,
-    "trades": 112,
-    "win_rate_pct": 69.6,
-    "mean_net_pct": 0.023,
+    "tradeable": 60,
+    "ghosts_excluded": 1392,
+    "trades": 110,
+    "win_rate_pct": 69.1,
+    "mean_net_pct": -0.008,
     "exits": {
-      "TAKE": 87,
+      "TAKE": 85,
       "STOP": 25,
       "TIMEOUT": 0
     },
-    "equity_after": 10016.51
+    "equity_after": 9982.64
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy). Ghosts excluded; fees = max(0.2%, 2x noise floor). Metal/energy stay empty until their data feed is wired (metals_samples.json / energy_samples.json)."
 }
