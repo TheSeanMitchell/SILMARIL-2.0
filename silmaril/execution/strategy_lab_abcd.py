@@ -333,6 +333,7 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
         _geo = (json.loads((out / "GEOMETRY.json").read_text()).get("by_symbol") or {})
     except Exception:
         _geo = {}
+    marks_all: Dict[str, float] = {}
     _regimes = (live.get("regimes") or {}) if isinstance(live, dict) else {}
     # ── 7.0.5 EXPANSION-BENCH INPUTS — measured on our own tape, never assumed. ──────────────
     # _reach[sym]  = how far this name actually travels over a day (feeds VOLATILITY HUNTER)
@@ -380,6 +381,7 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
         for pos in b.get("positions", []) or []:
             if pos.get("mark") and pos.get("sym"):
                 marks[pos["sym"]] = pos["mark"]
+                marks_all[pos["sym"]] = pos["mark"]
         for d in b.get("decision_trace_live") or []:
             sym = d.get("sym")
             if not sym:
@@ -463,6 +465,24 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
         by_industry[book] = rows
 
     st["generated_at"] = _now().isoformat()
+    # ── 7.0.6 SLEEVE MARKS (the "bar sits at zero in the middle" bug). Sleeve positions carried
+    # entry but never a MARK, so the UI's position bar fell back to mark=entry — which lands the
+    # marker at exactly 50% of the stop..target range for every open trade, forever. Stamping the
+    # live mark (and the sleeve's own target/stop) makes the bar show where price actually sits.
+    try:
+        for _sk7, _sb7 in (st.get("sleeves") or {}).items():
+            _bk7 = _sk7.split(":")[0] if ":" in _sk7 else "crypto"
+            _cfg7 = SLEEVES.get(_sk7.split(":")[-1]) or {}
+            for _sym7, _p7 in (_sb7.get("positions") or {}).items():
+                _mk7 = marks_all.get(_sym7)
+                if _mk7:
+                    _p7["mark"] = round(float(_mk7), 8)
+                    if _p7.get("entry"):
+                        _p7["upl_pct"] = round((float(_mk7) / float(_p7["entry"]) - 1) * 100, 3)
+                _p7.setdefault("target", _p7.get("target"))
+                _p7.setdefault("stop", _p7.get("stop"))
+    except Exception:
+        pass
     st["by_industry"] = by_industry
     # 7.0.2 PYRAMID: publish each sleeve's DISCIPLINE so sleeve_promotion can hand the
     # winner's playbook up to its industry book. Read-only export — sleeve behaviour is

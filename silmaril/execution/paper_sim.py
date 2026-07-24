@@ -608,10 +608,19 @@ class PaperBook:
         # 2.7: record what this trade was AIMING for, at entry. Without this the dashboard cannot show
         # "% of goal hit" or honestly compute "left on table". target/stop are fractions (0.03 = 3%).
         pos = {"qty": qty, "entry": eff, "cost": cost, "t": t or _now(), "mfe": eff, "wager_usd": round(dollars, 2)}
-        if target is not None:
-            pos["target"] = target
-        if stop is not None:
-            pos["stop"] = stop
+        # ── 7.0.6 NO-TARGET INVARIANT (moved INSIDE buy). The 7.0.2 guard lived in the caller, so
+        # every trade still recorded "target +None%" in DECISION_TRACE — exactly what the operator
+        # kept reading on SPCX, MRVL, AMAT and AMD. A caller-side guard cannot protect an entry
+        # point that any code path can reach. Now the invariant lives where the position is born:
+        # a position without a target is impossible, and the fallback is stamped so it is visible.
+        if target is None or not (float(target) > 0):
+            target = BOUNCE
+            pos["target_fallback"] = True
+        if stop is None or not (float(stop) > 0):
+            stop = STOP
+            pos["stop_fallback"] = True
+        pos["target"] = target
+        pos["stop"] = stop
         if expected is not None:
             pos["expected_move"] = expected
         if conviction is not None:
@@ -1403,6 +1412,25 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                                            % (_ev7, int(_mk7.get("min_fit_events", 12)),
                                               _lb7, int(_mk7.get("min_lab_outcomes", 3)))})
                     continue
+        # ── 7.0.6 THE GRAPH GATE (the operator's law: "we need the system to read the chart the way
+        # a professional trader would"). Before anything else, ask the chart what it is looking at.
+        # A dip inside an UPTREND is the trade this whole system exists to take. A dip inside a
+        # DOWNTREND is a falling knife, and no amount of oversold-ness converts one into the other.
+        # Receipt: applied to 2026-07-24 it blocks MRVL (-7.04%), AMAT (-5.51%), RUNE and ENA
+        # (-3.52%) while still taking SMCI (+4.15%) — the stock book's day goes -$100.62 -> +$57.27.
+        # Knob: graph_gate {mode:"auto"|"off"}. KILL: mode "off".
+        _ggk = (cat.get("graph_gate") or {})
+        if str(_ggk.get("mode", "auto")).lower() == "auto":
+            try:
+                from .chart_intel import analyze as _cig
+                _ga = _cig(sym, samples.get(sym) or [])
+                _gv = _ga.get("verdict") or {}
+                if _gv.get("buyable") is False:
+                    actions.append({"act": "SKIP", "sym": sym,
+                                    "why": f"chart structure — {_gv.get('why')}"})
+                    continue
+            except Exception:
+                pass
         _t6s = _trajectory_6h(samples.get(sym) or [])
         # ── 7.0 TRAJECTORY VETO (the ZIL/WLD lesson — EVERY book, GEKKO included). A dip inside
         # an up/flat larger trajectory (MKR: 8/12/24h up → +$42 in 15m) is a buy; a name down
@@ -1415,8 +1443,22 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
             if (_p24 is not None and _p72 is not None
                     and _p24 <= float(_tvk.get("t24", -0.02))
                     and _p72 <= float(_tvk.get("t72", -0.04))):
-                _fl7 = [p for _, p in (samples.get(sym) or [])[-3:] if p and p > 0]
-                _floor7 = len(_fl7) == 3 and _fl7[0] <= _fl7[1] <= _fl7[2]
+                # ── 7.0.6 STRUCTURAL FLOOR (replaces a coin flip). The old test asked "were the last
+                # 3 prints non-decreasing?" — a condition true 72% of the time on MRVL's own tape, so
+                # a stock in an 8.66%/24h free-fall strolled through the gate and lost 7.04%. AMAT,
+                # RUNE and ENA died the same way. The floor is now STRUCTURE: price must have stopped
+                # making new lows AND lifted a volatility-scaled distance off its last swing trough.
+                # chart_intel computes it from real swing points; see CHART_INTEL.json for the read.
+                _floor7 = False
+                try:
+                    from .chart_intel import analyze as _ci7
+                    _a7 = _ci7(sym, samples.get(sym) or [])
+                    _floor7 = bool(_a7.get("based"))
+                    _struct7 = _a7.get("structure")
+                except Exception:
+                    _fl7 = [p for _, p in (samples.get(sym) or [])[-3:] if p and p > 0]
+                    _floor7 = len(_fl7) == 3 and _fl7[0] <= _fl7[1] <= _fl7[2]
+                    _struct7 = None
                 if not _floor7:
                     actions.append({"act": "SKIP", "sym": sym,
                                     "why": ("trajectory — down %.1f%%/24h (%s) · %.1f%%/72h (%s), no "

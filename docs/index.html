@@ -1619,7 +1619,12 @@ function __posBar(p){try{
   const tgt=(p.target!=null?(p.target<1?p.entry*(1+p.target):p.target):p.entry*(1+EXIT.t));
   const stop=(p.stop!=null?(p.stop<1?p.entry*(1-p.stop):p.stop):p.entry*(1-EXIT.s));
   const rng=Math.max(1e-9,tgt-stop);
-  const mark=(p.mark!=null?p.mark:p.entry);
+  // 7.0.6: NEVER invent a mark. mark=entry lands the marker at dead centre of stop..target and
+  // that is precisely the "bar sitting at zero in the middle for every open trade" the operator
+  // reported. With no live mark we say so instead of drawing a confident-looking lie.
+  const hasMark=(p.mark!=null&&isFinite(p.mark)&&p.mark>0);
+  if(!hasMark)return '<span class="dim" style="font-size:9px">awaiting live mark \u2014 no bar drawn</span>';
+  const mark=p.mark;
   const mk=Math.max(0,Math.min(100,(mark-stop)/rng*100));
   const en=Math.max(0,Math.min(100,(p.entry-stop)/rng*100));
   const up=((p.upl_pct!=null?p.upl_pct:(mark/p.entry-1)*100))>=0;
@@ -1798,6 +1803,73 @@ async function openChart(sym,entry,mark){__resetModalBox();CSYM=sym;CE=entry;CM=
     ?`this position: bought at $${(+entry).toFixed(4)} (${P.style||'MR'}, born in ${P.entry_regime||'?'}); ITS OWN target +${(window._CT*100).toFixed(2)}% ($${(entry*(1+window._CT)).toFixed(4)}); stop −${(window._CS*100).toFixed(1)}% ($${(entry*(1-window._CS)).toFixed(4)}); exits on target/stop only (timeouts off).`
     :`MR thesis: bought ~3% dip at $${(+entry).toFixed(4)}; target +${(window._CT*100).toFixed(0)}% ($${(entry*(1+window._CT)).toFixed(4)}); stop −${(window._CS*100).toFixed(0)}% ($${(entry*(1-window._CS)).toFixed(4)}); ~${Math.round(_hold)}m timeout→market.`);
   $('chartHost').textContent='loading price history (one-time)…';if(!PRICES){PRICES=await jget('data/price_samples.json');try{const _M=await jget('data/metals_samples.json');if(_M&&_M.samples)Object.assign(PRICES.samples||{},_M.samples);}catch(e){__pfail(e)}try{const _E=await jget('data/energy_samples.json');if(_E&&_E.samples)Object.assign(PRICES.samples||{},_E.samples);}catch(e){__pfail(e)}try{const _X=await jget('data/ccxt_samples.json');if(_X&&_X.samples)Object.assign(PRICES.samples||{},_X.samples);}catch(e){__pfail(e)}}drawChart();}
+
+// ── 7.0.6 THE GRAPH BRAIN — one panel, every metric, same source as the gate ──────────────────
+async function __graphBrain(sym){
+  try{
+    const host=document.getElementById('chartHost'); if(!host)return;
+    let box=document.getElementById('gbrain');
+    if(!box){box=document.createElement('div');box.id='gbrain';box.style.cssText='margin-top:8px';host.parentNode.insertBefore(box,host.nextSibling);}
+    box.innerHTML='<span class="dim" style="font-size:10px">reading the chart…</span>';
+    const ci=await jget('data/CHART_INTEL.json').catch(()=>null);
+    const a=(ci&&ci.by_symbol)?ci.by_symbol[sym]:null;
+    if(!a){box.innerHTML='<span class="dim" style="font-size:10px">no chart read for '+sym+' yet — the graph brain analyses held + candidate names each cycle</span>';return;}
+    const v=a.verdict||{};
+    const col=(v.buyable===false)?'#ff6b6b':(a.structure==='UPTREND'?'#39d353':'#d4af37');
+    const w=a.windows||{};
+    const ladder=['2h','4h','8h','12h','1d','2d','3d','1w'].map(k=>{
+      const val=w[k];
+      if(val==null)return '<span class="dim" style="min-width:52px">'+k+' —</span>';
+      const c=val>=0?'pos':'neg';
+      return '<span style="min-width:52px"><span class="dim">'+k+'</span> <b class="'+c+'">'+(val>=0?'+':'')+val+'%</b></span>';
+    }).join(' ');
+    const pk=a.peak_trajectory||{}, tr=a.trough_trajectory||{};
+    const arrow=d=>d==='RISING'?'▲':d==='FALLING'?'▼':d==='FLAT'?'▬':'—';
+    const acol=d=>d==='RISING'?'pos':d==='FALLING'?'neg':'dim';
+    const lvl=(o,lab)=>o?('<b>$'+f(o.level,4)+'</b> <span class="dim">('+o.tested+'× tested)</span>'):'<span class="dim">none found</span>';
+    box.innerHTML=
+      '<div style="border:1px solid '+col+';padding:8px;font-size:11px">'
+      +'<div style="font-weight:800;color:'+col+';letter-spacing:.4px">🧠 GRAPH BRAIN — '+sym+' · '+(a.structure||'—')
+      +' <span style="font-weight:400;opacity:.8">('+(a.structure_why||'')+')</span></div>'
+      +'<div style="margin:6px 0;padding:5px;border-left:3px solid '+col+';background:rgba(255,255,255,.03)">'
+      +(v.buyable===false?'<b class="neg">✕ ENTRY REFUSED</b> — ':'<b class="pos">✓ ENTRY PERMITTED</b> — ')
+      +(v.why||'')+'</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:8px;margin:6px 0">'+ladder+'</div>'
+      +'<table style="width:100%;font-size:10.5px;border-collapse:collapse">'
+      +'<tr><td class="dim">peak trajectory</td><td><b class="'+acol(pk.direction)+'">'+arrow(pk.direction)+' '+(pk.direction||'—')+'</b>'
+        +(pk.change_pct!=null?' <span class="dim">('+(pk.change_pct>=0?'+':'')+pk.change_pct+'% across last '+pk.n+' peaks)</span>':'')+'</td></tr>'
+      +'<tr><td class="dim">trough trajectory</td><td><b class="'+acol(tr.direction)+'">'+arrow(tr.direction)+' '+(tr.direction||'—')+'</b>'
+        +(tr.change_pct!=null?' <span class="dim">('+(tr.change_pct>=0?'+':'')+tr.change_pct+'% across last '+tr.n+' lows)</span>':'')+'</td></tr>'
+      +'<tr><td class="dim">ceiling (resistance)</td><td>'+lvl(a.ceiling)+(a.distance_to_ceiling_pct!=null?' <span class="dim">· '+a.distance_to_ceiling_pct+'% above</span>':'')+'</td></tr>'
+      +'<tr><td class="dim">floor (support)</td><td>'+lvl(a.floor)+(a.distance_to_floor_pct!=null?' <span class="dim">· '+a.distance_to_floor_pct+'% above it</span>':'')+'</td></tr>'
+      +'<tr><td class="dim">position in range</td><td>'+(a.position_in_range!=null?('<b>'+Math.round(a.position_in_range*100)+'%</b> <span class="dim">(0=floor, 100=ceiling)</span>'):'—')+'</td></tr>'
+      +'<tr><td class="dim">basing</td><td><b class="'+(a.based?'pos':'neg')+'">'+(a.based?'YES':'NO')+'</b> <span class="dim">— '+(a.basing_why||'')+'</span></td></tr>'
+      +'<tr><td class="dim">peak cadence</td><td>'+(a.cadence_min!=null?('every <b>'+a.cadence_min+'m</b>'+(a.next_peak_eta_min!=null?' <span class="dim">· next peak ETA '+a.next_peak_eta_min+'m</span>':'')):'<span class="dim">learning</span>')+'</td></tr>'
+      +'<tr><td class="dim">volatility (median tick)</td><td>'+(a.sigma_pct!=null?a.sigma_pct+'%':'—')+'</td></tr>'
+      +'<tr><td class="dim">evidence</td><td>'+(a.prints||0)+' intraday prints over '+(a.span_h||0)+'h</td></tr>'
+      +'</table>'
+      +'<div id="gbXsrc" class="dim" style="font-size:9.5px;margin-top:5px"></div>'
+      +'<div class="dim" style="font-size:9px;margin-top:4px">This is the same read the entry gate uses (CHART_INTEL.json) — the chart and the engine cannot disagree.</div>'
+      +'</div>';
+    // cross-source truth: show every feed that prices this name, and flag disagreement
+    try{
+      const files=[['price_samples.json','primary'],['ccxt_samples.json','ccxt'],['metals_samples.json','metals'],['energy_samples.json','energy']];
+      const seen=[];
+      for(const [fn,lab] of files){
+        const d=await jget('data/'+fn).catch(()=>null);
+        const rows=d&&d.samples?d.samples[sym]:null;
+        if(rows&&rows.length){const last=rows[rows.length-1];seen.push({lab:lab,px:last[1]});}
+      }
+      const el=document.getElementById('gbXsrc'); if(!el)return;
+      if(seen.length<2){el.innerHTML='📡 one feed prices this name — no cross-check available';return;}
+      const ps=seen.map(z=>z.px), spread=(Math.max(...ps)/Math.min(...ps)-1)*100;
+      const agree=spread<=0.5;
+      el.innerHTML='📡 cross-source: '+seen.map(z=>z.lab+' <b>$'+f(z.px,4)+'</b>').join(' · ')
+        +' · spread <b class="'+(agree?'pos':'neg')+'">'+f(spread,3)+'%</b> '
+        +(agree?'(sources agree)':'<b class="neg">— SOURCES DISAGREE, treat this price as suspect</b>');
+    }catch(e){}
+  }catch(e){__pfail(e)}
+}
 function drawChart(){const s=(PRICES&&PRICES.samples)?PRICES.samples[CSYM]:null;
   if(!s||!s.length){const CC=(window.__SIL_CARDS||{})[CSYM]||{};
     $('chartHost').innerHTML='<div style="padding:14px;line-height:1.7"><b>'+CSYM+'</b> — no intraday series on file yet.<br>'
@@ -1819,6 +1891,11 @@ function drawChart(){const s=(PRICES&&PRICES.samples)?PRICES.samples[CSYM]:null;
     ${hasPos?`<rect x="${pad}" y="${Y(tgt).toFixed(1)}" width="${W-pad-10}" height="${(Y(CE)-Y(tgt)).toFixed(1)}" fill="var(--pos)" opacity="0.08"/>`:''}
     <path d="${line}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>
     ${hl(CE,'var(--fg)','ENTRY',true)}${hl(tgt,'var(--pos)','TARGET',false)}${hl(stp,'var(--neg)','STOP',false)}${hl(CM,'var(--accent)','MARK',true)}</svg>`;
+  // ── 7.0.6 THE GRAPH BRAIN PANEL (operator: "put everything into this graph — all data, all
+  // projections, all systems"). Every metric a trader reads off a chart, rendered under the chart
+  // and sourced from CHART_INTEL.json — the SAME file the entry gate consults, so what you see is
+  // literally what the engine decided on. If this panel says DOWNTREND, the gate refused the buy.
+  __graphBrain(CSYM);
   if(!hasPos){$('mStats').innerHTML='<span class="dim">no open position — price history only (entry/target/stop overlays appear when a book holds this name)</span>';return;}
   const chg=(CM/CE-1)*100;$('mStats').innerHTML=`Live uPL <b class="${cl(chg)}">${sg(chg)}%</b> · to target <b>${f((tgt/CM-1)*100)}%</b> · to stop <b>${f((CM/stp-1)*100)}%</b> · ${rows.length} pts`;
 }

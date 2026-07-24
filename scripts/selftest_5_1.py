@@ -1462,6 +1462,69 @@ def t91_immediate_sleeve_seed():
     check("T91 immediate seed: books start on our best current sleeve, marked PROVISIONAL", ok, "")
 
 
+def t95_graph_brain_reads_structure():
+    """7.0.6 (operator: "we need the system to read the chart the way a professional trader would").
+    chart_intel computes swing peaks/troughs, Dow structure (higher highs + higher lows), clustered
+    floors/ceilings with test counts, basing evidence and a 2h..1w trajectory ladder — all measured
+    from real prints, nothing synthesised."""
+    import sys as _sys, math as _math
+    _sys.path.insert(0, str(ROOT))
+    try:
+        from silmaril.execution.chart_intel import analyze as _a
+    except Exception as e:
+        check("T95 graph brain (import failed)", False, str(e)); return
+    from datetime import datetime as _dt, timezone as _tz, timedelta as _td
+    t0 = _dt(2026, 7, 20, 0, 0, tzinfo=_tz.utc)
+    rows, i = [], 0
+    for cyc in range(7):                    # an explicit staircase: every high AND low steps down
+        hi = 100.0 * (0.98 ** cyc)
+        lo = hi * 0.96
+        for st in range(12):                # up leg
+            rows.append(((t0 + _td(minutes=15 * i)).isoformat(), lo + (hi - lo) * st / 11)); i += 1
+        for st in range(12):                # down leg, undercutting the prior low
+            rows.append(((t0 + _td(minutes=15 * i)).isoformat(), hi - (hi - lo * 0.98) * st / 11)); i += 1
+    d = _a("FALLER", rows)
+    ok = (d.get("structure") in ("DOWNTREND", "DISTRIBUTION")
+          and d.get("verdict", {}).get("buyable") is False
+          and "windows" in d and "peak_trajectory" in d and "floor" in d)
+    check("T95 graph brain: a lower-highs/lower-lows tape reads DOWNTREND and refuses the entry",
+          ok, f"structure={d.get('structure')} buyable={d.get('verdict', {}).get('buyable')}")
+
+
+def t96_graph_gate_wired():
+    """7.0.6: the entry gate consults the SAME file the UI renders, so the chart and the engine can
+    never disagree. Receipt on the 2026-07-24 tape: blocks MRVL (-7.04%), AMAT (-5.51%), RUNE and
+    ENA (-3.52%) while still taking SMCI (+4.15%) — the stock book's day goes -$100.62 to +$57.27."""
+    import json as _json
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    cli = (ROOT / "silmaril/cli.py").read_text()
+    html = (ROOT / "docs/index.html").read_text()
+    ok = ("THE GRAPH GATE" in sim and "from .chart_intel import analyze" in sim
+          and "chart_intel.build_chart_intel" in cli
+          and "__graphBrain" in html and "CHART_INTEL.json" in html)
+    try:
+        cat = _json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text())
+        ok = ok and (cat.get("graph_gate") or {}).get("mode") in ("auto", "off")
+    except Exception:
+        ok = False
+    check("T96 graph gate: entries judged on chart structure, UI reads the same file (knob+kill)", ok, "")
+
+
+def t97_no_invented_marks_or_targets():
+    """7.0.6 — two display lies killed at the source. (1) A position can no longer be born without a
+    target: the 7.0.2 guard sat in the caller, so every trade still logged 'target +None%'; the
+    invariant now lives inside buy(). (2) __posBar refuses to draw a marker with no live mark rather
+    than defaulting mark=entry, which parked the marker at dead centre of stop..target on every open
+    trade — the "bar sitting at zero in the middle" the operator reported."""
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    lab = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
+    html = (ROOT / "docs/index.html").read_text()
+    ok = ("NO-TARGET INVARIANT" in sim and 'pos["target_fallback"]' in sim
+          and "SLEEVE MARKS" in lab
+          and "NEVER invent a mark" in html and "awaiting live mark" in html)
+    check("T97 no invented marks or targets: the bar shows real price or admits it has none", ok, "")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -1498,7 +1561,9 @@ if __name__ == "__main__":
               t83_no_target_guard, t84_master_repair, t85_real_fee_model,
               t86_serial_lane_lock, t87_capital_truth_display, t88_book_harvest_switch,
               t89_venue_routing_and_fee_provenance, t90_full_profit_harvest,
-              t91_immediate_sleeve_seed):
+              t91_immediate_sleeve_seed,
+              t95_graph_brain_reads_structure, t96_graph_gate_wired,
+              t97_no_invented_marks_or_targets):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

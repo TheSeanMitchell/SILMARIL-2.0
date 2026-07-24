@@ -3593,6 +3593,9 @@ Reply in 3-5 bullets, no preamble.
                           ("strategy lab A/B/C/D", "strategy_lab_abcd.build_strategy_lab"),
                           # 7.0.2 PYRAMID RUNG 2 — must run AFTER the lab: the workshop's best
                           # sleeve hands its discipline up to its industry book.
+                          # 7.0.6: the graph brain runs BEFORE the books act, so every entry
+                          # is judged against fresh chart structure.
+                          ("chart intel (the graph brain)", "chart_intel.build_chart_intel"),
                           ("sleeve promotion (workshop → book)", "sleeve_promotion.build_sleeve_promotion"),
                           # 7.0.3: publish the itemised, venue-sourced cost model every cycle.
                           ("fee model (real venue costs)", "fee_model.build_fee_model"),
