@@ -1,0 +1,129 @@
+{
+  "version": "leaned-in-router-2.0",
+  "generated_at": "2026-07-24T03:20:00.925034+00:00",
+  "regime": {
+    "include_mild": false,
+    "composite": "UNKNOWN",
+    "stance": "DEFENSIVE/UNKNOWN \u2014 Strong Positive only"
+  },
+  "definition": "leaned-in = sentiment >= 0.5 only (defensive/unknown tape \u2014 tightened to best ideas), top 8/class, weighted by conviction x momentum",
+  "weighting": {
+    "reserve_pct": 0.0,
+    "max_name_weight": 0.6,
+    "momentum_mult_range": [
+      0.25,
+      4.0
+    ],
+    "note": "target_weight = (conviction x momentum) normalized to 100% deployable, capped 60%/name. Rising-since-last-read names pull more (double-down); cooling names pull less (scale-out)."
+  },
+  "accounts": {
+    "LEGACY": {
+      "role": "STOCKS",
+      "equity": 10000.0,
+      "reserve_pct": 0.0,
+      "deployable_cash": 10000.0,
+      "target_book": [
+        {
+          "ticker": "DELL",
+          "conviction": 1.0,
+          "momentum_mult": 1.972,
+          "raw_weight": 3.88996729,
+          "target_weight": 0.3263,
+          "target_notional": 3263.0
+        },
+        {
+          "ticker": "XOM",
+          "conviction": 1.0,
+          "momentum_mult": 1.744,
+          "raw_weight": 3.0413267235999992,
+          "target_weight": 0.2551,
+          "target_notional": 2551.0
+        },
+        {
+          "ticker": "UUP",
+          "conviction": 1.0,
+          "momentum_mult": 1.127,
+          "raw_weight": 1.2694979584,
+          "target_weight": 0.1065,
+          "target_notional": 1065.0
+        },
+        {
+          "ticker": "JNJ",
+          "conviction": 0.5,
+          "momentum_mult": 1.561,
+          "raw_weight": 1.2177049681999998,
+          "target_weight": 0.1022,
+          "target_notional": 1022.0
+        },
+        {
+          "ticker": "AMAT",
+          "conviction": 0.5,
+          "momentum_mult": 1.498,
+          "raw_weight": 1.1218222472,
+          "target_weight": 0.0941,
+          "target_notional": 941.0
+        },
+        {
+          "ticker": "ANET",
+          "conviction": 0.5,
+          "momentum_mult": 1.375,
+          "raw_weight": 0.9453125000000003,
+          "target_weight": 0.0793,
+          "target_notional": 793.0
+        },
+        {
+          "ticker": "TSM",
+          "conviction": 0.5,
+          "momentum_mult": 0.67,
+          "raw_weight": 0.22420886480000002,
+          "target_weight": 0.0188,
+          "target_notional": 188.0
+        },
+        {
+          "ticker": "IEF",
+          "conviction": 1.0,
+          "momentum_mult": 0.458,
+          "raw_weight": 0.2100572224,
+          "target_weight": 0.0176,
+          "target_notional": 176.0
+        }
+      ],
+      "buy": [
+        "DELL",
+        "XOM",
+        "UUP",
+        "JNJ",
+        "AMAT",
+        "ANET",
+        "TSM",
+        "IEF"
+      ],
+      "sell": [],
+      "keep": [],
+      "narrative": "STOCKS: mirror the leaned-in book \u2014 buy 8 new (DELL, XOM, UUP, JNJ, AMAT, ANET, TSM, IEF), sell 0 cooled/fell-off (\u2014), hold+resize 0; 0% kept in cash to rotate"
+    },
+    "HARVEST_3": {
+      "role": "CRYPTO/VALUABLES",
+      "equity": 10000.0,
+      "reserve_pct": 0.0,
+      "deployable_cash": 10000.0,
+      "target_book": [],
+      "buy": [],
+      "sell": [],
+      "keep": [],
+      "narrative": "CRYPTO/VALUABLES: mirror the leaned-in book \u2014 buy 0 new (\u2014), sell 0 cooled/fell-off (\u2014), hold+resize 0; 0% kept in cash to rotate"
+    },
+    "HARVEST_5": {
+      "role": "CRYPTO/VALUABLES",
+      "equity": 10000.0,
+      "reserve_pct": 0.0,
+      "deployable_cash": 10000.0,
+      "target_book": [],
+      "buy": [],
+      "sell": [],
+      "keep": [],
+      "narrative": "CRYPTO/VALUABLES: mirror the leaned-in book \u2014 buy 0 new (\u2014), sell 0 cooled/fell-off (\u2014), hold+resize 0; 0% kept in cash to rotate"
+    }
+  },
+  "law": "holdings mirror the weighted leaned-in book each cron read: strengthen -> add, cool/fall-off -> trim/exit, always keep rotation cash. Executor still applies every safety rail; this selects + sizes only, never touches engine/agent logic."
+}
