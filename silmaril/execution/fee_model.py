@@ -75,6 +75,61 @@ REGIME_MULT = {"UPTREND": 1.0, "SIDEWAYS": 1.0, "DOWNTREND": 1.5}   # thin bids 
 STYLE_MULT = {"MR": 1.0, "mr": 1.0, "MOM": 1.3, "mom": 1.3}         # chasing costs more
 
 
+# ── 7.0.4 VENUE ROUTING (operator's law): "If a coin is available on binance.us it should always
+# go with them. Only when it is not available should it use Coinbase or Robinhood with their fees."
+# VENUE_UNIVERSE.json carries per-symbol listings for all three venues (473 crypto symbols), so the
+# route is a lookup against real listing data — not an assumption. Every trade then carries the fee
+# of the venue that would actually have filled it.
+VENUE_PREFERENCE = ("binanceus", "coinbase", "robinhood")
+_VENUE_KEY = {"binanceus": "binance_us", "coinbase": "coinbase_adv", "robinhood": "robinhood"}
+_VENUE_CACHE: Dict[str, Any] = {"loaded_from": None, "symbols": {}}
+
+
+def load_venue_universe(out_dir) -> Dict[str, Any]:
+    """Per-symbol venue availability, cached. Empty dict when the venue lane has not run yet."""
+    out = Path(out_dir)
+    key = str(out)
+    if _VENUE_CACHE.get("loaded_from") != key:
+        try:
+            _VENUE_CACHE["symbols"] = (json.loads((out / "VENUE_UNIVERSE.json").read_text())
+                                       .get("symbols") or {})
+        except Exception:
+            _VENUE_CACHE["symbols"] = {}
+        _VENUE_CACHE["loaded_from"] = key
+    return _VENUE_CACHE["symbols"]
+
+
+def resolve_venue(sym: str, book: str, out_dir=None) -> Dict[str, Any]:
+    """Which venue would actually fill this name, and what it charges.
+
+    Crypto routes by real listing data in preference order (Binance.US -> Coinbase -> Robinhood).
+    Non-crypto books route to the US equity/ETF broker. A name listed NOWHERE is flagged
+    unroutable so it can be excluded honestly rather than filled at a fictional price."""
+    if book in ("stock", "metal", "energy"):
+        return {"venue": "us_equity", "listed": True, "routed_by": "asset class",
+                "taker": VENUES["us_equity"]["taker"], "label": VENUES["us_equity"]["label"]}
+    syms = load_venue_universe(out_dir) if out_dir else {}
+    if not syms:
+        # venue lane has not published yet: assume the primary venue, and SAY it is an assumption
+        return {"venue": "binance_us", "listed": None,
+                "routed_by": "venue map unavailable — assumed primary",
+                "taker": VENUES["binance_us"]["taker"], "label": VENUES["binance_us"]["label"]}
+    row = (syms.get(sym) or {}).get("venues")
+    if row:
+        for v in VENUE_PREFERENCE:
+            if row.get(v):
+                key = _VENUE_KEY[v]
+                return {"venue": key, "listed": True, "routed_by": f"listed on {v} (preference order)",
+                        "taker": VENUES[key]["taker"], "label": VENUES[key]["label"]}
+        return {"venue": "unroutable", "listed": False,
+                "routed_by": "listed on NO configured venue — excluded, never filled at a fiction",
+                "taker": VENUES["coinbase_adv"]["taker"], "label": "UNROUTABLE"}
+    # the map is loaded but this name is not in it — it is not buyable on our venues.
+    return {"venue": "unroutable", "listed": False,
+            "routed_by": "not present in the venue map — not buyable on Binance.US/Coinbase/Robinhood",
+            "taker": VENUES["coinbase_adv"]["taker"], "label": "UNROUTABLE"}
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -97,12 +152,19 @@ def measured_half_spread(prices: List[float]) -> Optional[float]:
 
 
 def round_trip(prices: List[float], book: str, style: str = "MR",
-               regime: str = "SIDEWAYS", knob: Dict[str, Any] = None) -> Dict[str, Any]:
+               regime: str = "SIDEWAYS", knob: Dict[str, Any] = None,
+               sym: str = None, out_dir=None) -> Dict[str, Any]:
     """The full, itemised cost of one round trip for THIS name in THIS book, under THIS style and
     regime. Returns the breakdown so the number is never a bare float nobody can audit."""
     knob = knob or {}
-    venue = str((knob.get("book_venue") or BOOK_VENUE).get(book, "us_equity"))
-    vinfo = VENUES.get(venue, VENUES["us_equity"])
+    # 7.0.4: when a symbol is given, charge the venue that would REALLY fill it (Binance.US first).
+    if sym and str(knob.get("route_by_symbol", "auto")).lower() == "auto":
+        r = resolve_venue(sym, book, out_dir)
+        venue = r["venue"] if r["venue"] != "unroutable" else "coinbase_adv"
+        vinfo = {"taker": r["taker"], "label": r["label"]}
+    else:
+        venue = str((knob.get("book_venue") or BOOK_VENUE).get(book, "us_equity"))
+        vinfo = VENUES.get(venue, VENUES["us_equity"])
     comm = float(vinfo["taker"]) * 2.0                      # in + out
 
     reg = SEC_FEE_RATE if venue == "us_equity" else 0.0     # sells only, US equities

@@ -378,7 +378,8 @@
   "mode": "auto",
   "min_closes": 3,
   "switch_margin_pct": 0.75,
-  "_note": "7.0.2 THE PYRAMID: each industry book adopts the DISCIPLINE (position cap, recycle horizon) of the best sleeve in its own workshop, judged on REAL closed trades vs the null. Sleeve behaviour is never altered, only selected. Losing workshops promote nobody. KILL: mode 'off'."
+  "seed_immediately": true,
+  "_note": "7.0.4 THE PYRAMID + IMMEDIATE SEED \u2014 operator: 'we want to immediately start with the best sleeves we have currently as our default starting sleeves until better ones show themselves and prove it.' With seed_immediately true, a book whose workshop has no sleeve at min_closes yet adopts the best sleeve on WHATEVER evidence exists, flagged PROVISIONAL so the dashboard never mistakes it for proven. A fully-graded sleeve (>=min_closes, positive expectancy) always outranks a provisional one. Sleeve behaviour is never altered \u2014 only selected. KILL: mode 'off'."
  },
  "fee_class": {
   "mode": "auto",
@@ -403,8 +404,8 @@
   "_note": "7.0.3 REAL FEES: cost = published venue commission (in+out) + US regulatory on sells + spread MEASURED from our own tape + slippage scaled by regime and trade style. Replaces the 7.0.2 per-class 'floor' guess. Set book_venue.crypto to 'coinbase_adv' to see the honest 1.20%/round-trip picture if trading Coinbase Advanced instead of Binance.US \u2014 venue choice dominates crypto edge at this size. KILL: mode 'off' falls back to the class floor."
  },
  "book_harvest": {
-  "mode": "off",
-  "frac": 0.0,
-  "_note": "7.0.3 BOOK HARVEST \u2014 the operator's law that 'profits are only real when flat'. When mode is 'auto', a slice (frac) of every WINNING close moves into reserve_usd: non-spendable, never redeployed, out of the market for good. The portal cards and click-ins render it as 'vaulted'. DEFAULT OFF because this is a genuine strategy trade-off, not a bug fix: vaulting locks in gains but shrinks the capital that compounds, so it is the operator's call. Suggested first setting: mode 'auto', frac 0.25 (bank a quarter of every win). Master and Sleeve F already vault on their own rules and are unaffected by this knob."
+  "mode": "auto",
+  "frac": 1.0,
+  "_note": "7.0.4 FULL HARVEST \u2014 operator's law: 'we want ALL profits reserved into USD. All profits above fee costs and round trip slippage... anything after all fees should be swept into a USD reserve.' frac 1.0 sweeps 100% of every winning close into non-spendable reserve_usd. The pnl swept is already NET of fees and modelled slippage (the fill price is fee-adjusted and the cost model charges commission + regulatory + measured spread + slippage), so what is banked istrue  take-home. Working capital therefore stays near the $10k base and never compounds gains back into risk \u2014 profits are only profits when they leave the table. KILL: mode 'off'."
  }
 }

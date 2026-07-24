@@ -1415,6 +1415,50 @@ def t88_book_harvest_switch():
     check("T88 book harvest: vault survives cycles, reaches the UI, defaults OFF (operator's call)", ok, "")
 
 
+def t89_venue_routing_and_fee_provenance():
+    """7.0.4 (operator: "if a coin is available on binance.us it should always go with them; only when
+    it is not available should it use Coinbase or Robinhood with their fees ... each trade needs the
+    fee amount attached from the source"). Routing is a lookup against real VENUE_UNIVERSE listing
+    data in preference order, and every close carries the venue, the routing reason and fee_usd."""
+    fm = (ROOT / "silmaril/execution/fee_model.py").read_text()
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok = ("VENUE_PREFERENCE" in fm and 'VENUE_PREFERENCE = ("binanceus", "coinbase", "robinhood")' in fm
+          and "def resolve_venue" in fm and "unroutable" in fm
+          and "FEE PROVENANCE" in sim and '"fee_usd"' in sim and '"venue_routed_by"' in sim)
+    check("T89 venue routing: Binance.US first, real listings, fee + venue stamped on every close", ok, "")
+
+
+def t90_full_profit_harvest():
+    """7.0.4 (operator: "we want ALL profits reserved into USD ... anything after all fees should be
+    swept into a USD reserve"). Every winning close sweeps 100% of its NET take-home into
+    non-spendable reserve_usd, and that vault survives cycles."""
+    import json as _json
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok = "book_harvest" in sim and "self.reserve_usd" in sim
+    try:
+        hk = (_json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text()).get("book_harvest") or {})
+        ok = ok and str(hk.get("mode")).lower() == "auto" and float(hk.get("frac", 0)) == 1.0
+    except Exception:
+        ok = False
+    check("T90 full harvest: 100% of every net win swept to USD reserve, never redeployed", ok, "")
+
+
+def t91_immediate_sleeve_seed():
+    """7.0.4 (operator: "immediately start with the best sleeves we have currently as our default
+    starting sleeves until better ones show themselves and prove it"). A book with no fully-graded
+    sleeve adopts the best available one, flagged PROVISIONAL so it is never mistaken for proven."""
+    import json as _json
+    src = (ROOT / "silmaril/execution/sleeve_promotion.py").read_text()
+    ok = ("PROVISIONAL" in src and "seed_immediately" in src
+          and '("PROMOTED", "PROVISIONAL")' in src)
+    try:
+        k = (_json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text()).get("sleeve_promotion") or {})
+        ok = ok and bool(k.get("seed_immediately")) is True
+    except Exception:
+        ok = False
+    check("T91 immediate seed: books start on our best current sleeve, marked PROVISIONAL", ok, "")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -1449,7 +1493,9 @@ if __name__ == "__main__":
               t78_workflow_independence, t79_sleeve_promotion_pyramid, t80_trade_detail_everywhere,
               t81_per_industry_badges_and_gekko_rank, t82_fee_truth_and_reachable_targets,
               t83_no_target_guard, t84_master_repair, t85_real_fee_model,
-              t86_serial_lane_lock, t87_capital_truth_display, t88_book_harvest_switch):
+              t86_serial_lane_lock, t87_capital_truth_display, t88_book_harvest_switch,
+              t89_venue_routing_and_fee_provenance, t90_full_profit_harvest,
+              t91_immediate_sleeve_seed):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

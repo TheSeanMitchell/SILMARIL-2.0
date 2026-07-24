@@ -98,6 +98,36 @@ def build_sleeve_promotion(out_dir) -> Dict[str, Any]:
         prev_sleeve = prev_bk.get("sleeve")
 
         if not graded:
+            # 7.0.4 IMMEDIATE SEED: rather than leaving a book on an unrelated grid champion while its
+            # workshop warms up, adopt the best sleeve on whatever evidence exists and mark it
+            # PROVISIONAL. A book should start with our best current hand, not a stranger's.
+            if bool(knob.get("seed_immediately", True)) and rows:
+                seed = None
+                for r in rows:
+                    sc = _score(r)
+                    if sc is None:
+                        continue
+                    if seed is None or sc > (_score(seed) or -1e9):
+                        seed = r
+                if seed is not None:
+                    sk = seed.get("sleeve")
+                    cfg = (sleeves_def.get(sk) or {}) if isinstance(sleeves_def, dict) else {}
+                    books[bk] = {
+                        "sleeve": sk, "name": seed.get("name"),
+                        "discipline": {k: cfg.get(k) for k in DISCIPLINE_KEYS
+                                       if cfg.get(k) is not None} or None,
+                        "status": "PROVISIONAL",
+                        "why": (f"seeded with the best available sleeve {sk} {seed.get('name')} "
+                                f"({(_score(seed) or 0):+.2f}%) — PROVISIONAL: under {min_closes} "
+                                f"closed trades, so it holds the seat only until a sleeve proves itself"),
+                        "evidence": {"closed": int(seed.get("closed") or 0),
+                                     "win_rate": seed.get("win_rate"),
+                                     "return_pct": seed.get("return_pct"),
+                                     "delta_vs_hodl": seed.get("delta_vs_hodl"),
+                                     "score": round(float(_score(seed) or 0), 3)},
+                        "candidates_graded": 0, "changed": False, "previous": prev_sleeve,
+                    }
+                    continue
             books[bk] = {
                 "sleeve": None, "name": None, "discipline": None,
                 "status": "WAITING",
@@ -185,7 +215,7 @@ def promoted_discipline(out_dir, book: str) -> Dict[str, Any]:
     if str((cat.get("sleeve_promotion") or {}).get("mode", "auto")).lower() == "off":
         return {}
     rec = ((_load(out, STORE).get("books") or {}).get(book) or {})
-    if rec.get("status") != "PROMOTED":
+    if rec.get("status") not in ("PROMOTED", "PROVISIONAL"):
         return {}
     return dict(rec.get("discipline") or {})
 

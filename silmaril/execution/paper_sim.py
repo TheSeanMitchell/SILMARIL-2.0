@@ -690,6 +690,18 @@ class PaperBook:
         _raw_entry = pos["entry"] / (1.0 + _cost / 2.0) if pos["entry"] > 0 else 0.0
         _exit_gross = (price / _raw_entry - 1.0) if _raw_entry > 0 else 0.0
         srow["fee_pct"] = round(_cost * 100, 3)                       # the fee, on its OWN line
+        # ── 7.0.4 FEE PROVENANCE (operator: "each trade needs the fee amount attached from the
+        # source"). Every close now carries the VENUE that would have filled it, why it routed
+        # there, and the fee in DOLLARS — not just a percentage floating free of its origin.
+        try:
+            from .fee_model import resolve_venue as _rv7
+            _r7 = _rv7(sym, getattr(self, "_book_name", None) or "crypto",
+                       getattr(self, "_out_dir", None))
+            srow["venue"] = _r7["venue"]
+            srow["venue_routed_by"] = _r7["routed_by"]
+            srow["fee_usd"] = round(pos["qty"] * pos["entry"] * _cost, 4)
+        except Exception:
+            pass
         srow["realized_gross_pct"] = round(_exit_gross * 100, 3)      # the market move we exited on
         tgt = pos.get("target")
         if tgt is not None:
@@ -892,6 +904,7 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
     if stop_ is None or not (float(stop_) > 0):
         stop_ = STOP
     pbook = PaperBook.load(out / f"paper_book_{book}.json")
+    pbook._book_name, pbook._out_dir = book, out   # 7.0.4: lets each fill name its venue + fee
     pbook._canon = (out, book)   # 7.0 FINAL: LIVE cycle writes the one book of record (LEDGER.jsonl)
     # ── 7.0 ONE-UNIVERSE RIVER (read side): the workshop's resolved outcomes count as maturity
     # evidence for the REAL books — what the sleeves learn matures names for production.
