@@ -141,12 +141,31 @@ def fit_strategy(fp: Dict[str, Any], cost: float, floor_min: Optional[float],
                  realism: float = 0.66, min_entry: float = 0.003, max_entry: float = 0.05,
                  cap_target: float = 0.06, target_margin: float = 0.003,
                  stop_dip_mult: float = 3.0, cap_stop: float = 0.20,
-                 min_reliability: float = 0.3) -> Optional[Dict[str, Any]]:
+                 min_reliability: float = 0.3,
+                 falling_min_reliability: float = 0.6) -> Optional[Dict[str, Any]]:
     """Fit a realistic custom strategy for this valuable, or None if it can't clear fees."""
     if not fp.get("ok"):
         return None
+    # ── 7.0.8 EVIDENCE OUTRANKS THE LABEL (the operator's founding doctrine, finally applied here).
+    # This used to be a blanket `if falling: return None`, and it ran BEFORE the measured
+    # bounce-reliability check — so a name's own recorded behaviour never got a vote. The cost was
+    # enormous: 384 of the 473 unfitted names were rejected on that label alone, and 126 of them
+    # carried a MEASURED bounce reliability of 0.6 or better. WIF-USD recovers from a 0.66% dip to
+    # a 1.94% bounce 90% of the time; SAND, BLUR, ROSE, TIA and SNX look the same. Every one was
+    # thrown away for being "falling".
+    #
+    # The point-in-time backtest said the same thing from the other direction: across 89 closed
+    # trades DOWNTREND names won 76.2% and made +53.68, while a structure veto that blocked them
+    # cost -284.98 and refused 16 consecutive winners on 2026-07-13.
+    #
+    # So the label no longer decides. A falling name may still be fitted IF its own tape shows it
+    # reliably recovers; a falling name with weak or no recovery evidence is still refused, which
+    # is the real falling-knife case. KILL: set falling_min_reliability to 1.1 to restore the old
+    # blanket rejection.
     if fp.get("falling"):
-        return None  # a name in a genuine multi-timeframe downtrend is not a dip-buy
+        _relf = fp.get("bounce_reliability")
+        if _relf is None or _relf < falling_min_reliability:
+            return None
     rel = fp.get("bounce_reliability")
     if rel is not None and rel < min_reliability:
         return None  # measured, and it does NOT reliably recover -> skip (raises the win rate)

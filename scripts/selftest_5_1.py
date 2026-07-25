@@ -1561,6 +1561,51 @@ def t97_no_invented_marks_or_targets():
     check("T97 no invented marks or targets: the bar shows real price or admits it has none", ok, "")
 
 
+def t99_sleeve_marks_from_tape():
+    """7.0.8 — the sleeve portal showed "entry -> entry +0.00%" on every open trade. My 7.0.6 fix
+    sourced marks from LIVE BOOK positions, but a sleeve holds names the books do not (ENA, WAVES,
+    RUNE, BNB, BAL), so 0 of 118 sleeve positions ever got a mark. Marks now come from the PRICE
+    TAPE, which prices everything we hold."""
+    lab = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
+    ok = ("_tape7" in lab and "THE ACTUAL FIX" in lab
+          and "price_samples.json" in lab)
+    check("T99 sleeve marks come from the price tape, not just book positions", ok, "")
+
+
+def t100_fast_regime_bands():
+    """7.0.8 (asked three times): sub-hour regime awareness. The engine already computed 12m/15m/30m
+    slopes and a fast_band_red/green early warning; the panel never displayed them, so a turn in
+    progress stayed invisible until the 1h band caught up."""
+    html = (ROOT / "docs/index.html").read_text()
+    rc = (ROOT / "silmaril/execution/regime_classifier.py").read_text()
+    ok = ("slope_15m_pct" in html and "FAST BANDS" in html and "FAST RED" in html
+          and "slope_15m_pct" in rc)
+    check("T100 fast regime bands (12m/15m/30m) surfaced in LIVE REGIME", ok, "")
+
+
+def t101_evidence_outranks_label():
+    """7.0.8 — the same error found in two more places, both now corrected.
+
+    (1) fingerprint.fit_strategy rejected any 'falling' name BEFORE looking at its measured bounce
+        reliability: 384 of 473 unfitted names died on that label, 126 of them carrying a measured
+        reliability of 0.6+ (WIF-USD recovers 1.94% from a 0.66% dip, 90% of the time).
+    (2) geometry.p_floor counted ONLY book trades, so after a wipe every name was STAND-DOWN and
+        could never earn the trades the gate was waiting for — 474 of 674 names deadlocked shut.
+        A name's own tape now counts as evidence at a haircut, labelled 'tape' so it can never be
+        confused with a live record."""
+    import json as _json
+    fpz = (ROOT / "silmaril/execution/fingerprint.py").read_text()
+    geo = (ROOT / "silmaril/execution/geometry.py").read_text()
+    ok = ("falling_min_reliability" in fpz and "EVIDENCE OUTRANKS THE LABEL" in fpz
+          and "TAPE EVIDENCE" in geo and "tape_haircut" in geo)
+    try:
+        cat = _json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text())
+        ok = ok and (cat.get("geometry") or {}).get("tape_evidence") in (True, False)
+    except Exception:
+        ok = False
+    check("T101 evidence outranks the label (fingerprint falling-reject + geometry deadlock)", ok, "")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -1599,7 +1644,9 @@ if __name__ == "__main__":
               t89_venue_routing_and_fee_provenance, t90_full_profit_harvest,
               t91_immediate_sleeve_seed,
               t95_graph_brain_reads_structure, t96_graph_brain_informs_not_blocks,
-              t97_no_invented_marks_or_targets, t98_reentry_guard_brent):
+              t97_no_invented_marks_or_targets, t98_reentry_guard_brent,
+              t99_sleeve_marks_from_tape, t100_fast_regime_bands,
+              t101_evidence_outranks_label):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

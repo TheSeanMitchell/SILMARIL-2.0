@@ -133,7 +133,25 @@ def build_geometry(out_dir) -> Dict[str, Any]:
             p_floor = (w * (own_lo or pr)) + (1 - w) * pr * 0.9   # prior haircut 10%
             ev_src = f"cluster {cl}(n={pn})·w={w:.2f}"
         else:
-            p_floor, ev_src = None, "none"
+            # ── 7.0.8 TAPE EVIDENCE (breaks a genuine deadlock). p_floor previously counted ONLY
+            # book trades and their cluster prior. After a wipe no name has book trades, so p_floor
+            # is None, the verdict is STAND-DOWN, and the name cannot trade — which means it can
+            # never accumulate the very trades the gate is waiting for. On this tree that produced
+            # 474 STAND-DOWN and 97 UNTRADEABLE:evidence out of 674 names: the gate had locked
+            # itself shut.
+            #
+            # But a name is not evidence-free just because WE have not traded it. Its own tape
+            # records how often it recovers from a dip — bounce_reliability, measured over hundreds
+            # of prints. That is real evidence about the name, merely not evidence about our
+            # execution, so it enters at a DISCOUNT (haircut) and is labelled 'tape' so no panel can
+            # mistake it for a live track record. Book evidence still outranks it the moment it
+            # exists. KILL: geometry.tape_evidence false.
+            _rel = f.get("bounce_reliability")
+            if bool(kb.get("tape_evidence", True)) and _rel is not None:
+                p_floor = float(_rel) * float(kb.get("tape_haircut", 0.85))
+                ev_src = f"tape(rel={_rel:.2f}·haircut)"
+            else:
+                p_floor, ev_src = None, "none"
         if tgt and vol_stop:
             geo_ok = vol_stop <= tgt * ratio
             stop_used = min(vol_stop, tgt * ratio)

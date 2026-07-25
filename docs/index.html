@@ -1232,11 +1232,18 @@ async function openSleeve(bk,sk){try{__resetModalBox();const d=await jget('data/
   // 7.0.2: the sleeve's OPEN book, with entry \u2192 mark and the same \u25c4stop\u00b7\u00b7target\u25ba bar as COMMAND.
   var _op=sv.positions||{}, _opK=Object.keys(_op), _openHtml='';
   if(_opK.length){
-    _openHtml='<div style="font-weight:800;margin:4px 0">OPEN POSITIONS ('+_opK.length+')</div>'
+    _openHtml='<div style="font-weight:800;margin:4px 0">OPEN POSITIONS ('+_opK.length+') <span class="dim" style="font-weight:400;font-size:9.5px">\u2014 click any symbol for its full chart, graph brain and multi-source overlay</span></div>'
       +'<table style="font-size:11px;width:100%"><thead><tr><th>sym</th><th>qty</th><th>entry \u2192 now</th><th>uPL%</th><th style="width:30%">\u25c4 stop \u00b7\u00b7 target \u25ba</th></tr></thead><tbody>'
       +_opK.map(function(s){var q=_op[s]||{};var ep=q.entry||q.entry_price||0;var mk=(q.mark!=null?q.mark:ep);
         var up=(ep>0?(mk/ep-1)*100:0);
-        return '<tr><td>'+s+'</td><td>'+f(q.qty||0,4)+'</td><td class="dim" style="font-size:10px">$'+f(ep,4)+' \u2192 $'+f(mk,4)+'</td>'
+        // 7.0.8 THE MISSING LINK. The graph brain and the source overlay have been built and wired
+        // since 7.0.6a, but they only ever ran inside the TICKER chart — and the sleeve portal has
+        // no chart, just this table. So the operator opened a sleeve, saw a bare position list, and
+        // reasonably concluded the graph did not exist. Every symbol here is now a click-through to
+        // its full chart: price, entry/target/stop overlay, the GRAPH BRAIN read (structure, peaks,
+        // troughs, floors, ceilings, the 2h..1w ladder, cadence) and the multi-source tracing-paper
+        // overlay. The data was always there; the door was missing.
+        return '<tr><td><a href="#" onclick="openChart(\''+s+'\','+(ep||0)+','+(mk||0)+');return false;" style="color:#4da3ff;text-decoration:underline dotted" title="open the full chart + graph brain for '+s+'">'+s+'</a></td><td>'+f(q.qty||0,4)+'</td><td class="dim" style="font-size:10px">$'+f(ep,4)+' \u2192 $'+f(mk,4)+'</td>'
           +'<td class="'+(up>=0?'pos':'neg')+'">'+(up>=0?'+':'')+f(up,2)+'%</td>'
           +'<td>'+__posBar({entry:ep,mark:mk,target:q.target,stop:q.stop,upl_pct:up})+'</td></tr>';}).join('')
       +'</tbody></table>';
@@ -1318,7 +1325,17 @@ async function renderRegimePanel(){try{const d=await jget('data/REGIME_CLASSIFIE
   const col=v=>v==null?'dim':v>0.3?'pos':v<-0.3?'neg':'';
   const rows=['crypto','stock','metal','energy'].map(b=>{const r=(d.by_book||{})[b]||{};
     const shift=/turning/.test(r.shift_watch||'')?' <span style="color:#d4af37">\u26a1 shift?</span>':'';
-    return '<tr><td><b>'+b.toUpperCase()+'</b> '+dot(r.regime)+' '+(r.regime||'\u2014')+shift+'</td>'
+    // 7.0.8 FAST BANDS SURFACED (operator asked three times for sub-hour regime awareness). The
+    // engine has computed 12m/15m/30m slopes and a fast_band_red/green early warning all along —
+    // the panel simply never showed them, so a turn happening RIGHT NOW stayed invisible until the
+    // 1h band admitted it. The fast trio leads; a red/green trio while the slow bands still
+    // disagree is the earliest honest signal of a regime turn we have.
+    const fastAll=[r.slope_12m_pct,r.slope_15m_pct,r.slope_30m_pct].filter(v=>v!=null);
+    const fastTag=r.fast_band_red?' <b class="neg">\u26a1 FAST RED</b>':(r.fast_band_green?' <b class="pos">\u26a1 FAST GREEN</b>':'');
+    return '<tr><td><b>'+b.toUpperCase()+'</b> '+dot(r.regime)+' '+(r.regime||'\u2014')+shift+fastTag+'</td>'
+      +'<td class="'+col(r.slope_12m_pct)+'" style="font-size:10px">12m '+sgn(r.slope_12m_pct)+'</td>'
+      +'<td class="'+col(r.slope_15m_pct)+'" style="font-size:10px"><b>15m '+sgn(r.slope_15m_pct)+'</b></td>'
+      +'<td class="'+col(r.slope_30m_pct)+'" style="font-size:10px">30m '+sgn(r.slope_30m_pct)+'</td>'
       +'<td class="'+col(r.slope_1h_pct)+'">1h '+sgn(r.slope_1h_pct)+'</td>'
       +'<td class="'+col(r.slope_6h_pct)+'">6h '+sgn(r.slope_6h_pct)+'</td>'
       +'<td class="'+col(r.slope_24h_pct)+'">24h '+sgn(r.slope_24h_pct)+'</td>'
@@ -1327,7 +1344,7 @@ async function renderRegimePanel(){try{const d=await jget('data/REGIME_CLASSIFIE
       +'<td class=dim style="font-size:9px">'+(r.avg_volatility_pct!=null?'\u03c3 '+r.avg_volatility_pct+'%':'')+'</td>'
       +'<td class=dim style="font-size:9px">'+(r.advice||'')+'</td></tr>';}).join('');
   el.innerHTML='<div class="hd" style="font-size:12px">\ud83e\udde0 LIVE REGIME \u2014 intraday-only, multi-timeframe (updates every cycle)</div>'
-    +'<div class="bd"><div class=dim style="font-size:10px;margin-bottom:3px">headline = 6h intraday trend \u00b7 1h = fast shift trigger \u00b7 daily-backfill candles excluded (the bug that made green days read red)</div>'
+    +'<div class="bd"><div class=dim style="font-size:10px;margin-bottom:3px">headline = 6h intraday trend \u00b7 12m/15m/30m = FAST BANDS (sub-hour regime awareness; all three red or green = a turn happening now, ahead of the 1h) \u00b7 1h = fast shift trigger \u00b7 daily-backfill candles excluded (the bug that made green days read red)</div>'
     +'<table style="font-size:11px"><tbody>'+rows+'</tbody></table></div>';
 }catch(e){__pfail(e)}}
 async function renderDeniedPanel(){try{const el=$('deniedPanel');if(!el)return;

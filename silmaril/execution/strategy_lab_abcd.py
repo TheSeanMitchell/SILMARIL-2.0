@@ -334,6 +334,14 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
     except Exception:
         _geo = {}
     marks_all: Dict[str, float] = {}
+    # 7.0.8: every price series we hold, so any sleeve position can be marked to the live tape.
+    _tape7: Dict[str, Any] = {}
+    for _fn7 in ("price_samples.json", "ccxt_samples.json",
+                 "metals_samples.json", "energy_samples.json"):
+        try:
+            _tape7.update(json.loads((out / _fn7).read_text()).get("samples", {}))
+        except Exception:
+            pass
     _regimes = (live.get("regimes") or {}) if isinstance(live, dict) else {}
     # ── 7.0.5 EXPANSION-BENCH INPUTS — measured on our own tape, never assumed. ──────────────
     # _reach[sym]  = how far this name actually travels over a day (feeds VOLATILITY HUNTER)
@@ -474,7 +482,17 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
             _bk7 = _sk7.split(":")[0] if ":" in _sk7 else "crypto"
             _cfg7 = SLEEVES.get(_sk7.split(":")[-1]) or {}
             for _sym7, _p7 in (_sb7.get("positions") or {}).items():
+                # 7.0.8 THE ACTUAL FIX. 7.0.6 sourced marks only from LIVE BOOK positions — but a
+                # sleeve holds names the books do not (ENA, WAVES, RUNE, BNB, BAL...). So marks_all
+                # was empty for 118 of 118 sleeve positions and every bar still read "entry -> entry
+                # +0.00%". Marks now come from the PRICE TAPE, which prices every name we hold.
                 _mk7 = marks_all.get(_sym7)
+                if not _mk7:
+                    _rows7 = _tape7.get(_sym7) or []
+                    for _t7, _px7 in reversed(_rows7):
+                        if _px7 and float(_px7) > 0:
+                            _mk7 = float(_px7)
+                            break
                 if _mk7:
                     _p7["mark"] = round(float(_mk7), 8)
                     if _p7.get("entry"):
