@@ -1973,6 +1973,21 @@ function drawChart(){const s=(PRICES&&PRICES.samples)?PRICES.samples[CSYM]:null;
   // projections, all systems"). Every metric a trader reads off a chart, rendered under the chart
   // and sourced from CHART_INTEL.json — the SAME file the entry gate consults, so what you see is
   // literally what the engine decided on. If this panel says DOWNTREND, the gate refused the buy.
+  // ── 7.1 THE EVERYTHING GRAPH. Earlier passes gave a text panel beside the chart and dashed
+  // overlay lines; the operator asked for the systems drawn ON the price itself. silmaril_graph.js
+  // renders one canvas with nine layers: price, every other feed traced over it with a live spread
+  // readout, swing peaks and troughs, floors and ceilings labelled with test counts, the position's
+  // entry/target/stop bands, the fingerprint's own dip trigger and bounce target, the cadence
+  // projection for the next peak, our real fills, and a verdict ribbon carrying structure,
+  // geometry's required win rate and the name's measured floor. Same stores the gates read.
+  try{
+    if(window.SilmarilGraph){
+      window.SilmarilGraph.clearCache();
+      window.SilmarilGraph.draw(CSYM,$('chartHost'),{hours:CH,entry:CE,mark:CM,target:EXIT.t,stop:EXIT.s});
+      $('mStats').innerHTML='';
+      return;
+    }
+  }catch(e){__pfail(e)}
   __graphBrain(CSYM);
   __overlaySources(CSYM);
   if(!hasPos){$('mStats').innerHTML='<span class="dim">no open position — price history only (entry/target/stop overlays appear when a book holds this name)</span>';return;}
@@ -2030,5 +2045,5 @@ if('serviceWorker' in navigator){try{
   if(first)first.click();
 }catch(e){__pfail(e)}})();
 load();setInterval(load,60000);
-</script>  <script src="silmaril_chart.js"></script>
+</script>  <script src="silmaril_chart.js"></script>  <script src="silmaril_graph.js"></script>
 </body></html>

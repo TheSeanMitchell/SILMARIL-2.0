@@ -1648,6 +1648,42 @@ def t103_workshop_is_not_frozen():
     check("T103 workshop not frozen: sleeves mark every held name from the tape, so exits can fire", ok, "")
 
 
+def t104_everything_graph():
+    """7.1 THE EVERYTHING GRAPH. The operator asked repeatedly for every subsystem drawn ON the
+    price, not described beside it. silmaril_graph.js renders one canvas with nine layers: price,
+    every other feed traced over it, swing peaks/troughs, floors and ceilings labelled with test
+    counts, the position's entry/target/stop bands, the fingerprint's own dip trigger and bounce
+    target, the cadence projection for the next peak, our real fills, and a verdict ribbon carrying
+    structure, geometry's required win rate and the name's measured floor. Every layer is read from
+    a store the gates also read, so the chart and the engine cannot disagree."""
+    g = ROOT / "docs/silmaril_graph.js"
+    html = (ROOT / "docs/index.html").read_text()
+    if not g.exists():
+        check("T104 everything graph (module missing)", False, "docs/silmaril_graph.js absent"); return
+    src = g.read_text()
+    layers = ["LAYER 1", "LAYER 2", "LAYER 3", "LAYER 4", "LAYER 5",
+              "LAYER 6", "LAYER 7", "LAYER 8", "LAYER 9"]
+    ok = all(l in src for l in layers)
+    ok = ok and "CHART_INTEL.json" in src and "FINGERPRINTS.json" in src and "GEOMETRY.json" in src
+    ok = ok and "silmaril_graph.js" in html and "SilmarilGraph" in html
+    check("T104 everything graph: nine layers drawn on the price from the same stores the gates read", ok, "")
+
+
+def t105_cross_source_normalisation():
+    """7.1 — we held TWO independent crypto feeds (primary 1040 symbols as BTC-USD, ccxt 404 as
+    BTCUSDT) and cross-verified NOTHING, because the key conventions differed so the intersection
+    was exactly zero. Normalising the symbol lifts the overlap to 211 names that can now be checked
+    against a second source; the chart reports the spread and flags disagreement rather than
+    averaging it away. It immediately found AAVE-USD disagreeing by 0.534%."""
+    g = ROOT / "docs/silmaril_graph.js"
+    if not g.exists():
+        check("T105 cross-source normalisation (module missing)", False, ""); return
+    src = g.read_text()
+    ok = ("function normSym" in src and "function altKeys" in src
+          and "USDT|USDC|USD" in src and "DISAGREE" in src)
+    check("T105 cross-source: symbol normalisation lets a second feed verify the price", ok, "")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -1689,7 +1725,8 @@ if __name__ == "__main__":
               t97_no_invented_marks_or_targets, t98_reentry_guard_brent,
               t99_sleeve_marks_from_tape, t100_fast_regime_bands,
               t101_evidence_outranks_label, t102_maturity_gate_can_see_evidence,
-              t103_workshop_is_not_frozen):
+              t103_workshop_is_not_frozen, t104_everything_graph,
+              t105_cross_source_normalisation):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test
