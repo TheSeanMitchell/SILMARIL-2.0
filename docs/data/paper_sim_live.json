@@ -1,17 +1,15 @@
 {
-  "generated_at": "2026-07-25T10:01:43.756000+00:00",
+  "generated_at": "2026-07-25T10:20:46.229357+00:00",
   "marks_health": {
     "marked": 884,
     "entry_warm": 884,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.5,
+    "newest_sample_age_min": 1.3,
     "state": "OK",
     "oscillating": 54,
     "oscillating_syms": [
       "1INCH-USD",
-      "AAVEUSDT",
       "AFL",
-      "APEUSDT",
       "ARE",
       "AZO",
       "BATUSDT",
@@ -19,7 +17,9 @@
       "BONKUSD",
       "BRENT",
       "BXP",
-      "CHD"
+      "CHD",
+      "CSGP",
+      "DOTUSD"
     ]
   },
   "equity_market": {
@@ -58,7 +58,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-25T10:01:41.901719+00:00",
+    "generated_at": "2026-07-25T10:20:44.570400+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -67,7 +67,7 @@
     "excluded": [
       {
         "sym": "MOG-USD",
-        "snapbacks": 4,
+        "snapbacks": 3,
         "max_move_pct": 11.1
       },
       {
@@ -112,17 +112,24 @@
     "funnel": {
       "seen": 342,
       "entry_warm": 319,
-      "candidates_after_gates": 1,
+      "candidates_after_gates": 2,
       "bought": 0,
       "rejections": {
+        "immature": 1,
         "UNTRADEABLE:evidence": 1
       }
     },
     "decision_trace_live": [
       {
+        "sym": "XMR-USD",
+        "dip_pct": -0.65,
+        "conviction": 0.0546,
+        "fate": "candidate"
+      },
+      {
         "sym": "ZIL-USD",
-        "dip_pct": -0.98,
-        "conviction": 0.165,
+        "dip_pct": -1.16,
+        "conviction": 0.1802,
         "fate": "candidate"
       }
     ],
@@ -134,7 +141,7 @@
     "open_positions": 0,
     "positions": [],
     "recent_trades": [],
-    "tradeable_universe": 35,
+    "tradeable_universe": 38,
     "universe_seen": 342
   },
   "stock": {
@@ -167,11 +174,11 @@
       "rejections": {}
     },
     "decision_trace_live": [],
-    "equity": 9863.77,
+    "equity": 9862.46,
     "cash": 7124.74,
     "realized_pnl": -74.52,
     "reserve_usd": 0.0,
-    "return_pct": -1.36,
+    "return_pct": -1.38,
     "open_positions": 2,
     "positions": [
       {
@@ -193,7 +200,7 @@
         "sym": "INJ-USD",
         "qty": 261.2765,
         "entry": 5.359724,
-        "mark": 5.227,
+        "mark": 5.222,
         "t": "2026-07-24T09:15:40.294305+00:00",
         "wager_usd": 1400.37,
         "target": 0.02,
@@ -202,7 +209,7 @@
         "style": null,
         "entry_regime": null,
         "exp_net_usd": 22.14,
-        "upl_pct": -2.48
+        "upl_pct": -2.57
       }
     ],
     "recent_trades": [
@@ -278,7 +285,7 @@
         "pred": null
       }
     ],
-    "tradeable_universe": 35,
+    "tradeable_universe": 38,
     "universe_seen": 342,
     "display_name": "GEKKO"
   },
@@ -328,17 +335,17 @@
   "combined_realized_pnl": -100.62,
   "backtest_3day_crypto": {
     "universe_total": 1452,
-    "tradeable": 37,
-    "ghosts_excluded": 1415,
-    "trades": 80,
-    "win_rate_pct": 65.0,
-    "mean_net_pct": -0.281,
+    "tradeable": 40,
+    "ghosts_excluded": 1412,
+    "trades": 82,
+    "win_rate_pct": 64.6,
+    "mean_net_pct": -0.299,
     "exits": {
-      "TAKE": 61,
-      "STOP": 19,
+      "TAKE": 62,
+      "STOP": 20,
       "TIMEOUT": 0
     },
-    "equity_after": 9771.87
+    "equity_after": 9752.1
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy). Ghosts excluded; fees = max(0.2%, 2x noise floor). Metal/energy stay empty until their data feed is wired (metals_samples.json / energy_samples.json)."
 }
