@@ -256,12 +256,27 @@ def analyze(sym: str, rows, cost: Optional[float] = None) -> Dict[str, Any]:
     # THE VERDICT the entry gate consumes. A dip inside an uptrend is the trade the whole system is
     # built to take. A dip inside a downtrend is a falling knife, and no amount of oversold-ness
     # makes it one — that is the MRVL/AMAT/RUNE lesson, encoded.
-    buyable, why = True, "structure permits a dip entry"
-    if structure == "DOWNTREND" and not based:
-        buyable = False
-        why = (f"DOWNTREND ({struct_why}) with no basing — {base_why}. "
-               f"down in {len(down_windows)} of {len([v for v in wins.values() if v is not None])} "
-               f"windows. A falling knife is not a dip.")
+    # ── 7.0.7 THE STRUCTURE VETO IS RETIRED, and this is me correcting myself with receipts. ──
+    # I shipped a rule that refused DOWNTREND-without-basing. Backtested POINT-IN-TIME across three
+    # real sessions (89 closed trades, tape truncated to each entry so there is no look-ahead) it
+    # was actively destructive:
+    #
+    #     no gate                        +1754.36
+    #     DOWNTREND-without-basing veto  +1469.38   (-284.98, blocked 18 trades)
+    #
+    # On 2026-07-13 alone it would have refused 16 trades and EVERY ONE WAS A WINNER (+341.56).
+    # The reason is now obvious and the operator said it first: buying a beaten-down name and
+    # catching the bounce IS mean reversion. Sorted by structure across those 89 trades:
+    #
+    #     RANGE       n=48  95.8% win  +1469.89
+    #     DOWNTREND   n=21  76.2% win    +53.68   <- the category I was blocking. It is PROFITABLE.
+    #     UPTREND     n=11  63.6% win    -49.93   <- the category I was letting through. It LOSES.
+    #
+    # So the veto is gone. `buyable` stays True; the structure read is published for the UI and for
+    # conviction weighting, where a noisy-but-real signal belongs. What actually separates winners
+    # from losers is WHERE IN THE RANGE the entry sits, and that now shapes conviction instead of
+    # slamming a door — see floor_proximity in paper_sim.
+    buyable, why = True, f"{structure} — {struct_why}"
     # NOTE — 7.0.6a, and this is a correction of my own overreach. Two further rules once lived
     # here: block DISTRIBUTION, and block anything "down across 6+ timeframes". Both were removed
     # after a POINT-IN-TIME backtest (tape truncated to each entry moment, no look-ahead) over the

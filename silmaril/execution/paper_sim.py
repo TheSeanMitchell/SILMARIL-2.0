@@ -688,6 +688,16 @@ class PaperBook:
                     self.reserve_usd = round(float(getattr(self, "reserve_usd", 0.0)) + _v, 2)
         except Exception:
             pass
+        # 7.0.7 THE BRENT LESSON: remember what we sold at, so we never pay MORE to get back in.
+        # On 2026-07-23 the energy book bought BRENT at 86.95 and sold at 100.23 for +$198.64 —
+        # then re-entered at 100.56, above its own exit, and has been under water since. Taking a
+        # profit and immediately buying the same level back is not a new trade, it is a round trip
+        # paid for twice.
+        try:
+            self._last_exit = getattr(self, "_last_exit", {})
+            self._last_exit[sym] = {"px": float(eff), "t": _now()}
+        except Exception:
+            pass
         realized_pct = (eff / pos["entry"] - 1) if pos["entry"] > 0 else 0.0
         srow = {"side": "SELL", "sym": sym, "integrity": ("SUSPECT_OSC" if sym in _LAST_OSC else "ok"),
                 "qty": round(pos["qty"], 6), "price": round(eff, 6),
@@ -742,6 +752,7 @@ class PaperBook:
         Path(path).write_text(json.dumps({
             "cash": self.cash, "realized_pnl": self.realized_pnl,
             "reserve_usd": round(float(getattr(self, "reserve_usd", 0.0)), 2),
+            "last_exit": getattr(self, "_last_exit", {}),   # 7.0.7: the BRENT guard needs this to survive cycles
             "positions": self.positions, "trades": self.trades[-800:],
             "updated_at": _now()}, indent=2))
 
@@ -752,6 +763,7 @@ class PaperBook:
             b = cls(d.get("cash", cash))
             b.realized_pnl = d.get("realized_pnl", 0.0)
             b.reserve_usd = float(d.get("reserve_usd", 0.0) or 0.0)   # 7.0.3: vault survives cycles
+            b._last_exit = d.get("last_exit", {}) or {}                # 7.0.7: BRENT re-entry guard
             b.positions = d.get("positions", {})
             b.trades = d.get("trades", [])
             return b
@@ -1419,16 +1431,67 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         # Receipt: applied to 2026-07-24 it blocks MRVL (-7.04%), AMAT (-5.51%), RUNE and ENA
         # (-3.52%) while still taking SMCI (+4.15%) — the stock book's day goes -$100.62 -> +$57.27.
         # Knob: graph_gate {mode:"auto"|"off"}. KILL: mode "off".
-        _ggk = (cat.get("graph_gate") or {})
-        if str(_ggk.get("mode", "auto")).lower() == "auto":
+        # ── 7.0.7 FLOOR PROXIMITY (replaces the hard structure veto, which measured -284.98). ──
+        # Across 89 point-in-time trades from three real sessions the single clean separator was not
+        # the trend label — it was WHERE IN THE RANGE the entry sat:
+        #
+        #     winners: median position_in_range 0.00, median distance_to_floor -0.14%
+        #     losers : median position_in_range 0.92, median distance_to_floor +0.79%
+        #
+        #     entries at/below the floor   n=50   92.0% win   +1297.35
+        #     entries 0-1% above           n=17   88.2% win    +183.99
+        #     entries 3-8% above           n=12   91.7% win    +310.18
+        #     entries >8% above            n= 6   50.0% win     -98.83   <- the only losing bucket
+        #
+        # This is the operator's own question answered: the floor is not decoration, it is the
+        # entry. But the >8% bucket is SIX TRADES and the sign flips if the threshold moves to 10%,
+        # so a hard block there would be curve-fitting. Instead the distance shapes CONVICTION —
+        # near the floor sizes up, far above it sizes down — which uses a real-but-noisy signal at
+        # the strength the evidence supports. KILL: floor_proximity.mode "off".
+        # ── 7.0.7 RE-ENTRY GUARD (the BRENT lesson, stated as a rule): after taking a profit in a
+        # name, do not buy it back ABOVE the price we just sold it at. BRENT sold at 100.2335 and
+        # was re-bought at 100.5641 — 0.33% higher — and never recovered. Paying more to re-enter
+        # what you just banked is a round trip charged twice for the same idea. A dip BELOW the exit
+        # is a legitimate new trade and is still allowed. KILL: reentry_guard.mode "off".
+        _rgk = (cat.get("reentry_guard") or {})
+        if str(_rgk.get("mode", "auto")).lower() == "auto":
+            try:
+                _le = (getattr(pbook, "_last_exit", {}) or {}).get(sym)
+                if _le and _le.get("px"):
+                    _need = float(_le["px"]) * (1.0 - float(_rgk.get("min_discount_pct", 0.5)) / 100.0)
+                    _px_now = px_of(sym)[-1] if px_of(sym) else None
+                    if _px_now and _px_now > _need:
+                        _age_h = None
+                        try:
+                            _age_h = (now - datetime.fromisoformat(str(_le.get("t")))).total_seconds() / 3600.0
+                        except Exception:
+                            pass
+                        if _age_h is None or _age_h <= float(_rgk.get("window_h", 48)):
+                            actions.append({"act": "SKIP", "sym": sym,
+                                            "why": (f"re-entry guard — we sold this at "
+                                                    f"{_le['px']:.4f}; buying back at {_px_now:.4f} "
+                                                    f"pays more than we just banked (need "
+                                                    f"<={_need:.4f})")})
+                            continue
+            except Exception:
+                pass
+        _fpk = (cat.get("floor_proximity") or {})
+        _fp_mult, _fp_note = 1.0, ""
+        if str(_fpk.get("mode", "auto")).lower() == "auto":
             try:
                 from .chart_intel import analyze as _cig
                 _ga = _cig(sym, samples.get(sym) or [])
-                _gv = _ga.get("verdict") or {}
-                if _gv.get("buyable") is False:
-                    actions.append({"act": "SKIP", "sym": sym,
-                                    "why": f"chart structure — {_gv.get('why')}"})
-                    continue
+                _dfl = _ga.get("distance_to_floor_pct")
+                if _dfl is not None:
+                    if _dfl <= float(_fpk.get("at_floor_pct", 0.0)):
+                        _fp_mult = float(_fpk.get("at_floor_mult", 1.15))
+                        _fp_note = f"at/below floor ({_dfl:+.2f}%)"
+                    elif _dfl <= float(_fpk.get("near_floor_pct", 3.0)):
+                        _fp_mult = float(_fpk.get("near_floor_mult", 1.05))
+                        _fp_note = f"near floor (+{_dfl:.2f}%)"
+                    elif _dfl >= float(_fpk.get("far_pct", 8.0)):
+                        _fp_mult = float(_fpk.get("far_mult", 0.75))
+                        _fp_note = f"FAR above floor (+{_dfl:.2f}%) — sized down, this is the losing bucket"
             except Exception:
                 pass
         _t6s = _trajectory_6h(samples.get(sym) or [])
@@ -1579,6 +1642,9 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                 _ce_score = None
             if _ce_score is not None:
                 _conf = float(_ce_score)
+            # 7.0.7: floor proximity shapes conviction (see the block above for the evidence).
+            if _fp_mult != 1.0:
+                _conf = float(_conf) * _fp_mult
             # ── 7.0 NEWS PULSE — shadow-log every sized candidate; tilt only when mode='on' ──
             _nk7 = (cat.get("news_tilt") or {})
             _nmode7 = str(_nk7.get("mode", "shadow")).lower()

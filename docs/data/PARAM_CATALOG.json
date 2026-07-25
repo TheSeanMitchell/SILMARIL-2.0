@@ -408,8 +408,20 @@
   "frac": 1.0,
   "_note": "7.0.4 FULL HARVEST \u2014 operator's law: 'we want ALL profits reserved into USD. All profits above fee costs and round trip slippage... anything after all fees should be swept into a USD reserve.' frac 1.0 sweeps 100% of every winning close into non-spendable reserve_usd. The pnl swept is already NET of fees and modelled slippage (the fill price is fee-adjusted and the cost model charges commission + regulatory + measured spread + slippage), so what is banked istrue  take-home. Working capital therefore stays near the $10k base and never compounds gains back into risk \u2014 profits are only profits when they leave the table. KILL: mode 'off'."
  },
- "graph_gate": {
+ "floor_proximity": {
   "mode": "auto",
-  "_note": "7.0.6a THE GRAPH GATE, narrowed after a point-in-time backtest. It refuses ONE shape: lower highs AND lower lows AND price still printing new lows (DOWNTREND with no basing). VALIDATED, tape truncated to each entry moment so there is no look-ahead: 2026-07-23 session +173.76 -> +248.21 (blocks ZEC -74.45); 2026-07-24 session -175.14 -> -193.01 (blocks AMD +17.87). Net across 20 closed trades +56.58. HONEST LIMIT: that is 2 blocked trades out of 20 \u2014 the sign is right and the rule is defensible a priori, but it is NOT statistically proven at this sample size. An earlier, wider version of this gate (blocking DISTRIBUTION and '6+ down windows') was measured at -107.69 across the same trades and was removed. KILL: mode 'off'."
+  "at_floor_pct": 0.0,
+  "at_floor_mult": 1.15,
+  "near_floor_pct": 3.0,
+  "near_floor_mult": 1.05,
+  "far_pct": 8.0,
+  "far_mult": 0.75,
+  "_note": "7.0.7 FLOOR PROXIMITY \u2014 the entry-timing signal, used at the strength the evidence supports. Measured point-in-time over 89 closed trades from 2026-07-13, 07-23 and 07-24: winners entered at a median 0.14% BELOW the floor, losers a median 0.79% ABOVE it; entries at/below the floor won 92% (n=50, +1297.35) while entries >8% above won 50% (n=6, -98.83). Because that losing bucket is only six trades and the sign flips at a 10% threshold, this is a CONVICTION WEIGHT, not a block \u2014 near the floor sizes up, far above it sizes down. It replaces a hard structure veto that measured -284.98 over the same trades. KILL: mode 'off'."
+ },
+ "reentry_guard": {
+  "mode": "auto",
+  "min_discount_pct": 0.5,
+  "window_h": 48,
+  "_note": "7.0.7 THE BRENT GUARD. After a profitable exit, a name may only be re-bought at least min_discount_pct BELOW the price we sold it at, for window_h hours. Receipt: on 2026-07-23 the energy book bought BRENT at 86.9481 and sold at 100.2335 for +$198.64 \u2014 then re-entered at 100.5641, above its own exit, and has been under water ever since. A genuine dip below the exit is still a valid new trade. KILL: mode 'off'."
  }
 }

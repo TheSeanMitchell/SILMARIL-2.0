@@ -1484,39 +1484,66 @@ def t95_graph_brain_reads_structure():
         for st in range(12):                # down leg, undercutting the prior low
             rows.append(((t0 + _td(minutes=15 * i)).isoformat(), hi - (hi - lo * 0.98) * st / 11)); i += 1
     d = _a("FALLER", rows)
+    # 7.0.7: the brain must READ the structure correctly — but it must NOT block on it. A hard
+    # DOWNTREND veto measured -284.98 across 89 point-in-time trades and refused 16 straight
+    # winners on 2026-07-13, because catching the bounce in a beaten-down name IS mean reversion.
+    # Structure now feeds conviction; the floor distance is what actually shapes the wager.
     ok = (d.get("structure") in ("DOWNTREND", "DISTRIBUTION")
-          and d.get("verdict", {}).get("buyable") is False
-          and "windows" in d and "peak_trajectory" in d and "floor" in d)
-    check("T95 graph brain: a lower-highs/lower-lows tape reads DOWNTREND and refuses the entry",
+          and d.get("verdict", {}).get("buyable") is not False
+          and "windows" in d and "peak_trajectory" in d and "floor" in d
+          and d.get("distance_to_floor_pct") is not None)
+    check("T95 graph brain: reads lower-highs/lower-lows as DOWNTREND and reports it WITHOUT blocking",
           ok, f"structure={d.get('structure')} buyable={d.get('verdict', {}).get('buyable')}")
 
 
-def t96_graph_gate_wired():
-    """7.0.6a: the entry gate consults the SAME file the UI renders, so the chart and the engine can
-    never disagree. VALIDATED POINT-IN-TIME (tape truncated to each entry moment — an earlier claim
-    of mine used the full tape and was therefore look-ahead-contaminated and wrong):
-        2026-07-23 session  +173.76 -> +248.21   (blocks ZEC-USD -74.45)
-        2026-07-24 session  -175.14 -> -193.01   (blocks AMD +17.87)
-        combined, 20 trades   -1.38 ->  +55.20
-    Honest limit: 2 blocked trades out of 20. The sign is right and the rule is defensible a priori,
-    but it is not statistically proven at this sample size."""
+def t96_graph_brain_informs_not_blocks():
+    """7.0.7 — this tripwire records a reversal I had to make against my own work.
+
+    I shipped a hard veto refusing DOWNTREND-without-basing. Backtested POINT-IN-TIME over 89 closed
+    trades from three real sessions (tape truncated to each entry, no look-ahead) it was destructive:
+
+        no gate                        +1754.36
+        DOWNTREND-without-basing veto  +1469.38   (-284.98, 18 trades blocked)
+
+    On 2026-07-13 it would have refused 16 trades and every single one was a winner (+341.56),
+    because buying a beaten-down name and catching the bounce IS mean reversion. By structure:
+    RANGE 95.8% win (+1469.89), DOWNTREND 76.2% win (+53.68 — the category I blocked, profitable),
+    UPTREND 63.6% win (-49.93 — the category I allowed, losing).
+
+    The veto is gone. The chart read now shapes CONVICTION via floor proximity, which is what the
+    evidence actually supports, and the UI renders the same file the engine reads."""
     import json as _json
     sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ci = (ROOT / "silmaril/execution/chart_intel.py").read_text()
     cli = (ROOT / "silmaril/cli.py").read_text()
     html = (ROOT / "docs/index.html").read_text()
-    ci = (ROOT / "silmaril/execution/chart_intel.py").read_text()
-    ok = ("THE GRAPH GATE" in sim and "from .chart_intel import analyze" in sim
+    ok = ("STRUCTURE VETO IS RETIRED" in ci
+          and "FLOOR PROXIMITY" in sim and "_fp_mult" in sim
           and "chart_intel.build_chart_intel" in cli
-          and "__graphBrain" in html and "CHART_INTEL.json" in html
-          and "__overlaySources" in html                      # tracing-paper source overlay
-          and "correction of my own overreach" in ci          # the wide rules stay removed
-          and "len(down_windows) >= 6" not in ci)
+          and "__graphBrain" in html and "__overlaySources" in html)
     try:
         cat = _json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text())
-        ok = ok and (cat.get("graph_gate") or {}).get("mode") in ("auto", "off")
+        ok = ok and (cat.get("floor_proximity") or {}).get("mode") in ("auto", "off")
+        ok = ok and "graph_gate" not in cat          # the harmful veto knob is gone for good
     except Exception:
         ok = False
-    check("T96 graph gate: entries judged on chart structure, UI reads the same file (knob+kill)", ok, "")
+    check("T96 chart read informs conviction, never hard-blocks (the -284.98 veto stays retired)", ok, "")
+
+
+def t98_reentry_guard_brent():
+    """7.0.7 THE BRENT GUARD. On 2026-07-23 the energy book bought BRENT at 86.9481 and sold at
+    100.2335 for +$198.64 — then re-entered at 100.5641, ABOVE its own exit, and has been under
+    water since. A name may now only be re-bought below the price we sold it at."""
+    import json as _json
+    sim = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok = ("RE-ENTRY GUARD" in sim and "_last_exit" in sim
+          and '"last_exit": getattr(self, "_last_exit"' in sim)      # survives cycles
+    try:
+        cat = _json.loads((ROOT / "docs/data/PARAM_CATALOG.json").read_text())
+        ok = ok and (cat.get("reentry_guard") or {}).get("mode") in ("auto", "off")
+    except Exception:
+        ok = False
+    check("T98 re-entry guard: never buy back above the price we just sold (BRENT)", ok, "")
 
 
 def t97_no_invented_marks_or_targets():
@@ -1571,8 +1598,8 @@ if __name__ == "__main__":
               t86_serial_lane_lock, t87_capital_truth_display, t88_book_harvest_switch,
               t89_venue_routing_and_fee_provenance, t90_full_profit_harvest,
               t91_immediate_sleeve_seed,
-              t95_graph_brain_reads_structure, t96_graph_gate_wired,
-              t97_no_invented_marks_or_targets):
+              t95_graph_brain_reads_structure, t96_graph_brain_informs_not_blocks,
+              t97_no_invented_marks_or_targets, t98_reentry_guard_brent):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test
