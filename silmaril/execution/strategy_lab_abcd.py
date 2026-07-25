@@ -390,6 +390,28 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
             if pos.get("mark") and pos.get("sym"):
                 marks[pos["sym"]] = pos["mark"]
                 marks_all[pos["sym"]] = pos["mark"]
+        # ── 7.0.9 THE FROZEN WORKSHOP — the worst bug in this audit. ─────────────────────────────
+        # `marks` was built ONLY from names the funded books currently hold. On the 2026-07-25 tree
+        # the books held exactly one name (LTCUSDT) while the sleeves held 41 — so 41 of 41 sleeve
+        # positions had NO MARK. A sleeve cannot hit a target it cannot see and cannot hit a stop it
+        # cannot see, so every one of those positions was frozen: never sold, never graded, never
+        # returned to the river as evidence. STRK-USD sat at +28.25% unrealised because the
+        # simulator was blind to the price, not because it chose to hold.
+        #
+        # The workshop is the bottom of the pyramid. With it frozen, nothing matured, nothing was
+        # promoted, and the whole learning chain stalled. Marks now come from the PRICE TAPE for
+        # every name a sleeve holds, which is the same tape the books trade on.
+        for _sk9, _sb9 in (st.get("sleeves") or {}).items():
+            if not _sk9.startswith(book + ":"):
+                continue
+            for _sym9 in (_sb9.get("positions") or {}):
+                if _sym9 in marks:
+                    continue
+                for _t9, _p9 in reversed(_tape7.get(_sym9) or []):
+                    if _p9 and float(_p9) > 0:
+                        marks[_sym9] = float(_p9)
+                        marks_all[_sym9] = float(_p9)
+                        break
         for d in b.get("decision_trace_live") or []:
             sym = d.get("sym")
             if not sym:

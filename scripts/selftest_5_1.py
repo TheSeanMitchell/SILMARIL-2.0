@@ -1606,6 +1606,48 @@ def t101_evidence_outranks_label():
     check("T101 evidence outranks the label (fingerprint falling-reject + geometry deadlock)", ok, "")
 
 
+def t102_maturity_gate_can_see_evidence():
+    """7.0.9 THE SILENT DEADLOCK. The maturity gate reads
+            _ev7 = int(_ftm.get("dip_samples") or _ftm.get("n") or 0)
+    where _ftm is the dict returned by fit_strategy() — which never carried either field. So _ev7
+    was 0 for every name on every cycle, and every candidate was judged "immature" regardless of
+    the evidence behind it. XMR-USD sat on 672 samples and 295 observed dip events with a 0.933
+    bounce reliability and the gate read zero. Measured cost: the crypto book found 12 qualifying
+    candidates and bought NONE for 40 hours (9 of 12 rejected "immature"); only GEKKO, which is
+    exempt by doctrine, kept trading."""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT))
+    try:
+        from silmaril.execution.fingerprint import fingerprint as _fp, fit_strategy as _fit
+    except Exception as e:
+        check("T102 maturity gate evidence (import failed)", False, str(e)); return
+    px = [100.0]
+    for i in range(400):                      # a tape with plenty of real dips
+        px.append(px[-1] * (0.995 if i % 7 == 0 else 1.0015))
+    f = _fp(px)
+    fit = _fit(f, 0.0038, 0.06)
+    ok = f.get("dip_samples") is not None
+    if fit:
+        ev = int(fit.get("dip_samples") or fit.get("n") or 0)
+        ok = ok and ev > 0            # the gate must be able to SEE the evidence
+    check("T102 maturity gate can see fit evidence (dip_samples/n reach the gate, not 0)", ok,
+          f"fp.dip_samples={f.get('dip_samples')} fit_ev={(int((fit or {}).get('dip_samples') or (fit or {}).get('n') or 0)) if fit else 'no-fit'}")
+
+
+def t103_workshop_is_not_frozen():
+    """7.0.9 THE FROZEN WORKSHOP — the worst bug in the 2026-07-25 audit. The sleeve simulator built
+    its `marks` dict ONLY from names the funded books currently held. The books held one name
+    (LTCUSDT); the sleeves held 41. So 41 of 41 sleeve positions had no mark, and a sleeve cannot
+    hit a target or a stop it cannot see. Every sleeve position was frozen — never sold, never
+    graded, never returned to the river as maturity evidence (STRK-USD sat at +28.25% unrealised).
+    The workshop is the bottom of the pyramid; frozen, it stalled the entire learning chain."""
+    lab = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
+    ok = ("THE FROZEN WORKSHOP" in lab
+          and "_tape7.get(_sym9)" in lab           # marks come from the tape
+          and "for _sk9, _sb9 in" in lab)
+    check("T103 workshop not frozen: sleeves mark every held name from the tape, so exits can fire", ok, "")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -1646,7 +1688,8 @@ if __name__ == "__main__":
               t95_graph_brain_reads_structure, t96_graph_brain_informs_not_blocks,
               t97_no_invented_marks_or_targets, t98_reentry_guard_brent,
               t99_sleeve_marks_from_tape, t100_fast_regime_bands,
-              t101_evidence_outranks_label):
+              t101_evidence_outranks_label, t102_maturity_gate_can_see_evidence,
+              t103_workshop_is_not_frozen):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

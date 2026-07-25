@@ -97,6 +97,9 @@ def fingerprint(prices: List[float], rows=None, dip_h: int = 6, bounce_h: int = 
 
     # TYPICAL DIP: median magnitude of the negative ~1h moves this name makes
     dips = [x for x in _returns(p, dip_h) if x < 0]
+    # 7.0.9: publish the dip-event count. The maturity gate asks "how many dip events have we
+    # actually observed on this name" and had no field to read — see the fit_strategy note below.
+    fp["dip_samples"] = len(dips)
     typical_dip = abs(statistics.median(dips)) if len(dips) >= 5 else (
         abs(statistics.median(_returns(p, dip_h))) if _returns(p, dip_h) else 0.0)
 
@@ -190,8 +193,21 @@ def fit_strategy(fp: Dict[str, Any], cost: float, floor_min: Optional[float],
     # never goes absurd (a 22% stop for a 6% target is not a trade a pro takes).
     stop = min(cap_stop, max(float(floor_min or 0.06), (fp.get("typical_dip") or 0.0) * stop_dip_mult))
 
+    # ── 7.0.9 THE SILENT DEADLOCK, and this one has been costing real trades since 7.0-FINAL. ──
+    # The maturity gate in paper_sim does:
+    #       _ev7 = int(_ftm.get("dip_samples") or _ftm.get("n") or 0)
+    # where _ftm is THIS dict. But this dict never carried either field, so _ev7 evaluated to 0 for
+    # every name, on every cycle, forever — and every candidate was judged "immature" no matter how
+    # much evidence stood behind it. XMR-USD sat on 672 samples and 295 observed dip events with a
+    # 0.933 bounce reliability, and the gate read it as zero.
+    #
+    # Measured consequence on the 2026-07-25 tree: the crypto book found 12 qualifying candidates
+    # and bought NONE for 40 hours straight (9 of 12 rejected "immature"). GEKKO kept trading only
+    # because it is exempt from this gate by doctrine. The books were not being cautious; they were
+    # reading a field that did not exist.
     return {"dir": "mr", "entry": round(entry, 4), "target": round(target, 4),
             "stop": round(stop, 4),
+            "n": fp.get("n"), "dip_samples": fp.get("dip_samples"),
             "typical_dip": fp.get("typical_dip"), "typical_bounce": fp.get("typical_bounce"),
             "bounce_reliability": fp.get("bounce_reliability"), "trend": fp.get("trend"),
             "strong_up": fp.get("strong_up"), "vol": fp.get("vol")}
