@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-07-26T13:36:00.919406+00:00",
+  "generated_at": "2026-07-26T13:47:21.407495+00:00",
   "marks_health": {
     "marked": 725,
     "entry_warm": 725,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
     "newest_sample_age_min": 0.6,
     "state": "OK",
-    "oscillating": 31,
+    "oscillating": 26,
     "oscillating_syms": [
-      "1INCH-USD",
       "A-USD",
-      "ANKR-USD",
       "ARE",
-      "ARKM-USD",
-      "AXL-USD",
       "BF-B",
       "BXP",
       "CHZ-USD",
       "CSGP",
       "HST",
-      "INVH"
+      "INVH",
+      "IOTA-USD",
+      "IRM",
+      "KAITO-USD",
+      "KIM"
     ]
   },
   "equity_market": {
@@ -58,18 +58,13 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-26T13:35:58.415288+00:00",
+    "generated_at": "2026-07-26T13:47:19.318412+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
     "window": 60,
-    "excluded_count": 6,
+    "excluded_count": 5,
     "excluded": [
-      {
-        "sym": "THETA-USD",
-        "snapbacks": 2,
-        "max_move_pct": 7.9
-      },
       {
         "sym": "ANT-USD",
         "snapbacks": 2,
@@ -111,7 +106,7 @@
   "crypto": {
     "funnel": {
       "seen": 183,
-      "entry_warm": 165,
+      "entry_warm": 170,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {
@@ -123,26 +118,32 @@
     "decision_trace_live": [
       {
         "sym": "UNI-USD",
-        "dip_pct": -1.36,
-        "conviction": 0.1132,
-        "fate": "candidate"
-      },
-      {
-        "sym": "STRK-USD",
-        "dip_pct": -1.0,
-        "conviction": 0.2501,
+        "dip_pct": -1.06,
+        "conviction": 0.0881,
         "fate": "candidate"
       },
       {
         "sym": "TURBO-USD",
-        "dip_pct": -0.73,
-        "conviction": 0.0606,
+        "dip_pct": -1.21,
+        "conviction": 0.1008,
         "fate": "candidate"
       },
       {
         "sym": "ZEC-USD",
-        "dip_pct": -0.61,
-        "conviction": 0.0512,
+        "dip_pct": -1.04,
+        "conviction": 0.0863,
+        "fate": "candidate"
+      },
+      {
+        "sym": "MKR-USD",
+        "dip_pct": -0.73,
+        "conviction": 0.0608,
+        "fate": "candidate"
+      },
+      {
+        "sym": "EOS-USD",
+        "dip_pct": -0.42,
+        "conviction": 0.0346,
         "fate": "candidate"
       }
     ],
@@ -181,14 +182,23 @@
   "aggressive": {
     "funnel": {
       "seen": 183,
-      "entry_warm": 165,
-      "candidates_after_gates": 0,
+      "entry_warm": 170,
+      "candidates_after_gates": 1,
       "bought": 0,
-      "rejections": {},
+      "rejections": {
+        "UNTRADEABLE:evidence": 1
+      },
       "armed": true,
       "arming_why": "armed"
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "TURBO-USD",
+        "dip_pct": -1.21,
+        "conviction": 0.1008,
+        "fate": "candidate"
+      }
+    ],
     "equity": 10000.0,
     "cash": 10000.0,
     "realized_pnl": 0.0,
@@ -249,15 +259,15 @@
     "universe_total": 1074,
     "tradeable": 22,
     "ghosts_excluded": 1052,
-    "trades": 86,
-    "win_rate_pct": 66.3,
-    "mean_net_pct": 0.083,
+    "trades": 85,
+    "win_rate_pct": 65.9,
+    "mean_net_pct": 0.028,
     "exits": {
-      "TAKE": 68,
+      "TAKE": 67,
       "STOP": 18,
       "TIMEOUT": 0
     },
-    "equity_after": 10054.67
+    "equity_after": 10007.32
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
