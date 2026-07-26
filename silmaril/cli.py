@@ -1507,6 +1507,18 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
     # This is what stops the 15-20 min cron stacking the operator keeps hitting.
     _FAST = bool(os.environ.get("SILMARIL_FAST"))
     if not _FAST:
+      # ── 7.1 EXTERNAL SOURCE OVERLAY (operator: "imports other graphs from other sites like
+      # Coinbase or Yahoo … overlay it with three sources"). Real third-party series for every
+      # held/weighed name → SOURCE_OVERLAY.json; the Everything Graph draws them as tracing
+      # paper with a time-aligned agreement verdict. Budgeted; wrapped; never breaks the cycle.
+      try:
+          from .execution.source_overlay import build_source_overlay
+          _so = build_source_overlay(out)
+          log.info("  Source overlay: %s/%s names covered by outside venues in %ss · %d disagreement(s)",
+                   _so.get("covered", 0), _so.get("scoped", 0), _so.get("spent_s", "?"),
+                   len(_so.get("disagreements") or []))
+      except Exception as e:
+          log.warning("  Source overlay skipped: %s", e)
         # ── News & Event Intelligence (read-only, deterministic, NO LLM) ──
       # Forward event calendar + ETF regime baskets + news momentum from the day's
       # signals.json + catalysts.json. Display-only (Phase 1); wrapped so a failure

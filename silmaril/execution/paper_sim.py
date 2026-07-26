@@ -449,16 +449,29 @@ def feed_integrity(samples: Dict[str, List]) -> Dict[str, Any]:
 def load_all_samples(out) -> Dict[str, List]:
     """Merge the system's own price_samples with the CCXT-widened universe so the
     sim/leaderboard test hundreds of fresh names, not 52. The live executor does
-    NOT use this — it stays on price_samples only (Alpaca-safe)."""
-    out = Path(out)
-    merged: Dict[str, List] = {}
-    for fn in ("price_samples.json", "ccxt_samples.json", "metals_samples.json", "energy_samples.json"):
-        try:
-            s = json.loads((out / fn).read_text()).get("samples", {})
-            merged.update(s)
-        except Exception:
-            pass
-    return merged
+    NOT use this — it stays on price_samples only (Alpaca-safe).
+
+    7.1 THE ONE-KEY LAW (the DOGEUSDT-vs-DOGE-USD incident): the raw merge used to
+    leave ccxt spellings (DOGEUSDT) alongside canonical ones (DOGE-USD), so the crypto
+    book's universe contained the SAME coin twice and could buy the spelling no chart,
+    mark-stamper, or one-listing-per-base check could see. Every consumer now loads
+    through canon_keys.canonical_samples: one spelling per asset, history UNIONED
+    across spellings, price_samples winning timestamp collisions."""
+    try:
+        from .canon_keys import canonical_samples
+        return canonical_samples(out)
+    except Exception:
+        # fallback keeps the engine alive if the module is somehow absent — but the
+        # selftest battery (T107) fails loudly if this path is ever the live one.
+        out = Path(out)
+        merged: Dict[str, List] = {}
+        for fn in ("price_samples.json", "ccxt_samples.json", "metals_samples.json", "energy_samples.json"):
+            try:
+                s = json.loads((out / fn).read_text()).get("samples", {})
+                merged.update(s)
+            except Exception:
+                pass
+        return merged
 
 
 _LAST_OSC: set = set()
@@ -912,6 +925,46 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         _promo = _pd7(out, book) or {}
     except Exception:
         _promo = {}
+    # ── 7.1 THE ARMING GATE (PYRAMID LAW — the missing LICENSE). ────────────────────────────────
+    # The 2026-07-25 incident, in one line: the crypto book opened DOGEUSDT while its own workshop
+    # had ZERO closed trades since the wipe. Discipline promotion (7.0.2) handed the sleeve's HAND
+    # upstairs, and seed_immediately (7.0.4) handed it early — but nothing ever required the
+    # workshop to actually PROVE anything before the book was allowed to spend. The operator's law,
+    # stated ~30 times: sleeves trade FIRST, find their groove, and only then does confidence pass
+    # upward. This gate is that law as code, completing the ladder the Master already obeys
+    # (master_account: require_promoted_sleeve):
+    #
+    #     sleeves  → trade freely from cycle one (ungated probes — unchanged)
+    #     books    → may OPEN only when their workshop status is PROMOTED, i.e. a sleeve has
+    #                ≥ min_closes REAL closed trades since the wipe with positive Δ-vs-null
+    #     Master   → may fund a quadrant only when that book's workshop is PROMOTED (existing)
+    #
+    # PROVISIONAL still seeds the DISCIPLINE (cap/patience) so the book starts with our best hand —
+    # it just doesn't grant the license to spend. An UNARMED book still manages exits, marks, and
+    # candidate scanning (the sleeves feed off its candidate stream), and cancels any resting maker
+    # orders. GEKKO (aggressive) is exempt by doctrine — it IS a probe.
+    # Knob: PARAM_CATALOG.arming_gate {"mode":"auto"} · KILL: mode "off" · Tripwire: T106.
+    _agk = (cat.get("arming_gate") or {})
+    _armed, _arming_why = True, "armed"
+    if str(_agk.get("mode", "auto")).lower() == "auto" and book != "aggressive":
+        try:
+            _spb = ((json.loads((out / "SLEEVE_PROMOTION.json").read_text())
+                     .get("books") or {}).get(book) or {})
+        except Exception:
+            _spb = {}
+        _spst = _spb.get("status")
+        if _spst == "PROMOTED":
+            _armed, _arming_why = True, ("armed — promoted sleeve %s (%s) has real closed trades"
+                                         % (_spb.get("sleeve"), _spb.get("name")))
+        else:
+            _closes = int(((_spb.get("evidence") or {}).get("closed")) or 0)
+            _need = int(_spb.get("closes_needed") or 3)
+            _armed = False
+            _arming_why = ("OBSERVE — pyramid law: the %s workshop must promote a sleeve on real "
+                           "closed trades before this book may open. Best sleeve so far: %s · "
+                           "%d/%d closes since wipe · status %s. The book still scans, marks and "
+                           "manages exits; the sleeves are earning its license right now."
+                           % (book, (_spb.get("sleeve") or "—"), _closes, _need, _spst or "WAITING"))
     entry, target, stop_, max_hold = p["entry"], p["target"], p["stop"], p["max_hold_min"]
     # ── 7.0.2 NO-TARGET GUARD (the SPCX post-mortem). SPCX was entered with "target +None%" —
     # the stock champion's params were incomplete that cycle, so the position opened with no
@@ -1360,6 +1413,12 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         actions.append({"act": "SKIP", "sym": f"{len(cands[:MAX_NAMES]) - _slots} name(s)",
                         "why": "position cap %d/%d for %s — concentration law: a new name must beat a held one" % (len(pbook.positions), _poscap, book)})
     # ── 7.0 MAKER BOOK: resting post-only limits from prior cycles fill or expire ──
+    # 7.1 ARMING GATE: an UNARMED book may not fill resting orders either — a limit placed
+    # before the license existed is not a license. Cancel them, say why, once.
+    if _pend and not _armed:
+        actions.append({"act": "SKIP", "sym": ", ".join(sorted(_pend.keys()))[:60],
+                        "why": "arming gate — resting maker order(s) cancelled: the workshop has not promoted a sleeve yet"})
+        _pend = {}
     if _pend:
         from datetime import timedelta as _td7
         for _psym in list(_pend.keys()):
@@ -1397,6 +1456,15 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
             actions.append({"act": "SKIP", "sym": _cs[0],
                             "why": "verified-crash cool-off (M8) — real disaster, let it settle"})
         cands = [c for c in cands if c not in _hot]
+    # ── 7.1 ARMING GATE, applied. Candidates were scanned above (the sleeves trade off this
+    # book's candidate stream via decision_trace_live — that river MUST keep flowing), but an
+    # unarmed book spends nothing. One OBSERVE row states the exact license terms.
+    if not _armed and cands:
+        actions.append({"act": "SKIP", "sym": "%d candidate(s)" % len(cands[:MAX_NAMES]),
+                        "why": "arming gate — " + _arming_why})
+        cands = []
+    elif not _armed:
+        actions.append({"act": "NOTE", "sym": "*", "why": "arming gate — " + _arming_why})
     for sym, lp, h1, cv in cands[:min(MAX_NAMES, _slots)]:
         if sym in pbook.positions:   # belt-and-suspenders with the buy() guard (T54): never re-buy a held name
             continue
@@ -1756,7 +1824,9 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         _dtrace = []
     funnel = {"seen": len(side_marks),
               "entry_warm": sum(1 for s_ in side_marks if s_ in _WARM_SYMS),
-              "candidates_after_gates": len(cands), "bought": _bought, "rejections": _rej}
+              "candidates_after_gates": len(cands), "bought": _bought, "rejections": _rej,
+              # 7.1: the license, stated on the funnel itself so no panel ever has to guess
+              "armed": _armed, "arming_why": _arming_why}
     try:
         _pend_all[book] = _pend
         (out / "MAKER_PENDING.json").write_text(json.dumps(_pend_all, indent=1))
@@ -1816,6 +1886,17 @@ def live_step(out_dir) -> Dict[str, Any]:
     """One paper-trading cycle for BOTH sides. Persists each book and emits the
     cockpit summary docs/data/paper_sim_live.json."""
     out = Path(out_dir)
+    # 7.1 ONE-KEY LAW, retroactive: re-key any open position / resting order already booked
+    # under a non-canonical spelling (the DOGEUSDT position), so it can be marked and exited
+    # instead of freezing. Idempotent; every rename is journaled to CANON_MIGRATIONS.jsonl.
+    try:
+        from .canon_keys import canonicalize_positions as _ckp7
+        _mig7 = _ckp7(out)
+        if _mig7.get("migrated") or _mig7.get("flagged"):
+            print("  one-key law: %d open key(s) re-keyed, %d flagged (CANON_MIGRATIONS.jsonl)"
+                  % (_mig7.get("migrated", 0), _mig7.get("flagged", 0)))
+    except Exception:
+        pass
     samples = load_all_samples(out)
     global _WARM_SYMS
     marks, _WARM_SYMS, marks_health = _marks_from_samples(samples)
@@ -1975,9 +2056,10 @@ def live_step(out_dir) -> Dict[str, Any]:
         "combined_equity": round(sum(results[b]["equity"] for b in BOOKS), 2),
         "combined_realized_pnl": round(sum(results[b]["realized_pnl"] for b in BOOKS), 2),
         "backtest_3day_crypto": bt,
-        "note": ("Internal paper sim, 4 independent books (crypto/stock/metal/energy). "
-                 "Ghosts excluded; fees = max(0.2%, 2x noise floor). Metal/energy stay "
-                 "empty until their data feed is wired (metals_samples.json / energy_samples.json)."),
+        "note": ("Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical "
+                 "key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may "
+                 "OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since "
+                 "the wipe (arming gate) — until then it scans, marks, and manages exits only."),
     }
     # 5.0 FINGERPRINTS: publish the per-valuable identities + fitted realistic strategies driving live
     # entries, so the dashboard shows HOW the engine reads each graph. Bounded scan to stay cheap.

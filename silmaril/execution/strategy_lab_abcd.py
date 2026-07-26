@@ -335,13 +335,19 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
         _geo = {}
     marks_all: Dict[str, float] = {}
     # 7.0.8: every price series we hold, so any sleeve position can be marked to the live tape.
+    # 7.1 ONE-KEY LAW: load through the canonical union so a position keyed one spelling can
+    # never miss a tape stored under another (the DOGE-USD/DOGEUSDT class of freeze).
     _tape7: Dict[str, Any] = {}
-    for _fn7 in ("price_samples.json", "ccxt_samples.json",
-                 "metals_samples.json", "energy_samples.json"):
-        try:
-            _tape7.update(json.loads((out / _fn7).read_text()).get("samples", {}))
-        except Exception:
-            pass
+    try:
+        from .canon_keys import canonical_samples as _cs71
+        _tape7 = _cs71(out)
+    except Exception:
+        for _fn7 in ("price_samples.json", "ccxt_samples.json",
+                     "metals_samples.json", "energy_samples.json"):
+            try:
+                _tape7.update(json.loads((out / _fn7).read_text()).get("samples", {}))
+            except Exception:
+                pass
     _regimes = (live.get("regimes") or {}) if isinstance(live, dict) else {}
     # ── 7.0.5 EXPANSION-BENCH INPUTS — measured on our own tape, never assumed. ──────────────
     # _reach[sym]  = how far this name actually travels over a day (feeds VOLATILITY HUNTER)
@@ -350,12 +356,9 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
     _reach, _trend, _cost7 = {}, {}, {}
     try:
         from .paper_sim import _reachable_move as _rm7, _traj_win as _tw7, round_trip_cost as _rtc7
-        _samp = {}
-        for _fn in ("price_samples.json", "metals_samples.json", "energy_samples.json"):
-            try:
-                _samp.update(json.loads((out / _fn).read_text()).get("samples", {}))
-            except Exception:
-                pass
+        # 7.1 ONE-KEY LAW: measure reach/trend/cost on the SAME canonical union the sleeves
+        # trade (was a second raw merge that skipped ccxt and kept duplicate spellings).
+        _samp = _tape7
         for _s7, _rows7 in _samp.items():
             try:
                 _r = _rm7(_rows7, 24)

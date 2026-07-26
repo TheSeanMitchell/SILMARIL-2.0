@@ -39,6 +39,13 @@ LEARNING = {
     "CALIBRATION.json", "GRAVEYARD.json", "CONDUCTOR_STATE.json", "CONDUCTOR_REPORT_CARD.json",
     "knowledge_graph.json", "RESEARCH_QUEUE.json", "ROTATION_HYPOTHESES.json",
     "CENSUS_ROSTER.json", "INVARIANTS_STATE.json",
+    # ── 7.1: same wired-but-contradicted class, caught by the fresh-tree battery. The reset
+    # script deliberately PRESERVES VENUE_UNIVERSE.json (deleting the listings would make every
+    # close UNROUTABLE until the next 09:2x refresh), but the registry classed it DERIVED — so
+    # T53 called the preserved copy a stale lie on every fresh tree. It is a snapshot of the
+    # OUTSIDE world (exchange listings), exactly like price_samples/KRAKEN_SPREAD: yesterday's
+    # copy is yesterday's listings, not a ghost of pre-wipe book state. Classed to match.
+    "VENUE_UNIVERSE.json",
 }
 STATE_HINTS = ("paper_book_", "BENCH_BOOKS", "STRATEGY_LAB", "MASTER_ACCOUNT",
                "MASTER_DECISIONS", "MASTER_LEDGER", "CHAMPION_GOVERNANCE", "champion_",

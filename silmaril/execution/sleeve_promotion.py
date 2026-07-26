@@ -117,6 +117,7 @@ def build_sleeve_promotion(out_dir) -> Dict[str, Any]:
                         "discipline": {k: cfg.get(k) for k in DISCIPLINE_KEYS
                                        if cfg.get(k) is not None} or None,
                         "status": "PROVISIONAL",
+                        "arms_book": False, "closes_needed": min_closes,
                         "why": (f"seeded with the best available sleeve {sk} {seed.get('name')} "
                                 f"({(_score(seed) or 0):+.2f}%) — PROVISIONAL: under {min_closes} "
                                 f"closed trades, so it holds the seat only until a sleeve proves itself"),
@@ -131,6 +132,7 @@ def build_sleeve_promotion(out_dir) -> Dict[str, Any]:
             books[bk] = {
                 "sleeve": None, "name": None, "discipline": None,
                 "status": "WAITING",
+                "arms_book": False, "closes_needed": min_closes,
                 "why": (f"no sleeve has {min_closes}+ closed trades yet — the book keeps its own "
                         f"champion until the workshop has real forward evidence to hand up"),
                 "candidates_graded": 0,
@@ -146,6 +148,7 @@ def build_sleeve_promotion(out_dir) -> Dict[str, Any]:
             books[bk] = {
                 "sleeve": None, "name": None, "discipline": None,
                 "status": "NO_POSITIVE_SLEEVE",
+                "arms_book": False, "closes_needed": min_closes,
                 "why": (f"best sleeve {best.get('sleeve')} {best.get('name')} scores "
                         f"{best_score:+.2f}% — negative expectancy is not promotable; the book "
                         f"keeps its own champion until a sleeve earns its way up"),
@@ -173,6 +176,7 @@ def build_sleeve_promotion(out_dir) -> Dict[str, Any]:
             "name": chosen.get("name"),
             "discipline": discipline or None,
             "status": "PROMOTED" if mode != "off" else "PROMOTED_SHADOW",
+            "arms_book": mode != "off", "closes_needed": min_closes,
             "why": why,
             "evidence": {
                 "closed": int(chosen.get("closed") or 0),
@@ -198,7 +202,10 @@ def build_sleeve_promotion(out_dir) -> Dict[str, Any]:
                  "Sleeve behaviour is never altered — only selected. The Master then mirrors the "
                  "books, so the workshop's best hand reaches the top of the pyramid."),
         "law": ("Promotion needs closed trades, positive expectancy, and a margin over the "
-                "incumbent. A losing workshop promotes nobody."),
+                "incumbent. A losing workshop promotes nobody. 7.1 ARMING: only PROMOTED "
+                "arms its book to spend — PROVISIONAL seeds the discipline (the hand) but "
+                "never the license; the book observes until its own workshop has proven a "
+                "sleeve on real closed trades since the wipe."),
     }
     try:
         write_json_atomic(out / STORE, payload)

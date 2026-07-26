@@ -1377,7 +1377,9 @@ def t86_serial_lane_lock():
     wf = ROOT / ".github/workflows"
     # 7.0.5: the operator runs five lanes (daily, analytics, hourly, selftest, venue) and leaves the
     # rest off after a wipe. Assert the law on the lanes that actually run.
-    lanes = ["daily.yml", "hourly.yml", "analytics.yml", "venue_universe.yml", "selftest.yml"]
+    # 7.1 ONE WRITER LAW: hourly.yml is RETIRED (contents:read, no state, no cron) — its full
+    # pass now runs inside daily.yml, so the lock law no longer binds it. T110 owns the new law.
+    lanes = ["daily.yml", "analytics.yml", "venue_universe.yml", "selftest.yml"]
     # 7.0.5: the same-lane "newest wins" rule moved to the QUEUE (GitHub supersedes a pending run)
     # after cancel-in-progress:true was found murdering the daily's own 12-13 min cycle every 10
     # minutes. T92 now owns that law; T86 asserts the lock itself and its no-starvation timeout.
@@ -1684,6 +1686,421 @@ def t105_cross_source_normalisation():
     check("T105 cross-source: symbol normalisation lets a second feed verify the price", ok, "")
 
 
+
+
+# ═══════════════ 7.1 — THE ARMING LAW, THE ONE-KEY LAW, THE ONE-WRITER LAW ═══════════════
+
+def t106_arming_gate_pyramid_license():
+    """Incident 2026-07-25: the crypto book opened DOGEUSDT with ZERO sleeve closes since
+    the wipe. The pyramid promotes DISCIPLINE (7.0.2) and seeds it early (7.0.4), but no
+    code ever required the workshop to PROVE anything before the book could spend. This
+    tripwire holds the license itself: (a) sleeve_promotion marks PROVISIONAL/WAITING/
+    NO_POSITIVE_SLEEVE as arms_book=False and only PROMOTED as True; (b) paper_sim's buy
+    path is behind the _armed gate; (c) an unarmed book cancels resting maker orders."""
+    import tempfile as _tf
+    from silmaril.execution import sleeve_promotion as _sp
+    with _tf.TemporaryDirectory() as td:
+        out = Path(td)
+        (out / "PARAM_CATALOG.json").write_text(json.dumps({}))
+        (out / "STRATEGY_LAB.json").write_text(json.dumps({
+            "by_industry": {"crypto": [
+                {"sleeve": "H", "name": "PATIENT REVERT", "closed": 0,
+                 "return_pct": 1.2, "delta_vs_hodl": 1.2}],
+                "stock": [], "metal": [], "energy": []},
+            "sleeves_def": {"H": {"cap": 3, "patient": True}}}))
+        pay = _sp.build_sleeve_promotion(out)
+        prov = (pay["books"]["crypto"] or {})
+        promoted_ok = None
+        # now give it real closes → PROMOTED must arm
+        (out / "STRATEGY_LAB.json").write_text(json.dumps({
+            "by_industry": {"crypto": [
+                {"sleeve": "H", "name": "PATIENT REVERT", "closed": 4,
+                 "return_pct": 2.4, "delta_vs_hodl": 2.4}],
+                "stock": [], "metal": [], "energy": []},
+            "sleeves_def": {"H": {"cap": 3, "patient": True}}}))
+        pay2 = _sp.build_sleeve_promotion(out)
+        promoted_ok = (pay2["books"]["crypto"].get("status") == "PROMOTED"
+                       and pay2["books"]["crypto"].get("arms_book") is True)
+    src = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    gate_declared = "THE ARMING GATE (PYRAMID LAW" in src and '"armed": _armed' in src
+    buy_i = src.index("for sym, lp, h1, cv in cands[:min(MAX_NAMES, _slots)]:")
+    gate_i = src.index("if not _armed and cands:")
+    maker_cancel = "resting maker order(s) cancelled" in src
+    ok = (prov.get("status") == "PROVISIONAL" and prov.get("arms_book") is False
+          and promoted_ok and gate_declared and gate_i < buy_i and maker_cancel)
+    check("T106 arming gate: PROVISIONAL seeds the hand, only PROMOTED grants the license to spend",
+          ok, f"prov={prov.get('status')}/{prov.get('arms_book')} promoted_ok={promoted_ok} "
+              f"gate_before_buy={gate_i < buy_i} maker_cancel={maker_cancel}")
+
+
+def t107_one_key_law_loader():
+    """Incident 2026-07-25: load_all_samples merged ccxt keys RAW, so the crypto universe
+    held DOGE-USD and DOGEUSDT as two different assets and the book bought the spelling no
+    chart or mark-stamper could see. The canonical loader must (a) collapse spellings, (b)
+    UNION their history, (c) let price_samples win timestamp collisions, and (d) leave
+    non-crypto keys untouched."""
+    import tempfile as _tf
+    from silmaril.execution.canon_keys import canonical_samples, canon
+    with _tf.TemporaryDirectory() as td:
+        out = Path(td)
+        (out / "price_samples.json").write_text(json.dumps({"samples": {
+            "DOGE-USD": [["2026-07-25T10:00:00+00:00", 0.0719],
+                         ["2026-07-25T10:10:00+00:00", 0.0721]],
+            "GLD": [["2026-07-25T10:00:00+00:00", 221.5]]}}))
+        (out / "ccxt_samples.json").write_text(json.dumps({"samples": {
+            "DOGEUSDT": [["2026-07-25T09:50:00+00:00", 0.0717],
+                         ["2026-07-25T10:00:00+00:00", 0.0999]]}}))   # collision: primary must win
+        m = canonical_samples(out)
+        rows = {t: p for t, p in m.get("DOGE-USD", [])}
+    ok = ("DOGEUSDT" not in m and "DOGE-USD" in m
+          and len(m["DOGE-USD"]) == 3                       # unioned, deduped by timestamp
+          and abs(rows.get("2026-07-25T10:00:00+00:00", 0) - 0.0719) < 1e-9   # primary won
+          and "GLD" in m
+          and canon("REQUSDT") == "REQ-USD" and canon("BTC/USDT") == "BTC-USD"
+          and canon("USO") == "USO")                        # energy ETF never re-keyed
+    check("T107 one-key law: one spelling per asset, history unioned, primary tape wins collisions",
+          ok, f"keys={sorted(m.keys())} doge_rows={len(m.get('DOGE-USD', []))}")
+
+
+def t108_open_position_key_migration():
+    """The retroactive half of the one-key law: a position already booked under DOGEUSDT
+    must be re-keyed to DOGE-USD at the top of the live cycle (else it can never be marked
+    or exited — the frozen-workshop disease, in a funded book), with the rename journaled."""
+    import tempfile as _tf
+    from silmaril.execution.canon_keys import canonicalize_positions
+    with _tf.TemporaryDirectory() as td:
+        out = Path(td)
+        (out / "paper_book_crypto.json").write_text(json.dumps({
+            "cash": 8431.14, "realized_pnl": 0.0,
+            "positions": {"DOGEUSDT": {"qty": 21602.3307, "entry": 0.072624,
+                                       "t": "2026-07-25T21:10:00+00:00"}},
+            "trades": []}))
+        r = canonicalize_positions(out)
+        bk = json.loads((out / "paper_book_crypto.json").read_text())
+        jl = (out / "CANON_MIGRATIONS.jsonl").exists()
+        r2 = canonicalize_positions(out)   # idempotent: second pass moves nothing
+    ok = (r.get("migrated") == 1 and "DOGE-USD" in bk["positions"]
+          and "DOGEUSDT" not in bk["positions"]
+          and abs(bk["positions"]["DOGE-USD"]["qty"] - 21602.3307) < 1e-6
+          and jl and r2.get("migrated") == 0)
+    check("T108 open-position key migration: bad spellings re-keyed, journaled, idempotent",
+          ok, f"r={r.get('migrated')}/{r.get('flagged')} second={r2.get('migrated')}")
+
+
+def t109_journal_windowed_and_ghost_free():
+    """Incident 2026-07-25: 'BRENT +41.8% — stale/ghost' headlined 99.7%-missed. Two sins:
+    the 'move' was the best trough→peak across the ENTIRE stored series, and unfillable
+    ghosts were counted as missed movers. The journal must (a) measure over the last 48h of
+    LIVE prints only (T00:00:00 backfill candles excluded) and (b) exclude ghosts/closed
+    markets from the missed math into `excluded`, with the renderer already wired for it."""
+    src = (ROOT / "silmaril/execution/opportunity_journal.py").read_text()
+    ok_src = ("_live_window" in src and '"T00:00:00" in ts' in src
+              and '"excluded"' in src and "stale_ghost" in src
+              and "canonical" in src and '"window_h": 48' in src)
+    # functional: an all-time 40% runup whose last-48h window is ~flat must NOT be logged
+    from silmaril.execution.opportunity_journal import _live_window
+    from datetime import timedelta as _td
+    old = (now() - _td(days=9)).isoformat()
+    rows = [[old, 1.00], [(now() - _td(days=8)).isoformat(), 1.40]] + [
+        [(now() - _td(hours=h)).isoformat(), 1.40 + 0.001 * (12 - h)] for h in range(12, 0, -1)]
+    win = _live_window(rows, 48.0)
+    peak = 0.0
+    tr = win[0] if win else 1.0
+    for p in win:
+        tr = min(tr, p)
+        peak = max(peak, p / tr - 1)
+    html = (ROOT / "docs/index.html").read_text()
+    ok = ok_src and win and peak < 0.04 and "oj.excluded" in html
+    check("T109 journal sanity: 48h live-print window, ghosts excluded from the missed math",
+          ok, f"src={ok_src} window_peak={round(peak * 100, 2)}% renderer={'oj.excluded' in html}")
+
+
+def t110_one_writer_workflow_law():
+    """Incident 2026-07-25: three scheduled lanes ran `python -m silmaril --live` on three
+    checkouts; `git rebase -X theirs` then erased each other's books. The law now: EXACTLY
+    ONE workflow may hold both a cron schedule and the live cycle — daily.yml — and the
+    retired lanes carry no cron. daily.yml must also contain the folded hourly/deep/backfill
+    cadences so no capability was lost in the fold."""
+    wf = ROOT / ".github/workflows"
+    offenders, daily_ok = [], False
+    for y in sorted(wf.glob("*.yml")):
+        t = y.read_text()
+        has_cron = "cron:" in t and any(
+            ln.strip().startswith("- cron:") for ln in t.splitlines())
+        has_live = "python -m silmaril --live" in t
+        if has_cron and has_live:
+            offenders.append(y.name)
+        if y.name == "daily.yml":
+            daily_ok = (has_cron and has_live and "ONE WRITER LAW" in t
+                        and "silmaril.analytics.suite" in t
+                        and "backfill_universe.py" in t
+                        and "venue_universe.py" in t
+                        and "sanitize_history.py" in t)
+    for retired in ("hourly.yml", "analytics.yml", "backfill_universe.yml", "venue_universe.yml"):
+        t = (wf / retired).read_text()
+        if any(ln.strip().startswith("- cron:") for ln in t.splitlines()):
+            offenders.append(retired + " (cron survived)")
+    ok = offenders == ["daily.yml"] and daily_ok
+    check("T110 one-writer law: exactly one scheduled lane runs the live cycle, cadences folded in",
+          ok, f"scheduled_live_lanes={offenders} daily_carries_folds={daily_ok}")
+
+
+def t111_chart_key_door_and_outside_world():
+    """(a) THE KEY DOOR — 'DOGEUSDT not even showing a graph at all, but DOGE-USD does':
+    drawChart's pre-check must resolve every spelling (SilmarilGraph.altKeys) before
+    declaring 'no series'. (b) THE OUTSIDE WORLD — the operator's tracing-paper ask: the
+    engine must publish REAL third-party series (coinbase/kraken/yahoo) to SOURCE_OVERLAY,
+    the graph must draw them, the verdict must be TIME-ALIGNED, and nothing may ever be
+    synthesized when a provider is absent."""
+    html = (ROOT / "docs/index.html").read_text()
+    gjs = (ROOT / "docs/silmaril_graph.js").read_text()
+    so = (ROOT / "silmaril/execution/source_overlay.py").read_text()
+    cli = (ROOT / "silmaril/cli.py").read_text()
+    door = ("THE KEY DOOR" in html and "SilmarilGraph.altKeys(CSYM)" in html)
+    exported = "altKeys: altKeys" in gjs
+    draws_ext = ("SOURCE_OVERLAY.json" in gjs and "external: true" in gjs
+                 and "vs outside venues" in gjs)
+    engine = ("_aligned_spread" in so and "coinbase" in so and "kraken" in so
+              and "yfinance" in so and "NO_EXTERNAL_SOURCE" in so
+              and "nothing drawn, nothing invented" in so
+              and "build_source_overlay" in cli)
+    ok = door and exported and draws_ext and engine
+    check("T111 chart key door + outside-world overlay: every spelling opens, real venues traced, aligned verdict",
+          ok, f"door={door} exported={exported} draws_ext={draws_ext} engine={engine}")
+
+
+def t106_arming_law():
+    """7.1 THE ARMING GATE (incident 2026-07-25: the crypto book opened DOGEUSDT with ZERO
+    sleeve closes since the wipe — the pyramid law violated at the book level). Root cause:
+    7.0.4's seed_immediately handed a PROVISIONAL sleeve's DISCIPLINE to the book, and nothing
+    distinguished discipline-seeding from trade-AUTHORIZATION, so a book with an ungraded
+    workshop traded anyway. The law now: a book may OPEN only when its own workshop has
+    PROMOTED a sleeve on >=3 REAL closed trades since the wipe. PROVISIONAL seeds the hand,
+    never the license. GEKKO (aggressive) is exempt — it IS a probe. Master unchanged: it
+    already required strict PROMOTED."""
+    import shutil
+    from silmaril.execution.sleeve_promotion import build_sleeve_promotion
+    tmp = Path(tempfile.mkdtemp(prefix="t106_"))
+    try:
+        # Case A — workshop warming (1 close): best sleeve seeds PROVISIONAL, must NOT arm.
+        (tmp / "STRATEGY_LAB.json").write_text(json.dumps({
+            "by_industry": {"crypto": [
+                {"sleeve": "H", "name": "PATIENT REVERT", "closed": 1,
+                 "delta_vs_hodl": 2.4, "return_pct": 2.4}]},
+            "sleeves_def": {"H": {"cap": 3, "recycle_h": 168, "patient": True}}}))
+        pa = build_sleeve_promotion(tmp)
+        a = (pa.get("books") or {}).get("crypto") or {}
+        ok_a = (a.get("status") == "PROVISIONAL" and a.get("arms_book") is False
+                and int(a.get("closes_needed") or 0) >= 3)
+        # Case B — 5 real closes, positive Δ-vs-null: PROMOTED, arms the book.
+        (tmp / "STRATEGY_LAB.json").write_text(json.dumps({
+            "by_industry": {"crypto": [
+                {"sleeve": "H", "name": "PATIENT REVERT", "closed": 5,
+                 "delta_vs_hodl": 5.1, "return_pct": 4.2}]},
+            "sleeves_def": {"H": {"cap": 3, "recycle_h": 168, "patient": True}}}))
+        pb = build_sleeve_promotion(tmp)
+        b = (pb.get("books") or {}).get("crypto") or {}
+        ok_b = (b.get("status") == "PROMOTED" and b.get("arms_book") is True)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    # The gate must exist in the executor: sentinel + entries blocked + resting orders cancelled.
+    ps = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok_src = ("ARMING GATE" in ps
+              and "if not _armed and cands" in ps
+              and "if _pend and not _armed" in ps
+              and '"armed": _armed' in ps)
+    # The Master's own rung stays strict.
+    ma = (ROOT / "silmaril/execution/master_account.py").read_text()
+    ok_master = '!= "PROMOTED"' in ma
+    # The cockpit tells the truth about the license.
+    html = (ROOT / "docs/index.html").read_text()
+    ok_ui = "fun.armed===false" in html and "arming_why" in html
+    check("T106 arming law: PROVISIONAL seeds the hand, only PROMOTED (3+ real closes) licenses a book to open",
+          ok_a and ok_b and ok_src and ok_master and ok_ui,
+          f"A={a.get('status')}/{a.get('arms_book')} B={b.get('status')}/{b.get('arms_book')} "
+          f"src={ok_src} master={ok_master} ui={ok_ui}")
+
+
+def t107_canonical_loader():
+    """7.1 THE ONE-KEY LAW, loader half (incident 2026-07-25: load_all_samples raw-merged four
+    sample files, so DOGE-USD and DOGEUSDT coexisted as two 'different' assets — the book bought
+    the spelling the charts, marks and journals were blind to). canonical_samples() must collapse
+    every spelling to one canonical key, UNION the history by timestamp, and let the primary tape
+    win collisions (ccxt deepens, never overrides)."""
+    import shutil
+    from silmaril.execution.canon_keys import canonical_samples, canon
+    tmp = Path(tempfile.mkdtemp(prefix="t107_"))
+    try:
+        t1, t2, t3 = "2026-07-25T10:05:00+00:00", "2026-07-25T10:15:00+00:00", "2026-07-25T10:25:00+00:00"
+        (tmp / "price_samples.json").write_text(json.dumps({"samples": {
+            "DOGE-USD": [[t2, 0.0710], [t3, 0.0712]]}}))
+        (tmp / "ccxt_samples.json").write_text(json.dumps({"samples": {
+            "DOGEUSDT": [[t1, 0.0695], [t2, 0.0709]]}}))
+        m = canonical_samples(tmp)
+        ok_key = "DOGE-USD" in m and "DOGEUSDT" not in m
+        rows = {r[0]: r[1] for r in (m.get("DOGE-USD") or [])}
+        ok_union = len(rows) == 3 and t1 in rows            # ccxt's early history joined
+        ok_primary = abs(float(rows.get(t2, 0)) - 0.0710) < 1e-12   # primary wins the collision
+        ok_canon = canon("REQUSDT") == "REQ-USD" and canon("USO") == "USO" and canon("BTC/USDT") == "BTC-USD"
+        # and the executor actually loads through it
+        ps = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+        ok_wired = "from .canon_keys import canonical_samples" in ps
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    check("T107 one-key loader: spellings collapse to ONE canonical key, history unioned, primary tape wins collisions",
+          ok_key and ok_union and ok_primary and ok_canon and ok_wired,
+          f"key={ok_key} union={ok_union} primary={ok_primary} canon={ok_canon} wired={ok_wired}")
+
+
+def t108_position_migration():
+    """7.1 THE ONE-KEY LAW, retroactive half. A DOGEUSDT position ALREADY open when the law lands
+    must not become a frozen, unmarkable, unexitable row (the frozen-workshop disease, in a funded
+    book). canonicalize_positions() re-keys open positions and resting maker orders to canonical,
+    preserves qty/entry, journals every rename to CANON_MIGRATIONS.jsonl, is idempotent, and NEVER
+    rewrites closed-trade history."""
+    import shutil
+    from silmaril.execution.canon_keys import canonicalize_positions
+    tmp = Path(tempfile.mkdtemp(prefix="t108_"))
+    try:
+        (tmp / "paper_book_crypto.json").write_text(json.dumps({
+            "cash": 9000.0,
+            "positions": {"DOGEUSDT": {"qty": 100.0, "entry": 0.0719, "t": "2026-07-25T09:00:00+00:00"}},
+            "trades": [{"sym": "REQUSDT", "side": "SELL", "pnl": 1.23}]}))
+        (tmp / "MAKER_PENDING.json").write_text(json.dumps({
+            "crypto": {"LMWRUSDT": {"limit": 0.5, "qty": 10}}}))
+        r1 = canonicalize_positions(tmp)
+        book = json.loads((tmp / "paper_book_crypto.json").read_text())
+        pos = book.get("positions") or {}
+        ok_rekey = ("DOGE-USD" in pos and "DOGEUSDT" not in pos
+                    and abs(pos["DOGE-USD"]["qty"] - 100.0) < 1e-9
+                    and pos["DOGE-USD"].get("migrated_from") == "DOGEUSDT")
+        ok_history = (book.get("trades") or [{}])[0].get("sym") == "REQUSDT"   # history untouched
+        pend = json.loads((tmp / "MAKER_PENDING.json").read_text())
+        ok_pend = "LMWR-USD" in (pend.get("crypto") or {}) and "LMWRUSDT" not in (pend.get("crypto") or {})
+        jl = (tmp / "CANON_MIGRATIONS.jsonl")
+        ok_journal = jl.exists() and "REKEYED_OPEN_POSITION" in jl.read_text()
+        r2 = canonicalize_positions(tmp)                       # idempotent second pass
+        ok_idem = int(r1.get("migrated") or 0) >= 2 and int(r2.get("migrated") or 0) == 0
+        # and the live cycle actually runs it
+        ps = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+        ok_wired = "canonicalize_positions" in ps
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    check("T108 position migration: open keys re-keyed + journaled, maker orders too, history untouched, idempotent",
+          ok_rekey and ok_history and ok_pend and ok_journal and ok_idem and ok_wired,
+          f"rekey={ok_rekey} hist={ok_history} pend={ok_pend} journal={ok_journal} idem={ok_idem} wired={ok_wired}")
+
+
+def t109_journal_sanity():
+    """7.1 THE HONEST MOVERS JOURNAL (incident 2026-07-25: '99.7% of 399 tradable movers missed',
+    headlined by BRENT +41.8% and REQUSDT/LMWRUSDT ghosts, minutes after a wipe). Three lies in
+    one panel: peaks measured over the ENTIRE stored series (weeks), dash-less spellings escaping
+    the dedupe, and unfillable ghosts counted as 'missed'. The law now: peaks come from the LIVE
+    last-48h window only (backfill candles excluded), ghosts and closed-market names are EXCLUDED
+    with named counts — never rows, never in the missed%%."""
+    import shutil
+    from silmaril.execution.opportunity_journal import build_opportunity_journal
+    tmp = Path(tempfile.mkdtemp(prefix="t109_"))
+    try:
+        nowdt = now()
+        def iso(mins_ago):
+            t = nowdt - timedelta(minutes=mins_ago)
+            return t.replace(hour=max(1, t.hour) if t.hour == 0 else t.hour).isoformat()
+        # REALMOVE: fresh, 25 live prints in-window, clean ~6% trough→peak → MUST be logged.
+        real = [[iso(300 - i * 10), 1.00 + (0.0026 * i)] for i in range(25)]
+        # GHOST: 25 in-window prints, price FROZEN → freshness 0 → excluded stale_ghost.
+        ghost = [[iso(300 - i * 10), 0.5000] for i in range(25)]
+        # OLDMOVE: 40% pump entirely OLDER than 48h; live window only drifts ~2% → not a mover.
+        old_part = [[iso(60 * 60 + i * 30), 1.0 + 0.02 * i] for i in range(20)]   # ~2.5d ago, to +40%
+        recent_flat = [[iso(300 - i * 10), 1.40 + 0.001 * i] for i in range(25)]
+        (tmp / "price_samples.json").write_text(json.dumps({"samples": {
+            "REALMOVE-USD": real, "GHOST-USD": ghost, "OLDMOVE-USD": old_part + recent_flat}}))
+        pj = build_opportunity_journal(tmp)
+        ticks = [r["ticker"] for r in (pj.get("journal") or [])]
+        ex = pj.get("excluded") or {}
+        ok_real = "REALMOVE-USD" in ticks
+        ok_ghost = "GHOST-USD" not in ticks and int(ex.get("stale_ghost") or 0) >= 1
+        ok_old = "OLDMOVE-USD" not in ticks                    # 48h window, not all-time
+        ok_pct = pj.get("movers_logged") == len(ticks) or pj.get("movers_logged") >= len(ticks)
+        ok_win = pj.get("window_h") == 48
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    check("T109 journal sanity: 48h LIVE-window peaks only; ghosts excluded with counts, never 'missed'",
+          ok_real and ok_ghost and ok_old and ok_pct and ok_win,
+          f"real={ok_real} ghost={ok_ghost} old={ok_old} pct={ok_pct} win={ok_win} ticks={ticks[:4]}")
+
+
+def t110_one_writer():
+    """7.1 THE ONE WRITER LAW (incident 2026-07-25: daily every 10 min, hourly at :07 and the
+    3x/day analytics lane ALL ran `python -m silmaril --live` on separate checkouts; the serial
+    lane lock's 600s fairness cap meant the extra lanes 'proceeded anyway' and the push step's
+    `git rebase -X theirs` then ERASED the other lane's books, sleeves and ledgers on every
+    same-file conflict. Trades vanished; marks froze; fixed panels re-showed pre-fix output).
+    The permanent fix is architectural: EXACTLY ONE scheduled workflow may run the live cycle.
+    daily.yml carries every cadence itself from one clock; the folded lanes keep manual
+    dispatch but have NO cron."""
+    wf = ROOT / ".github/workflows"
+    def live_lines(p):
+        keep = []
+        for ln in p.read_text().splitlines():
+            s = ln.strip()
+            if s.startswith("#"):
+                continue
+            keep.append(ln)
+        return "\n".join(keep)
+    scheduled_writers = []
+    for p in sorted(wf.glob("*.yml")):
+        body = live_lines(p)
+        has_cron = any(l.strip().startswith("- cron:") for l in body.splitlines())
+        runs_live = "-m silmaril --live" in body
+        if has_cron and runs_live:
+            scheduled_writers.append(p.name)
+    ok_one = scheduled_writers == ["daily.yml"]
+    ok_no_cron = all(
+        not any(l.strip().startswith("- cron:") for l in live_lines(wf / f).splitlines())
+        for f in ("hourly.yml", "analytics.yml", "backfill_universe.yml", "venue_universe.yml"))
+    daily = live_lines(wf / "daily.yml")
+    ok_folded = ("SILMARIL_FAST=1" in daily and "sanitize_history.py" in daily
+                 and "backfill_universe.py" in daily and "venue_universe.py" in daily
+                 and "silmaril.analytics.suite" in daily)
+    hourly = live_lines(wf / "hourly.yml")
+    ok_hourly_inert = "-m silmaril --live" not in hourly and "git push" not in hourly
+    analytics = live_lines(wf / "analytics.yml")
+    ok_analytics = "-m silmaril --live" not in analytics
+    check("T110 one writer: exactly ONE scheduled lane runs the live cycle; folded lanes have no cron and cannot write over it",
+          ok_one and ok_no_cron and ok_folded and ok_hourly_inert and ok_analytics,
+          f"writers={scheduled_writers} no_cron={ok_no_cron} folded={ok_folded} "
+          f"hourly_inert={ok_hourly_inert} analytics={ok_analytics}")
+
+
+def t111_chart_key_door_and_source_overlay():
+    """7.1 THE KEY DOOR + THE OUTSIDE WORLD (incidents 2026-07-25: DOGEUSDT opened onto an empty
+    chart while DOGE-USD drew fine — drawChart's pre-check looked up ONE spelling and bailed; and
+    the operator's repeated ask for genuinely EXTERNAL Coinbase/Yahoo overlays was still unmet —
+    __overlaySources only re-coloured our own four internal files). Now: every spelling is tried
+    before declaring a series absent; SOURCE_OVERLAY.json carries real third-party series
+    (coinbase/kraken via ccxt, yahoo for ETFs + mapped futures) drawn as tracing paper; the
+    verdict compares TIME-ALIGNED prints (<=15 min apart), never last-vs-last from different
+    moments; absence is reported, never synthesized."""
+    html = (ROOT / "docs/index.html").read_text()
+    gjs = (ROOT / "docs/silmaril_graph.js").read_text()
+    so = (ROOT / "silmaril/execution/source_overlay.py").read_text()
+    cli = (ROOT / "silmaril/cli.py").read_text()
+    ok_door = ("THE KEY DOOR" in html and "SilmarilGraph.altKeys" in html)
+    ok_graph = ("SOURCE_OVERLAY.json" in gjs and "altKeys: altKeys" in gjs
+                and "normSym: normSym" in gjs and "external: true" in gjs
+                and "vs outside venues" in gjs)
+    ok_overlay = ("def _aligned_spread" in so and "NO_EXTERNAL_SOURCE" in so
+                  and "worst_spread_pct" in so and "ccxt" in so and "yfinance" in so
+                  and "tol_min" in so)
+    ok_wired = "build_source_overlay" in cli
+    # honesty: the overlay must never invent a series when a provider is absent
+    ok_honest = "nothing drawn, nothing invented" in so
+    check("T111 chart key door + external overlay: every spelling tried; real outside venues drawn; time-aligned verdict; absence never synthesized",
+          ok_door and ok_graph and ok_overlay and ok_wired and ok_honest,
+          f"door={ok_door} graph={ok_graph} overlay={ok_overlay} wired={ok_wired} honest={ok_honest}")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -1726,7 +2143,10 @@ if __name__ == "__main__":
               t99_sleeve_marks_from_tape, t100_fast_regime_bands,
               t101_evidence_outranks_label, t102_maturity_gate_can_see_evidence,
               t103_workshop_is_not_frozen, t104_everything_graph,
-              t105_cross_source_normalisation):
+              t105_cross_source_normalisation,
+              t106_arming_law, t107_canonical_loader,
+              t108_position_migration, t109_journal_sanity,
+              t110_one_writer, t111_chart_key_door_and_source_overlay):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

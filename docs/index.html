@@ -1000,9 +1000,12 @@ async function renderWarmup(){try{const el=$('warmupPanel');if(!el)return;
     const B=(L[b]||{});const pos=(B.positions||[]).length;const fun=B.funnel||{};const rej=fun.rejections||{};
     const cands=fun.candidates_after_gates||0;const imm=rej.immature||0;const traj=rej.trajectory||0;
     let state,col;
-    if(pos>0){state='TRADING — '+pos+' open';col='pos';}
+    if(pos>0){state='TRADING — '+pos+' open'+(fun.armed===false?' · ⚠ UNARMED (managing exits only — workshop must promote a sleeve before new entries)':'');col='pos';}
     else if(B.skipped){state='MARKET CLOSED — '+(((B.why||'').replace(/^market closed[^A-Za-z0-9]*/i,''))||'resumes at next session open (weekend/holiday)');col='dim';}
     else if(pq.active){state='QUIET — '+Math.ceil(pq.minutes_left||0)+'m left in the post-wipe settle window';col='dim';}
+    // 7.1 ARMING GATE (pyramid law): the license comes before every other reason. An unarmed
+    // book is OBSERVING by design — its sleeves are earning its right to spend, right now.
+    else if(fun.armed===false){state='🔒 '+(fun.arming_why||'OBSERVE — pyramid law: the workshop must promote a sleeve (3 real closes since wipe) before this book may open');col='#d4af37';}
     else if(r==='DOWNTREND'){state='HELD BACK — regime red (gate blocks new entries)';col='neg';}
     else if(imm>0){state='OBSERVE — earning evidence · '+imm+' candidate(s) immature (needs fit-events / bounce-tries / 3 workshop outcomes — the sleeves are maturing them via the one-universe river)';col='#d4af37';}
     else if(traj>0){state='VETOED — '+traj+' candidate(s) in multi-window free-fall (trajectory veto: dips buy, collapses wait for a floor)';col='neg';}
@@ -1773,7 +1776,8 @@ async function renderForensics(){
   const oj=await jget('data/opportunity_journal.json');
   if(oj){const miss=(oj.journal||[]).filter(r=>!r.captured).slice(0,5).map(r=>`<div style="margin:2px 0">${r.ticker} <b class="pos">+${r.peak_available_pct}%</b> — <span class="dim" style="font-size:10px">${r.why||''}</span></div>`).join('');
     const stuck=(oj.stuck_positions||[]).length?`<div style="margin-top:6px;padding:4px;border-left:3px solid #c33"><b>CAPITAL STUCK</b> (underwater ≥72h): ${(oj.stuck_positions||[]).map(r=>`${r.sym} $${Math.round(r.wager_usd)} [${r.book}]`).join(' · ')}</div>`:'';
-    $('ojBody').innerHTML=`<b class="neg">${oj.pct_of_movers_missed}%</b> of ${oj.movers_logged} tradable movers missed — each with its EXACT rule:${'<div style="margin-top:4px">'+miss+'</div>'}${stuck}<div class="note" style="margin-top:4px">sane universe: canonical · fresh ≤24h · one listing/base · |move|≤50%. Pair with DECISION TRACE — the journal says why we MISSED; the trace says why each TAKEN trade lived and died.</div>`;}
+    const ex=oj.excluded||{};const exBits=[['stale_ghost','stale ghosts'],['closed_market','closed-market'],['too_thin','too thin'],['spike_suspect','spike-suspect']].filter(([k])=>ex[k]>0).map(([k,l])=>ex[k]+' '+l).join(' · ');
+    $('ojBody').innerHTML=`<b class="neg">${oj.pct_of_movers_missed}%</b> of ${oj.movers_logged} tradable movers missed — each with its EXACT rule:${'<div style="margin-top:4px">'+miss+'</div>'}${stuck}<div class="note" style="margin-top:4px">peaks measured over the LIVE last-${oj.window_h||48}h window only (daily backfill candles excluded). ${exBits?('Excluded from the count, not counted as missed: '+exBits+'. '):''}sane universe: canonical · fresh ≤24h · one listing/base. Pair with DECISION TRACE — the journal says why we MISSED; the trace says why each TAKEN trade lived and died.</div>`;}
   const lk=await jget('data/execution_leak.json');
   if(lk)$('leakBody').innerHTML=`<div>${lk.headline||'—'}</div><div class="note">${lk.reconciliation_note||''}</div>`;
   // trend charts from snapshot history
@@ -1907,7 +1911,10 @@ async function __overlaySources(sym){
         window.__SRC_CACHE[path]=await jget(path).catch(()=>null);
       }
       const d=window.__SRC_CACHE[path];
-      const rows=(d&&d.samples)?d.samples[sym]:null;
+      // 7.1 one-key law: try every spelling (DOGE-USD vs DOGEUSDT) before declaring a feed absent
+      let rows=null;
+      const aks=(window.SilmarilGraph&&window.SilmarilGraph.altKeys)?window.SilmarilGraph.altKeys(sym):[sym];
+      if(d&&d.samples){for(const k of aks){if(d.samples[k]&&d.samples[k].length>3){rows=d.samples[k];break;}}}
       if(rows&&rows.length>3)series.push({lab:lab,col:col,rows:rows});
     }
     if(series.length<2)return;               // nothing to trace against
@@ -1948,7 +1955,14 @@ async function __overlaySources(sym){
     svg.insertAdjacentHTML('beforeend',g);
   }catch(e){__pfail(e)}
 }
-function drawChart(){const s=(PRICES&&PRICES.samples)?PRICES.samples[CSYM]:null;
+function drawChart(){
+  // 7.1 THE KEY DOOR (the "DOGEUSDT shows no graph at all, but DOGE-USD does" bug): this
+  // pre-check looked up ONE spelling and bailed. Every spelling is now tried (same altKeys
+  // law as the Everything Graph), so no position key can ever again open onto an empty room.
+  let s=null;try{
+    const _aks=(window.SilmarilGraph&&window.SilmarilGraph.altKeys)?window.SilmarilGraph.altKeys(CSYM):[CSYM];
+    for(const _k of _aks){const _r=(PRICES&&PRICES.samples)?PRICES.samples[_k]:null;if(_r&&_r.length){s=_r;break;}}
+  }catch(e){s=(PRICES&&PRICES.samples)?PRICES.samples[CSYM]:null;}
   if(!s||!s.length){const CC=(window.__SIL_CARDS||{})[CSYM]||{};
     $('chartHost').innerHTML='<div style="padding:14px;line-height:1.7"><b>'+CSYM+'</b> — no intraday series on file yet.<br>'
       +'<span class="dim">Every trade is still fully accounted (fills, fees, gross/net) in the books; the tape series joins on the next recorder cycle.</span><br>'

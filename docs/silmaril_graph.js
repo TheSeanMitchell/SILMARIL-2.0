@@ -91,10 +91,10 @@
     host.innerHTML = '<div style="padding:10px;opacity:.7;font-size:11px">reading every layer for ' + esc(sym) + '…</div>';
 
     // ── gather every layer the engine publishes ────────────────────────────────────────────────
-    const [ci, fp, geo, cards, live, lab] = await Promise.all([
+    const [ci, fp, geo, cards, live, lab, srcov] = await Promise.all([
       grab('data/CHART_INTEL.json'), grab('data/FINGERPRINTS.json'), grab('data/GEOMETRY.json'),
       grab('data/CONFIDENCE_CARDS.json'), grab('data/paper_sim_live.json'),
-      grab('data/STRATEGY_LAB.json'),
+      grab('data/STRATEGY_LAB.json'), grab('data/SOURCE_OVERLAY.json'),
     ]);
 
     const series = [];
@@ -109,8 +109,38 @@
         .map(r => [new Date(r[0]).getTime(), +r[1]])
         .filter(r => isFinite(r[0]) && r[1] > 0)
         .sort((a, b) => a[0] - b[0]);
-      if (pts.length >= 2) series.push({ label, colour, width, dash, pts });
+      if (pts.length >= 2) series.push({ label, colour, width, dash, pts, internal: true });
     }
+    // ── 7.1 THE OUTSIDE WORLD (operator: "imports other graphs from other sites like Coinbase
+    // or Yahoo Finance … overlay it with three sources"). SOURCE_OVERLAY.json carries genuinely
+    // EXTERNAL series — Coinbase and Kraken via ccxt for crypto, Yahoo for equities/ETFs and the
+    // mapped futures for spot metals/energy — fetched by the engine on the full pass. Each is
+    // drawn as its own tracing-paper line; the verdict below compares TIME-ALIGNED prints. An
+    // absent provider is an absent line (the store says so) — nothing here is ever synthesized.
+    let extAgree = null, extAge = null;
+    try {
+      const so = await grab('data/SOURCE_OVERLAY.json');
+      if (so && so.symbols) {
+        let rec = null;
+        for (const k of altKeys(sym)) { if (so.symbols[k]) { rec = so.symbols[k]; break; } }
+        if (rec) {
+          const EXT_COL = { coinbase: '#f7931a', kraken: '#5741d9' };
+          let ci2 = 0;
+          for (const [plabel, prow] of Object.entries(rec.providers || {})) {
+            const pts = (prow || [])
+              .map(r => [new Date(r[0]).getTime(), +r[1]])
+              .filter(r => isFinite(r[0]) && r[1] > 0)
+              .sort((a, b) => a[0] - b[0]);
+            if (pts.length >= 2) {
+              const col = EXT_COL[plabel] || ['#e6b800', '#00bcd4', '#e91e63'][ci2++ % 3];
+              series.push({ label: plabel + ' ⇡', colour: col, width: 1.2, dash: '7 3', pts, external: true });
+            }
+          }
+          extAgree = rec.agreement || null;
+          if (so.generated_at) extAge = Date.now() - new Date(so.generated_at).getTime();
+        }
+      }
+    } catch (e) { /* external layer is optional; the internal graph never breaks for it */ }
     if (!series.length) {
       host.innerHTML = '<div style="padding:14px;font-size:11px;line-height:1.7"><b>' + esc(sym) +
         '</b> — no price series on file yet.<br><span style="opacity:.65">Every trade stays fully accounted in the books; the tape joins on the next recorder cycle.</span></div>';
@@ -301,11 +331,23 @@
       lx += 20 + s.label.length * 5.4;
     });
     if (series.length > 1) {
-      const lasts = series.map(s => s.pts[s.pts.length - 1][1]);
-      const spread = (Math.max(...lasts) / Math.min(...lasts) - 1) * 100;
-      const agree = spread <= 0.5;
-      out.push('<text x="' + (W - padR) + '" y="14" text-anchor="end" font-size="8.5" fill="' + (agree ? '#39d353' : '#ff6b6b') + '">' +
-        'source spread ' + spread.toFixed(3) + '% ' + (agree ? '(agree)' : '— DISAGREE, price suspect') + '</text>');
+      // 7.1: prefer the ENGINE's time-aligned verdict (our last live print vs each external
+      // venue's print nearest in time, ≤15 min apart) over a naive last-vs-last, which compared
+      // prints from different moments. Internal feeds still get the quick spread as a fallback.
+      if (extAgree && extAgree.worst_spread_pct != null) {
+        const sp = extAgree.worst_spread_pct, ok = extAgree.verdict === 'AGREE';
+        out.push('<text x="' + (W - padR) + '" y="14" text-anchor="end" font-size="8.5" fill="' + (ok ? '#39d353' : '#ff6b6b') + '">' +
+          'vs outside venues ' + (sp >= 0 ? '+' : '') + sp.toFixed(3) + '% ' + (ok ? '(agree' : '— DISAGREE, price suspect (') +
+          (extAge != null ? ', checked ' + fmtAge(extAge) + ' ago)' : ')') + '</text>');
+      } else {
+        const lasts = series.filter(s => !s.external).map(s => s.pts[s.pts.length - 1][1]);
+        if (lasts.length > 1) {
+          const spread = (Math.max(...lasts) / Math.min(...lasts) - 1) * 100;
+          const agree = spread <= 0.5;
+          out.push('<text x="' + (W - padR) + '" y="14" text-anchor="end" font-size="8.5" fill="' + (agree ? '#39d353' : '#ff6b6b') + '">' +
+            'internal feed spread ' + spread.toFixed(3) + '% ' + (agree ? '(agree)' : '— DISAGREE, price suspect') + '</text>');
+        }
+      }
     }
     out.push('</svg>');
 
@@ -360,5 +402,6 @@
     host.innerHTML = out.join('') + ribbon;
   }
 
-  window.SilmarilGraph = { draw: draw, clearCache: () => { for (const k in _cache) delete _cache[k]; } };
+  window.SilmarilGraph = { draw: draw, altKeys: altKeys, normSym: normSym,
+                           clearCache: () => { for (const k in _cache) delete _cache[k]; } };
 })();
