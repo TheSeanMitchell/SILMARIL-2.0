@@ -1,20 +1,20 @@
 {
-  "generated_at": "2026-07-26T09:38:20.677976+00:00",
+  "generated_at": "2026-07-26T09:47:21.639317+00:00",
   "marks_health": {
     "marked": 727,
     "entry_warm": 727,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.6,
+    "newest_sample_age_min": 1.0,
     "state": "OK",
-    "oscillating": 24,
+    "oscillating": 22,
     "oscillating_syms": [
       "ARE",
       "BF-B",
-      "BLUR-USD",
       "BXP",
+      "CHZ-USD",
       "CSGP",
       "DGB-USD",
-      "FRT",
+      "DIA-USD",
       "HST",
       "INVH",
       "IOTA-USD",
@@ -58,7 +58,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-26T09:38:18.663157+00:00",
+    "generated_at": "2026-07-26T09:47:19.837212+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -106,11 +106,10 @@
   "crypto": {
     "funnel": {
       "seen": 185,
-      "entry_warm": 175,
+      "entry_warm": 176,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {
-        "position cap 0/2 for crypto": 1,
         "arming gate": 1
       },
       "armed": false,
@@ -118,21 +117,15 @@
     },
     "decision_trace_live": [
       {
-        "sym": "TURBO-USD",
-        "dip_pct": -0.6,
-        "conviction": 0.0497,
-        "fate": "candidate"
-      },
-      {
         "sym": "ENJ-USD",
-        "dip_pct": -0.83,
-        "conviction": 0.0694,
+        "dip_pct": -0.85,
+        "conviction": 0.0712,
         "fate": "candidate"
       },
       {
         "sym": "EOS-USD",
-        "dip_pct": -0.71,
-        "conviction": 0.0594,
+        "dip_pct": -0.72,
+        "conviction": 0.0599,
         "fate": "candidate"
       }
     ],
@@ -144,7 +137,7 @@
     "open_positions": 0,
     "positions": [],
     "recent_trades": [],
-    "tradeable_universe": 19,
+    "tradeable_universe": 20,
     "universe_seen": 185
   },
   "stock": {
@@ -171,10 +164,12 @@
   "aggressive": {
     "funnel": {
       "seen": 185,
-      "entry_warm": 175,
+      "entry_warm": 176,
       "candidates_after_gates": 0,
       "bought": 0,
-      "rejections": {},
+      "rejections": {
+        "maker limit UNFILLED in 45m": 1
+      },
       "armed": true,
       "arming_why": "armed"
     },
@@ -187,7 +182,7 @@
     "open_positions": 0,
     "positions": [],
     "recent_trades": [],
-    "tradeable_universe": 19,
+    "tradeable_universe": 20,
     "universe_seen": 185,
     "display_name": "GEKKO"
   },
@@ -237,17 +232,17 @@
   "combined_realized_pnl": 0.0,
   "backtest_3day_crypto": {
     "universe_total": 1074,
-    "tradeable": 21,
-    "ghosts_excluded": 1053,
+    "tradeable": 22,
+    "ghosts_excluded": 1052,
     "trades": 63,
     "win_rate_pct": 58.7,
-    "mean_net_pct": -0.521,
+    "mean_net_pct": -0.526,
     "exits": {
       "TAKE": 48,
       "STOP": 15,
       "TIMEOUT": 0
     },
-    "equity_after": 9672.47
+    "equity_after": 9669.1
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
