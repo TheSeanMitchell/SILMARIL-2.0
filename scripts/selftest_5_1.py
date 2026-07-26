@@ -2101,6 +2101,37 @@ def t111_chart_key_door_and_source_overlay():
           f"door={ok_door} graph={ok_graph} overlay={ok_overlay} wired={ok_wired} honest={ok_honest}")
 
 
+def t112_everything_chart_modal():
+    """7.1.1 THE WRONG CHART (incident 2026-07-25 evening: the operator installed 7.1.0 and saw
+    ZERO graph change — because the modal every ticker click actually opens is silmaril_chart.js,
+    whose capture-phase click handler routes ALL clicks to itself, and it read NONE of the engine's
+    stores. 674 fitted fingerprints, CHART_INTEL, GEOMETRY and a 229KB SOURCE_OVERLAY sat on disk
+    while it drew a bare line; MOG-USD's quantized feed rendered as an unlabeled square wave with
+    every axis label rounded to $0.000000. "If it's not on the graph we assume the data is not
+    really being collected."). The modal must consume every store, canonicalize keys, show real
+    sub-penny digits, label quantized feeds, and show structure (peaks/cadence/next-peak/floors)
+    for EVERY name — engine numbers when fitted, the same swing math on the same tape otherwise."""
+    p = ROOT / "docs/silmaril_chart.js"
+    if not p.exists():
+        check("T112 everything-chart modal (file missing)", False, "docs/silmaril_chart.js absent"); return
+    src = p.read_text()
+    ok_stores = all(k in src for k in ("SOURCE_OVERLAY.json", "CHART_INTEL.json",
+                                       "FINGERPRINTS.json", "GEOMETRY.json", "ccxt_samples.json"))
+    ok_key = "function canon(" in src and "altKeys" in src
+    ok_layers = all(k in src for k in ("QUANTIZED FEED", "fp buys", "next peak",
+                                       "floor ", "ceiling ", "vs outside venues"))
+    ok_subpenny = "function decFor" in src and "return 10" in src and "decFor(v)" in src
+    ok_structure = "function swings(" in src and "view-detected" in src
+    ok_honest = "never invented" in src
+    ok_api = "window.openChart" in src and "capture" not in ""  # openChart export kept for callers
+    html = (ROOT / "docs/index.html").read_text()
+    ok_wired = "silmaril_chart.js" in html
+    check("T112 everything chart: the modal every click opens consumes every store — structure, fingerprint, geometry, outside venues, quantized-feed truth, sub-penny digits",
+          ok_stores and ok_key and ok_layers and ok_subpenny and ok_structure and ok_honest and ok_api and ok_wired,
+          f"stores={ok_stores} key={ok_key} layers={ok_layers} subpenny={ok_subpenny} "
+          f"structure={ok_structure} honest={ok_honest} wired={ok_wired}")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -2146,7 +2177,8 @@ if __name__ == "__main__":
               t105_cross_source_normalisation,
               t106_arming_law, t107_canonical_loader,
               t108_position_migration, t109_journal_sanity,
-              t110_one_writer, t111_chart_key_door_and_source_overlay):
+              t110_one_writer, t111_chart_key_door_and_source_overlay,
+              t112_everything_chart_modal):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test
