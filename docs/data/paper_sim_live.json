@@ -1,13 +1,14 @@
 {
-  "generated_at": "2026-07-26T21:24:18.291989+00:00",
+  "generated_at": "2026-07-26T21:42:38.102560+00:00",
   "marks_health": {
     "marked": 725,
     "entry_warm": 724,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.4,
+    "newest_sample_age_min": 0.6,
     "state": "OK",
     "oscillating": 25,
     "oscillating_syms": [
+      "1INCH-USD",
       "ANKR-USD",
       "ARE",
       "BF-B",
@@ -18,8 +19,7 @@
       "INVH",
       "IOST-USD",
       "IOTA-USD",
-      "IRM",
-      "KAITO-USD"
+      "IRM"
     ]
   },
   "equity_market": {
@@ -58,7 +58,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-26T21:24:16.944584+00:00",
+    "generated_at": "2026-07-26T21:42:35.976715+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -67,7 +67,7 @@
     "excluded": [
       {
         "sym": "ANKR-USD",
-        "snapbacks": 13,
+        "snapbacks": 14,
         "max_move_pct": 9.2
       },
       {
@@ -115,6 +115,7 @@
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {
+        "regime throttle": 1,
         "arming gate": 1
       },
       "armed": false,
@@ -122,15 +123,15 @@
     },
     "decision_trace_live": [
       {
-        "sym": "ENA-USD",
-        "dip_pct": -0.82,
-        "conviction": 0.0681,
+        "sym": "STRK-USD",
+        "dip_pct": -1.83,
+        "conviction": 0.3523,
         "fate": "candidate"
       },
       {
         "sym": "RUNE-USD",
-        "dip_pct": -0.65,
-        "conviction": 0.0539,
+        "dip_pct": -0.42,
+        "conviction": 0.0347,
         "fate": "candidate"
       }
     ],
@@ -170,13 +171,20 @@
     "funnel": {
       "seen": 183,
       "entry_warm": 170,
-      "candidates_after_gates": 0,
+      "candidates_after_gates": 1,
       "bought": 0,
       "rejections": {},
       "armed": true,
       "arming_why": "armed"
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "STRK-USD",
+        "dip_pct": -1.83,
+        "conviction": 0.3523,
+        "fate": "candidate"
+      }
+    ],
     "equity": 10000.0,
     "cash": 10000.0,
     "realized_pnl": 0.0,
@@ -239,13 +247,13 @@
     "ghosts_excluded": 1050,
     "trades": 86,
     "win_rate_pct": 65.1,
-    "mean_net_pct": -0.127,
+    "mean_net_pct": -0.146,
     "exits": {
       "TAKE": 67,
       "STOP": 19,
       "TIMEOUT": 0
     },
-    "equity_after": 9875.24
+    "equity_after": 9858.4
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
