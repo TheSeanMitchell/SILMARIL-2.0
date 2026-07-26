@@ -1,6 +1,6 @@
 {
   "version": "api-health-1.3",
-  "generated_at": "2026-07-26T00:03:13.432493+00:00",
+  "generated_at": "2026-07-26T00:31:10.499855+00:00",
   "overall": "impaired",
   "freshness": {
     "ok": 9,
@@ -58,40 +58,40 @@
       },
       "market_leaders.json": {
         "status": "fresh",
-        "age_hours": 1.5,
+        "age_hours": 0.9,
         "budget_hours": 36
       },
       "debug_stream.json": {
         "status": "fresh",
-        "age_hours": 1.5,
+        "age_hours": 0.9,
         "budget_hours": 24
       }
     }
   },
   "news": {
-    "distinct_sources": 178,
-    "articles_in_cycle": 373,
+    "distinct_sources": 181,
+    "articles_in_cycle": 489,
     "top_sources": {
-      "Yahoo Finance": 27,
-      "CoinMarketCap": 27,
-      "TradingView": 27,
-      "Bitcoin Foundation": 16,
-      "Crypto News": 13,
-      "Coinpedia": 12,
-      "CryptoRank": 10,
-      "Binance": 9,
-      "Pluang": 7,
-      "The Block": 6,
-      "Bitget": 6,
-      "Cryptonews.net": 5
+      "Yahoo Finance": 74,
+      "simplywall.st": 38,
+      "TradingView": 20,
+      "MarketWatch": 19,
+      "MarketBeat": 17,
+      "PR Newswire": 16,
+      "CoinMarketCap": 15,
+      "Bitcoin Foundation": 11,
+      "Kavout | AI": 10,
+      "Reuters": 8,
+      "Moomoo": 8,
+      "The Motley Fool": 7
     },
     "gated_by_domain_clock": true,
     "note": "Quota note: providers don't expose remaining minutes; delivery (sources x volume) is the real meter \u2014 a rate-limited feed collapses here first."
   },
   "prices": {
     "coverage_pct": 100.0,
-    "priced": 625,
-    "universe": 625
+    "priced": 624,
+    "universe": 624
   },
   "broker": {
     "LEGACY": {
@@ -127,7 +127,7 @@
   },
   "domain_clocks": {
     "version": "domain-clock-1.0",
-    "checked_at": "2026-07-25T23:37:30.818711+00:00",
+    "checked_at": "2026-07-26T00:31:10.499855+00:00",
     "domains": {
       "stocks": {
         "open": false,
@@ -135,44 +135,46 @@
       },
       "stocks_news": {
         "open": false,
-        "reason": "off-hours hourly news sweep \u2014 16 min since last"
+        "reason": "off-hours hourly news sweep \u2014 7 min since last"
       },
       "valuables": {
         "open": true,
         "reason": "always open \u2014 markets never close"
       },
       "social": {
-        "open": true,
-        "reason": "hourly cadence \u2014 first run"
+        "open": false,
+        "reason": "hourly cadence \u2014 54 min since last"
       },
       "edgar": {
-        "open": true,
-        "reason": "4h cadence \u2014 first run"
+        "open": false,
+        "reason": "4h cadence \u2014 54 min since last"
       }
     },
     "last_allowed": {
-      "stocks_news": "2026-07-25T23:21:16.917693+00:00"
+      "stocks_news": "2026-07-26T00:23:48.329062+00:00",
+      "edgar": "2026-07-25T23:37:36.510191+00:00",
+      "social": "2026-07-25T23:37:37.058409+00:00"
     },
     "today_budget": {
       "stocks": {
         "allowed": 0,
-        "skipped": 10
+        "skipped": 1
       },
       "stocks_news": {
-        "allowed": 3,
-        "skipped": 7
+        "allowed": 1,
+        "skipped": 0
       }
     },
     "spcx_intensive_until": "2026-07-03",
     "note": "the cron may run 24/7: stock TRADING-adjacent fetches (earnings/ipo-cal) keep 08:30-16:30 ET Mon-Fri; equity NEWS runs every cycle in-window and hourly off-hours (information never sleeps); valuables always; social hourly; EDGAR every run through the SPCX window then 4h"
   },
   "storage": {
-    "repo_mb": 142.9,
-    "worktree_mb": 124.7,
-    "git_history_mb": 18.2,
-    "data_dir_mb": 114.6,
+    "repo_mb": 145.0,
+    "worktree_mb": 126.9,
+    "git_history_mb": 18.1,
+    "data_dir_mb": 116.8,
     "archive_mb": 6.9,
-    "archive_share_pct": 6.0,
+    "archive_share_pct": 5.9,
     "status": "ok",
     "note": "comfortably inside GitHub free limits",
     "limits_reference": {
@@ -252,88 +254,5 @@
     "overall": "headroom",
     "doctrine": "ride the limit, never cross it: push cadence until a provider reads 'riding', and treat 'over' + a delivery collapse in the news block as the back-off signal",
     "estimates_note": "per-cycle call counts are engineering estimates until per-provider instrumentation lands (roadmap C)"
-  },
-  "key_groups": [
-    {
-      "providers_active": 3,
-      "providers_total": 3,
-      "status": "GREEN",
-      "all": [
-        "coingecko",
-        "birdeye",
-        "ccxt/binanceus"
-      ],
-      "need": "Crypto price"
-    },
-    {
-      "providers_active": 6,
-      "providers_total": 6,
-      "status": "GREEN",
-      "all": [
-        "yfinance",
-        "alpaca",
-        "finnhub",
-        "alpha_vantage",
-        "fmp",
-        "polygon"
-      ],
-      "need": "Stock price"
-    },
-    {
-      "providers_active": 3,
-      "providers_total": 3,
-      "status": "GREEN",
-      "all": [
-        "google_rss",
-        "edgar",
-        "finnhub_news"
-      ],
-      "need": "News"
-    },
-    {
-      "providers_active": 3,
-      "providers_total": 3,
-      "status": "GREEN",
-      "all": [
-        "yfinance",
-        "openexchangerates",
-        "alpha_vantage"
-      ],
-      "need": "Metals"
-    },
-    {
-      "providers_active": 3,
-      "providers_total": 3,
-      "status": "GREEN",
-      "all": [
-        "yfinance",
-        "eia",
-        "tiingo"
-      ],
-      "need": "Energy"
-    },
-    {
-      "providers_active": 3,
-      "providers_total": 3,
-      "status": "GREEN",
-      "all": [
-        "fred",
-        "edgar",
-        "yfinance"
-      ],
-      "need": "Macro/Fundamentals"
-    },
-    {
-      "providers_active": 3,
-      "providers_total": 3,
-      "status": "GREEN",
-      "all": [
-        "alpaca_key",
-        "alpaca_secret",
-        "paper_feed"
-      ],
-      "need": "Broker (pricing-only)"
-    }
-  ],
-  "key_groups_note": "computed each cycle in the keyed lanes (daily/hourly); configured = key present in env, keyless providers always count"
+  }
 }
