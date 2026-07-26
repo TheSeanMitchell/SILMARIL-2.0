@@ -82,7 +82,15 @@
       j("data/paper_sim_live.json"), j("data/PEAK_RHYTHM.json"), j("data/champion_crypto.json"), j("data/champion_stock.json"),
       j("data/CHART_OVERLAYS.json"), j("data/CHART_INTEL.json"), j("data/FINGERPRINTS.json"), j("data/GEOMETRY.json"), j("data/SOURCE_OVERLAY.json"), j("data/PRICE_TRUTH.json")
     ]).then(function (r) {
-      var ps = r[0], mt = r[1], en = r[2], cx = r[3], live = r[4], rhy = r[5], cc = r[6], cs = r[7], ovf = r[8], ci = r[9], fp = r[10], geo = r[11], so = r[12];
+     /* 7.1.3 FAIL-SOFT BOOT. The 2026-07-26 outage: a 7.1.2 patch appended PRICE_TRUTH.json to
+        this fetch list but never declared its binding, so this function threw ReferenceError on
+        every page load. READY stayed false and EVERY ticker click on the whole dashboard did
+        nothing — the operator's "the link is broken now". One missing var took out the entire
+        chart system, because the wiring here was all-or-nothing. It is not any more: parsing
+        each store is now individually guarded, so a bad or missing store costs its own layer
+        and nothing else, and the price line always survives. */
+     try {
+      var ps = r[0], mt = r[1], en = r[2], cx = r[3], live = r[4], rhy = r[5], cc = r[6], cs = r[7], ovf = r[8], ci = r[9], fp = r[10], geo = r[11], so = r[12], pt = r[13];
       DATA = (ps && ps.samples) || {};
       [mt, en].forEach(function (S) { if (S && S.samples) Object.keys(S.samples).forEach(function (k) { if (!DATA[k]) DATA[k] = S.samples[k]; }); });
       /* ccxt joins UNDER THE CANON KEY — union by timestamp, primary tape wins collisions.
@@ -113,7 +121,14 @@
         });
       });
       if (rhy && rhy.by_symbol) RHY = rhy.by_symbol;
+     } catch (e) {
+      /* Layers are optional; the chart is not. Log and continue with whatever loaded. */
+      try { console.error("SilmarilChart: layer wiring error (chart still renders):", e); } catch (e2) {}
+     }
       READY = true;
+    }).catch(function (e) {
+      try { console.error("SilmarilChart: boot fetch failed (charts degraded):", e); } catch (e2) {}
+      READY = true;                      /* never leave the whole UI dead because a fetch failed */
     });
   }
 
@@ -212,7 +227,14 @@
     sym = canon(sym);
     var all = series(sym) || [];
     var rows = slice(all, tf);
-    if (rows.length < 2) return { svg: "<div style='padding:30px;color:#8b93a7;text-align:center'>No price history for " + sym + "</div>" };
+    if (rows.length < 2) {
+      /* 7.1.3: a shape-complete object even when there is no tape, so head() and statsPanel()
+         cannot throw on c.st and take the modal down with them. An empty chart must say it is
+         empty, never fail silently. */
+      return { svg: "<div style='padding:30px;color:#8b93a7;text-align:center'>No price history for " + sym + " yet \u2014 it will appear once the feed has collected prints.</div>",
+               rows: [], all: all, st: null, sw: {}, ext: [], srec: null, ciR: {}, fpc: null,
+               cadM: null, nextPk: null, qz: null, up: true, w: w, h: h, empty: true };
+    }
     var xs = rows.map(function (r) { return tsParse(r[0]); }), ys = rows.map(function (r) { return r[1]; });
     var p = POS[sym] || {}, extra = [p.entry, p.target, p.stop, p.mark].filter(function (v) { return v != null; });
 
@@ -348,6 +370,7 @@
   }
 
   function head(sym, c) {
+    if (!c || !c.st) return "<div style='display:flex;align-items:baseline;gap:10px'><span style='font-size:18px;font-weight:800'>" + sym + "</span><span class='dim' style='color:#8b93a7;font-size:12px'>no price history yet</span></div>";
     var st = c.st, col = c.up ? "#16c784" : "#ea3943", tr = trend(c.rows);
     var tcol = tr.dir === "up" ? "#16c784" : tr.dir === "down" ? "#ea3943" : "#9aa4b8";
     var gr = rec(GEO, canon(sym)) || {}, gv = gr.verdict, gcol = gv === "TRADEABLE" ? "#16c784" : (gv && gv.indexOf("UNTRADEABLE") === 0) ? "#ea3943" : "#9aa4b8";
@@ -364,6 +387,7 @@
   }
 
   function statsPanel(sym, c) {
+    if (!c || !c.st) return "<div style='font-size:12px;color:#8b93a7'>Nothing to summarise yet \u2014 this name has no stored prints.</div>";
     sym = canon(sym);
     var st = c.st, p = POS[sym] || {}, ry = rec(RHY, sym) || {}, sw = c.sw || {}, ciR = c.ciR || {}, fpc = c.fpc, gr = rec(GEO, sym) || {};
     function row(k, v, cls) { return "<div style='display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-bottom:1px solid #ffffff0d'><span style='color:#8b93a7'>" + k + "</span><span style='font-weight:600;text-align:right" + (cls ? ";color:" + cls : "") + "'>" + v + "</span></div>"; }
@@ -526,6 +550,20 @@
     return modal;
   }
   function draw() {
+    try { _draw(); }
+    catch (e) {
+      /* 7.1.3: a thrown draw used to leave an empty modal and look like "nothing happened".
+         Surface it — a visible error is debuggable, a silent one is what cost the week. */
+      try {
+        modal.querySelector("#slm-body").innerHTML =
+          "<div style='padding:24px;color:#ea3943;font-size:12px'><b>Chart error.</b><br>" +
+          String(e && e.message ? e.message : e) + "<br><span style='color:#8b93a7'>The price data is fine; this is a rendering fault. Please screenshot this message.</span></div>";
+        modal.querySelector("#slm-hd").innerHTML = "<span style='font-size:18px;font-weight:800'>" + curSym + "</span>";
+      } catch (e2) {}
+      try { console.error("SilmarilChart draw:", e); } catch (e3) {}
+    }
+  }
+  function _draw() {
     var host = modal.querySelector("#slm-body"), W = host.clientWidth || 760, H = host.clientHeight || 420;
     var c = chartSVG(curSym, curTF, W, H, true);
     host.innerHTML = c.svg;
@@ -618,7 +656,20 @@
     });
   }
 
-  window.openChart = function (sym) { openFull(sym); };
+  /* 7.1.3 ONE ENTRY POINT, ONE CONTRACT. index.html renders tickers three different ways and
+     two of them call openChart(sym, entry, mark) — the sleeve OPEN POSITIONS link and the live
+     positions row. This override must therefore honour that signature: when a caller hands us
+     an entry/mark for a position the books do not carry (every sleeve position), use it so the
+     ENTRY and MARK lines still draw. Never throws: a broken chart must not break its caller. */
+  window.openChart = function (sym, entry, mark) {
+    try {
+      var ck = canon(sym);
+      if (entry != null && +entry > 0 && !POS[ck]) {
+        POS[ck] = { entry: +entry, mark: (mark != null && +mark > 0) ? +mark : +entry, book: "sleeve" };
+      }
+      openFull(sym);
+    } catch (e) { try { console.error("openChart:", e); } catch (e2) {} }
+  };
   window.SilmarilChart = { boot: boot, openFull: openFull, autotag: autotag, canon: canon, refresh: function () { READY = false; return boot().then(function () { autotag(document); }); } };
   function start() { boot().then(function () { delegate(); autotag(document); setInterval(function () { autotag(document); }, 4000); }); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();

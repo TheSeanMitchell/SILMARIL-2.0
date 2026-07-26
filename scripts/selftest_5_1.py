@@ -2317,6 +2317,57 @@ def t115_arena_honesty():
           f"nocarry={ok_nocarry} crypto_intact={ok_crypto_intact} receipts={ok_receipts}")
 
 
+def t116_click_path_runs():
+    """7.1.3 THE OUTAGE THAT PROVES THE POINT (2026-07-26). Every graph link on the dashboard
+    went dead. Cause: a 7.1.2 patch appended PRICE_TRUTH.json to silmaril_chart.js's boot fetch
+    list but never declared its binding, so boot() threw ReferenceError on page load, READY
+    never became true, and every ticker click on every panel silently did nothing.
+
+    It shipped because the checks were a syntax parse and a source grep. Both passed. NEITHER
+    RAN THE CODE — an undeclared identifier is valid syntax and fails only at runtime, and a
+    grep can prove text exists but never that a click opens a chart. That is the honest reason
+    the same class of thing kept breaking, and this test is the correction: it EXECUTES the real
+    chart module against the real data store in a minimal DOM and asserts the behaviour the
+    operator performs — boot resolves, openChart(sym) works, openChart(sym, entry, mark) works
+    (the sleeve OPEN POSITIONS link and the live-positions row both use that signature), a name
+    with tape renders, a name without tape degrades instead of throwing, and nothing reached
+    console.error. Verified to FAIL against the broken build with "boot() rejected: pt is not
+    defined" — a regression test that cannot reproduce the regression is decoration."""
+    import shutil
+    import subprocess
+    harness = ROOT / "scripts/click_path_check.js"
+    if not harness.exists():
+        check("T116 click path (harness missing)", False, "scripts/click_path_check.js absent")
+        return
+    node = shutil.which("node")
+    if not node:
+        # Never a silent pass: state plainly that the runtime check could not run here.
+        src = (ROOT / "docs/silmaril_chart.js").read_text()
+        # Minimum static defence when node is unavailable: every r[N] the boot list fetches must
+        # be bound in the destructuring line that follows it.
+        import re as _re
+        m = _re.search(r"return Promise\.all\(\[(.*?)\]\)\.then\(function \(r\) \{\s*(?:/\*.*?\*/\s*)?(?:try \{\s*)?var ([^;]+);",
+                       src, _re.S)
+        ok_static = False
+        if m:
+            n_fetch = m.group(1).count("j(\"data/")
+            n_bound = len([x for x in m.group(2).split(",") if "r[" in x])
+            ok_static = n_fetch == n_bound
+        check("T116 click path (node unavailable — static arity check only: every fetched store is bound)",
+              ok_static, "install node for the full runtime click-path check")
+        return
+    try:
+        p = subprocess.run([node, str(harness), str(ROOT / "docs")],
+                           capture_output=True, text=True, timeout=180)
+        tail = (p.stdout or "").strip().splitlines()
+        summary = tail[-1] if tail else (p.stderr or "no output").strip()[:160]
+        fails = [l for l in tail if l.startswith("FAIL")]
+        check("T116 click path EXECUTES: boot resolves, openChart(sym) and openChart(sym,entry,mark) open a chart, empty names degrade, no console errors",
+              p.returncode == 0, summary if p.returncode == 0 else " | ".join(fails)[:300] or summary)
+    except Exception as e:
+        check("T116 click path EXECUTES", False, "harness could not run: %s" % e)
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -2365,7 +2416,7 @@ if __name__ == "__main__":
               t110_one_writer, t111_chart_key_door_and_source_overlay,
               t112_everything_chart_modal,
               t113_scale_guarded_union, t114_price_truth_gate,
-              t115_arena_honesty):
+              t115_arena_honesty, t116_click_path_runs):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test
