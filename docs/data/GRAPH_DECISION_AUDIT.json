@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-26T23:05:33.739095+00:00",
+  "generated_at": "2026-07-26T23:23:57.565409+00:00",
   "what": "does reading the graph before entry actually separate winners from losers? Each closed trade's graph state is reconstructed from the tape AS OF ITS ENTRY (nothing after the entry is visible to the reconstruction, so no hindsight can leak in), then outcomes are graded inside each bucket.",
   "coupling_status": {
     "graph_brain_store": "CHART_INTEL.json",
@@ -16,13 +16,19 @@
       "ceiling_overhead"
     ]
   },
-  "trades_seen": 24,
-  "trades_graded": 24,
+  "trades_seen": 26,
+  "trades_graded": 26,
   "trades_unreadable": 0,
   "min_n_for_verdict": 25,
   "features": {
     "peak_trajectory": {
       "buckets": {
+        "FLAT": {
+          "n": 6,
+          "wins": 4,
+          "win_pct": 66.7,
+          "mean_net_pct": 1.481
+        },
         "FALLING": {
           "n": 13,
           "wins": 2,
@@ -34,32 +40,26 @@
           "wins": 2,
           "win_pct": 28.6,
           "mean_net_pct": -2.571
-        },
-        "FLAT": {
-          "n": 4,
-          "wins": 2,
-          "win_pct": 50.0,
-          "mean_net_pct": -0.121
         }
       },
-      "n": 24,
-      "verdict": "TOO_EARLY",
-      "why": "n=24 graded entries carry this feature (need 25, with >=5 in each bucket being compared). Any verdict at this sample size would be noise wearing a label \u2014 the buckets below are shown so the shape can be watched, not acted on.",
+      "n": 26,
+      "verdict": "PREDICTIVE",
+      "why": "entries taken at FLAT averaged +1.481% vs -2.571% at RISING (spread 4.052% over n=26) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": false
     },
     "trend": {
       "buckets": {
+        "SIDEWAYS": {
+          "n": 14,
+          "wins": 4,
+          "win_pct": 28.6,
+          "mean_net_pct": -0.515
+        },
         "UP": {
           "n": 10,
           "wins": 3,
           "win_pct": 30.0,
           "mean_net_pct": 0.116
-        },
-        "SIDEWAYS": {
-          "n": 12,
-          "wins": 2,
-          "win_pct": 16.7,
-          "mean_net_pct": -1.381
         },
         "DOWN": {
           "n": 2,
@@ -68,18 +68,18 @@
           "mean_net_pct": 0.287
         }
       },
-      "n": 24,
-      "verdict": "TOO_EARLY",
-      "why": "n=24 graded entries carry this feature (need 25, with >=5 in each bucket being compared). Any verdict at this sample size would be noise wearing a label \u2014 the buckets below are shown so the shape can be watched, not acted on.",
+      "n": 26,
+      "verdict": "NEUTRAL",
+      "why": "no meaningful separation between buckets (spread 0.631% over n=26) \u2014 on this evidence the feature does not yet distinguish good entries",
       "read_by_selection": true
     },
     "cadence_phase": {
       "buckets": {
         "PEAK_DUE": {
-          "n": 20,
-          "wins": 5,
-          "win_pct": 25.0,
-          "mean_net_pct": -0.563
+          "n": 22,
+          "wins": 7,
+          "win_pct": 31.8,
+          "mean_net_pct": -0.086
         },
         "MID_CYCLE": {
           "n": 4,
@@ -88,24 +88,24 @@
           "mean_net_pct": -0.893
         }
       },
-      "n": 24,
+      "n": 26,
       "verdict": "TOO_EARLY",
-      "why": "n=24 graded entries carry this feature (need 25, with >=5 in each bucket being compared). Any verdict at this sample size would be noise wearing a label \u2014 the buckets below are shown so the shape can be watched, not acted on.",
+      "why": "n=26 graded entries carry this feature (need 25, with >=5 in each bucket being compared). Any verdict at this sample size would be noise wearing a label \u2014 the buckets below are shown so the shape can be watched, not acted on.",
       "read_by_selection": false
     },
     "range_position": {
       "buckets": {
-        "HIGH_THIRD": {
-          "n": 9,
-          "wins": 4,
-          "win_pct": 44.4,
-          "mean_net_pct": 0.79
-        },
         "LOW_THIRD": {
-          "n": 12,
-          "wins": 1,
-          "win_pct": 8.3,
-          "mean_net_pct": -1.633
+          "n": 13,
+          "wins": 2,
+          "win_pct": 15.4,
+          "mean_net_pct": -1.147
+        },
+        "HIGH_THIRD": {
+          "n": 10,
+          "wins": 5,
+          "win_pct": 50.0,
+          "mean_net_pct": 1.179
         },
         "MID_THIRD": {
           "n": 3,
@@ -114,38 +114,38 @@
           "mean_net_pct": -0.785
         }
       },
-      "n": 24,
-      "verdict": "TOO_EARLY",
-      "why": "n=24 graded entries carry this feature (need 25, with >=5 in each bucket being compared). Any verdict at this sample size would be noise wearing a label \u2014 the buckets below are shown so the shape can be watched, not acted on.",
+      "n": 26,
+      "verdict": "PREDICTIVE",
+      "why": "entries taken at HIGH_THIRD averaged +1.179% vs -1.147% at LOW_THIRD (spread 2.326% over n=26) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": false
     },
     "floor_support": {
       "buckets": {
-        "AWAY_FROM_FLOOR": {
-          "n": 14,
-          "wins": 5,
-          "win_pct": 35.7,
-          "mean_net_pct": 0.165
-        },
         "ON_TESTED_FLOOR": {
-          "n": 10,
-          "wins": 1,
-          "win_pct": 10.0,
-          "mean_net_pct": -1.715
+          "n": 11,
+          "wins": 2,
+          "win_pct": 18.2,
+          "mean_net_pct": -1.134
+        },
+        "AWAY_FROM_FLOOR": {
+          "n": 15,
+          "wins": 6,
+          "win_pct": 40.0,
+          "mean_net_pct": 0.467
         }
       },
-      "n": 24,
-      "verdict": "TOO_EARLY",
-      "why": "n=24 graded entries carry this feature (need 25, with >=5 in each bucket being compared). Any verdict at this sample size would be noise wearing a label \u2014 the buckets below are shown so the shape can be watched, not acted on.",
+      "n": 26,
+      "verdict": "PREDICTIVE",
+      "why": "entries taken at AWAY_FROM_FLOOR averaged +0.467% vs -1.134% at ON_TESTED_FLOOR (spread 1.601% over n=26) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": false
     },
     "ceiling_overhead": {
       "buckets": {
         "UNDER_TESTED_CEILING": {
-          "n": 12,
-          "wins": 6,
-          "win_pct": 50.0,
-          "mean_net_pct": 1.437
+          "n": 14,
+          "wins": 8,
+          "win_pct": 57.1,
+          "mean_net_pct": 1.901
         },
         "CLEAR_OVERHEAD": {
           "n": 12,
@@ -154,13 +154,18 @@
           "mean_net_pct": -2.674
         }
       },
-      "n": 24,
-      "verdict": "TOO_EARLY",
-      "why": "n=24 graded entries carry this feature (need 25, with >=5 in each bucket being compared). Any verdict at this sample size would be noise wearing a label \u2014 the buckets below are shown so the shape can be watched, not acted on.",
+      "n": 26,
+      "verdict": "PREDICTIVE",
+      "why": "entries taken at UNDER_TESTED_CEILING averaged +1.901% vs -2.674% at CLEAR_OVERHEAD (spread 4.575% over n=26) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": false
     }
   },
-  "promotion_candidates": [],
-  "next_step": "no feature has earned PREDICTIVE yet on this sample. Wiring the graph into selection now would be faith, not evidence \u2014 the honest move is to keep collecting closed trades and re-read this panel as n grows.",
+  "promotion_candidates": [
+    "peak_trajectory",
+    "range_position",
+    "floor_support",
+    "ceiling_overhead"
+  ],
+  "next_step": "EVIDENCE FOUND: peak_trajectory, range_position, floor_support, ceiling_overhead now separate winners from losers and are still not consulted at entry. These are the features to gate on next \u2014 with a knob, a kill switch, and an A/B, never silently.",
   "honesty": "this audit grades entries the system already took; it cannot say what would have happened on entries it never took. It answers 'did reading the graph help?', not 'is the graph complete?'"
 }
