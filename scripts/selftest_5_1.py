@@ -1926,21 +1926,34 @@ def t107_canonical_loader():
     sample files, so DOGE-USD and DOGEUSDT coexisted as two 'different' assets — the book bought
     the spelling the charts, marks and journals were blind to). canonical_samples() must collapse
     every spelling to one canonical key, UNION the history by timestamp, and let the primary tape
-    win collisions (ccxt deepens, never overrides)."""
+    win collisions (ccxt deepens, never overrides).
+
+    7.1.2 AMENDMENT: the union is now SCALE-GUARDED (see T113) — a spelling joins only when a
+    time-aligned check proves it is the same asset at the same price. So this fixture must give
+    the two spellings OVERLAPPING prints at the SAME scale, which is what a genuine second feed
+    for the same coin looks like. The old fixture merged on faith; that faith was the bug."""
     import shutil
     from silmaril.execution.canon_keys import canonical_samples, canon
     tmp = Path(tempfile.mkdtemp(prefix="t107_"))
     try:
-        t1, t2, t3 = "2026-07-25T10:05:00+00:00", "2026-07-25T10:15:00+00:00", "2026-07-25T10:25:00+00:00"
-        (tmp / "price_samples.json").write_text(json.dumps({"samples": {
-            "DOGE-USD": [[t2, 0.0710], [t3, 0.0712]]}}))
-        (tmp / "ccxt_samples.json").write_text(json.dumps({"samples": {
-            "DOGEUSDT": [[t1, 0.0695], [t2, 0.0709]]}}))
+        base = now().replace(microsecond=0)
+        def _iso(i):
+            return (base - timedelta(minutes=10 * (24 - i))).isoformat()
+        # primary tape: the second half of the window
+        prim = [[_iso(i), 0.0710 + 0.00001 * (i % 5)] for i in range(8, 24)]
+        # a genuine second feed for the SAME coin: same scale, overlapping, plus earlier history
+        ccxt = [[_iso(i), 0.0709 + 0.00001 * (i % 5)] for i in range(0, 20)]
+        t_early, t_clash = _iso(0), _iso(8)
+        (tmp / "price_samples.json").write_text(json.dumps({"samples": {"DOGE-USD": prim}}))
+        (tmp / "ccxt_samples.json").write_text(json.dumps({"samples": {"DOGEUSDT": ccxt}}))
         m = canonical_samples(tmp)
         ok_key = "DOGE-USD" in m and "DOGEUSDT" not in m
         rows = {r[0]: r[1] for r in (m.get("DOGE-USD") or [])}
-        ok_union = len(rows) == 3 and t1 in rows            # ccxt's early history joined
-        ok_primary = abs(float(rows.get(t2, 0)) - 0.0710) < 1e-12   # primary wins the collision
+        ok_union = len(rows) == 24 and t_early in rows      # verified feed's early history joined
+        _exp_prim = 0.0710 + 0.00001 * (8 % 5)      # what the PRIMARY tape says at the clash
+        _exp_ccxt = 0.0709 + 0.00001 * (8 % 5)      # what the second feed says at the same moment
+        _got = float(rows.get(t_clash, 0))
+        ok_primary = abs(_got - _exp_prim) < 1e-9 and abs(_got - _exp_ccxt) > 1e-9
         ok_canon = canon("REQUSDT") == "REQ-USD" and canon("USO") == "USO" and canon("BTC/USDT") == "BTC-USD"
         # and the executor actually loads through it
         ps = (ROOT / "silmaril/execution/paper_sim.py").read_text()
@@ -2118,7 +2131,7 @@ def t112_everything_chart_modal():
     ok_stores = all(k in src for k in ("SOURCE_OVERLAY.json", "CHART_INTEL.json",
                                        "FINGERPRINTS.json", "GEOMETRY.json", "ccxt_samples.json"))
     ok_key = "function canon(" in src and "altKeys" in src
-    ok_layers = all(k in src for k in ("QUANTIZED FEED", "fp buys", "next peak",
+    ok_layers = all(k in src for k in ('FEED " + qz.grade', "fp buys", "next peak",
                                        "floor ", "ceiling ", "vs outside venues"))
     ok_subpenny = "function decFor" in src and "return 10" in src and "decFor(v)" in src
     ok_structure = "function swings(" in src and "view-detected" in src
@@ -2130,6 +2143,178 @@ def t112_everything_chart_modal():
           ok_stores and ok_key and ok_layers and ok_subpenny and ok_structure and ok_honest and ok_api and ok_wired,
           f"stores={ok_stores} key={ok_key} layers={ok_layers} subpenny={ok_subpenny} "
           f"structure={ok_structure} honest={ok_honest} wired={ok_wired}")
+
+
+def t113_scale_guarded_union():
+    """7.1.2 THE SCALE-BLEND (my own 7.1.0 bug, caught by the operator's eyes not my tests).
+    The one-key law unioned every spelling of a symbol assuming they were the same asset at
+    the same price. On the operator's real tape that was FALSE for 271 of 358 overlapping
+    ccxt keys — APT-USD $0.000131 vs APTUSD $4.376 (33,000x), ENJ-USD $0.027 vs ENJUSD
+    $0.284, YFI-USD $2,087 vs YFIUSD $6,235. Blending them made the tape alternate between
+    price scales at adjacent timestamps: the square waves on ENJ/YFI/LDO/XTZ/BF-B/BRK-B, the
+    fake peaks that fed rhythm and fingerprints, the incoherent leaderboards, and marks a
+    book could book a windfall against. A spelling may now JOIN a canonical series only if
+    an outside venue or a TIME-ALIGNED price check proves it is the same asset at the same
+    scale; everything else is rejected with a named reason, never blended, never silently
+    dropped."""
+    import shutil
+    from silmaril.execution.canon_keys import canonical_samples_report
+    tmp = Path(tempfile.mkdtemp(prefix="t113_"))
+    try:
+        base = now().replace(microsecond=0)
+        def iso(i):
+            return (base - timedelta(minutes=10 * (30 - i))).isoformat()
+        # primary: the real ENJ tape, moving normally
+        prim = [[iso(i), 0.0270 + 0.00002 * (i % 7)] for i in range(30)]
+        # ccxt spelling at a 10x DIFFERENT scale, same moments  -> must be REJECTED
+        wrong = [[iso(i), 0.2840 + 0.0002 * (i % 7)] for i in range(30)]
+        # ccxt spelling at the SAME scale, extending history     -> must be ADMITTED
+        right = [[iso(i), 0.0271 + 0.00002 * (i % 5)] for i in range(30)]
+        # a frozen series                                        -> must be REJECTED
+        frozen = [[iso(i), 0.0300] for i in range(30)]
+        (tmp / "price_samples.json").write_text(json.dumps({"samples": {"ENJ-USD": prim, "APE-USD": prim}}))
+        (tmp / "ccxt_samples.json").write_text(json.dumps({"samples": {
+            "ENJUSD": wrong, "ENJUSDT": right, "APEUSDT": frozen}}))
+        merged, rep = canonical_samples_report(tmp)
+        reasons = {(r["sym"], r["spelling"]): r["reason"] for r in rep["rejects"]}
+        ok_conflict = reasons.get(("ENJ-USD", "ENJUSD")) == "SCALE_CONFLICT"
+        ok_frozen = reasons.get(("APE-USD", "APEUSDT")) == "FROZEN_SERIES"
+        ok_admit = ("ENJ-USD", "ENJUSDT") not in reasons
+        ys = [float(r[1]) for r in (merged.get("ENJ-USD") or [])]
+        ok_clean = bool(ys) and (max(ys) / min(ys) < 1.5)       # no cross-scale square wave
+        ok_receipts = rep["rejected"] >= 2 and "why" in rep["rejects"][0]
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    check("T113 scale-guarded union: a spelling joins a canonical series only if proven the same asset at the same scale",
+          ok_conflict and ok_frozen and ok_admit and ok_clean and ok_receipts,
+          f"conflict={ok_conflict} frozen={ok_frozen} admitted_same_scale={ok_admit} "
+          f"clean_series={ok_clean} receipts={ok_receipts}")
+
+
+def t114_price_truth_gate():
+    """7.1.2 THE FEED GATE. "Account sold it for a profit of $200. That didn't seem real."
+    It wasn't: a feed reporting 3 price levels 22% apart cannot produce an honest fill, and
+    a fingerprint fitted to it reported 41 peaks, a 3.0h heartbeat and 100% bounce
+    reliability — every number real, every number meaningless. A tape must now EARN the
+    right to be traded, fitted and scored by RESOLVING the move the strategy needs.
+    The operator's constraint is the hard part and is asserted here: this must not block
+    real things we can invest in. So the test is resolution, never price magnitude — a
+    sub-penny coin with a fine tick stays tradeable — and market-closed repetition is not
+    a defect, so an ETF flat over a closed weekend is never quarantined."""
+    import shutil
+    from silmaril.execution.price_truth import build_price_truth, may_trade, may_learn
+    tmp = Path(tempfile.mkdtemp(prefix="t114_"))
+    try:
+        base = now().replace(microsecond=0)
+        def iso(i, minutes=10):
+            return (base - timedelta(minutes=minutes * (120 - i))).isoformat()
+        samples = {
+            # sub-penny but FINELY resolved -> must stay tradeable (the no-false-positive law)
+            "TINY-USD": [[iso(i), 0.0000001000 * (1 + 0.0004 * (i % 53))] for i in range(120)],
+            # 3 levels far apart -> QUANTIZED (the MOG class)
+            "MOGX-USD": [[iso(i), [1.0e-7, 1.1e-7, 1.2e-7][i % 3]] for i in range(120)],
+            # one price forever -> FROZEN (the APT class)
+            "DEAD-USD": [[iso(i), 0.000131] for i in range(120)],
+            # healthy normal coin
+            "GOOD-USD": [[iso(i), 100.0 * (1 + 0.0007 * (i % 61))] for i in range(120)],
+        }
+        # an ETF that only prints in-session and repeats outside it: must NOT be quarantined
+        etf = []
+        for d in range(3):
+            for m in range(60):
+                t = (base - timedelta(days=d)).replace(hour=14, minute=0, second=0, microsecond=0) + timedelta(minutes=m)
+                etf.append([t.isoformat(), 60.0 * (1 + 0.0006 * (m % 37))])
+            for m in range(60):                                  # closed-hours flat prints
+                t = (base - timedelta(days=d)).replace(hour=2, minute=0, second=0, microsecond=0) + timedelta(minutes=m)
+                etf.append([t.isoformat(), 60.0])
+        samples["GLDX"] = sorted(etf, key=lambda r: r[0])
+        (tmp / "price_samples.json").write_text(json.dumps({"samples": samples}))
+        p = build_price_truth(tmp, samples)
+        g = {k: v["grade"] for k, v in p["by_symbol"].items()}
+        ok_tiny = g.get("TINY-USD") == "OK" and may_trade(tmp, "TINY-USD")
+        ok_quant = g.get("MOGX-USD") == "QUANTIZED" and not may_trade(tmp, "MOGX-USD") and not may_learn(tmp, "MOGX-USD")
+        ok_dead = g.get("DEAD-USD") == "FROZEN" and not may_trade(tmp, "DEAD-USD")
+        ok_good = g.get("GOOD-USD") == "OK"
+        ok_etf = g.get("GLDX") == "OK" and may_trade(tmp, "GLDX")      # closed market != broken feed
+        ok_kill = True
+        (tmp / "PARAM_CATALOG.json").write_text(json.dumps({"price_truth": {"mode": "off"}}))
+        pk = build_price_truth(tmp, samples)
+        ok_kill = pk.get("mode") == "off" and not pk.get("by_symbol")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    # and the gates must actually consume it
+    ps = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok_entry = "UNTRADEABLE:feed" in ps and "_pt_ok(out, sym)" in ps
+    ok_fit = "_pt_learn(out, _s)" in ps
+    sl = (ROOT / "silmaril/execution/strategy_lab.py").read_text()
+    ok_arena = "may_learn as _ml7" in sl and "feeds_excluded" in sl
+    html = (ROOT / "docs/index.html").read_text()
+    ok_ui = "__SIL_PRICE_TRUTH" in html and "_ptBad" in html and "FEED TRUTH" in html
+    gjs = (ROOT / "docs/silmaril_chart.js").read_text()
+    ok_chart = "PRICE_TRUTH.json" in gjs and "FEED \" + qz.grade" in gjs
+    check("T114 price-truth gate: resolution not magnitude — quantized/frozen tapes blocked from entries, fitting and the arena; fine-tick sub-penny and closed-market ETFs stay tradeable",
+          ok_tiny and ok_quant and ok_dead and ok_good and ok_etf and ok_kill
+          and ok_entry and ok_fit and ok_arena and ok_ui and ok_chart,
+          f"tiny_ok={ok_tiny} quant={ok_quant} dead={ok_dead} good={ok_good} etf_closed={ok_etf} "
+          f"kill={ok_kill} entry={ok_entry} fit={ok_fit} arena={ok_arena} ui={ok_ui} chart={ok_chart}")
+
+
+def t115_arena_honesty():
+    """7.1.2 THE ARENA'S TWO LIES (operator: "QUADRANT LEADERBOARDS & CHAMPIONS data also
+    looks sketch" — it was, and both defects were pre-existing).
+
+    LIE 1 — SURVIVORSHIP. TIMEOUT_EXIT is False, so a trade that hit neither target nor stop
+    walked to the end of the window and `if oc is None: break` DISCARDED it. Only RESOLVED
+    trades were counted, and on a drifting series a +5% target resolves constantly while a
+    -12% stop almost never does — so the survivors were overwhelmingly winners. The stock
+    arena printed MR_d1_t5_s12 at 99.0% wins and +5.59%/trade over 97 trades. With the
+    discarded trades marked to the last real price, the same tape reads 54.1% wins and
+    +0.61% — and a DIFFERENT champion is elected. The bias was choosing the strategy too.
+
+    LIE 2 — SESSION CONTINUITY. _bt_one treats index adjacency as continuous time, so an
+    equity trade opened at 3pm Monday could "exit" into Tuesday's opening gap — a move no
+    intraday strategy could have captured. Series are now cut at gaps and each segment
+    backtested alone.
+
+    Both are asserted functionally on synthetic tape, because both produced numbers that
+    looked plausible enough to ship — the only defence is a test that counts the trades
+    the arena throws away."""
+    from silmaril.execution.strategy_lab import _bt_one, _segment_series
+    # ── LIE 1: a rising tape where a target resolves and a stop never does ─────────────
+    cfg = {"entry": 0.01, "target": 0.05, "stop": 0.12, "hold": 10 ** 6, "dir": "mr"}
+    # RESOLVES: dips early, then climbs through the +5% target.
+    up = [100.0] * 8 + [98.0] + [98.0 * (1.0 + 0.01 * i) for i in range(1, 12)]
+    # NEVER RESOLVES: flat, then dips with only three bars left — neither target nor stop can
+    # be reached, which is precisely the trade the old code threw on the floor.
+    late = [100.0] * 56 + [98.5, 98.6, 98.7, 98.8]
+    r = _bt_one({"UP": up, "LATE": late}, cfg, {"UP": 0.002, "LATE": 0.002})
+    ok_counted = r.get("open_marks", 0) >= 1 and r.get("resolved", 0) >= 1
+    ok_split = (r.get("resolved", 0) + r.get("open_marks", 0)) == r.get("trades", -1)
+    ok_exits = "OPEN_MARK" in (r.get("exits") or {})
+    # ── LIE 2: two sessions a day apart must never be walked as one continuous series ──
+    base = now().replace(microsecond=0)
+    rows = []
+    for d in (2, 1, 0):
+        day = (base - timedelta(days=d)).replace(hour=14, minute=0, second=0, microsecond=0)
+        for m in range(30):
+            rows.append([(day + timedelta(minutes=m)).isoformat(), 50.0 + 0.05 * m])
+    segs, nseg = _segment_series({"XYZ": rows})
+    ok_seg = nseg == 1 and len([k for k in segs if k.startswith("XYZ#s")]) == 3
+    ok_nocarry = all(len(v) <= 30 for k, v in segs.items() if k.startswith("XYZ#s"))
+    # crypto is 24/7: a continuous tape must NOT be split
+    ct = [[(base - timedelta(minutes=10 * (40 - i))).isoformat(), 100.0 + i] for i in range(40)]
+    csegs, cn = _segment_series({"BTC-USD": ct})
+    ok_crypto_intact = cn == 0 and len(csegs.get("BTC-USD") or []) == 40
+    # ── and the arena must publish both laws so the panel can explain itself ───────────
+    sl = (ROOT / "silmaril/execution/strategy_lab.py").read_text()
+    ok_receipts = ("SURVIVORSHIP LAW" in sl and "SESSION-CONTINUITY LAW" in sl
+                   and "names_segmented" in sl and "session_law" in sl
+                   and '"resolved": _res' in sl)
+    check("T115 arena honesty: unresolved trades are marked and counted (no survivorship), sessions never walked as one series, champions elected on the honest record",
+          ok_counted and ok_split and ok_exits and ok_seg and ok_nocarry
+          and ok_crypto_intact and ok_receipts,
+          f"counted={ok_counted} split={ok_split} exits={ok_exits} seg3={ok_seg} "
+          f"nocarry={ok_nocarry} crypto_intact={ok_crypto_intact} receipts={ok_receipts}")
 
 
 if __name__ == "__main__":
@@ -2178,7 +2363,9 @@ if __name__ == "__main__":
               t106_arming_law, t107_canonical_loader,
               t108_position_migration, t109_journal_sanity,
               t110_one_writer, t111_chart_key_door_and_source_overlay,
-              t112_everything_chart_modal):
+              t112_everything_chart_modal,
+              t113_scale_guarded_union, t114_price_truth_gate,
+              t115_arena_honesty):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

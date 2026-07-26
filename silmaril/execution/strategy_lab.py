@@ -114,12 +114,81 @@ def book_strategies(book: str) -> Dict[str, Dict[str, Any]]:
     return dict(STRATEGIES)
 
 
+# ── 7.1.2 SESSION-CONTINUITY LAW ───────────────────────────────────────────────────────
+# _bt_one walks a bare price list and treats index adjacency as continuous time. For
+# equities that silently let a trade opened at 3pm Monday "exit" into Tuesday's opening
+# gap — an overnight move no intraday strategy could ever have captured. That artifact is
+# what produced MR_d1_t7_s12 at 92.2% wins and +7.00%/trade on the stock arena: a money
+# printer made of gaps. Series are now cut into SEGMENTS wherever the tape jumps more than
+# the continuity window, and each segment is backtested on its own, so no position can span
+# a gap it could not trade through. Crypto is 24/7 and rarely segments — there it only
+# splits genuine feed outages, which is also correct.
+_GAP_MIN = 90.0
+
+
+def _iso_ts(t):
+    """Seconds-since-epoch for an ISO stamp, or None."""
+    try:
+        from datetime import datetime as _dt
+        return _dt.fromisoformat(str(t).replace("Z", "+00:00")).timestamp()
+    except Exception:
+        return None
+
+
+def _segment_series(samples):
+    """{sym: rows} -> ({key: [px]}, n_segmented). Keys of split names carry a '#sN' suffix;
+    callers strip it with .split('#s')[0] for class and cost lookups."""
+    series, segmented = {}, 0
+    for tk, rows in (samples or {}).items():
+        live = []
+        for r in (rows or []):
+            try:
+                t, px = r[0], float(r[1])
+            except Exception:
+                continue
+            if px <= 0 or "T00:00:00" in str(t):
+                continue
+            ts = _iso_ts(t)
+            if ts is not None:
+                live.append((ts, px))
+        live.sort()
+        segs, cur = [], []
+        for i, (ts, px) in enumerate(live):
+            if cur and (ts - live[i - 1][0]) > _GAP_MIN * 60.0:
+                segs.append(cur)
+                cur = []
+            cur.append(px)
+        if cur:
+            segs.append(cur)
+        segs = [g for g in segs if len(g) > 8]
+        if not segs:
+            continue
+        if len(segs) == 1:
+            series[tk] = segs[0]
+            continue
+        segmented += 1
+        for si, g in enumerate(segs):
+            series["%s#s%d" % (tk, si)] = g
+    return series, segmented
+
+
 def _bt_one(series_fresh: Dict[str, List[float]], cfg: Dict[str, Any],
             costs: Dict[str, float]) -> Dict[str, Any]:
     d, tgt, stop, hold = cfg["entry"], cfg["target"], cfg["stop"], cfg["hold"]
     mr = cfg["dir"] == "mr"
+    # ── 7.1.2 SURVIVORSHIP LAW ────────────────────────────────────────────────────────
+    # THE DEFECT: TIMEOUT_EXIT is False, so a trade that hit neither target nor stop walked
+    # to the end of the window and then `if oc is None: break` DISCARDED it. The arena
+    # therefore counted only the trades that RESOLVED. On any series with upward drift a
+    # +5% target resolves constantly while a -12% stop almost never does, so the survivors
+    # were overwhelmingly winners: MR_d1_t5_s12 printed 99.0% wins at +5.59%/trade over 97
+    # trades — a money printer made of the trades that were thrown away. That single line is
+    # why the operator read the quadrant leaderboards as "sketch"; they were.
+    # THE LAW: a position still open when the window ends is not a non-event. It is marked to
+    # the last real price and counted, exactly as a live book would carry it — and reported
+    # separately from realized closes so nobody mistakes a mark for a fill.
     rets: List[float] = []
-    exits = {"TAKE": 0, "STOP": 0, "TIMEOUT": 0}
+    exits = {"TAKE": 0, "STOP": 0, "TIMEOUT": 0, "OPEN_MARK": 0}
     for tk, px in series_fresh.items():
         n = len(px)
         c = costs[tk]
@@ -138,19 +207,25 @@ def _bt_one(series_fresh: Dict[str, List[float]], cfg: Dict[str, Any],
                 if ch >= tgt: oc, k = "TAKE", j; break
                 if TIMEOUT_EXIT and (j - i) >= hold: oc, k = "TIMEOUT", j; break
                 j += 1
-            if oc is None: break
+            if oc is None:
+                if n - 1 > i:                     # carry it as an open mark, never drop it
+                    rets.append((px[n - 1] / ep - 1) - c); exits["OPEN_MARK"] += 1
+                break
             rets.append((px[k] / ep - 1) - c); exits[oc] += 1; i = k + 1
     if not rets:
         return {"trades": 0, "mean_net_pct": 0.0, "total_pct": 0.0,
-                "win_pct": 0.0, "equity": 10000.0}
+                "win_pct": 0.0, "equity": 10000.0,
+                "resolved": 0, "open_marks": 0, "exits": dict(exits)}
     eq = 10000.0
     for r in rets:
         eq *= (1 + r * PER_NAME_FRAC)
+    _res = exits["TAKE"] + exits["STOP"] + exits["TIMEOUT"]
     return {"trades": len(rets),
             "mean_net_pct": round(mean(rets) * 100, 3),
             "win_pct": round(sum(1 for r in rets if r > 0) / len(rets) * 100, 1),
             "total_pct": round(sum(rets) * 100, 1),
             "equity": round(eq, 2),
+            "resolved": _res, "open_marks": exits["OPEN_MARK"],
             "exits": exits}
 
 
@@ -159,11 +234,13 @@ def run_leaderboard(out_dir) -> Dict[str, Any]:
     samples = load_all_samples(out)
     if not samples:
         return {"error": "no samples"}
-    series = {tk: [p for t, p in rows if p and p > 0 and "T00:00:00" not in t] for tk, rows in samples.items()}
+    series, _segmented = _segment_series(samples)
     fresh_all = {tk: px for tk, px in series.items() if len(px) > 20 and is_tradeable(px)}
     costs = {tk: round_trip_cost(px) for tk, px in fresh_all.items()}
-    fresh_crypto = {k: v for k, v in fresh_all.items() if _is_crypto(k)}
-    fresh_stock = {k: v for k, v in fresh_all.items() if not _is_crypto(k)}
+    def _base(tk):
+        return tk.split("#s")[0]
+    fresh_crypto = {k: v for k, v in fresh_all.items() if _is_crypto(_base(k))}
+    fresh_stock = {k: v for k, v in fresh_all.items() if not _is_crypto(_base(k))}
 
     rows = []
     for name, cfg in STRATEGIES.items():
@@ -224,14 +301,28 @@ def run_split_leaderboards(out_dir):
     samples = load_all_samples(out)
     if not samples:
         return {}
-    series = {tk: [p for t, p in rows if p and p > 0 and "T00:00:00" not in t] for tk, rows in samples.items()}
+    series, _segmented = _segment_series(samples)
+    # ── 7.1.2 PRICE TRUTH: the arena may only run on tapes that can be traded. ────────────
+    # The operator called the quadrant leaderboards "sketch" and was right: rows like
+    # MR_d1_t1_s8 at 91.7% wins and -1.33% mean net are arithmetically incoherent for that
+    # shape — they were the backtest dutifully "buying dips" that were feed artifacts. A
+    # champion elected on artifact names is a champion of nothing.
+    try:
+        from .price_truth import may_learn as _ml7
+        _before = len(series)
+        series = {tk: px for tk, px in series.items() if _ml7(out, tk.split("#s")[0])}
+        _dropped = _before - len(series)
+    except Exception:
+        _dropped = 0
     fresh_all = {tk: px for tk, px in series.items() if len(px) > 20}
     costs = {tk: round_trip_cost(px) for tk, px in fresh_all.items()}
+    def _base(tk):
+        return tk.split("#s")[0]
     out_payloads = {}
     from .paper_sim import asset_class as _ac, BOOKS as _BOOKS
     for book in _BOOKS:
         is_cry = (book == "crypto")
-        uni = {k: v for k, v in fresh_all.items() if _ac(k) == book and _uni_ok(v, is_cry)}
+        uni = {k: v for k, v in fresh_all.items() if _ac(_base(k)) == book and _uni_ok(v, is_cry)}
         roster = book_strategies(book)
         rows = []
         for name, cfg in roster.items():
@@ -245,6 +336,13 @@ def run_split_leaderboards(out_dir):
         payload = {
             "generated_at": _now(), "book": book, "universe_size": len(uni),
             "min_trades_for_trust": min_tr,
+            "feeds_excluded": _dropped, "names_segmented": _segmented,
+            "session_law": ("series are cut at gaps > %dmin and each segment backtested alone, so no "
+                            "trade can exit into an overnight gap it could never have traded through"
+                            % int(_GAP_MIN)),
+            "feed_law": ("names whose feed PRICE_TRUTH graded FROZEN/QUANTIZED/COARSE/DISPUTED are "
+                         "excluded from this arena — a strategy cannot be scored on a tape whose "
+                         "moves are the venue's tick size"),
             "leaderboard": ranked, "best_trusted": winners[0] if winners else None,
             "verdict": (f"BEST {book}: {winners[0]['strategy']} nets {winners[0]['mean_net_pct']:+.2f}%/trade "
                         f"over {winners[0]['trades']} trades"
@@ -313,15 +411,17 @@ def run_wide_arena(out_dir):
     samples = load_all_samples(out)
     if not samples:
         return {}
-    series = {tk: [p for t, p in rows if p and p > 0 and "T00:00:00" not in t] for tk, rows in samples.items()}
+    series, _segmented = _segment_series(samples)
     fresh_all = {tk: px for tk, px in series.items() if len(px) > 20}
     costs = {tk: round_trip_cost(px) for tk, px in fresh_all.items()}
+    def _base(tk):
+        return tk.split("#s")[0]
     wide = _make_strategies(wide=True)
     res = {}
     from .paper_sim import asset_class as _ac, BOOKS as _BOOKS
     for book in _BOOKS:
         is_cry = (book == "crypto")
-        uni = {k: v for k, v in fresh_all.items() if _ac(k) == book and _uni_ok(v, is_cry)}
+        uni = {k: v for k, v in fresh_all.items() if _ac(_base(k)) == book and _uni_ok(v, is_cry)}
         rows = []
         for name, cfg in wide.items():
             r = _bt_one(uni, cfg, costs)

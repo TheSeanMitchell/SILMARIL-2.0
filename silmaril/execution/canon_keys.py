@@ -98,30 +98,221 @@ def _union_rows(a: List, b: List) -> List:
     return sorted(([t, p] for t, p in m.items()), key=lambda r: r[0])
 
 
-def canonical_samples(out_dir) -> Dict[str, List]:
-    """THE loader. Merges the four sample files under canonical keys, unioning
-    history across spellings. price_samples wins timestamp collisions (it is the
-    tape the live executor marks against). Non-crypto keys pass through."""
+def _live_rows(rows: List) -> List:
+    """Live intraday prints only — daily backfill candles carry a T00:00:00 stamp and
+    would otherwise dominate any scale/shape measurement (the backfill-poisoning law)."""
+    out = []
+    for r in (rows or []):
+        try:
+            if not r or len(r) < 2:
+                continue
+            px = float(r[1])
+            if px > 0 and "T00:00:00" not in str(r[0]):
+                out.append([str(r[0]), px])
+        except Exception:
+            continue
+    return out
+
+
+def _median(xs: List[float]):
+    if not xs:
+        return None
+    s = sorted(xs)
+    n = len(s)
+    return s[n // 2] if n % 2 else 0.5 * (s[n // 2 - 1] + s[n // 2])
+
+
+def _ts(s):
+    try:
+        return datetime.fromisoformat(str(s).replace("Z", "+00:00")).timestamp()
+    except Exception:
+        return None
+
+
+def _aligned_ratio(cand: List, ref: List, tol_s: float = 1800.0):
+    """Median price ratio between a candidate spelling and the reference tape, measured
+    on TIME-ALIGNED prints only (<=30 min apart). Comparing raw medians across different
+    windows would call a coin that simply moved a 'scale conflict'; comparing the same
+    moments cannot. Returns (ratio, n_pairs) or (None, 0) when the two never overlap."""
+    if not cand or not ref:
+        return None, 0
+    rt = sorted([(t, p) for t, p in ((_ts(r[0]), r[1]) for r in ref) if t])
+    if not rt:
+        return None, 0
+    times = [x[0] for x in rt]
+    ratios = []
+    step = max(1, len(cand) // 40)
+    for r in cand[::step]:
+        t = _ts(r[0])
+        if not t:
+            continue
+        lo, hi = 0, len(times) - 1
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if times[mid] < t:
+                lo = mid + 1
+            else:
+                hi = mid
+        best = None
+        for j in (lo - 1, lo):
+            if 0 <= j < len(rt) and abs(rt[j][0] - t) <= tol_s:
+                if best is None or abs(rt[j][0] - t) < abs(best[0] - t):
+                    best = rt[j]
+        if best and best[1] > 0:
+            ratios.append(r[1] / best[1])
+    m = _median(ratios)
+    return m, len(ratios)
+
+
+def _shape(rows: List) -> Dict[str, Any]:
+    ys = [r[1] for r in rows]
+    if not ys:
+        return {"n": 0, "levels": 0, "repeat": 1.0}
+    same = sum(1 for i in range(1, len(ys)) if ys[i] == ys[i - 1])
+    return {"n": len(ys), "levels": len(set(ys)),
+            "repeat": (same / max(1, len(ys) - 1))}
+
+
+# A spelling may join the canonical series only if it is priced within this band of the
+# reference at the SAME moments. 5% is far wider than any venue spread and far narrower
+# than the conflicts this guard exists to stop (APT: 33,000x; ARB: 1,492x; BAL: 45x).
+SCALE_TOL = 0.05
+
+
+def canonical_samples_report(out_dir):
+    """THE loader, with receipts. Returns (merged, report).
+
+    7.1.2 INCIDENT — THE SCALE-BLEND: 7.1.0's one-key law unioned every spelling of a
+    symbol on the assumption that DOGEUSDT and DOGE-USD are the same asset at the same
+    price. For 271 of 358 overlapping ccxt keys that assumption was FALSE — the feed
+    publishes a different (mis-mapped or stale) instrument under the near-canonical
+    spelling: APT-USD $0.000131 vs APTUSD $4.376, ENJ-USD $0.027 vs ENJUSD $0.284,
+    YFI-USD $2,087 vs YFIUSD $6,235. Blending them produced a series that alternates
+    between price scales at adjacent timestamps — the square wave the operator saw on
+    ENJ/YFI/LDO/XTZ/BF-B/BRK-B, the fake peaks that fed rhythm and fingerprints, the
+    incoherent leaderboards (91.7% win rate at -1.33% mean), and marks a book could
+    book a windfall against. One bad assumption, every downstream lie.
+
+    The law now: ONE canonical key still means one series, but a spelling JOINS that
+    series only if it is verifiably the same asset at the same price at the same moments.
+    Everything else is rejected with a named reason and journaled — never blended,
+    never silently dropped."""
     out = Path(out_dir)
-    merged: Dict[str, List] = {}
-    # order matters: primary FIRST so it wins collisions inside _union_rows
+    # ── gather every candidate spelling, keyed canonically ──────────────────────────
+    cands: Dict[str, List[Dict[str, Any]]] = {}
     for fn in SAMPLE_FILES:
         try:
             s = json.loads((out / fn).read_text()).get("samples", {}) or {}
         except Exception:
             continue
-        primary = (fn == "price_samples.json")
         for k, rows in s.items():
             key = canon(k) if is_crypto_key(k) else k
             if not key:
                 continue
-            if key not in merged:
-                merged[key] = list(rows or [])
+            live = _live_rows(rows)
+            cands.setdefault(key, []).append({
+                "spelling": k, "file": fn, "rows": list(rows or []), "live": live,
+                "primary": (fn == "price_samples.json"), "med": _median([r[1] for r in live]),
+                "shape": _shape(live),
+            })
+
+    # ── the outside arbiter: real venue prices, when we have them ───────────────────
+    ext: Dict[str, float] = {}
+    try:
+        so = json.loads((out / "SOURCE_OVERLAY.json").read_text())
+        for sym, rec in (so.get("symbols") or {}).items():
+            px = []
+            for _lab, rws in (rec.get("providers") or {}).items():
+                for r in (rws or [])[-40:]:
+                    try:
+                        v = float(r[1])
+                        if v > 0:
+                            px.append(v)
+                    except Exception:
+                        pass
+            m = _median(px)
+            if m:
+                ext[canon(sym) if is_crypto_key(sym) else sym] = m
+    except Exception:
+        pass
+
+    merged: Dict[str, List] = {}
+    rejects: List[Dict[str, Any]] = []
+    disputes: List[Dict[str, Any]] = []
+
+    for key, cl in cands.items():
+        if len(cl) == 1:
+            merged[key] = cl[0]["rows"]
+            continue
+        # 1) pick the REFERENCE spelling
+        arb = ext.get(key)
+        ref = None
+        if arb:
+            scored = [(abs((c["med"] or 0) / arb - 1.0), c) for c in cl if c["med"]]
+            if scored:
+                scored.sort(key=lambda x: x[0])
+                if scored[0][0] <= 0.15:            # an outside venue confirms this spelling
+                    ref = scored[0][1]
+                    ref["_why_ref"] = "matches outside venue (%.1f%% off)" % (scored[0][0] * 100)
+        if ref is None:
+            prim = [c for c in cl if c["primary"] and c["live"]]
+            if prim:
+                ref = max(prim, key=lambda c: c["shape"]["levels"])
+                ref["_why_ref"] = "primary tape (the series the books mark against)"
             else:
-                # existing (earlier file in order) is the more-primary series
-                merged[key] = _union_rows(merged[key], rows) if not primary \
-                    else _union_rows(rows, merged[key])
-    return merged
+                usable = [c for c in cl if c["live"]] or cl
+                ref = max(usable, key=lambda c: c["shape"]["levels"])
+                ref["_why_ref"] = "deepest live series (no primary, no outside venue)"
+        # if an outside venue exists and even the reference disagrees hard, say so out loud
+        if arb and ref.get("med") and abs(ref["med"] / arb - 1.0) > 0.15:
+            disputes.append({"sym": key, "our_px": round(ref["med"], 10),
+                             "outside_px": round(arb, 10),
+                             "off_pct": round((ref["med"] / arb - 1.0) * 100, 3),
+                             "spelling": ref["spelling"],
+                             "why": "our tape disagrees with real venues — arbitration needed before this name is trusted"})
+        # 2) admit only the spellings that are verifiably the SAME asset at the SAME moments
+        rows = list(ref["rows"])
+        for c in cl:
+            if c is ref:
+                continue
+            sh = c["shape"]
+            if sh["levels"] <= 2 and sh["repeat"] >= 0.95:
+                rejects.append({"sym": key, "spelling": c["spelling"], "file": c["file"],
+                                "reason": "FROZEN_SERIES", "levels": sh["levels"],
+                                "repeat_pct": round(sh["repeat"] * 100, 1),
+                                "why": "a flat series adds no history and manufactures fake steps when interleaved"})
+                continue
+            ratio, npair = _aligned_ratio(c["live"], ref["live"])
+            if ratio is None or npair < 3:
+                rejects.append({"sym": key, "spelling": c["spelling"], "file": c["file"],
+                                "reason": "UNVERIFIABLE_NO_OVERLAP", "pairs": npair,
+                                "why": "never priced at the same moments as the reference, so its scale cannot be checked"})
+                continue
+            if abs(ratio - 1.0) > SCALE_TOL:
+                rejects.append({"sym": key, "spelling": c["spelling"], "file": c["file"],
+                                "reason": "SCALE_CONFLICT", "ratio": round(ratio, 6),
+                                "pairs": npair,
+                                "ref_px": round(ref["med"] or 0, 10), "cand_px": round(c["med"] or 0, 10),
+                                "why": "different price scale at the same moments — a different instrument, not this one"})
+                continue
+            rows = _union_rows(rows, c["rows"])       # verified same asset: history joins
+        merged[key] = rows
+
+    report = {"generated_at": datetime.now(timezone.utc).isoformat(),
+              "law": ("one canonical key = one series, but a spelling joins it only if an outside venue or "
+                      "time-aligned price check proves it is the same asset at the same scale"),
+              "scale_tolerance_pct": SCALE_TOL * 100,
+              "symbols": len(merged), "candidates": sum(len(v) for v in cands.values()),
+              "admitted": sum(len(v) for v in cands.values()) - len(rejects),
+              "rejected": len(rejects), "rejects": rejects,
+              "outside_arbiter_symbols": len(ext), "disputed": disputes}
+    return merged, report
+
+
+def canonical_samples(out_dir) -> Dict[str, List]:
+    """THE loader. One canonical key per asset, history unioned ONLY across spellings
+    proven to be the same asset at the same scale (see canonical_samples_report)."""
+    return canonical_samples_report(out_dir)[0]
 
 
 def canonicalize_positions(out_dir) -> Dict[str, Any]:

@@ -376,6 +376,35 @@ def _feed_unreliable(prices: List[float]) -> bool:
     return _snapbacks(p) >= SNAPBACK_MIN
 
 
+# ── 7.1.2 PRICE TRUTH helpers (module-level so every gate reads one verdict) ────────────
+def _pt_ok(out, sym) -> bool:
+    """May a book OPEN on this name's feed? Fails OPEN when no verdict has been published
+    (the other gates still apply); never fails silently closed."""
+    try:
+        from .price_truth import may_trade
+        return may_trade(out, sym)
+    except Exception:
+        return True
+
+
+def _pt_learn(out, sym) -> bool:
+    """May this name's tape train a fingerprint, a rhythm or a leaderboard row? Learning
+    from a broken tape is worse than not learning — it looks like knowledge."""
+    try:
+        from .price_truth import may_learn
+        return may_learn(out, sym)
+    except Exception:
+        return True
+
+
+def _pt_why(out, sym) -> str:
+    try:
+        from .price_truth import why
+        return why(out, sym)
+    except Exception:
+        return "no feed verdict available"
+
+
 def is_tradeable(prices: List[float]) -> bool:
     return freshness(prices) >= MIN_FRESHNESS and not _feed_unreliable(prices)
 
@@ -1672,6 +1701,16 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                                 "why": f"UNTRADEABLE:evidence — needs {round(_pstar*100,1)}% wins, "
                                        f"proven floor {round(_pfloor*100,1)}% ({_grow.get('evidence')})"})
                 continue
+        # ── 7.1.2 PRICE TRUTH GATE: no entry on a tape we cannot trust. ───────────────
+        # This is the gate that would have refused the "$200 profit that didn't seem
+        # real": a feed reporting 3 price levels 22% apart, or frozen at one number, or
+        # disagreeing with real venues, cannot produce an honest fill — the "move" is the
+        # tick size. Deliberately NOT a price-magnitude test: a sub-penny coin with a fine
+        # tick stays fully tradeable, an expensive name with a blocky feed does not.
+        if not _pt_ok(out, sym):
+            actions.append({"act": "SKIP", "sym": sym,
+                            "why": "UNTRADEABLE:feed — %s" % _pt_why(out, sym)})
+            continue
         if _sz_halt:
             continue
         if _factor_over:
@@ -1898,6 +1937,21 @@ def live_step(out_dir) -> Dict[str, Any]:
     except Exception:
         pass
     samples = load_all_samples(out)
+    # ── 7.1.2 PRICE TRUTH: grade every feed BEFORE anything trades or learns from it. ──────
+    # The 2026-07-25 lesson: a broken tape does not announce itself — it produces square
+    # waves that peak-detection reads as a 3.0h heartbeat, that fingerprints fit to, that
+    # leaderboards score, and that a book can book a windfall against. Nothing downstream
+    # can undo that, so the verdict must exist before the first consumer runs. A failure
+    # here fails OPEN (no verdict → the other gates still apply) but says so loudly.
+    try:
+        from .price_truth import build_price_truth as _bpt7
+        _pt7 = _bpt7(out, samples)
+        _c7 = _pt7.get("counts") or {}
+        print("  price truth: %d/%d feeds tradeable (%s)"
+              % (_pt7.get("tradeable", 0), _pt7.get("graded", 0),
+                 ", ".join("%s %d" % (k, v) for k, v in sorted(_c7.items()) if k != "OK") or "all clean"))
+    except Exception as _e7:
+        print("  price truth: NOT PUBLISHED (%s) — feed grading unavailable this cycle" % _e7)
     global _WARM_SYMS
     marks, _WARM_SYMS, marks_health = _marks_from_samples(samples)
     # 2.7 TRUE post-wipe quiet period (measured from wipe time): take no trades for the first window after a
@@ -2112,11 +2166,21 @@ def live_step(out_dir) -> Dict[str, Any]:
                     _m7.setdefault(_t7, _p7)
                 _fp_rows[_key] = sorted(_m7.items())
         _by_cls = {}
+        _fp_skip = 0
         for _s, _rows in _fp_rows.items():
+            # 7.1.2 PRICE TRUTH: a fingerprint fitted to a square wave is a confident lie.
+            # MOG's 3-level feed produced "41 peaks · 3.0h heartbeat · 100% bounce
+            # reliability" — every number real, every number meaningless. Ungraded feeds
+            # do not get to author the system's beliefs about a name.
+            if not _pt_learn(out, _s):
+                _fp_skip += 1
+                continue
             _cl = asset_class(_s)
             _pp = [p for _t, p in _rows if p and p > 0]
             if len(_pp) >= 30:
                 _by_cls.setdefault(_cl, []).append((_s, _pp))
+        if _fp_skip:
+            print("  fingerprints: %d name(s) excluded — feed not trustworthy (PRICE_TRUTH.json)" % _fp_skip)
         for _lst in _by_cls.values():
             _lst.sort(key=lambda x: len(x[1]), reverse=True)
         _quota = (("metal", 10**9), ("energy", 10**9), ("stock", 160), ("crypto", 10**9))

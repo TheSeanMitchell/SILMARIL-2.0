@@ -171,6 +171,19 @@ def main():
     # PRESERVED on purpose: price_samples.json (graphs + fingerprints), favicon caches, per-asset data.
     print("  PRESERVED: price_samples.json (graphs/fingerprints) + favicons — dashboard will NOT go blank")
     print("PRESERVED FOREVER: EVOLUTION_LEDGER.jsonl · RESEARCH_QUEUE.json · REGIME_COMBOS.jsonl · DAILY_BASELINE.json · knowledge_graph.json · ROTATION_HYPOTHESES.json · RESEARCH_OS.json · CONDUCTOR_LEDGER.jsonl · CONDUCTOR_STATE.json · REGIME_EXIT_AB.jsonl · CONDUCTOR_REPORT_CARD.json · CONFIDENCE_ENGINE.json · CENSUS_ROSTER.json · INVARIANTS_STATE.json · LEDGER.jsonl (the one book of record) · CHAMPION_FORWARD_LEDGER.jsonl (election evidence — the champion can finally evolve) · CALIBRATION.json + CALIBRATION_LEDGER.jsonl (the machine's memory of its own honesty) (long-memory, survives every wipe)")
+    # ── 7.1.2: rebuild the store registry on the way out. The class list and this script's
+    # preserve list must never contradict each other — that contradiction is its own bug class
+    # (a store PROMISED as preserved, then swept as a "stale DERIVED lie", or flagged as one by
+    # the tripwire on every fresh tree). Rebuilding here makes the code's classes authoritative
+    # the moment a wipe finishes, instead of waiting for the next full cycle.
+    try:
+        import sys as _sys
+        _sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from silmaril.execution.store_registry import build_store_registry as _bsr
+        _bsr(DATA)
+        print("  store registry rebuilt — classes now authoritative for the preserved set")
+    except Exception as _e:
+        print(f"  store registry NOT rebuilt ({_e}) — it will refresh on the next cycle")
     print("CLEAN. Books pristine at $10k; all graph/fingerprint/favicon history intact.")
 
 if __name__ == "__main__":

@@ -1519,6 +1519,17 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                    len(_so.get("disagreements") or []))
       except Exception as e:
           log.warning("  Source overlay skipped: %s", e)
+      # ── 7.1.2 PRICE TRUTH, second pass. The live cycle already graded every feed on shape;
+      # this re-grade runs AFTER the outside venues land so a name whose price real venues
+      # dispute is caught by arbitration too, not just by its own shape.
+      try:
+          from .execution.price_truth import build_price_truth as _bpt
+          _pt = _bpt(out)
+          log.info("  Price truth: %s/%s tapes tradeable · %s",
+                   _pt.get("tradeable", 0), _pt.get("graded", 0),
+                   ", ".join("%s %s" % (k, v) for k, v in sorted((_pt.get("counts") or {}).items())))
+      except Exception as e:
+          log.warning("  Price truth skipped: %s", e)
         # ── News & Event Intelligence (read-only, deterministic, NO LLM) ──
       # Forward event calendar + ETF regime baskets + news momentum from the day's
       # signals.json + catalysts.json. Display-only (Phase 1); wrapped so a failure

@@ -29,7 +29,7 @@
   if (window.__silmarilChartBooted) return;
   window.__silmarilChartBooted = true;
 
-  var DATA = {}, POS = {}, RHY = {}, OV = {}, CI = {}, FP = {}, GEO = {}, SRC = {}, SRCMETA = {}, READY = false;
+  var DATA = {}, POS = {}, RHY = {}, OV = {}, CI = {}, FP = {}, GEO = {}, SRC = {}, SRCMETA = {}, PT = {}, READY = false;
   var MO = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   function j(p) { return fetch(p + "?t=" + Date.now()).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); }
@@ -80,7 +80,7 @@
     return Promise.all([
       j("data/price_samples.json"), j("data/metals_samples.json"), j("data/energy_samples.json"), j("data/ccxt_samples.json"),
       j("data/paper_sim_live.json"), j("data/PEAK_RHYTHM.json"), j("data/champion_crypto.json"), j("data/champion_stock.json"),
-      j("data/CHART_OVERLAYS.json"), j("data/CHART_INTEL.json"), j("data/FINGERPRINTS.json"), j("data/GEOMETRY.json"), j("data/SOURCE_OVERLAY.json")
+      j("data/CHART_OVERLAYS.json"), j("data/CHART_INTEL.json"), j("data/FINGERPRINTS.json"), j("data/GEOMETRY.json"), j("data/SOURCE_OVERLAY.json"), j("data/PRICE_TRUTH.json")
     ]).then(function (r) {
       var ps = r[0], mt = r[1], en = r[2], cx = r[3], live = r[4], rhy = r[5], cc = r[6], cs = r[7], ovf = r[8], ci = r[9], fp = r[10], geo = r[11], so = r[12];
       DATA = (ps && ps.samples) || {};
@@ -100,6 +100,7 @@
       if (geo && geo.by_symbol) GEO = geo.by_symbol;
       if (fp && fp.cards) fp.cards.forEach(function (c2) { if (c2 && c2.sym) FP[canon(c2.sym)] = c2; });
       if (so && so.symbols) { SRC = so.symbols; SRCMETA = { at: so.generated_at ? tsParse(so.generated_at) : null }; }
+      if (pt && pt.by_symbol) { PT = pt.by_symbol; try { window.__SIL_PRICE_TRUTH = PT; } catch (e) {} }
       function ts(nm) { var t = /_t(\d+)/.exec(nm || ""), s = /_s(\d+)/.exec(nm || ""); return [t ? +t[1] : null, s ? +s[1] : null]; }
       var champ = { crypto: cc && cc.name, stock: cs && cs.name };
       if (live) ["crypto", "stock", "metal", "energy"].forEach(function (bk) {
@@ -303,11 +304,17 @@
         s += "<line x1='" + (w - padR - 64).toFixed(1) + "' x2='" + (w - padR).toFixed(1) + "' y1='" + Y(cur).toFixed(1) + "' y2='" + py2.toFixed(1) + "' stroke='#b388ff' stroke-width='1.3' stroke-dasharray='3 2'/><circle cx='" + (w - padR).toFixed(1) + "' cy='" + py2.toFixed(1) + "' r='2.6' fill='#b388ff'/><text x='" + (w - padR - 2).toFixed(1) + "' y='" + (py2 - 4).toFixed(1) + "' font-size='8' fill='#b388ff' text-anchor='end'>DrStrange " + ov.dr_strange.direction + " " + (dsm >= 0 ? "+" : "") + dsm + "%</text>";
       }
     }
-    /* QUANTIZED-FEED banner — the MOG class, named instead of mystifying */
-    var qz = quantized(ys);
+    /* FEED VERDICT — authoritative from PRICE_TRUTH.json (the same grade that decides
+       whether the engine will trade or learn from this name); local heuristic only as a
+       fallback before the first grading cycle publishes. */
+    var ptr = rec(PT, sym) || null;
+    var qz = (ptr && ptr.grade && ptr.grade !== "OK" && ptr.grade !== "UNKNOWN")
+      ? { levels: ptr.levels, spreadPct: (ptr.tick_pct || 0), grade: ptr.grade, why: ptr.why, gated: true }
+      : quantized(ys);
+    if (qz && !qz.grade) { qz.grade = "QUANTIZED"; qz.why = "venue reports only " + qz.levels + " price levels in view (" + qz.spreadPct.toFixed(1) + "% apart) — the square wave is the feed's tick size, not trading"; }
     if (qz) {
       s += "<rect x='" + padL + "' y='" + padT + "' width='" + iw + "' height='16' fill='#d4af37' opacity='.13'/>";
-      s += "<text x='" + (padL + iw / 2).toFixed(1) + "' y='" + (padT + 11) + "' font-size='8.5' fill='#d4af37' text-anchor='middle' font-weight='700'>⚠ QUANTIZED FEED — venue reports only " + qz.levels + " price levels at this precision (" + qz.spreadPct.toFixed(1) + "% apart). The square wave is the feed's tick size, not real trading; integrity rails exclude it from entries.</text>";
+      s += "<text x='" + (padL + iw / 2).toFixed(1) + "' y='" + (padT + 11) + "' font-size='8.5' fill='#d4af37' text-anchor='middle' font-weight='700'>⚠ FEED " + qz.grade + " — " + (qz.why || "") + (qz.gated ? " · EXCLUDED from entries and from fitting until the feed improves." : "") + "</text>";
     }
     if (withCross) s += "<g class='cross' style='display:none'><line stroke='#ffffff66' stroke-width='1'/><circle r='3.6' fill='#fff'/><g class='ctip'></g></g>";
     s += "</svg>";
@@ -346,6 +353,11 @@
     var gr = rec(GEO, canon(sym)) || {}, gv = gr.verdict, gcol = gv === "TRADEABLE" ? "#16c784" : (gv && gv.indexOf("UNTRADEABLE") === 0) ? "#ea3943" : "#9aa4b8";
     var H = "<div style='display:flex;align-items:baseline;gap:10px;flex-wrap:wrap'><span style='font-size:18px;font-weight:800'>" + sym + "</span><span style='font-size:18px;font-weight:800'>" + fmtP(st.close) + "</span><span style='color:" + col + ";font-weight:700'>" + (st.chgP >= 0 ? "▲ +" : "▼ ") + st.chgP.toFixed(2) + "% (" + (st.chg >= 0 ? "+" : "") + fmtP(st.chg) + ")</span><span style='background:" + tcol + "22;color:" + tcol + ";border:1px solid " + tcol + "55;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700'>" + tr.label + " " + (tr.slopePct >= 0 ? "+" : "") + tr.slopePct + "%</span>";
     if (gv) H += "<span style='background:" + gcol + "18;color:" + gcol + ";border:1px solid " + gcol + "55;padding:1px 7px;border-radius:10px;font-size:10.5px;font-weight:700'>geometry " + gv + "</span>";
+    var _pth = rec(PT, canon(sym));
+    if (_pth && _pth.grade && _pth.grade !== "OK") {
+      var _pc = _pth.grade === "UNKNOWN" ? "#9aa4b8" : "#d4af37";
+      H += "<span style='background:" + _pc + "18;color:" + _pc + ";border:1px solid " + _pc + "55;padding:1px 7px;border-radius:10px;font-size:10.5px;font-weight:700'>feed " + _pth.grade + "</span>";
+    }
     H += agreeChip(c);
     H += "</div>";
     return H;
@@ -414,7 +426,7 @@
     }
 
     if (c.qz) {
-      H += "<div style='margin:8px 0;padding:6px 8px;border:1px solid #d4af3755;border-radius:6px;background:#d4af3711;font-size:10.5px;color:#d4af37'><b>⚠ QUANTIZED FEED.</b> Only " + c.qz.levels + " representable price levels in view (" + c.qz.spreadPct.toFixed(1) + "% apart) — a precision limit of the venue feed, not trading. The square-wave shape is the feed's tick size; freshness/integrity rails keep it out of entries and learning.</div>";
+      H += "<div style='margin:8px 0;padding:6px 8px;border:1px solid #d4af3755;border-radius:6px;background:#d4af3711;font-size:10.5px;color:#d4af37'><b>⚠ FEED " + c.qz.grade + ".</b> " + (c.qz.why || "") + (c.qz.gated ? " This name is EXCLUDED from entries, from fingerprint fitting and from the strategy arena until its feed resolves finely enough to express the move — it keeps collecting tape and is re-graded every cycle." : "") + "</div>";
     }
 
     try {

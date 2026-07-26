@@ -552,8 +552,15 @@ function renderClock(){_updLastUpd();const now=new Date();
 setInterval(renderClock,1000);renderClock();
 function renderHealth(){const L=LIVE||{};const el=document.getElementById('healthFooter');if(!el)return;
   const age=L.generated_at?Math.round((Date.now()-new Date(L.generated_at))/60000):null;
-  el.innerHTML=`PROJECT HEALTH · last sim run: ${L.generated_at?new Date(L.generated_at).toLocaleString()+(age!=null?' ('+age+'m ago)':''):'—'} · books live: crypto/stock/metal/energy + 🦎 GEKKO + 4 bench nulls · feeds: price+ccxt+news active, metals/energy via API keys · data: internal paper sim (Alpaca paper + live shown separately when wired)`;}
+  /* 7.1.2: feed health is project health. A cockpit that reports "feeds active" while a
+     third of the tape is frozen or quantized is the panel that let the square waves through. */
+  const PTM=window.__SIL_PRICE_TRUTH_META||{}, PTC=PTM.counts||{};
+  const bad=(PTC.FROZEN||0)+(PTC.QUANTIZED||0)+(PTC.COARSE||0)+(PTC.DISPUTED||0);
+  const ptLine=PTM.graded?(` · <b>FEED TRUTH</b>: ${PTM.tradeable}/${PTM.graded} tapes tradeable`+(bad?` · quarantined ${bad} (`+['FROZEN','QUANTIZED','COARSE','DISPUTED'].filter(k=>PTC[k]).map(k=>PTC[k]+' '+k.toLowerCase()).join(', ')+`) — excluded from entries, fitting and the arena; re-graded every cycle`:' · all clean')+(PTC.UNKNOWN?` · ${PTC.UNKNOWN} still gathering prints`:'')):' · FEED TRUTH: not published yet (first graded cycle pending)';
+  el.innerHTML=`PROJECT HEALTH · last sim run: ${L.generated_at?new Date(L.generated_at).toLocaleString()+(age!=null?' ('+age+'m ago)':''):'—'} · books live: crypto/stock/metal/energy + 🦎 GEKKO + 4 bench nulls · feeds: price+ccxt+news active, metals/energy via API keys · data: internal paper sim (Alpaca paper + live shown separately when wired)`+ptLine;}
 async function load(){
+  /* 7.1.2 PRICE TRUTH — one feed verdict, shared by every panel and the chart modal. */
+  try{ if(!window.__SIL_PRICE_TRUTH){ const _pt = await jget('data/PRICE_TRUTH.json'); window.__SIL_PRICE_TRUTH = (_pt&&_pt.by_symbol)||{}; window.__SIL_PRICE_TRUTH_META = {counts:(_pt&&_pt.counts)||{}, graded:(_pt&&_pt.graded)||0, tradeable:(_pt&&_pt.tradeable)||0, at:(_pt&&_pt.generated_at)||null}; } }catch(e){ window.__SIL_PRICE_TRUTH = window.__SIL_PRICE_TRUTH||{}; }
   try{ if(!window.__SIL_CARDS){ const _cc = await jget('data/CONFIDENCE_CARDS.json'); window.__SIL_CARDS = (_cc&&_cc.cards)||{}; window.__SIL_CARDS_META = {n:(_cc&&_cc.n_cards)||0, leaders:(_cc&&_cc.compounder_leaders)||[]}; } }catch(e){ window.__SIL_CARDS = window.__SIL_CARDS||{}; }
   LIVE=await jget('data/paper_sim_live.json');
   // 7.0.1 RESET-TRUTH BANNER: if a wipe is newer than the live snapshot, or the snapshot is the
@@ -1199,15 +1206,23 @@ async function renderBrain(){try{
     var tr=d.trajectory||{};function tchip(k){var v=tr[k];return '<span style="font-size:10px;margin-right:6px">'+k+' <b class="'+((v||0)>=0?'pos':'neg')+'">'+(v!=null?(v>=0?'+':'')+v.toFixed(2)+'%':'\u2014')+'</b></span>';}
     var parts=d.confidence_parts||{};var pbars=Object.keys(parts).map(function(k){return '<div style="display:flex;align-items:center;gap:6px;font-size:9px"><span class="dim" style="min-width:120px">'+k.replace(/_/g,' ')+'</span><div style="height:7px;width:'+Math.max(2,(parts[k]||0)*120)+'px;background:var(--gold);border-radius:2px"></div><span>'+(parts[k]!=null?Math.round(parts[k]*100)+'%':'\u2014')+'</span></div>';}).join('');
     function fact(k,v){return '<div style="margin:3px 0"><span class="dim" style="font-size:9px;text-transform:uppercase">'+k+'</span><div style="font-size:12.5px;font-weight:700">'+v+'</div></div>';}
-    dpn.innerHTML='<div style="margin-bottom:8px">'+chips+'</div>'
+    var _ptd=(window.__SIL_PRICE_TRUTH||{})[d.sym]||{};
+    var _ptBad=_ptd.grade&&_ptd.grade!=='OK'&&_ptd.grade!=='UNKNOWN';
+    /* 7.1.2: a dossier is a claim about a name. On a feed graded FROZEN/QUANTIZED/COARSE/
+       DISPUTED the rhythm, ETA and likelihoods are artifacts of the venue's tick size —
+       LDO's "regular 144m cycle - RHYTHM-TRADEABLE" was read off a square wave. Say so at
+       the top and strike the claims rather than printing confident numbers. */
+    var _ptBanner=_ptBad?('<div style="margin-bottom:8px;padding:6px 9px;border:1px solid var(--gold);border-radius:6px;background:rgba(212,175,55,.10);font-size:10.5px;color:var(--gold)"><b>\u26a0 FEED '+_ptd.grade+'</b> \u2014 '+(_ptd.why||'')+' Rhythm, ETA and likelihoods below are NOT trusted for this name and it is excluded from entries and from fitting until its feed improves.</div>'):'';
+    function _ptv(v){return _ptBad?('<span class="dim">not trusted \u2014 feed '+_ptd.grade+'</span>'):v;}
+    dpn.innerHTML='<div style="margin-bottom:8px">'+chips+'</div>'+_ptBanner
     +'<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;align-items:start">'
     +'<div>'+svgSpark(d,560,230)
     +'<div style="margin-top:6px">'+tchip('h1')+tchip('d1')+tchip('d2')+tchip('w1')+' <span class="dim" style="font-size:9px">trajectory (momentum windows)</span></div></div>'
     +'<div>'
     +fact('last peak', d.last_peak_at?_fmtAgoIso(d.last_peak_at):'\u2014')
-    +fact('next peak ETA', d.next_peak_eta?(_fmtAgoIso(d.next_peak_eta)+' <span class=dim style=font-size:9px>(last peak + median cycle '+Math.round(d.cycle_min||0)+'m)</span>'):'learning')
-    +fact('typical swing', (d.amplitude_pct!=null?d.amplitude_pct.toFixed(2)+'%':'\u2014')+' <span class=dim style=font-size:9px>cycle '+(d.cycle_min?Math.round(d.cycle_min)+'m':'\u2014')+'</span>')
-    +fact('bounce likelihood', d.bounce_likelihood!=null?Math.round(d.bounce_likelihood*100)+'% <span class=dim style=font-size:9px>of dips historically recovered</span>':'learning')
+    +fact('next peak ETA', _ptBad?_ptv(''):d.next_peak_eta?(_fmtAgoIso(d.next_peak_eta)+' <span class=dim style=font-size:9px>(last peak + median cycle '+Math.round(d.cycle_min||0)+'m)</span>'):'learning')
+    +fact('typical swing', _ptBad?_ptv(''):(d.amplitude_pct!=null?d.amplitude_pct.toFixed(2)+'%':'\u2014')+' <span class=dim style=font-size:9px>cycle '+(d.cycle_min?Math.round(d.cycle_min)+'m':'\u2014')+'</span>')
+    +fact('bounce likelihood', _ptBad?_ptv(''):d.bounce_likelihood!=null?Math.round(d.bounce_likelihood*100)+'% <span class=dim style=font-size:9px>of dips historically recovered</span>':'learning')
     +fact('its own buy level', d.typical_dip!=null?('dip \u2265 '+(d.typical_dip*100).toFixed(2)+'% \u00b7 aims +'+((d.typical_bounce||0)*100).toFixed(2)+'%'):'vol-native fallback')
     +fact('MTF confluence', (d.mtf_confluence!=null?((d.mtf_confluence>=0?'+':'')+d.mtf_confluence):'\u2014'))
     +fact('confidence', d.confidence!=null?('<span class=pos>'+Math.round(d.confidence*100)+'%</span> \u00b7 rhythm-tradeability '+Math.round((d.rhythm_tradeability||0)*100)+'%'):'\u2014')
