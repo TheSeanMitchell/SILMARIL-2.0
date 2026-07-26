@@ -2441,7 +2441,12 @@ def t118_sleeves_respect_the_calendar():
     real_now = L._now
     try:
         L._now = lambda: datetime(2026, 7, 26, 18, 0, tzinfo=timezone.utc)   # Sunday
-        ok_sun = _market_open_for("stock") is False and _market_open_for("metal") is False
+        # 7.1.5 AMENDMENT: the calendar moved from per-BOOK to per-SYMBOL, because one calendar
+        # per book cannot be right for a metal book holding SPOT XAU (24/7 as of 2026-07-26)
+        # alongside ETFs, or an energy book holding BRENT alongside USO. Equities stay shut on a
+        # Sunday; the metal book is now correctly OPEN because gold is. Per-symbol correctness is
+        # asserted in T121; here we assert only that equities are still refused.
+        ok_sun = _market_open_for("stock") is False
         L._now = lambda: datetime(2026, 7, 27, 15, 0, tzinfo=timezone.utc)   # Monday 15:00 UTC
         ok_mon = _market_open_for("stock") is True
         L._now = lambda: datetime(2026, 7, 27, 3, 0, tzinfo=timezone.utc)    # Monday pre-dawn
@@ -2449,10 +2454,11 @@ def t118_sleeves_respect_the_calendar():
     finally:
         L._now = real_now
     src = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
-    ok_entry_gated = "if not _market_open_for(bk.get(\"_book7\")):" in src
-    ok_strike_gated = 'and _market_open_for(bk.get("_book7"))' in src
+    # gating is now per-symbol at each entry point (strike slots and mean-reversion slots)
+    ok_entry_gated = src.count("_market_open_for_symbol(sym, _book7)") >= 2
+    ok_strike_gated = ok_entry_gated
     # exits must NOT be gated — a position still has to be managed through a closed session
-    ok_exits_free = src.index("if not _market_open_for") > src.index('_sell(bk, sym, cur, "TARGET"')
+    ok_exits_free = "_market_open_for_symbol" not in src.split('_sell(bk, sym, cur, "TARGET"')[1][:400]
     check("T118 sleeves respect the market calendar: no weekend equity/metal entries, crypto unaffected, exits still managed while closed",
           ok_crypto and ok_sun and ok_mon and ok_closed_hours and ok_entry_gated
           and ok_strike_gated and ok_exits_free,
@@ -2602,6 +2608,97 @@ def t120_graph_decision_audit():
           f"states_gap={ok_states_gap} honesty={ok_honesty} wired={ok_wired} panel={ok_panel}")
 
 
+def t121_sleeves_have_the_books_rails():
+    """7.1.5 THE RAILS THE SLEEVES NEVER GOT. An audit of the two engines side by side:
+
+        rail                books   sleeves (before this release)
+        re-entry cooldown     4        0
+        trajectory veto      11        0
+        market calendar       yes      no (added 7.1.4, but gated per BOOK — wrong for both)
+
+    Six releases of hard-won safety rails existed only in the funded books. The workshop's
+    results read exactly as a book with no rails would:
+
+      G GEOMETRY SNIPER — 4 closed, 0% win, all STOPs, and the ledger shows the mechanism:
+          SELL XTZ STOP 08:47:54 -> BUY XTZ 08:47:54   (same second)
+          SELL TURBO STOP 12:18:42 -> BUY TURBO 12:18:42 (same second)
+          SELL XMR STOP 17:31:23 -> BUY XMR 17:31:23   (same second)
+        Stop out, instantly re-buy the same falling name, repeat. Not a bad strategy — a
+        strategy with no cooldown.
+      H PATIENT REVERT — 2 closed, 0% win, both STOPs on names in confirmed downtrends.
+        Mean reversion wants oversold-in-a-RANGE; bought in free-fall it is merely early.
+
+    Also asserted: the calendar is per SYMBOL, because one calendar per book cannot be right
+    for a metal book holding SPOT XAU (24/7 as of 2026-07-26) and a stock book holding equities.
+    And the vetoes must be WRITTEN DOWN — "quiet by correct design" and "actually broken" look
+    identical from outside until the workshop states its reasons."""
+    from silmaril.execution import strategy_lab_abcd as L
+
+    # ── rail 1: cooldown breaks the stop→rebuy loop ────────────────────────────────────
+    bk = {"trades": [{"side": "SELL", "sym": "XTZ-USD", "why": "STOP",
+                      "t": (now() - timedelta(minutes=5)).isoformat()}]}
+    ok_stop_blocked = _cd(L, bk, "XTZ-USD") is False
+    bk2 = {"trades": [{"side": "SELL", "sym": "XTZ-USD", "why": "STOP",
+                       "t": (now() - timedelta(minutes=400)).isoformat()}]}
+    ok_expires = _cd(L, bk2, "XTZ-USD") is True
+    bk3 = {"trades": [{"side": "SELL", "sym": "AAA-USD", "why": "TARGET",
+                       "t": (now() - timedelta(minutes=200)).isoformat()}]}
+    ok_target_shorter = _cd(L, bk3, "AAA-USD") is True         # 180m bar, not the 360m stop bar
+    ok_fresh_name = _cd(L, bk, "NEW-USD") is True              # never traded: no cooldown
+
+    # ── rail 2: trajectory veto refuses a name in free-fall with stepping-down peaks ───
+    base = now().replace(microsecond=0)
+    def mk(vals):
+        return [[(base - timedelta(minutes=5 * (len(vals) - i))).isoformat(), v]
+                for i, v in enumerate(vals)]
+    n = 300
+    falling = [100.0 * (1 - 0.0006 * i) + (2.0 if (i % 25) < 3 else 0.0) for i in range(n)]
+    ranging = [100.0 + 2.0 * ((i % 40) / 40.0) for i in range(n)]
+    cfg = {"respect_trajectory": True}
+    ok_veto = L._trajectory_ok("FALL-USD", mk(falling), cfg)[0] is False
+    ok_range_allowed = L._trajectory_ok("RANGE-USD", mk(ranging), cfg)[0] is True
+    ok_killable = L._trajectory_ok("FALL-USD", mk(falling), {"respect_trajectory": False})[0] is True
+    ok_peaks = L._peaks_falling(mk(falling)) is True
+
+    # ── rail 3: the calendar is per SYMBOL ────────────────────────────────────────────
+    real_now = L._now
+    try:
+        L._now = lambda: datetime(2026, 7, 26, 18, 0, tzinfo=timezone.utc)     # Sunday
+        ok_gold_sun = L._market_open_for_symbol("XAU", "metal") is True        # CME 1oz: 24/7
+        ok_silver_sun = L._market_open_for_symbol("XAG", "metal") is False     # 24/5, still shut
+        ok_etf_sun = L._market_open_for_symbol("GLD", "metal") is False        # an ETF is an ETF
+        ok_equity_sun = L._market_open_for_symbol("IRM", "stock") is False     # the Sunday trade
+        ok_crypto_sun = L._market_open_for_symbol("BTC-USD", "crypto") is True
+        L._now = lambda: datetime(2026, 7, 28, 10, 0, tzinfo=timezone.utc)     # Tue, pre-NYSE
+        ok_spot_weekday = L._market_open_for_symbol("BRENT", "energy") is True
+        ok_equity_predawn = L._market_open_for_symbol("IRM", "stock") is False
+        L._now = lambda: datetime(2026, 9, 1, 3, 0, tzinfo=timezone.utc)       # after the WTI date
+        ok_wti_flips = L._market_open_for_symbol("WTI", "energy") is True
+    finally:
+        L._now = real_now
+
+    src = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
+    ok_wired = (src.count("_cooldown_ok(bk, sym)") >= 2
+                and src.count("_trajectory_ok(sym, tape.get(sym), cfg)") >= 2
+                and src.count("_market_open_for_symbol(sym, _book7)") >= 2)
+    ok_published = "SLEEVE_VETOES.json" in src and '"reentry_cooldown_min"' in src
+    check("T121 sleeves now carry the books' rails: cooldown breaks the stop→rebuy loop, trajectory vetoes free-fall entries, the calendar is per-symbol (gold 24/7, ETFs not), and every refusal is written down",
+          ok_stop_blocked and ok_expires and ok_target_shorter and ok_fresh_name
+          and ok_veto and ok_range_allowed and ok_killable and ok_peaks
+          and ok_gold_sun and ok_silver_sun and ok_etf_sun and ok_equity_sun and ok_crypto_sun
+          and ok_spot_weekday and ok_equity_predawn and ok_wti_flips
+          and ok_wired and ok_published,
+          f"stop_blocked={ok_stop_blocked} expires={ok_expires} target_bar={ok_target_shorter} "
+          f"fresh={ok_fresh_name} veto={ok_veto} range_ok={ok_range_allowed} kill={ok_killable} "
+          f"peaks={ok_peaks} gold_sun={ok_gold_sun} silver_sun={ok_silver_sun} etf={ok_etf_sun} "
+          f"equity={ok_equity_sun} crypto={ok_crypto_sun} spot_wd={ok_spot_weekday} "
+          f"predawn={ok_equity_predawn} wti={ok_wti_flips} wired={ok_wired} published={ok_published}")
+
+
+def _cd(L, bk, sym):
+    return L._cooldown_ok(bk, sym)[0]
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -2653,7 +2750,8 @@ if __name__ == "__main__":
               t115_arena_honesty, t116_click_path_runs,
               t117_no_fabricated_fills, t118_sleeves_respect_the_calendar,
               t119_corruption_is_findable_and_quarantined,
-              t120_graph_decision_audit):
+              t120_graph_decision_audit,
+              t121_sleeves_have_the_books_rails):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

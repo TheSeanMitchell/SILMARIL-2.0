@@ -272,29 +272,165 @@ def _sell(bk: Dict[str, Any], sym: str, price: float, why: str, vault: bool,
     del bk["positions"][sym]
 
 
-def _market_open_for(book: str) -> bool:
-    """Is this book's market open right now? Crypto never closes; everything else follows the
-    US session. Deliberately conservative and self-contained: if the engine's own economic
-    clock is available it wins, and if anything is uncertain we say CLOSED, because a missed
-    entry costs nothing and a weekend fill against a stale print corrupts the record."""
-    if book in (None, "crypto", "aggressive"):
-        return True
+# ── 7.1.5 THE PER-SYMBOL CALENDAR ──────────────────────────────────────────────────────
+# 7.1.4 gated by BOOK and got it wrong in both directions. The metal book holds XAU, XAG,
+# XPT, XPD, XCU — SPOT metals, not ETFs — and spot metal never closed on weekends the way an
+# equity does; blocking the whole book on a Saturday silenced instruments that were trading
+# fine. Meanwhile the stock book holds real equities that must respect the NYSE session.
+# One calendar per BOOK cannot be right for both, so the calendar is now per SYMBOL.
+#
+# Operator note, 2026-07-26: CME's 1-Ounce Gold future moved to 24/7 on this date, and a 24/7
+# 10-Barrel WTI contract is scheduled for 2026-08-30. Our metal/energy books trade the SPOT
+# series, which already price around the clock on weekdays; gold now prices on weekends too.
+# The table below encodes that, with the WTI date pre-registered so it flips itself.
+SPOT_24_7 = {"XAU"}                                   # CME 1oz gold: 24/7 from 2026-07-26
+SPOT_24_5 = {"XAG", "XPT", "XPD", "XCU",              # spot metals: Sun 22:00 → Fri 21:00 UTC
+             "BRENT", "WTI", "NATGAS", "GASOIL"}      # energy spot/futures: same window
+WTI_24_7_FROM = datetime(2026, 8, 30, tzinfo=timezone.utc)
+_US_ETF = {"GLD", "IAU", "SLV", "GDX", "SIVR", "PPLT", "PALL", "CPER",
+           "USO", "USL", "USOI", "UNG", "BNO", "UGA", "SPY", "QQQ"}
+
+
+# ── 7.1.5 THE RAILS THE SLEEVES NEVER GOT ─────────────────────────────────────────────
+# The audit that produced this release: the BOOKS carry a re-entry cooldown (4 references), a
+# trajectory veto (11 references) and a market calendar, accumulated over six releases of hard
+# lessons. The SLEEVES carried NONE of them. Grep score before this change —
+#   cooldown: books 3, sleeves 0 · re-entry: books 4, sleeves 0 · trajectory: books 11, sleeves 0
+# and the workshop's results read exactly like a book with no rails would:
+#
+#   G GEOMETRY SNIPER — 4 closed, 0% win, every one a STOP. And the ledger shows why:
+#       SELL XTZ-USD  STOP 08:47:54   ->  BUY XTZ-USD 08:47:54   (the same second)
+#       SELL TURBO    STOP 12:18:42   ->  BUY TURBO   12:18:42   (the same second)
+#       SELL XMR-USD  STOP 17:31:23   ->  BUY XMR-USD 17:31:23   (the same second)
+#     It stopped out and instantly re-bought the identical falling name, over and over. That is
+#     not a bad strategy; that is a strategy with no cooldown, feeding itself into a knife.
+#
+#   H PATIENT REVERT — 2 closed, 0% win, both STOPs, both on names in confirmed downtrends
+#     (XTZ: peaks FALLING, -1.6% 1D / -2.2% 2D / -2.2% 3D; TURBO likewise). Mean reversion wants
+#     oversold-in-a-RANGE. Bought in free-fall it is just early.
+#
+# Two rails, both mirroring what the books already do, both knob-gated with a kill switch.
+REENTRY_COOLDOWN_MIN = 180.0        # matches the books' 180-minute re-entry cooldown
+STOPPED_COOLDOWN_MIN = 360.0        # a name that stopped us out earns a longer timeout
+
+
+def _cooldown_ok(bk: Dict[str, Any], sym: str) -> tuple:
+    """(may_enter, why_not). A name we just exited is not a fresh idea — least of all one that
+    just stopped us out. This single rail is what breaks G's stop→rebuy loop."""
     try:
-        from .market_clock import is_open as _mc_is_open        # engine calendar, when present
-        v = _mc_is_open(book)
-        if v is not None:
-            return bool(v)
+        last, was_stop = None, False
+        for t in reversed(bk.get("trades") or []):
+            if t.get("side") == "SELL" and t.get("sym") == sym:
+                last = _parse(t.get("t"))
+                was_stop = str(t.get("why") or "").upper() == "STOP"
+                break
+        if not last:
+            return True, None
+        mins = (_now() - last).total_seconds() / 60.0
+        bar = STOPPED_COOLDOWN_MIN if was_stop else REENTRY_COOLDOWN_MIN
+        if mins < bar:
+            return False, ("cooldown — %s %s us %.0fm ago; a name we just exited is not a fresh "
+                           "idea for another %.0fm" % (sym, "stopped" if was_stop else "closed",
+                                                       mins, bar - mins))
     except Exception:
         pass
+    return True, None
+
+
+def _peaks_falling(rows: List) -> Optional[bool]:
+    """Is this name making LOWER highs? The graph brain's most basic read, finally consulted by
+    a decision instead of only drawn. None when there is not enough structure to judge."""
+    try:
+        live = [(t, float(p)) for t, p in (rows or [])
+                if p and float(p) > 0 and "T00:00:00" not in str(t)]
+        if len(live) < 30:
+            return None
+        ys = [p for _t, p in live][-400:]
+        n = len(ys)
+        rets = sorted(abs(ys[i] / ys[i - 1] - 1) for i in range(1, n) if ys[i - 1] > 0)
+        sig = rets[len(rets) // 2] if rets else 0.001
+        prom, w = max(sig * 3, 0.002), max(2, n // 40)
+        peaks = []
+        for i in range(w, n - w):
+            if ys[i] == max(ys[i - w:i + w + 1]):
+                base = min(ys[max(0, i - w * 3):i + 1])
+                if base > 0 and ys[i] / base - 1 >= prom:
+                    peaks.append(ys[i])
+        if len(peaks) < 3:
+            return None
+        lp = peaks[-3:]
+        return lp[-1] < lp[0] * 0.998
+    except Exception:
+        return None
+
+
+def _trajectory_ok(sym: str, rows: List, cfg: Dict[str, Any]) -> tuple:
+    """(may_enter, why_not). Mean reversion wants oversold-in-a-range, never free-fall. If the
+    name is down across EVERY window AND its peaks are stepping down, this is not a dip — it is
+    a decline, and buying it is what cost H both of its trades.
+
+    This is the first time the graph's own read gates a decision rather than decorating one. It
+    is deliberately a VETO, not a signal: a veto can only prevent a trade the system was already
+    about to take, so it cannot manufacture a new class of loss. Its effect is logged for the
+    graph→decision audit to grade."""
+    if not cfg.get("respect_trajectory", True):
+        return True, None
+    try:
+        from .paper_sim import _traj_win as _tw
+        wins = []
+        for h in (4, 12, 24):
+            pct, basis = _tw([(str(t), float(p)) for t, p in (rows or []) if p], h)
+            if pct is not None:
+                wins.append(pct)
+        if len(wins) >= 2 and all(w < -0.005 for w in wins):
+            if _peaks_falling(rows) is True:
+                return False, ("trajectory veto — %s is down across every window (%s) and its "
+                               "peaks are stepping down. That is a decline, not a dip; mean "
+                               "reversion wants oversold-in-a-range."
+                               % (sym, ", ".join("%.2f%%" % (w * 100) for w in wins)))
+    except Exception:
+        pass
+    return True, None
+
+
+def _market_open_for_symbol(sym: str, book: str = None) -> bool:
+    """May we OPEN a position in this instrument right now?
+
+    Conservative by construction: anything unrecognised falls through to the equity session,
+    because a missed entry costs nothing and a fill against a frozen weekend print corrupts the
+    record — which is exactly what the Sunday IRM trade did."""
+    s = (sym or "").upper()
     t = _now().astimezone(timezone.utc)
-    if t.weekday() >= 5:                                       # Saturday / Sunday
-        return False
-    mins = t.hour * 60 + t.minute
-    if book == "energy":                                       # futures-style, near-24/5
+    wd, mins = t.weekday(), t.hour * 60 + t.minute
+
+    if book in ("crypto", "aggressive") or s.endswith("-USD") or s.endswith("USDT"):
+        return True                                    # crypto never closes
+    if s in SPOT_24_7 or (s == "WTI" and t >= WTI_24_7_FROM):
+        return True                                    # 24/7 spot (gold today, WTI from Aug 30)
+    if s in SPOT_24_5:
+        # the global 24/5 window: closes Fri 21:00 UTC, reopens Sun 22:00 UTC
+        if wd == 5:
+            return False
+        if wd == 4 and mins >= 21 * 60:
+            return False
+        if wd == 6 and mins < 22 * 60:
+            return False
         return True
-    if book == "metal":                                        # spot metals, 24/5
+    if s in _US_ETF or book in ("stock", "metal", "energy"):
+        if wd >= 5:
+            return False
+        return (13 * 60 + 30) <= mins <= (20 * 60)     # NYSE regular session, UTC
+    return False
+
+
+def _market_open_for(book: str) -> bool:
+    """Book-level convenience kept for callers that ask 'is anything in this book open?'.
+    A book is open if ANY of its instruments is — the per-symbol gate does the real work."""
+    if book in (None, "crypto", "aggressive"):
         return True
-    return (13 * 60 + 30) <= mins <= (20 * 60)                 # NYSE regular session, UTC
+    probe = {"metal": ("XAU", "XAG", "GLD"), "energy": ("BRENT", "WTI", "USO"),
+             "stock": ("SPY",)}.get(book, ("SPY",))
+    return any(_market_open_for_symbol(x, book) for x in probe)
 
 
 def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
@@ -347,7 +483,7 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
     def _avail() -> float:
         return bk["cash"]
 
-    if cfg.get("strike_extra") and surge and _market_open_for(bk.get("_book7")):
+    if cfg.get("strike_extra") and surge:
         strikes_open = sum(1 for p in bk["positions"].values() if p.get("style") == "STRIKE")
         room = cfg["strike_extra"] - strikes_open
         for sym, px, mom in strike_pool:
@@ -359,6 +495,16 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
             # may not be PRICED from them. Re-price from the tape and refuse a stale fill.
             _tp = marks.get(sym)
             if not _tp or _tp <= 0 or not _px_is_fresh(sym):
+                continue
+            if not _market_open_for_symbol(sym, _book7):
+                continue
+            _ok, _why = _cooldown_ok(bk, sym)
+            if not _ok:
+                _vetoes.append({"sym": sym, "sleeve": cfg.get("sleeve"), "why": _why})
+                continue
+            _ok, _why = _trajectory_ok(sym, tape.get(sym), cfg)
+            if not _ok:
+                _vetoes.append({"sym": sym, "sleeve": cfg.get("sleeve"), "why": _why})
                 continue
             px = _tp
             budget = min(_avail() * 0.30, _avail() - 25)
@@ -386,8 +532,9 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
     # queued the order to Monday's open and filled somewhere else entirely. Crypto is 24/7
     # and unaffected. This gate blocks ENTRIES only — exits and marks continue, exactly as a
     # real desk manages a position through a closed session.
-    if not _market_open_for(bk.get("_book7")):
-        return
+    _book7 = bk.get("_book7")
+    _vetoes = bk.setdefault("_vetoes7", [])
+    tape = bk.get("_tape7") or {}
     cap = cfg["cap"]
     open_mr = sum(1 for p in bk["positions"].values() if p.get("style") != "STRIKE")
     if open_mr < cap:
@@ -409,6 +556,16 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
             _tp = marks.get(sym)
             if not _tp or _tp <= 0 or not _px_is_fresh(sym):
                 continue                      # tape-priced, fresh-only (see THE ONE FRESH PRICE LAW)
+            if not _market_open_for_symbol(sym, _book7):
+                continue
+            _ok, _why = _cooldown_ok(bk, sym)
+            if not _ok:
+                _vetoes.append({"sym": sym, "sleeve": cfg.get("sleeve"), "why": _why})
+                continue
+            _ok, _why = _trajectory_ok(sym, tape.get(sym), cfg)
+            if not _ok:
+                _vetoes.append({"sym": sym, "sleeve": cfg.get("sleeve"), "why": _why})
+                continue
             px = _tp
             budget = _avail() / max(1, cap - open_mr)
             budget = min(budget, _avail() * 0.95)
@@ -646,6 +803,7 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
             bk["_geo7"] = {c[0]: _geo.get(c[0]) for c in _cands_sk} if (cfg.get("geometry") or cfg.get("patient")) else None
             bk["_regime7"] = _regimes.get(book)
             bk["_book7"] = book
+            bk["_tape7"] = _tape7
             _RIVER.update({"out": str(out), "sleeve": sk, "book": book})
             _run_sleeve(cfg, bk, marks, _cands_sk, conf_map, fastgreen, surge, strike_pool, cost_of)
             _RIVER.update({"out": None})
@@ -720,6 +878,31 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                   "F = CASH HARVESTER (profits vaulted; $10k working base — profits are only "
                   "profits when they leave the table). Judged on compounding, never win rate; "
                   "kill after 40 closed if trailing that industry's A.")
+    # ── 7.1.5: publish WHY each sleeve stayed out. "Quiet by correct design" and "actually
+    # broken" look identical from the outside unless the vetoes are written down, and the
+    # operator has had to guess between them for weeks. Now the workshop states its reasons.
+    try:
+        _vall, _counts = [], {}
+        for _k, _b in (st.get("sleeves") or {}).items():
+            for _v in (_b.pop("_vetoes7", None) or []):
+                _v = dict(_v); _v["book"] = _k.split(":")[0]
+                _vall.append(_v)
+                _kind = ("cooldown" if "cooldown" in (_v.get("why") or "")
+                         else "trajectory" if "trajectory veto" in (_v.get("why") or "") else "other")
+                _counts[_kind] = _counts.get(_kind, 0) + 1
+            _b.pop("_tape7", None); _b.pop("_book7", None)
+        write_json_atomic(out / "SLEEVE_VETOES.json", {
+            "generated_at": _now().isoformat(),
+            "what": ("every entry a sleeve DECLINED this cycle and the exact rail that stopped it. "
+                     "A workshop that is quiet because its rails are working looks identical to a "
+                     "broken one until it says so."),
+            "counts": _counts, "total": len(_vall), "vetoes": _vall[:300],
+            "rails": {"reentry_cooldown_min": REENTRY_COOLDOWN_MIN,
+                      "stopped_cooldown_min": STOPPED_COOLDOWN_MIN,
+                      "trajectory_veto": "down across every window AND peaks stepping down"},
+        })
+    except Exception:
+        pass
     write_json_atomic(out / STORE, st)
     # ── 7.0 ONE-UNIVERSE: publish the river summary + the CHAMPION SLEEVE spotlight ──
     try:

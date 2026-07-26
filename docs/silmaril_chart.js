@@ -316,8 +316,8 @@
     }
     (ov.trades || []).forEach(function (t) {
       var et = tsParse(t.entry_t), xt = tsParse(t.exit_t);
-      if (et && et >= xs[0] && et <= xs[xs.length - 1] && t.entry != null) { var ex = X(et), ey = Y(t.entry); s += "<path d='M" + ex.toFixed(1) + "," + (ey + 6).toFixed(1) + " l-4,7 l8,0 z' fill='#9aa4b8' opacity='.95'/>"; }
-      if (xt && xt >= xs[0] && xt <= xs[xs.length - 1] && t.exit != null) { var xx2 = X(xt), xy = Y(t.exit), c2 = t.pnl_pct >= 0 ? "#16c784" : "#ea3943"; s += "<path d='M" + xx2.toFixed(1) + "," + (xy - 6).toFixed(1) + " l-4,-7 l8,0 z' fill='" + c2 + "'/>"; }
+      if (et && et >= xs[0] && et <= xs[xs.length - 1] && t.entry != null) { var ex = X(et), ey = Y(t.entry); s += "<path d='M" + ex.toFixed(1) + "," + (ey - 6).toFixed(1) + " l5,6 l-5,6 l-5,-6 z' fill='#e8edf5' stroke='#06121f' stroke-width='.8'><title>WE BOUGHT " + fmtP(t.entry) + " · " + fmtDateTime(et) + "</title></path>"; }
+      if (xt && xt >= xs[0] && xt <= xs[xs.length - 1] && t.exit != null) { var xx2 = X(xt), xy = Y(t.exit), c2 = t.pnl_pct >= 0 ? "#16c784" : "#ea3943"; s += "<path d='M" + xx2.toFixed(1) + "," + (xy - 6).toFixed(1) + " l5,6 l-5,6 l-5,-6 z' fill='" + c2 + "' stroke='#06121f' stroke-width='.8'><title>WE SOLD " + fmtP(t.exit) + " · " + (t.pnl_pct >= 0 ? "+" : "") + t.pnl_pct + "% · " + fmtDateTime(xt) + "</title></path>"; }
     });
     if (ov.dr_strange && ov.dr_strange.expected_move_pct != null) {
       var dsm = ov.dr_strange.expected_move_pct, cur = ys[ys.length - 1], projP = cur * (1 + dsm / 100);
@@ -569,9 +569,14 @@
     host.innerHTML = c.svg;
     modal.querySelector("#slm-hd").innerHTML = head(curSym, c);
     modal.querySelector("#slm-stats").innerHTML = c.st ? statsPanel(curSym, c) : "";
+    // 7.1.5: our FILLS used the same triangles as the tape's PEAKS/TROUGHS, so a chart could not
+    // be read at a glance — the operator said the key was confusing and they were right. Fills are
+    // now diamonds (a decision WE made); structure keeps the triangles (something the MARKET did).
     var legend = "<div style='display:flex;gap:12px;flex-wrap:wrap;font-size:10.5px;margin-bottom:3px'>"
-      + "<span><span style='color:#9aa4b8'>▲</span> buy</span>"
-      + "<span><span style='color:#16c784'>▼</span>/<span style='color:#ea3943'>▼</span> sell (win/loss)</span>"
+      + "<span style='opacity:.75'>OURS:</span>"
+      + "<span><span style='color:#e8edf5'>◆</span> we bought</span>"
+      + "<span><span style='color:#16c784'>◆</span>/<span style='color:#ea3943'>◆</span> we sold (win/loss)</span>"
+      + "<span style='opacity:.75;margin-left:6px'>MARKET:</span>"
       + "<span style='color:#ea3943'>▲ peak</span><span style='color:#39d353'>▼ trough</span>"
       + "<span style='color:#39d353'>┄ floor ·N×</span><span style='color:#ea3943'>┄ ceiling ·N×</span>"
       + "<span style='color:#4da3ff'>┈ fp dip / <span style='color:#7ee787'>fp bounce</span></span>"
@@ -581,7 +586,24 @@
       + (c.ext || []).map(function (e2) { return "<span style='color:" + e2.col + "'>╌ " + e2.lab + " (outside venue)</span>"; }).join("")
       + "</div>";
     var srcBits = (c.ext && c.ext.length ? " · " + c.ext.length + " outside venue(s) overlaid" : (c.srec ? " · outside venues: " + ((c.srec.agreement || {}).verdict || "—") : ""));
-    modal.querySelector("#slm-foot").innerHTML = legend + "SILMARIL Everything Chart · " + (c.rows ? c.rows.length : 0) + " pts · " + curTF + " · price + structure (peaks/floors/cadence) + fingerprint fit + geometry + our fills" + srcBits + ((c.sw && c.sw.peaks) ? " · " + c.sw.peaks.length + " peaks in view" : "");
+    // 7.1.5: "I honestly can't tell if the graphs are working, or defaulting to zero between
+    // runs, so looking like jagged snapping instead of smooth continuity." They are NOT zeroing —
+    // every vertex is a real print and the line between two prints is drawn straight because we
+    // have no data in between. The gap between prints is what makes it look jagged, so the chart
+    // now states its own sampling cadence and its worst gap, and nobody has to wonder again.
+    var _gapTxt = "";
+    try {
+      if (c.rows && c.rows.length > 2) {
+        var _dts = [];
+        for (var _i = 1; _i < c.rows.length; _i++) _dts.push(tsParse(c.rows[_i][0]) - tsParse(c.rows[_i - 1][0]));
+        _dts.sort(function (a, b) { return a - b; });
+        var _med = _dts[Math.floor(_dts.length / 2)] / 60000, _max = _dts[_dts.length - 1] / 60000;
+        _gapTxt = " · sampled every ~" + (_med < 1 ? "<1" : Math.round(_med)) + "m"
+          + (_max > _med * 3 ? (", worst gap " + (_max >= 60 ? (_max / 60).toFixed(1) + "h" : Math.round(_max) + "m")) : "")
+          + " — every vertex is a real print, straight lines between them mean no data in between (never zero)";
+      }
+    } catch (e) {}
+    modal.querySelector("#slm-foot").innerHTML = legend + "SILMARIL Everything Chart · " + (c.rows ? c.rows.length : 0) + " pts · " + curTF + " · price + structure (peaks/floors/cadence) + fingerprint fit + geometry + our fills" + srcBits + ((c.sw && c.sw.peaks) ? " · " + c.sw.peaks.length + " peaks in view" : "") + _gapTxt;
     var svg = host.querySelector("svg.slmchart");
     if (svg && c.rows) cross(svg, c);
   }
