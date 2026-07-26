@@ -1,7 +1,9 @@
 name: Backfill Universe (full coin + 1y fingerprint)
 on:
-  schedule:
-    - cron: "10 8 * * *"   # nightly gap-fill: daily candles + anything cron gaps missed, in the dead zone
+  # 7.1 ONE WRITER LAW: cron REMOVED — the nightly gap-fill now runs INSIDE the daily lane
+  # at 08:1x UTC (one checkout, one commit; see daily.yml). Its scheduled writes to the
+  # sample files raced the live lane's writes to the same files once a day. Manual dispatch
+  # remains for operator-forced gap fills.
   workflow_dispatch:
 # 7.0 FINAL WORKFLOW LAW (operator directive): every lane owns its OWN concurrency group,
 # so NO workflow can ever queue behind, delay, or displace another workflow's runs.

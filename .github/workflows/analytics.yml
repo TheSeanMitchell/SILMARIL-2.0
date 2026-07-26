@@ -14,10 +14,10 @@ name: deep-analytics
 #      copy on conflict; this lane's NEW files always survive. Output can never be silently
 #      discarded by a push race again.
 on:
-  schedule:
-    - cron: "20 7 * * *"
-    - cron: "20 11 * * *"   # 04:20 ET / 01:20 PT low-activity, not mid-session
-    - cron: "20 23 * * *"
+  # 7.1 ONE WRITER LAW: crons REMOVED — the 3x/day deep pass now runs INSIDE the daily
+  # lane at 07/11/23 UTC (one checkout, one commit; see daily.yml). This lane's scheduled
+  # `--live` was one of the three concurrent trade cycles erasing each other via rebase.
+  # Manual dispatch runs the READ-ONLY analytics suite only.
   workflow_dispatch:
 # 7.0 FINAL WORKFLOW LAW (operator directive): every lane owns its OWN concurrency group,
 # so NO workflow can ever queue behind, delay, or displace another workflow's runs.
@@ -104,7 +104,7 @@ jobs:
         env:
           SILMARIL_ANALYTICS: "1"
           SILMARIL_DEEP: "1"
-        run: python -m silmaril --live || echo "::warning::deep pass degraded (exit tolerated; partial artifacts still commit)"
+        run: echo "7.1 ONE WRITER LAW — this lane never runs the live cycle; the daily lane owns it."
       - name: full analytics suite
         run: python -m silmaril.analytics.suite --output docs/data || true
       - name: data diet

@@ -1,160 +1,40 @@
-name: Hourly Brain (heavy pass — off the pulse)
+name: Hourly Brain (RETIRED lane — folded into daily.yml)
 
-# 5.0 LANE SPLIT — the long-requested workflow split, delivered.
-#   PULSE   daily.yml      every ~10 min   SILMARIL_FAST=1 (ingest + trade + live views ONLY)
-#   HOURLY  this file      :07 each hour   full pass (arena compact, RA/TQ, governance,
-#                                           calibration, news/event intelligence, sanitize,
-#                                           brag sheet) — everything the old top-of-hour
-#                                           branch used to jam into the pulse lane
-#   DEEP    analytics.yml  3x/day          WIDE 280-grid + daily-HOLD + full suite + prune
+# ══ 7.1 ONE WRITER LAW ═══════════════════════════════════════════════════════════
+# THE 2026-07-25 INCIDENT: this lane, daily.yml and analytics.yml ALL ran
+# `python -m silmaril --live` on separate checkouts at the same time. The serial
+# lane lock's 600s fairness cap meant this lane "proceeded anyway" almost every
+# hour (the 10-min daily is nearly always in progress), and the push step's
+# `git rebase -X theirs` then resolved every same-file conflict by ERASING the
+# other lane's version of the books, sleeves and ledgers. Trades vanished,
+# sleeve marks froze at entry, and fixed panels kept re-showing pre-fix output
+# from stale checkouts.
 #
-# :07 stagger avoids GitHub's :00 cron congestion. silmaril-hourly serializes this
-# behind/ahead of the pulse — at most one pulse queues briefly once an hour, and the
-# 10-minute lane itself never carries a heavy step again. run_lock (30-min stale
-# reclaim) makes any overlap with the external pinger harmless.
+# The permanent fix is architectural: ONE scheduled lane writes state, ever.
+# daily.yml now runs the FULL (hourly-class) pass itself at the top of each hour
+# — same checkout, same commit — so this lane has NO cron and NO steps that
+# write. It exists only to tell anyone who dispatches it where the work went.
+# Tripwire: selftest T110 (exactly one scheduled lane may run --live).
 
 on:
-  schedule:
-    - cron: "7 * * * *"
   workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Why are you running manually?'
+        required: false
+        default: 'manual trigger'
 
 permissions:
-  contents: write
-  issues: write   # 7.0 FINAL: the lane files its own 🔴 ENGINE RED issue on failure
-
-# 7.0 FINAL WORKFLOW LAW (operator directive): every lane owns its OWN concurrency group,
-# so NO workflow can ever queue behind, delay, or displace another workflow's runs.
-# cancel-in-progress stays FALSE everywhere: once triggered, a run ALWAYS finishes.
-# Lanes may overlap in time (stacking is fine): the engine's own run_lock guards the
-# trade cycle, atomic_io guards every store write, and each commit step pulls+rebases
-# with retries so parallel pushes merge instead of failing.
-concurrency:
-  group: silmaril-hourly   # 7.0.2: OWN lane group. A shared group let only ONE run stay pending, so the 10-min daily kept cancelling queued hourly/analytics. Independent lanes never cancel each other; state safety = run_lock + atomic writes + rebase-retry push.
-  cancel-in-progress: false   # 7.0.5 CRITICAL: a RUNNING cycle is NEVER killed. 7.0.3 set this true and the */10 daily cron then cancelled its own 12-13 min run on every tick — the cycle could never finish. GitHub still supersedes a PENDING run when a newer one arrives, which is the 'newest wins' rule applied to the queue instead of to live work.
+  contents: read
 
 jobs:
-  hourly:
-    if: ${{ github.event_name != 'schedule' || vars.EXTERNAL_CRON_ONLY != 'true' }}
+  notice:
     runs-on: ubuntu-latest
-    timeout-minutes: 350   # 7.0.3: near GitHub's max so a lane can WAIT its turn without being killed (operator: "no timeout so they can always run")
+    timeout-minutes: 5
     steps:
-      # ── 7.0.3 SERIAL LANE LOCK (operator: "we do not want runs running simultaneously, it may
-      # corrupt data ... never interrupt, but also never run simultaneously, with no timeout").
-      # GitHub concurrency alone cannot express this: a shared group serialises but CANCELS queued
-      # runs (the 7.0.1 bug), while independent groups never cancel but DO run at the same time
-      # (the 7.0.2 bug the operator just caught — venue_universe and selftest overlapping).
-      # This step is the missing mutex: before touching state, wait for every other state lane to
-      # finish. It never cancels anyone and never gives up, so a queued run always eventually runs.
-      # Same-lane collisions are handled by concurrency.cancel-in-progress (newest wins) above.
-      - name: 🔒 SERIAL LANE LOCK — wait for other state lanes (never cancel, never overlap)
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: 7.1 ONE WRITER LAW — this lane is retired
         run: |
-          set -uo pipefail
-          LANES="daily.yml hourly.yml analytics.yml venue_universe.yml selftest.yml"
-          ME="${{ github.run_id }}"
-          MINE="${{ github.workflow }}"
-          MY_START="$(date -u +%s)"
-          WAITED=0
-          MAX_WAIT=600   # 7.0.5: fair-share cap. A busy daily must never starve hourly/analytics.
-          while :; do
-            BUSY=""
-            for L in $LANES; do
-              OUT=$(gh api "repos/${{ github.repository }}/actions/workflows/$L/runs?status=in_progress&per_page=30" \
-                     --jq ".workflow_runs[] | select(.id != $ME) | .run_started_at" 2>/dev/null || true)
-              for TS in $OUT; do
-                OTHER=$(date -u -d "$TS" +%s 2>/dev/null || echo 0)
-                # Deterministic tie-break: the run that started EARLIER owns the lane. Equal
-                # timestamps fall back to run id so two simultaneous starts can never both proceed.
-                if [ "$OTHER" -lt "$MY_START" ]; then BUSY="$L"; break; fi
-              done
-              [ -n "$BUSY" ] && break
-            done
-            if [ -z "$BUSY" ]; then
-              echo "lane clear after ${WAITED}s — proceeding"; break
-            fi
-            if [ "$WAITED" -ge "${MAX_WAIT:-600}" ]; then
-              echo "waited ${WAITED}s for $BUSY — proceeding anyway (fairness cap)."
-              echo "state stays safe on atomic writes + cli run_lock + rebase-retry push."
-              break
-            fi
-            echo "waiting ${WAITED}s: $BUSY holds the state lane…"
-            sleep 15; WAITED=$((WAITED+15))
-          done
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Hourly full pass (no FAST flag → hourly-cadence brains run)
-        env:
-          ALPHA_VANTAGE_API_KEY:    ${{ secrets.ALPHA_VANTAGE_API_KEY }}
-          BIRDEYE_API_KEY:          ${{ secrets.BIRDEYE_API_KEY }}
-          COINGECKO_API_KEY:        ${{ secrets.COINGECKO_API_KEY }}
-          EIA_API_KEY:              ${{ secrets.EIA_API_KEY }}
-          FINNHUB_API_KEY:          ${{ secrets.FINNHUB_API_KEY }}
-          FMP_API_KEY:              ${{ secrets.FMP_API_KEY }}
-          FRED_API_KEY:             ${{ secrets.FRED_API_KEY }}
-          OPENEXCHANGERATES_APP_ID: ${{ secrets.OPENEXCHANGERATES_APP_ID }}
-          POLYGON_API_KEY:          ${{ secrets.POLYGON_API_KEY }}
-          TIINGO_API_KEY:           ${{ secrets.TIINGO_API_KEY }}
-          ALPACA_API_KEY:           ${{ secrets.ALPACA_API_KEY }}
-          ALPACA_API_SECRET:        ${{ secrets.ALPACA_API_SECRET }}
-          ALPACA_API_KEY_H3:        ${{ secrets.ALPACA_API_KEY_H3 }}
-          ALPACA_API_SECRET_H3:     ${{ secrets.ALPACA_API_SECRET_H3 }}
-          ALPACA_API_KEY_H5:        ${{ secrets.ALPACA_API_KEY_H5 }}
-          ALPACA_API_SECRET_H5:     ${{ secrets.ALPACA_API_SECRET_H5 }}
-          ALPACA_BASE_URL:          ${{ secrets.ALPACA_BASE_URL }}
-          MARKETAUX_API_KEY:        ${{ secrets.MARKETAUX_API_KEY }}
-          NEWSAPI_KEY:              ${{ secrets.NEWSAPI_KEY }}
-          SEC_USER_AGENT_EMAIL:     ${{ secrets.SEC_USER_AGENT_EMAIL }}
-          TWELVEDATA_API_KEY:       ${{ secrets.TWELVEDATA_API_KEY }}
-        run: |
-          echo "== HOURLY full pass (heavy lane) =="
-          python -m silmaril --live
-
-      - name: Sanitize price history (drop corrupt feed ticks)
-        run: python scripts/sanitize_history.py || true
-
-      - name: Generate social brag sheet
-        run: python scripts/brag_sheet.py || true
-
-      - name: Commit results
-        run: |
-          git config user.name 'silmaril-bot'
-          git config user.email 'silmaril-bot@users.noreply.github.com'
-          git add docs/data/ docs/index.html docs/*.html 2>/dev/null || true
-          if git diff --staged --quiet; then
-            echo "nothing to commit"
-            exit 0
-          fi
-          git commit -m "🧠 hourly brain $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          for i in 1 2 3; do
-            git pull --rebase origin main || git rebase --abort || true
-            git push && break || true
-            echo "push attempt $i failed; fetching tip + rebasing"
-            git fetch --depth=1 origin main && git rebase -X theirs origin/main || git rebase -X theirs --abort || true
-            sleep 4
-          done
-      - name: 🔴 ENGINE RED — self-report failure as a pinned issue (7.0 FINAL fail-loud)
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const title = '🔴 ENGINE RED — hourly lane failing';
-            const body = `Run failed: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\nLane: hourly · ${new Date().toISOString()}\nThe machine reports its own faults now (7.0 fail-loud law). Close this issue after the lane is green again.`;
-            const open = await github.rest.issues.listForRepo({owner: context.repo.owner, repo: context.repo.repo, state: 'open', labels: 'engine-red'});
-            const hit = open.data.find(i => i.title === title);
-            if (hit) { await github.rest.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: hit.number, body}); }
-            else { await github.rest.issues.create({owner: context.repo.owner, repo: context.repo.repo, title, body, labels: ['engine-red']}); }
+          echo "== The hourly full pass now runs INSIDE daily.yml at the top of each hour =="
+          echo "== (one checkout, one commit — the only scheduled writer)."
+          echo "== To force a full pass now: Actions → 'Daily Run' → Run workflow."
+          echo "== This lane deliberately writes nothing, so it can never race the writer."

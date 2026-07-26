@@ -172,8 +172,53 @@ jobs:
           # cycle — nothing heavy ever rides the 10-minute lane again. The hourly
           # heavy pass lives in hourly.yml (cron :07); WIDE/deep stays in
           # analytics.yml (3x/day). This is the long-requested workflow split.
-          export SILMARIL_FAST=1; echo "== FAST trade cycle (pulse lane) =="
+          # ══ 7.1 ONE WRITER LAW ══════════════════════════════════════════════════════════════
+          # THE 2026-07-25 INCIDENT: daily (10-min, 12-13 min runtime), hourly (:07) and the
+          # 3x/day analytics lane ALL ran `python -m silmaril --live` — three concurrent live
+          # trade cycles on three separate checkouts. The serial lane lock's 600s fairness cap
+          # meant hourly/analytics "proceeded anyway" almost every time (daily is nearly always
+          # in progress), and the push step's `git rebase -X theirs` then resolved every same-
+          # file conflict by ERASING the other lane's version of the books, the sleeves, and
+          # the ledgers. That is how trades vanished, sleeve marks froze, "fixed" panels kept
+          # showing pre-fix output from stale checkouts, and yesterday-vs-today went "night and
+          # day" with no code change. The permanent fix is architectural, not another lock:
+          #
+          #     ONE scheduled lane runs the live cycle. ONE checkout. ONE commit. Ever.
+          #
+          # This lane now carries every cadence itself, from ONE clock:
+          #     · every 10 min          → FAST pulse (ingest + trade + live views)
+          #     · top of each hour      → FULL pass (hourly-class brains + source overlay)
+          #     · 07/11/23 UTC :2x tick → deep analytics suite, after the live cycle
+          #     · 08 UTC :1x tick       → nightly universe backfill, after the live cycle
+          #     · 09 UTC :2x tick       → venue-universe listings refresh
+          # hourly.yml / analytics.yml / backfill_universe.yml / venue_universe.yml keep
+          # workflow_dispatch for manual use but have NO cron — they can never race this lane.
+          # Tripwire: selftest T110 (exactly one scheduled lane may run --live).
+          MIN=$(date -u +%M); HH=$(date -u +%H)
+          if [ "$MIN" -lt 10 ]; then
+            echo "== FULL trade cycle (top-of-hour: pulse + hourly-class brains) =="
+          else
+            export SILMARIL_FAST=1; echo "== FAST trade cycle (pulse) =="
+          fi
           python -m silmaril --live
+          if [ "$MIN" -lt 10 ]; then
+            echo "== hourly-class housekeeping (same checkout, same commit) =="
+            python scripts/sanitize_history.py || true
+            python scripts/brag_sheet.py || true
+          fi
+          if [ "$HH" = "08" ] && [ "$MIN" -ge 10 ] && [ "$MIN" -lt 20 ]; then
+            echo "== nightly universe backfill (folded from backfill_universe.yml) =="
+            python scripts/backfill_universe.py || true
+          fi
+          if [ "$HH" = "09" ] && [ "$MIN" -ge 20 ] && [ "$MIN" -lt 30 ]; then
+            echo "== venue-universe listings refresh (folded from venue_universe.yml) =="
+            python scripts/venue_universe.py || true
+          fi
+          if { [ "$HH" = "07" ] || [ "$HH" = "11" ] || [ "$HH" = "23" ]; } && [ "$MIN" -ge 20 ] && [ "$MIN" -lt 30 ]; then
+            echo "== deep analytics suite (folded from analytics.yml — read-only over this cycle's data) =="
+            python -m silmaril.analytics.suite --output docs/data || true
+            python scripts/prune_data.py || true
+          fi
 
       # ── Post-cycle analytics (read-only, additive) ──────────────────
       # Runs the new sentiment-calibration ledger, the brutally-honest agent
