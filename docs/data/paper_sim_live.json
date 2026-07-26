@@ -1,73 +1,266 @@
 {
- "generated_at": "2026-07-26T05:04:38.091328+00:00",
- "seeded_by_reset": true,
- "post_wipe_quiet": {
-  "active": true,
-  "minutes_left": 120
- },
- "regimes": {},
- "marks_health": {
-  "warm_rule": "fresh reset \u2014 rebuilding live context"
- },
- "crypto": {
-  "positions": [],
-  "skipped": false,
-  "why": "",
-  "funnel": {
-   "seen": 0,
-   "entry_warm": 0,
-   "candidates_after_gates": 0,
-   "bought": 0,
-   "rejections": {}
-  }
- },
- "stock": {
-  "positions": [],
-  "skipped": false,
-  "why": "",
-  "funnel": {
-   "seen": 0,
-   "entry_warm": 0,
-   "candidates_after_gates": 0,
-   "bought": 0,
-   "rejections": {}
-  }
- },
- "metal": {
-  "positions": [],
-  "skipped": false,
-  "why": "",
-  "funnel": {
-   "seen": 0,
-   "entry_warm": 0,
-   "candidates_after_gates": 0,
-   "bought": 0,
-   "rejections": {}
-  }
- },
- "energy": {
-  "positions": [],
-  "skipped": false,
-  "why": "",
-  "funnel": {
-   "seen": 0,
-   "entry_warm": 0,
-   "candidates_after_gates": 0,
-   "bought": 0,
-   "rejections": {}
-  }
- },
- "aggressive": {
-  "positions": [],
-  "skipped": false,
-  "why": "",
-  "funnel": {
-   "seen": 0,
-   "entry_warm": 0,
-   "candidates_after_gates": 0,
-   "bought": 0,
-   "rejections": {}
-  }
- },
- "note": "seeded by reset_internal_clean \u2014 the first real engine cycle replaces this"
+  "generated_at": "2026-07-26T05:17:55.696742+00:00",
+  "marks_health": {
+    "marked": 766,
+    "entry_warm": 765,
+    "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
+    "newest_sample_age_min": 1.2,
+    "state": "QUIET after wipe \u2014 106 min left (by design)",
+    "oscillating": 34,
+    "oscillating_syms": [
+      "1INCH-USD",
+      "APE-USD",
+      "APT-USD",
+      "ARB-USD",
+      "ARE",
+      "ARKM-USD",
+      "BF-B",
+      "BLUR-USD",
+      "BXP",
+      "CHZ-USD",
+      "CSGP",
+      "EGLD-USD"
+    ]
+  },
+  "equity_market": {
+    "status": "CLOSED",
+    "why": "weekend"
+  },
+  "regimes": {
+    "crypto": "SIDEWAYS",
+    "stock": "SIDEWAYS",
+    "metal": "SIDEWAYS",
+    "energy": "SIDEWAYS"
+  },
+  "start_cash_each": 10000.0,
+  "champion_strategy": null,
+  "champion_crypto": null,
+  "champion_stock": "market closed",
+  "champion_metal": "market closed",
+  "champion_energy": "market closed",
+  "champion_live_params": {
+    "dir": "mr",
+    "entry": 0.02,
+    "target": 0.02,
+    "stop": 0.04,
+    "max_hold_min": 242.0
+  },
+  "heatshield": {
+    "active": true,
+    "floor_pct": 5.0,
+    "note": "no position stops out tighter than this floor \u2014 sits through heat for the bounce"
+  },
+  "timeout_exit": false,
+  "post_wipe_quiet": {
+    "active": true,
+    "minutes_left": 106.7,
+    "note": "engine intentionally quiet after a wipe \u2014 no trades until the window elapses, so the clean run starts from a known baseline"
+  },
+  "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
+  "feed_integrity": {
+    "generated_at": "2026-07-26T05:17:53.910621+00:00",
+    "spike_pct": 6.0,
+    "snapback_ret": 0.5,
+    "min_snapbacks": 1,
+    "window": 60,
+    "excluded_count": 12,
+    "excluded": [
+      {
+        "sym": "ARB-USD",
+        "snapbacks": 16,
+        "max_move_pct": 10757.8
+      },
+      {
+        "sym": "APT-USD",
+        "snapbacks": 16,
+        "max_move_pct": 459442.0
+      },
+      {
+        "sym": "THETA-USD",
+        "snapbacks": 16,
+        "max_move_pct": 8.8
+      },
+      {
+        "sym": "ENJ-USD",
+        "snapbacks": 16,
+        "max_move_pct": 14.8
+      },
+      {
+        "sym": "ZIL-USD",
+        "snapbacks": 16,
+        "max_move_pct": 46.1
+      },
+      {
+        "sym": "JUP-USD",
+        "snapbacks": 16,
+        "max_move_pct": 70915.8
+      },
+      {
+        "sym": "PNUT-USD",
+        "snapbacks": 16,
+        "max_move_pct": 10.4
+      },
+      {
+        "sym": "FLOW-USD",
+        "snapbacks": 13,
+        "max_move_pct": 6.7
+      },
+      {
+        "sym": "TURBO-USD",
+        "snapbacks": 5,
+        "max_move_pct": 6.7
+      },
+      {
+        "sym": "FLOKI8-USD",
+        "snapbacks": 3,
+        "max_move_pct": 52.1
+      },
+      {
+        "sym": "ANT-USD",
+        "snapbacks": 2,
+        "max_move_pct": 8.5
+      },
+      {
+        "sym": "HNT-USD",
+        "snapbacks": 1,
+        "max_move_pct": 63.8
+      }
+    ],
+    "what": "names whose recent feed shows a >=6% move immediately reversed by >=50% (a stale round-trip) \u2014 a real market does not do that; these are bad-data feeds, excluded from trading so they cannot book fake P&L. A real move that HOLDS is not flagged."
+  },
+  "strategy": "mean_reversion (default \u2014 champion not set yet)",
+  "params": {
+    "drop": 0.02,
+    "bounce": 0.02,
+    "stop": 0.04,
+    "max_hold_min": 240.0,
+    "per_name_frac": 0.1,
+    "min_freshness": 0.8,
+    "min_cost": 0.002
+  },
+  "crypto": {
+    "funnel": {
+      "seen": 0,
+      "entry_warm": 0,
+      "candidates_after_gates": 0,
+      "bought": 0,
+      "rejections": {},
+      "armed": false,
+      "arming_why": "OBSERVE \u2014 pyramid law: the crypto workshop must promote a sleeve on real closed trades before this book may open. Best sleeve so far: \u2014 \u00b7 0/3 closes since wipe \u00b7 status WAITING. The book still scans, marks and manages exits; the sleeves are earning its license right now."
+    },
+    "decision_trace_live": [],
+    "equity": 10000.0,
+    "cash": 10000.0,
+    "realized_pnl": 0.0,
+    "reserve_usd": 0.0,
+    "return_pct": 0.0,
+    "open_positions": 0,
+    "positions": [],
+    "recent_trades": [],
+    "tradeable_universe": 0,
+    "universe_seen": 0
+  },
+  "stock": {
+    "skipped": true,
+    "why": "market closed \u2014 weekend",
+    "funnel": {
+      "seen": 0,
+      "entry_warm": 0,
+      "candidates_after_gates": 0,
+      "bought": 0,
+      "rejections": {
+        "market closed": 1
+      }
+    },
+    "decision_trace_live": [],
+    "equity": 10000.0,
+    "realized_pnl": 0.0,
+    "positions": [],
+    "recent_trades": [],
+    "actions": [],
+    "universe": 0,
+    "universe_seen": 0
+  },
+  "aggressive": {
+    "funnel": {
+      "seen": 0,
+      "entry_warm": 0,
+      "candidates_after_gates": 0,
+      "bought": 0,
+      "rejections": {},
+      "armed": true,
+      "arming_why": "armed"
+    },
+    "decision_trace_live": [],
+    "equity": 10000.0,
+    "cash": 10000.0,
+    "realized_pnl": 0.0,
+    "reserve_usd": 0.0,
+    "return_pct": 0.0,
+    "open_positions": 0,
+    "positions": [],
+    "recent_trades": [],
+    "tradeable_universe": 0,
+    "universe_seen": 0,
+    "display_name": "GEKKO"
+  },
+  "metal": {
+    "skipped": true,
+    "why": "market closed \u2014 weekend",
+    "funnel": {
+      "seen": 0,
+      "entry_warm": 0,
+      "candidates_after_gates": 0,
+      "bought": 0,
+      "rejections": {
+        "market closed": 1
+      }
+    },
+    "decision_trace_live": [],
+    "equity": 10000.0,
+    "realized_pnl": 0.0,
+    "positions": [],
+    "recent_trades": [],
+    "actions": [],
+    "universe": 0,
+    "universe_seen": 0
+  },
+  "energy": {
+    "skipped": true,
+    "why": "market closed \u2014 weekend",
+    "funnel": {
+      "seen": 0,
+      "entry_warm": 0,
+      "candidates_after_gates": 0,
+      "bought": 0,
+      "rejections": {
+        "market closed": 1
+      }
+    },
+    "decision_trace_live": [],
+    "equity": 10000.0,
+    "realized_pnl": 0.0,
+    "positions": [],
+    "recent_trades": [],
+    "actions": [],
+    "universe": 0,
+    "universe_seen": 0
+  },
+  "combined_equity": 40000.0,
+  "combined_realized_pnl": 0.0,
+  "backtest_3day_crypto": {
+    "universe_total": 1074,
+    "tradeable": 14,
+    "ghosts_excluded": 1060,
+    "trades": 35,
+    "win_rate_pct": 77.1,
+    "mean_net_pct": -2.075,
+    "exits": {
+      "TAKE": 27,
+      "STOP": 8,
+      "TIMEOUT": 0
+    },
+    "equity_after": 9248.12
+  },
+  "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
