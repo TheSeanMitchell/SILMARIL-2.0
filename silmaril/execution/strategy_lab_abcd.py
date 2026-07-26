@@ -152,13 +152,83 @@ def _equity(bk: Dict[str, Any], marks: Dict[str, float]) -> float:
 # The sleeves already trade the books' own candidate stream (decision_trace_live) —
 # this closes the return river: candidates flow down, resolved evidence flows back up.
 _RIVER = {"out": None, "sleeve": None, "book": None}
+# 7.1.4: last real print time per symbol, so an exit taken across a sampling outage can say
+# so. SHIB-USD's -6.342% STOP on 2026-07-26 crossed a 2h52m hole in the tape; the fill was
+# honest but nobody was watching, and evidence nobody watched should not weigh the same.
+_LASTPRINT: Dict[str, Any] = {}
+
+# 7.1.4 THE ONE FRESH PRICE LAW. The forensics of the "$242.19 / +11.533% TARGET" fill:
+# PNUT-USD was bought at ~0.0397 and sold at 0.0443. The tape's only prints near 0.0397 are
+# from the PREVIOUS morning; at the moment of the buy the freshest print was 0.0448. So the
+# ENTRY was priced from a stale/derived number while the EXIT was priced from the live tape —
+# two different prices for one position, which fabricates P&L out of nothing. Worse, that
+# fabricated win went straight into LAB_OUTCOMES.jsonl as 1 of only 5 pieces of evidence the
+# maturity gate and sleeve promotion had to learn from.
+#
+# The law, in three parts, so the class cannot recur whichever store leaks next:
+#   1. Only the TAPE may price a fill. Derived stores (confidence cards, traces, rosters) may
+#      RANK and SUGGEST; they may never set an entry or exit price.
+#   2. No fill on a stale print. If the freshest print for a name is older than the window,
+#      there is no fill — the position simply stays armed, exactly as a real venue would leave
+#      a resting order unfilled.
+#   3. Every fill stamps the age of the print it used, so a future leak is visible in the
+#      record instead of hiding inside a plausible number.
+# The limit-fill cap in _sell is the backstop: even if a stale price ever slips through again,
+# a take-profit cannot fill above its limit, so a windfall is impossible by construction.
+MAX_PX_AGE_MIN = 45.0
 
 
-def _sell(bk: Dict[str, Any], sym: str, price: float, why: str, vault: bool):
+def _px_age_min(sym: str) -> Optional[float]:
+    """Minutes since this name last actually printed, or None when unknown."""
+    try:
+        t = _LASTPRINT.get(sym)
+        if not t:
+            return None
+        return max(0.0, (_now() - t).total_seconds() / 60.0)
+    except Exception:
+        return None
+
+
+def _px_is_fresh(sym: str) -> bool:
+    """A fill may only happen on a print we can still call current. Unknown age is NOT fresh —
+    with money on the line, "we don't know how old this is" must mean no."""
+    a = _px_age_min(sym)
+    return a is not None and a <= MAX_PX_AGE_MIN
+
+
+def _sell(bk: Dict[str, Any], sym: str, price: float, why: str, vault: bool,
+          intended: float = None, gap_h: float = None):
+    """7.1.4 THE LIMIT-FILL LAW — the fix for the "$242.19 / +11.533% TARGET" trade.
+
+    THE INCIDENT (2026-07-26 06:52): sleeve E held PNUT-USD with a STRIKE target of +4%.
+    Price rose past the target between cycles and the exit booked at the SAMPLED mark —
+    +11.533%, a $242 windfall on a $2,100 wager. Then it went straight into
+    LAB_OUTCOMES.jsonl, where it was 1 of only 5 pieces of evidence the maturity gate and
+    sleeve promotion had to learn from. A single unreal fill was 20% of the system's
+    knowledge. That is exactly the corruption the operator kept sensing.
+
+    THE LAW — how real execution actually works, and the asymmetry is the whole point:
+      * A take-profit is a LIMIT order. It CANNOT fill above its limit. Ever. So a TARGET
+        exit fills at the target price, never at a mark above it. Windfalls are impossible
+        by construction, not by luck.
+      * A stop is a MARKET order. It CAN fill worse than the trigger. So a STOP exit fills
+        at the WORSE of the stop price and the mark — slippage is real and must be worn.
+      * A trailing/discretionary exit fills at the mark; that is what it is.
+    Every capped fill is stamped so the record shows what was given up, and any fill made
+    across a sampling gap is stamped too, so learning can discount what it could not see.
+    This is also the honesty bar for live handoff: paper fills a live venue would refuse
+    are not evidence."""
     pos = bk["positions"].get(sym)
     if not pos or price <= 0:
         return
-    eff = price * (1 - pos.get("cost", MIN_COST) / 2.0)
+    fill_px, capped, forgone = price, False, 0.0
+    if intended is not None and intended > 0:
+        if why == "TARGET" and price > intended:          # a limit cannot overfill
+            forgone = (price / intended - 1) * 100.0
+            fill_px, capped = intended, True
+        elif why == "STOP" and price > intended:          # never better than the trigger
+            fill_px, capped = intended, True
+    eff = fill_px * (1 - pos.get("cost", MIN_COST) / 2.0)
     proceeds = pos["qty"] * eff
     pnl = proceeds - pos["qty"] * pos["entry"]
     bk["cash"] += proceeds
@@ -166,11 +236,26 @@ def _sell(bk: Dict[str, Any], sym: str, price: float, why: str, vault: bool):
     if vault and pnl > 0:
         bk["cash"] -= pnl
         bk["vault_usd"] = round(bk.get("vault_usd", 0.0) + pnl, 2)
-    bk["trades"].append({"side": "SELL", "sym": sym, "why": why, "simulated": True,
-                         "pnl": round(pnl, 2),
-                         "realized_pct": round((eff / pos["entry"] - 1) * 100, 3) if pos["entry"] > 0 else 0,
-                         "style": pos.get("style", "MR"),
-                         "t": _now().isoformat()})
+    _rec = {"side": "SELL", "sym": sym, "why": why, "simulated": True,
+            "pnl": round(pnl, 2),
+            "realized_pct": round((eff / pos["entry"] - 1) * 100, 3) if pos["entry"] > 0 else 0,
+            "style": pos.get("style", "MR"),
+            "entry": pos.get("entry"), "exit": round(fill_px, 12),
+            "mark_seen": round(price, 12),
+            "opened_t": pos.get("t"),
+            "t": _now().isoformat()}
+    if capped:
+        _rec["fill_capped"] = True
+        _rec["limit_px"] = round(intended, 12)
+        if forgone > 0.001:
+            _rec["forgone_pct"] = round(forgone, 3)
+            _rec["why_capped"] = ("a take-profit limit cannot fill above its limit — the mark ran "
+                                  "%.2f%% past it between cycles and that excess is not ours" % forgone)
+    if gap_h and gap_h > 0.75:
+        _rec["gap_fill_h"] = round(gap_h, 2)
+        _rec["why_gap"] = ("the tape had no print for %.1fh before this exit — the fill is honest "
+                           "but unobserved, so it should carry less weight than a watched one" % gap_h)
+    bk["trades"].append(_rec)
     try:  # ONE-UNIVERSE RIVER: resolved workshop outcome → shared evidence ledger
         if _RIVER.get("out"):
             with open(Path(_RIVER["out"]) / "LAB_OUTCOMES.jsonl", "a") as _rf:
@@ -180,10 +265,36 @@ def _sell(bk: Dict[str, Any], sym: str, price: float, why: str, vault: bool):
                     "why": why, "pnl": round(pnl, 2),
                     "net_pct": round((eff / pos["entry"] - 1) * 100, 3) if pos["entry"] > 0 else 0,
                     "win": pnl > 0, "style": pos.get("style", "MR"),
+                    "fill_capped": bool(capped), "gap_fill_h": (round(gap_h, 2) if gap_h else None),
                     "source": "strategy_lab"}) + "\n")
     except Exception:
         pass
     del bk["positions"][sym]
+
+
+def _market_open_for(book: str) -> bool:
+    """Is this book's market open right now? Crypto never closes; everything else follows the
+    US session. Deliberately conservative and self-contained: if the engine's own economic
+    clock is available it wins, and if anything is uncertain we say CLOSED, because a missed
+    entry costs nothing and a weekend fill against a stale print corrupts the record."""
+    if book in (None, "crypto", "aggressive"):
+        return True
+    try:
+        from .market_clock import is_open as _mc_is_open        # engine calendar, when present
+        v = _mc_is_open(book)
+        if v is not None:
+            return bool(v)
+    except Exception:
+        pass
+    t = _now().astimezone(timezone.utc)
+    if t.weekday() >= 5:                                       # Saturday / Sunday
+        return False
+    mins = t.hour * 60 + t.minute
+    if book == "energy":                                       # futures-style, near-24/5
+        return True
+    if book == "metal":                                        # spot metals, 24/5
+        return True
+    return (13 * 60 + 30) <= mins <= (20 * 60)                 # NYSE regular session, UTC
 
 
 def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
@@ -198,6 +309,10 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
         cur = marks.get(sym)
         if not cur:
             continue
+        if not _px_is_fresh(sym):
+            pos["stale_px"] = True            # armed, not filled — never exit on fiction
+            continue
+        pos.pop("stale_px", None)
         chg = cur / pos["entry"] - 1 if pos["entry"] > 0 else 0
         tgt = pos.get("target", 0.05)
         stop = pos.get("stop", 0.06)
@@ -208,10 +323,19 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
         striking = pos.get("style") == "STRIKE"
         riding = (cfg["ride_winners"] and (sym in fastgreen) and chg >= tgt) or \
                  (striking and chg >= tgt and surge)
+        _gap_h = None
+        try:
+            _lt = _LASTPRINT.get(sym)
+            if _lt:
+                _gap_h = max(0.0, (now - _lt).total_seconds() / 3600.0)
+        except Exception:
+            _gap_h = None
         if chg >= tgt and not riding:
-            _sell(bk, sym, cur, "TARGET", vault); continue
+            _sell(bk, sym, cur, "TARGET", vault,
+                  intended=pos["entry"] * (1.0 + tgt), gap_h=_gap_h); continue
         if chg <= -stop:
-            _sell(bk, sym, cur, "STOP", vault); continue
+            _sell(bk, sym, cur, "STOP", vault,
+                  intended=pos["entry"] * (1.0 - stop), gap_h=_gap_h); continue
         if riding:
             hw = max(pos.get("hw", chg), chg)
             pos["hw"] = hw
@@ -223,7 +347,7 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
     def _avail() -> float:
         return bk["cash"]
 
-    if cfg.get("strike_extra") and surge:
+    if cfg.get("strike_extra") and surge and _market_open_for(bk.get("_book7")):
         strikes_open = sum(1 for p in bk["positions"].values() if p.get("style") == "STRIKE")
         room = cfg["strike_extra"] - strikes_open
         for sym, px, mom in strike_pool:
@@ -231,6 +355,12 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
                 break
             if sym in bk["positions"] or not px or px <= 0:
                 continue
+            # THE ONE FRESH PRICE LAW: the STRIKE pool is ranked from confidence cards, but it
+            # may not be PRICED from them. Re-price from the tape and refuse a stale fill.
+            _tp = marks.get(sym)
+            if not _tp or _tp <= 0 or not _px_is_fresh(sym):
+                continue
+            px = _tp
             budget = min(_avail() * 0.30, _avail() - 25)
             if budget < 50:
                 break
@@ -242,9 +372,22 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
             bk["trades"].append({"side": "BUY", "sym": sym, "style": "STRIKE", "simulated": True,
                                  "regime": bk.get("_regime7"),
                                  "wager_usd": round(budget, 2), "mom_h1": mom,
+                                 "entry": px, "px_age_min": round(_px_age_min(sym) or 0.0, 1),
+                                 "target_pct": 4.0, "stop_pct": 5.0,
                                  "t": now.isoformat()})
             room -= 1
 
+    # ── 7.1.4 THE MARKET CALENDAR LAW ────────────────────────────────────────────────
+    # THE INCIDENT: on Sunday 2026-07-26 sleeve E opened IRM at $128.31 with "entry -> now"
+    # both reading $128.31 — because the price was Friday's close and NYSE has been shut for
+    # two days. The funded books have carried a market-closed gate for releases; the SLEEVES
+    # never had one, so the whole workshop could trade equities, metals and energy all
+    # weekend against frozen prices. Those fills are pure fiction: a live broker would have
+    # queued the order to Monday's open and filled somewhere else entirely. Crypto is 24/7
+    # and unaffected. This gate blocks ENTRIES only — exits and marks continue, exactly as a
+    # real desk manages a position through a closed session.
+    if not _market_open_for(bk.get("_book7")):
+        return
     cap = cfg["cap"]
     open_mr = sum(1 for p in bk["positions"].values() if p.get("style") != "STRIKE")
     if open_mr < cap:
@@ -263,6 +406,10 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
         for sym, px, h1, cv in pool[: cap - open_mr]:
             if not px or px <= 0:
                 continue
+            _tp = marks.get(sym)
+            if not _tp or _tp <= 0 or not _px_is_fresh(sym):
+                continue                      # tape-priced, fresh-only (see THE ONE FRESH PRICE LAW)
+            px = _tp
             budget = _avail() / max(1, cap - open_mr)
             budget = min(budget, _avail() * 0.95)
             if budget < 50:
@@ -285,7 +432,8 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
             bk["trades"].append({"side": "BUY", "sym": sym, "style": "MR", "simulated": True,
                                  "regime": bk.get("_regime7"),
                                  "target_pct": round(tgt * 100, 2), "stop_pct": round(stp * 100, 2),
-                                 "wager_usd": round(budget, 2),
+                                 "wager_usd": round(budget, 2), "entry": px,
+                                 "px_age_min": round(_px_age_min(sym) or 0.0, 1),
                                  "conf": round(conf_map.get(sym, 0.0), 3), "t": now.isoformat()})
 
     eq = _equity(bk, marks) + bk.get("vault_usd", 0.0)
@@ -348,6 +496,19 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                 _tape7.update(json.loads((out / _fn7).read_text()).get("samples", {}))
             except Exception:
                 pass
+    # 7.1.4: remember when each name last actually printed, so an exit taken across a hole in
+    # the tape can be stamped as unobserved (see _sell's gap_h).
+    try:
+        _LASTPRINT.clear()
+        for _s7, _rw7 in (_tape7 or {}).items():
+            for _r7 in reversed(_rw7 or []):
+                if _r7 and len(_r7) >= 2 and _r7[1] and float(_r7[1]) > 0 and "T00:00:00" not in str(_r7[0]):
+                    _dt7 = _parse(_r7[0])
+                    if _dt7:
+                        _LASTPRINT[_s7] = _dt7
+                    break
+    except Exception:
+        pass
     _regimes = (live.get("regimes") or {}) if isinstance(live, dict) else {}
     # ── 7.0.5 EXPANSION-BENCH INPUTS — measured on our own tape, never assumed. ──────────────
     # _reach[sym]  = how far this name actually travels over a day (feeds VOLATILITY HUNTER)
@@ -389,8 +550,20 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
         b = live.get(book) or {}
         marks: Dict[str, float] = {}
         cands: List[tuple] = []
+        # 7.1.4: EVERY name in this book's candidate stream is priced from the TAPE, up front.
+        # Previously marks were seeded from book positions and held-sleeve names only, and any
+        # other candidate fell back to a derived store's last_px — the stale-entry vector.
+        for _sy4, _rw4 in (_tape7 or {}).items():
+            for _t4, _p4 in reversed(_rw4 or []):
+                try:
+                    if _p4 and float(_p4) > 0 and "T00:00:00" not in str(_t4):
+                        marks[_sy4] = float(_p4)
+                        marks_all[_sy4] = float(_p4)
+                        break
+                except Exception:
+                    break
         for pos in b.get("positions", []) or []:
-            if pos.get("mark") and pos.get("sym"):
+            if pos.get("mark") and pos.get("sym") and pos["sym"] not in marks:
                 marks[pos["sym"]] = pos["mark"]
                 marks_all[pos["sym"]] = pos["mark"]
         # ── 7.0.9 THE FROZEN WORKSHOP — the worst bug in this audit. ─────────────────────────────
@@ -411,7 +584,8 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                 if _sym9 in marks:
                     continue
                 for _t9, _p9 in reversed(_tape7.get(_sym9) or []):
-                    if _p9 and float(_p9) > 0:
+                    # 7.1.4: a daily-backfill candle is not a live mark (backfill-poisoning law)
+                    if _p9 and float(_p9) > 0 and "T00:00:00" not in str(_t9):
                         marks[_sym9] = float(_p9)
                         marks_all[_sym9] = float(_p9)
                         break
@@ -419,9 +593,12 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
             sym = d.get("sym")
             if not sym:
                 continue
-            px = marks.get(sym) or (cards.get(sym) or {}).get("last_px")
+            # THE ONE FRESH PRICE LAW: price from the TAPE only. The card's last_px may be
+            # hours old on a fast pass, and pairing a stale entry with a live exit is exactly
+            # how the PNUT windfall was manufactured. A name with no tape mark is not a
+            # candidate at all — it is a name we cannot honestly price.
+            px = marks.get(sym)
             if px:
-                marks.setdefault(sym, px)
                 cands.append((sym, px, (d.get("dip_pct") or 0) / 100.0, d.get("conviction") or 0))
         pool = []
         for sym, c in cards.items():
@@ -429,8 +606,10 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                 continue
             mom = ((c.get("momentum") or {}).get("h1"))
             if mom is not None and mom >= 3.0:
-                pool.append((sym, c["last_px"], round(float(mom), 2)))
-                marks.setdefault(sym, c["last_px"])
+                # ranked by the card, PRICED by the tape (or skipped entirely)
+                _tpx = marks.get(sym)
+                if _tpx and _tpx > 0:
+                    pool.append((sym, _tpx, round(float(mom), 2)))
         pool.sort(key=lambda x: -x[2])
         surge = bool((mtf_books.get(book) or {}).get("fast_green")) or bool(pool)
         strike_pool = pool[:4]
@@ -466,6 +645,7 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                                  or ((_geo.get(c[0]) or {}).get("p_floor_pct") or 0) >= 65)]
             bk["_geo7"] = {c[0]: _geo.get(c[0]) for c in _cands_sk} if (cfg.get("geometry") or cfg.get("patient")) else None
             bk["_regime7"] = _regimes.get(book)
+            bk["_book7"] = book
             _RIVER.update({"out": str(out), "sleeve": sk, "book": book})
             _run_sleeve(cfg, bk, marks, _cands_sk, conf_map, fastgreen, surge, strike_pool, cost_of)
             _RIVER.update({"out": None})
@@ -552,6 +732,8 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                     _r = json.loads(_ln)
                 except Exception:
                     continue
+                if _r.get("excluded"):
+                    continue          # 7.1.4: quarantined fabricated fills are not evidence
                 _tot += 1
                 if str(_r.get("t", "")) >= _cut:
                     _24 += 1

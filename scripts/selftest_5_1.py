@@ -2368,6 +2368,240 @@ def t116_click_path_runs():
         check("T116 click path EXECUTES", False, "harness could not run: %s" % e)
 
 
+def t117_no_fabricated_fills():
+    """7.1.4 THE PNUT WINDFALL (2026-07-26 06:52): sleeve E booked "$242.19 · +11.533% · TARGET"
+    on a STRIKE position whose target was +4%. Forensics: the exit was priced from the live tape
+    (0.0443) while the ENTRY had been priced at ~0.0397 — a number the tape only carried the
+    PREVIOUS morning. One position, two prices, from two different moments. The fabricated win
+    then went into LAB_OUTCOMES.jsonl as 1 of only 5 rows the maturity gate and sleeve promotion
+    had to learn from, so a single unreal fill was 20% of the system's knowledge. That is the
+    corruption the operator kept sensing and could not name.
+
+    Three independent rails, each asserted here, because any one of them alone can be defeated:
+      1. ONLY THE TAPE MAY PRICE A FILL. Derived stores (confidence cards, traces) rank and
+         suggest; they never set a price.
+      2. NO FILL ON A STALE PRINT — and unknown age counts as stale, because with money on the
+         line "we don't know how old this is" must mean no.
+      3. A TAKE-PROFIT CANNOT FILL ABOVE ITS LIMIT (and a stop takes the WORSE of trigger and
+         mark, because slippage is real). This is the backstop: even if a stale price ever slips
+         through again, a windfall is arithmetically impossible.
+    Rail 3 is verified by replaying the actual PNUT numbers."""
+    from silmaril.execution import strategy_lab_abcd as L
+
+    # ── rail 3, on the real numbers: entry 0.0397, target +4%, mark 0.0443 ──────────────
+    bk = {"cash": 0.0, "realized_pnl": 0.0, "vault_usd": 0.0, "trades": [],
+          "positions": {"PNUT-USD": {"qty": 2100.0 / 0.0397, "entry": 0.0397,
+                                     "cost": 0.002, "style": "STRIKE",
+                                     "t": now().isoformat()}}}
+    L._sell(bk, "PNUT-USD", 0.0443, "TARGET", False, intended=0.0397 * 1.04)
+    tr = bk["trades"][-1]
+    got = tr["realized_pct"]
+    ok_capped = tr.get("fill_capped") is True and got < 4.01
+    ok_forgone = (tr.get("forgone_pct") or 0) > 6.0        # the excess is NAMED, not silently kept
+    ok_not_windfall = got < 11.0                            # the +11.533% can no longer be booked
+    # a stop must take the WORSE of trigger and mark (slippage is worn, never gifted)
+    bk2 = {"cash": 0.0, "realized_pnl": 0.0, "vault_usd": 0.0, "trades": [],
+           "positions": {"X-USD": {"qty": 100.0, "entry": 1.0, "cost": 0.002,
+                                   "style": "MR", "t": now().isoformat()}}}
+    L._sell(bk2, "X-USD", 0.90, "STOP", False, intended=0.94)   # gapped through a -6% stop
+    ok_stop_worse = bk2["trades"][-1]["realized_pct"] < -8.0
+
+    # ── rails 1 + 2, in source: the tape prices, staleness blocks, ages are stamped ─────
+    src = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
+    ok_law = "THE ONE FRESH PRICE LAW" in src
+    ok_fresh_fn = "def _px_is_fresh" in src and "a is not None and a <= MAX_PX_AGE_MIN" in src
+    ok_entry_gate = src.count("not _px_is_fresh(sym)") >= 3   # strike, mr, and the exit path
+    ok_tape_priced = ('px = marks.get(sym)\n            if px:' in src
+                      and 'or (cards.get(sym) or {}).get("last_px")' not in src)
+    ok_stamped = '"px_age_min"' in src
+    # the funded books must carry the same cap
+    ps = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    ok_book_cap = ('why, fill = "TAKE", min(cur, pos["entry"] * (1.0 + p_target))' in ps
+                   and 'why, fill = "STOP", min(cur, pos["entry"] * (1.0 - eff_stop))' in ps)
+    check("T117 no fabricated fills: tape-only pricing, stale prints cannot fill, take-profits capped at their limit, stops take the worse — the +11.533% windfall is now impossible",
+          ok_capped and ok_forgone and ok_not_windfall and ok_stop_worse and ok_law
+          and ok_fresh_fn and ok_entry_gate and ok_tape_priced and ok_stamped and ok_book_cap,
+          f"replayed_pnut={got}% capped={ok_capped} named_excess={ok_forgone} "
+          f"stop_worse={ok_stop_worse} fresh_fn={ok_fresh_fn} gates={ok_entry_gate} "
+          f"tape_priced={ok_tape_priced} stamped={ok_stamped} book_cap={ok_book_cap}")
+
+
+def t118_sleeves_respect_the_calendar():
+    """7.1.4 THE SUNDAY TRADE. On Sunday 2026-07-26 sleeve E opened IRM at $128.31 with
+    "entry → now" both reading $128.31, because that was Friday's close and NYSE had been shut
+    for two days. The funded books have carried a market-closed gate for releases; the SLEEVES
+    never had one, so the entire workshop could trade equities all weekend against frozen
+    prices — fills a live broker would simply have queued to Monday and filled elsewhere.
+    Crypto is 24/7 and must remain unaffected. Exits and marks must keep working while closed,
+    because a real desk still manages a position through a closed session."""
+    from silmaril.execution.strategy_lab_abcd import _market_open_for
+    ok_crypto = _market_open_for("crypto") is True and _market_open_for("aggressive") is True
+    # a known Sunday and a known weekday mid-session, asserted through the same function
+    import silmaril.execution.strategy_lab_abcd as L
+    real_now = L._now
+    try:
+        L._now = lambda: datetime(2026, 7, 26, 18, 0, tzinfo=timezone.utc)   # Sunday
+        ok_sun = _market_open_for("stock") is False and _market_open_for("metal") is False
+        L._now = lambda: datetime(2026, 7, 27, 15, 0, tzinfo=timezone.utc)   # Monday 15:00 UTC
+        ok_mon = _market_open_for("stock") is True
+        L._now = lambda: datetime(2026, 7, 27, 3, 0, tzinfo=timezone.utc)    # Monday pre-dawn
+        ok_closed_hours = _market_open_for("stock") is False
+    finally:
+        L._now = real_now
+    src = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
+    ok_entry_gated = "if not _market_open_for(bk.get(\"_book7\")):" in src
+    ok_strike_gated = 'and _market_open_for(bk.get("_book7"))' in src
+    # exits must NOT be gated — a position still has to be managed through a closed session
+    ok_exits_free = src.index("if not _market_open_for") > src.index('_sell(bk, sym, cur, "TARGET"')
+    check("T118 sleeves respect the market calendar: no weekend equity/metal entries, crypto unaffected, exits still managed while closed",
+          ok_crypto and ok_sun and ok_mon and ok_closed_hours and ok_entry_gated
+          and ok_strike_gated and ok_exits_free,
+          f"crypto={ok_crypto} sunday_closed={ok_sun} monday_open={ok_mon} "
+          f"predawn_closed={ok_closed_hours} entry={ok_entry_gated} strike={ok_strike_gated} "
+          f"exits_free={ok_exits_free}")
+
+
+def t119_corruption_is_findable_and_quarantined():
+    """7.1.4 FIND, ISOLATE, AND STOP COUNTING IT (the operator's actual ask: "find and isolate,
+    make sure this problem is 100 percent solved moving forward").
+
+    Rails stop new damage; they do not undo damage already written. On the operator's tree the
+    scan found TWO fabricated limit fills already sitting in the learning river — PNUT-USD
+    +11.533% and BRENT +15.280%/$198.64 from July 23, the trade that made the energy book look
+    like a winner. Both were 'evidence' the maturity gate and champion ledger were reading.
+
+    Three things are asserted here:
+      1. The quarantine finds a fabricated limit fill, is idempotent, is NEVER destructive
+         (learning-permanence law: annotate, never delete), and leaves honest rows alone — a big
+         STOP loss and a big trailing-exit win must both survive, or the tool is a data shredder.
+      2. Consumers actually SKIP quarantined rows. Annotating without skipping changes nothing.
+      3. PRICE_SOURCE_AUDIT names any derived store that disagrees with the tape, so the next
+         leak is a red line in a report instead of a plausible number inside a P&L."""
+    import shutil
+    import subprocess
+    tmp = Path(tempfile.mkdtemp(prefix="t119_"))
+    try:
+        rows = [
+            # fabricated: a LIMIT exit far above any legal limit
+            {"t": "2026-07-26T06:52:19", "sym": "PNUT-USD", "book": "crypto", "sleeve": "E",
+             "why": "TARGET", "net_pct": 11.533, "pnl": 242.19, "win": True},
+            # honest: a real stop loss (losses were never inflated by this bug)
+            {"t": "2026-07-26T13:18:52", "sym": "SHIB-USD", "book": "crypto", "sleeve": "E",
+             "why": "STOP", "net_pct": -6.342, "pnl": -190.27, "win": False},
+            # honest: a trailing exit may legitimately run past target (market order)
+            {"t": "2026-07-26T09:00:00", "sym": "XYZ-USD", "book": "crypto", "sleeve": "A",
+             "why": "RIDE_TRAIL", "net_pct": 18.4, "pnl": 300.0, "win": True},
+            # honest: a modest limit fill
+            {"t": "2026-07-26T10:00:00", "sym": "ABC-USD", "book": "crypto", "sleeve": "H",
+             "why": "TARGET", "net_pct": 4.2, "pnl": 80.0, "win": True},
+        ]
+        (tmp / "LAB_OUTCOMES.jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n")
+        script = ROOT / "scripts/quarantine_bad_fills.py"
+        if not script.exists():
+            check("T119 quarantine (script missing)", False, "scripts/quarantine_bad_fills.py absent")
+            return
+        subprocess.run([sys.executable, str(script), str(tmp), "--apply"],
+                       capture_output=True, text=True, timeout=120)
+        after = [json.loads(l) for l in (tmp / "LAB_OUTCOMES.jsonl").read_text().splitlines() if l.strip()]
+        by = {r["sym"]: r for r in after}
+        ok_caught = by["PNUT-USD"].get("excluded") is True and "why_excluded" in by["PNUT-USD"]
+        ok_kept_loss = not by["SHIB-USD"].get("excluded")
+        ok_kept_trail = not by["XYZ-USD"].get("excluded")
+        ok_kept_small = not by["ABC-USD"].get("excluded")
+        ok_nondestructive = len(after) == 4 and (tmp / "LAB_OUTCOMES.jsonl.pre_7_1_4").exists()
+        r2 = subprocess.run([sys.executable, str(script), str(tmp), "--apply"],
+                            capture_output=True, text=True, timeout=120)
+        ok_idem = "total quarantined: 0" in (r2.stdout or "")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    # 2 — consumers must skip excluded rows
+    ps = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+    sl = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
+    ok_skipped = ('if _r7.get("excluded"):' in ps and 'if _r.get("excluded"):' in sl)
+
+    # 3 — the leak detector exists, runs every cycle, and reports honestly
+    pt = (ROOT / "silmaril/execution/price_truth.py").read_text()
+    cli = (ROOT / "silmaril/cli.py").read_text()
+    ok_audit = ("def build_price_source_audit" in pt and "PRICE_SOURCE_AUDIT.json" in pt
+                and "DERIVED_PRICE_STORES" in pt and "build_price_source_audit" in cli)
+    # and the operator can finally see trade age (their explicit request)
+    html = (ROOT / "docs/index.html").read_text()
+    ok_age = ("__heldCell" in html and "price age" in html and "__px(ep)" in html
+              and ">held<" in html)
+    check("T119 corruption is findable and quarantined: fabricated limit fills flagged (never deleted), honest rows untouched, consumers skip them, store divergence is audited every cycle, trade age visible",
+          ok_caught and ok_kept_loss and ok_kept_trail and ok_kept_small and ok_nondestructive
+          and ok_idem and ok_skipped and ok_audit and ok_age,
+          f"caught={ok_caught} kept_loss={ok_kept_loss} kept_trail={ok_kept_trail} "
+          f"kept_small={ok_kept_small} nondestructive={ok_nondestructive} idempotent={ok_idem} "
+          f"consumers_skip={ok_skipped} audit={ok_audit} age_ui={ok_age}")
+
+
+def t120_graph_decision_audit():
+    """7.1.4 IS THE GRAPH ACTUALLY HELPING? The operator's strategic question, and the answer the
+    engine could not previously give: CHART_INTEL.json — the graph brain computing peaks, troughs,
+    floors, ceilings and trajectory — is read by the dashboard and by NOTHING in the selection
+    path. The graph is a display, not an input. Their instinct ("we gave so much attention to so
+    many tools to watch a system simply not use them") was architecture, not mood.
+
+    This audit measures the coupling instead of quietly closing it, because bolting an unmeasured
+    signal onto live selection is how the recent regressions happened. Two properties matter more
+    than the numbers it produces:
+
+      1. NO HINDSIGHT. Entry-time structure must be reconstructed from prints that existed AT the
+         entry. If a single later print can leak in, every verdict is worthless.
+      2. NO OVERCLAIMING. A first draft used n>=8 and duly reported four features as PREDICTIVE
+         off nine trades with buckets of three. That is noise wearing a verdict — exactly the
+         failure this project keeps paying for. A verdict now needs 25 graded entries AND at least
+         5 in each bucket compared, and says TOO_EARLY out loud until then."""
+    import shutil
+    from silmaril.execution.graph_decision_audit import (
+        _structure_at, _live, build_graph_decision_audit, MIN_N_FOR_VERDICT, MIN_BUCKET_N)
+
+    # 1 — hindsight test: a violent move AFTER the entry must not change the entry-time read
+    base = now().replace(microsecond=0)
+    rows = [[(base - timedelta(minutes=10 * (60 - i))).isoformat(), 100.0 + (i % 9) * 0.6]
+            for i in range(60)]
+    at = base - timedelta(minutes=100)
+    before = _structure_at(_live(rows), at)
+    spiked = rows + [[(base + timedelta(minutes=10 * i)).isoformat(), 500.0] for i in range(1, 12)]
+    after = _structure_at(_live(spiked), at)
+    ok_no_hindsight = bool(before) and before == after
+
+    # 2 — overclaiming test: a thin sample must NOT produce a verdict
+    tmp = Path(tempfile.mkdtemp(prefix="t120_"))
+    try:
+        (tmp / "price_samples.json").write_text(json.dumps({"samples": {"AAA-USD": rows}}))
+        trades = []
+        for i in range(6):                       # 6 closes: below the bar, must read TOO_EARLY
+            trades.append({"t": (base - timedelta(hours=i)).isoformat(), "sym": "AAA-USD",
+                           "book": "crypto", "sleeve": "E", "why": "TARGET",
+                           "net_pct": 2.0 if i % 2 else -2.0, "win": i % 2 == 1})
+        (tmp / "LAB_OUTCOMES.jsonl").write_text("\n".join(json.dumps(r) for r in trades) + "\n")
+        p = build_graph_decision_audit(tmp)
+        verdicts = {k: v["verdict"] for k, v in (p.get("features") or {}).items()}
+        ok_no_overclaim = all(v in ("TOO_EARLY", "NO_EVIDENCE") for v in verdicts.values())
+        ok_bar = MIN_N_FOR_VERDICT >= 25 and MIN_BUCKET_N >= 5
+        cs = p.get("coupling_status") or {}
+        ok_states_gap = (cs.get("consumed_by_decisions") is False
+                         and "DISPLAY, not an input" in (cs.get("statement") or "")
+                         and len(cs.get("features_drawn_but_ignored") or []) >= 4)
+        ok_honesty = "cannot say what would have happened" in (p.get("honesty") or "")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    # 3 — wired to run every cycle, and visible to the operator
+    cli = (ROOT / "silmaril/cli.py").read_text()
+    html = (ROOT / "docs/index.html").read_text()
+    ok_wired = "graph_decision_audit.build_graph_decision_audit" in cli
+    ok_panel = "renderGraphAudit" in html and "gdaBody" in html
+    check("T120 graph→decision audit: entry-time structure carries no hindsight, thin samples say TOO_EARLY instead of PREDICTIVE, the display-only coupling is stated out loud, and it runs every cycle",
+          ok_no_hindsight and ok_no_overclaim and ok_bar and ok_states_gap and ok_honesty
+          and ok_wired and ok_panel,
+          f"no_hindsight={ok_no_hindsight} no_overclaim={ok_no_overclaim} bar={ok_bar} "
+          f"states_gap={ok_states_gap} honesty={ok_honesty} wired={ok_wired} panel={ok_panel}")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -2416,7 +2650,10 @@ if __name__ == "__main__":
               t110_one_writer, t111_chart_key_door_and_source_overlay,
               t112_everything_chart_modal,
               t113_scale_guarded_union, t114_price_truth_gate,
-              t115_arena_honesty, t116_click_path_runs):
+              t115_arena_honesty, t116_click_path_runs,
+              t117_no_fabricated_fills, t118_sleeves_respect_the_calendar,
+              t119_corruption_is_findable_and_quarantined,
+              t120_graph_decision_audit):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

@@ -1530,6 +1530,19 @@ def run(mode: str = "demo", output_dir: str = "docs/data") -> None:
                    ", ".join("%s %s" % (k, v) for k, v in sorted((_pt.get("counts") or {}).items())))
       except Exception as e:
           log.warning("  Price truth skipped: %s", e)
+      # 7.1.4: name any derived store that disagrees with the tape, every cycle. The fills are
+      # rail-protected now, but a leak should be a visible red line, not a plausible number.
+      try:
+          from .execution.price_truth import build_price_source_audit as _bpsa
+          _psa = _bpsa(out)
+          if _psa.get("divergence_count") or _psa.get("stale_stores"):
+              log.warning("  PRICE SOURCE AUDIT: %s divergence(s), %s stale store(s) — see PRICE_SOURCE_AUDIT.json",
+                          _psa.get("divergence_count"), len(_psa.get("stale_stores") or []))
+          else:
+              log.info("  Price source audit: CLEAN (%s store prices agree with the tape; %s names have no recent print)",
+                       _psa.get("store_prices_checked"), _psa.get("tape_gap_count"))
+      except Exception as e:
+          log.warning("  Price source audit skipped: %s", e)
         # ── News & Event Intelligence (read-only, deterministic, NO LLM) ──
       # Forward event calendar + ETF regime baskets + news momentum from the day's
       # signals.json + catalysts.json. Display-only (Phase 1); wrapped so a failure
@@ -3619,6 +3632,10 @@ Reply in 3-5 bullets, no preamble.
                           # 7.0.6: the graph brain runs BEFORE the books act, so every entry
                           # is judged against fresh chart structure.
                           ("chart intel (the graph brain)", "chart_intel.build_chart_intel"),
+                          # 7.1.4: does reading the graph before entry actually separate winners
+                          # from losers? Measured every cycle, read-only, never trades.
+                          ("graph→decision audit (is the graph helping?)",
+                           "graph_decision_audit.build_graph_decision_audit"),
                           ("sleeve promotion (workshop → book)", "sleeve_promotion.build_sleeve_promotion"),
                           # 7.0.3: publish the itemised, venue-sourced cost model every cycle.
                           ("fee model (real venue costs)", "fee_model.build_fee_model"),

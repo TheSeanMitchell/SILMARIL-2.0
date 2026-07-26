@@ -339,3 +339,110 @@ if __name__ == "__main__":                                  # pragma: no cover
     print(json.dumps({"counts": p["counts"], "tradeable": p["tradeable"], "graded": p["graded"]}, indent=2))
     for w in p["worst"][:12]:
         print("  %-14s %-10s %s" % (w.get("sym"), w.get("grade"), w.get("why")))
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════
+# 7.1.4 PRICE SOURCE AUDIT — "find and isolate, make sure this is 100% solved"
+#
+# The PNUT windfall was one position priced from two different numbers. The rails in
+# strategy_lab_abcd/paper_sim make that unable to produce a fill any more, but rails only
+# stop the damage — they do not tell you WHICH store was lying. This does, every cycle,
+# by name, so a leak is a visible red line rather than a plausible number in a P&L.
+#
+# For every symbol it compares the canonical tape's freshest print against the "current
+# price" each DERIVED store believes, and flags:
+#   PRICE_DIVERGENCE — a derived store's price differs from the tape by more than the band
+#   STALE_STORE      — a derived store's price is older than the fill-freshness window
+#   TAPE_GAP         — the tape itself has no recent print, so nothing may fill on this name
+# Nothing here changes behaviour; it is the instrument that makes the class self-reporting.
+# ══════════════════════════════════════════════════════════════════════════════════════
+
+DERIVED_PRICE_STORES = {
+    "CONFIDENCE_CARDS.json": ("cards", "last_px"),
+    "GEOMETRY.json": ("by_symbol", "last_px"),
+    "CHART_INTEL.json": ("by_symbol", "last_px"),
+}
+
+
+def build_price_source_audit(out_dir, samples: Dict[str, List] = None,
+                             band_pct: float = 1.0, fresh_min: float = 45.0) -> Dict[str, Any]:
+    out = Path(out_dir)
+    if samples is None:
+        try:
+            from .canon_keys import canonical_samples
+            samples = canonical_samples(out)
+        except Exception:
+            samples = {}
+
+    now = datetime.now(timezone.utc)
+
+    def _age_min(ts) -> float:
+        t = _ts(ts)
+        if t is None:
+            return 1e9
+        if t.tzinfo is None:
+            t = t.replace(tzinfo=timezone.utc)
+        return max(0.0, (now - t).total_seconds() / 60.0)
+
+    # the tape's truth: freshest LIVE print per symbol
+    tape: Dict[str, Any] = {}
+    for sym, rows in (samples or {}).items():
+        for r in reversed(rows or []):
+            try:
+                if r and len(r) >= 2 and r[1] and float(r[1]) > 0 and "T00:00:00" not in str(r[0]):
+                    tape[sym] = {"px": float(r[1]), "at": str(r[0]), "age_min": round(_age_min(r[0]), 1)}
+                    break
+            except Exception:
+                break
+
+    divergences, stale_stores, checked = [], [], 0
+    for fname, (container, field) in DERIVED_PRICE_STORES.items():
+        try:
+            doc = json.loads((out / fname).read_text())
+        except Exception:
+            continue
+        body = doc.get(container) or {}
+        doc_age = round(_age_min(doc.get("generated_at")), 1)
+        if doc_age > fresh_min:
+            stale_stores.append({"store": fname, "age_min": doc_age,
+                                 "why": ("this store's prices are older than the fill-freshness "
+                                         "window — it may rank names but must never price a fill")})
+        for sym, rec in (body.items() if isinstance(body, dict) else []):
+            if not isinstance(rec, dict):
+                continue
+            px = rec.get(field)
+            t = tape.get(sym) or tape.get(canon(sym))
+            if not px or not t or px <= 0:
+                continue
+            checked += 1
+            off = (float(px) / t["px"] - 1.0) * 100.0
+            if abs(off) > band_pct:
+                divergences.append({"sym": sym, "store": fname, "store_px": float(px),
+                                    "tape_px": t["px"], "off_pct": round(off, 3),
+                                    "tape_age_min": t["age_min"],
+                                    "why": ("this store believes a different current price than the "
+                                            "tape — pairing it with a tape-priced exit is exactly how "
+                                            "the 2026-07-26 PNUT windfall was manufactured")})
+
+    tape_gaps = [{"sym": s, "age_min": v["age_min"],
+                  "why": "no recent print — nothing may fill on this name until the tape resumes"}
+                 for s, v in tape.items() if v["age_min"] > fresh_min]
+
+    divergences.sort(key=lambda d: -abs(d["off_pct"]))
+    payload = {
+        "generated_at": now.isoformat(),
+        "law": ("only the TAPE may price a fill; derived stores may rank and suggest. This audit "
+                "names any store that disagrees, so a price leak is a red line instead of a "
+                "plausible number in a P&L."),
+        "band_pct": band_pct, "fresh_window_min": fresh_min,
+        "symbols_on_tape": len(tape), "store_prices_checked": checked,
+        "divergences": divergences[:200], "divergence_count": len(divergences),
+        "stale_stores": stale_stores,
+        "tape_gap_count": len(tape_gaps), "tape_gaps": sorted(tape_gaps, key=lambda d: -d["age_min"])[:60],
+        "verdict": ("CLEAN — every derived store agrees with the tape inside the band"
+                    if not divergences and not stale_stores else
+                    "LEAKS PRESENT — see divergences/stale_stores; fills are rail-protected but the "
+                    "disagreement itself should be fixed at the writer"),
+    }
+    write_json_atomic(out / "PRICE_SOURCE_AUDIT.json", payload)
+    return payload

@@ -1016,6 +1016,11 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         for _ln7 in (out / "LAB_OUTCOMES.jsonl").read_text().splitlines()[-5000:]:
             try:
                 _r7 = json.loads(_ln7)
+                # 7.1.4: a quarantined outcome is a fabricated fill (see
+                # scripts/quarantine_bad_fills.py). It stays on the record forever for audit,
+                # but it must never again count as evidence that a name has matured.
+                if _r7.get("excluded"):
+                    continue
                 _lab7[_r7.get("sym")] = _lab7.get(_r7.get("sym"), 0) + 1
             except Exception:
                 continue
@@ -1162,7 +1167,15 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         eff_stop = max(p_stop, hs_floor) if HEATSHIELD else p_stop
         hw_pct = (pos.get("mfe", cur) / pos["entry"] - 1) if pos["entry"] > 0 else 0.0
         if chg >= p_target:
-            why, fill = "TAKE", cur
+            # ── 7.1.4 THE LIMIT-FILL LAW (books) ──────────────────────────────────────
+            # A take-profit is a LIMIT order and CANNOT fill above its limit. This branch
+            # used to book `cur`, so whenever the mark ran past target between cycles the
+            # book pocketed the whole excess. The sleeve twin of this line produced the
+            # "$242.19 / +11.533% TARGET" fill on a +4% PNUT-USD target, which then became
+            # 1 of only 5 rows in the learning river. Windfalls are now impossible by
+            # construction rather than by luck. Note TAKE_LIMIT below already did this
+            # correctly for the high-water case — that asymmetry was the tell.
+            why, fill = "TAKE", min(cur, pos["entry"] * (1.0 + p_target))
         elif _limit_ok and hw_pct >= p_target and cur > pos["entry"]:
             why, fill = "TAKE_LIMIT", pos["entry"] * (1.0 + p_target)   # limit fill at the target price
         elif _rx_on and _mtf_fastred and (chg - pos.get("cost", MIN_COST)) >= 0:
@@ -1176,7 +1189,9 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
             # it and reposition. Never forces a loss; underwater just gets flagged.
             why, fill = "FEE_CLEAR_TIME", cur
         elif chg <= -eff_stop:
-            why, fill = "STOP", cur
+            # A stop is a MARKET order: it may fill WORSE than the trigger, never better.
+            # Slippage is real and must be worn, so take the worse of the two.
+            why, fill = "STOP", min(cur, pos["entry"] * (1.0 - eff_stop))
         elif TIMEOUT_EXIT and hold >= max_hold:
             why, fill = "TIMEOUT", cur
         else:
@@ -1192,6 +1207,8 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
             _cvf, _bwu = pos.get("conv_frac"), pos.get("base_wager_usd")
             _pcost = pos.get("cost", MIN_COST)
             _rzpct = (fill / pos["entry"] - 1) * 100 if pos["entry"] > 0 else 0.0
+            _capped7 = bool(cur and fill and abs(cur - fill) > (abs(cur) * 1e-9))
+            _forgone7 = ((cur / fill - 1) * 100.0) if (_capped7 and fill and why == "TAKE") else 0.0
             pnl = pbook.sell(sym, fill, now.isoformat())
             if why in ("REGIME_FLIP_HARVEST", "FEE_CLEAR_TIME"):
                 try:  # append-only A/B ledger; the report card grades saved% at +6h/+24h
@@ -1204,6 +1221,13 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
             try:
                 tr = pbook.trades[-1]
                 tr["exit_reason"] = why
+                tr["mark_seen"] = round(cur, 12) if cur else None
+                if _capped7:
+                    tr["fill_capped"] = True
+                    if _forgone7 > 0.001:
+                        tr["forgone_pct"] = round(_forgone7, 3)
+                        tr["why_capped"] = ("take-profit limit: the mark ran %.2f%% past our limit "
+                                            "between cycles and that excess is not ours" % _forgone7)
                 # 7.0 CALIBRATION: close the prediction loop (Law 23 — a score that
                 # cannot predict does not get to allocate). pred stamped at entry.
                 try:

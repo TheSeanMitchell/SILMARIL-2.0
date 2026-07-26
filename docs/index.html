@@ -391,6 +391,7 @@
     <div class="note"><b>What:</b> stock recovery grouped by sector. <b>Why:</b> reveals if the weak stock edge is sector-specific. <b>Action:</b> whitelist positive sectors if any.</div>
     <div id="sectorBox"></div></div></section>
   <section data-cat="markets"><div class="hd">📐 THE GEOMETRY GATE — the law of winnable trades (p* vs the evidence floor, every name)</div><div class="bd" id="geoBody">loading…</div></section>
+  <section data-cat="markets"><div class="hd">📈 GRAPH → DECISION AUDIT — is the graph actually helping the sleeves choose, or just being drawn?</div><div class="bd" id="gdaBody">loading…</div></section>
 <section data-cat="markets"><div class="hd">🌡 REGIME OBSERVER — which market conditions help or hurt each strategy</div><div class="bd">
     <div class="note"><b>What:</b> every trade tagged with the market regime at entry (crypto & stock measured separately). <b>Why care:</b> it shows WHERE an edge actually exists. <b>Action:</b> if a strategy only wins in one regime, that's where it belongs — and where it doesn't, consider sitting out.</div>
     <div id="regimeBox"></div></div></section>
@@ -584,7 +585,7 @@ async function load(){
   // instead of sitting on 'loading…' until its analytics lane happens to run again.
   try{document.querySelectorAll('div,td,span').forEach(el=>{if(el.children.length===0&&el.textContent.trim()==='loading\u2026'){el.textContent='\u23f3 first cycle pending \u2014 this store rebuilds on the next engine/analytics run';el.classList.add('dim');}});}catch(e){__pfail(e)} safe(()=>renderAcct(LIVE),'acct'); safe(()=>renderChamp(cv,st,gov,ch),'champ'); safe(()=>renderReady(cv),'ready'); safe(()=>renderHealth(),'health');
   safe(()=>renderPos('crypto',$('posCrypto')),'posC'); safe(()=>renderPos('stock',$('posStock')),'posS'); safe(()=>renderPos('metal',$('posMetal')),'posM'); safe(()=>renderPos('energy',$('posEnergy')),'posE'); safe(()=>renderPos('aggressive',$('posAggressive')),'posG'); safe(()=>renderTrades(),'trades'); safe(()=>renderJournal(),'jrnl');
-  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderMasterBrainPanel(),'mbp'); safe(()=>renderDiscovery(),'disc'); safe(()=>renderQuestions(),'quest'); safe(()=>renderGeometry(),'geo'); safe(()=>renderSizerStrip(),'szr'); safe(()=>renderCalibration(),'calib'); safe(()=>renderDataLedger(),'dled'); safe(()=>renderDSR(),'dsr'); safe(()=>renderEngStrip(),'estrip'); safe(()=>{if(typeof renderMTFLadder==='function')renderMTFLadder();},'mtfl'); safe(()=>renderBrain(),'brain'); safe(()=>renderStrategyLab(),'slab'); safe(()=>renderConfidence(),'conf'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>renderWarmup(),'warm'); safe(()=>renderMasterReject(),'mrej'); safe(()=>renderWiring(),'wire'); safe(()=>renderFunnel(),'fun'); safe(()=>renderQuarantine(),'quar'); safe(()=>renderGekkoNote(),'gekko'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>renderMV(),'mv'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority'); safe(()=>renderFive(),'five');
+  safe(()=>renderScorecard(),'score'); safe(()=>renderQuadrantArena(),'qarena'); safe(()=>renderArena(cv,gov),'arena'); safe(()=>renderSession(),'sess'); safe(()=>renderAnatomy(),'anat'); safe(()=>renderTimeline(),'tl'); safe(()=>renderKraken(),'krk'); safe(()=>renderConc(),'conc'); safe(()=>renderReality(),'rchk'); safe(()=>renderRegistry(),'reg'); safe(()=>renderJournal(),'jrnl2'); safe(()=>renderMasterCard(),'mcard'); safe(()=>renderMaster(),'mstr'); safe(()=>renderHeatshield(),'heat'); safe(()=>renderHandoff(),'handoff'); safe(()=>renderFeeScenarios(),'fee'); safe(()=>renderDailyTakehome(),'dth'); safe(()=>renderSweep(),'swp'); safe(()=>renderTradeQuality(),'tq'); safe(()=>renderKrakenMirror(),'kmir'); safe(()=>renderMasterLog(),'mlog'); safe(()=>renderMasterDecisions(),'mdec'); safe(()=>renderMarksHealth(),'mh'); safe(()=>renderMasterBrainPanel(),'mbp'); safe(()=>renderDiscovery(),'disc'); safe(()=>renderQuestions(),'quest'); safe(()=>renderGeometry(),'geo'); safe(()=>renderGraphAudit(),'gda'); safe(()=>renderSizerStrip(),'szr'); safe(()=>renderCalibration(),'calib'); safe(()=>renderDataLedger(),'dled'); safe(()=>renderDSR(),'dsr'); safe(()=>renderEngStrip(),'estrip'); safe(()=>{if(typeof renderMTFLadder==='function')renderMTFLadder();},'mtfl'); safe(()=>renderBrain(),'brain'); safe(()=>renderStrategyLab(),'slab'); safe(()=>renderConfidence(),'conf'); safe(()=>renderRegimePanel(),'rpanel'); safe(()=>renderDeniedPanel(),'dpanel'); safe(()=>renderWarmup(),'warm'); safe(()=>renderMasterReject(),'mrej'); safe(()=>renderWiring(),'wire'); safe(()=>renderFunnel(),'fun'); safe(()=>renderQuarantine(),'quar'); safe(()=>renderGekkoNote(),'gekko'); safe(()=>bnbEligibility(),'bnb'); safe(()=>renderBrain(),'brain'); safe(()=>renderMV(),'mv'); safe(()=>applyVersion(),'ver'); safe(()=>buildYtWall(),'ytw'); safe(()=>renderCompound(),'cmp'); safe(()=>renderForensics(),'forensics'); safe(()=>renderAuthority(),'authority'); safe(()=>renderFive(),'five');
   safe(()=>renderTOD(),'tod'); safe(()=>renderIntrabar(),'ib'); safe(()=>renderThresh(),'th'); safe(()=>renderZero(),'zero'); safe(()=>renderHealthMatrix(),'hm'); safe(()=>renderTrace(),'trace'); safe(()=>renderTimer(),'timer'); safe(()=>renderThreshChamp(),'tchamp'); safe(()=>renderRouter(),'router'); safe(()=>renderSector(),'sector'); safe(()=>renderChampTruth(),'champtruth');
 }
 async function renderScorecard(){const s=await jget('data/SCORECARD.json');if(!s||!s.categories)return;
@@ -1238,6 +1239,25 @@ async function renderBrain(){try{
   }
 }catch(e){__pfail(e)}}
 
+/* 7.1.4 — two things the operator could not see and asked for directly.
+   (1) HOLD AGE. "When I click into a sleeve I don't have any way of knowing how old or how long
+       the trades have been live." Every open position now shows how long it has been held and how
+       old the print marking it is; every closed trade shows how long it was held. A position on a
+       stale print is called out in amber, because that is exactly the condition that manufactured
+       the PNUT windfall.
+   (2) REAL SUB-PENNY PRICES. SHIB-USD rendered "$0.0000 -> $0.0000" because the table was fixed at
+       4 decimals. A price you cannot read is a price you cannot check. */
+function __px(v){ if(v==null||!isFinite(v)) return '\u2014'; var a=Math.abs(v);
+  var d = a>=1000?2 : a>=1?2 : a>=0.01?4 : a>=0.0001?6 : a>=0.000001?8 : 10;
+  return '$'+(a>=1000? v.toLocaleString(undefined,{maximumFractionDigits:2}) : v.toFixed(d)); }
+function __ageStr(iso){ if(!iso) return null; var t=new Date(iso).getTime(); if(!isFinite(t)) return null;
+  var m=(Date.now()-t)/60000; if(m<0) m=0;
+  if(m<60) return Math.round(m)+'m'; if(m<48*60) return (m/60).toFixed(1)+'h'; return (m/1440).toFixed(1)+'d'; }
+function __heldCell(a0,b0){ if(!a0) return '<span class="dim">\u2014</span>';
+  var a=new Date(a0).getTime(), b=b0?new Date(b0).getTime():Date.now();
+  if(!isFinite(a)||!isFinite(b)) return '<span class="dim">\u2014</span>';
+  var m=Math.max(0,(b-a)/60000);
+  return m<60? Math.round(m)+'m' : m<48*60? (m/60).toFixed(1)+'h' : (m/1440).toFixed(1)+'d'; }
 async function openSleeve(bk,sk){try{__resetModalBox();const d=await jget('data/STRATEGY_LAB.json');const sv=(d.sleeves||{})[bk+':'+sk]||{};const tr=(sv.trades||[]).slice(-60).reverse();
   $('modal').style.display='block';$('modalTitle').innerHTML='\ud83e\uddea '+bk.toUpperCase()+' \u00b7 sleeve '+sk+' \u2014 full ledger';
   // 7.0.2 TRANSPARENCY (operator: "TARGET · simulated — what does this mean? Are these synthetic
@@ -1251,7 +1271,7 @@ async function openSleeve(bk,sk){try{__resetModalBox();const d=await jget('data/
   var _op=sv.positions||{}, _opK=Object.keys(_op), _openHtml='';
   if(_opK.length){
     _openHtml='<div style="font-weight:800;margin:4px 0">OPEN POSITIONS ('+_opK.length+') <span class="dim" style="font-weight:400;font-size:9.5px">\u2014 click any symbol for its full chart, graph brain and multi-source overlay</span></div>'
-      +'<table style="font-size:11px;width:100%"><thead><tr><th>sym</th><th>qty</th><th>entry \u2192 now</th><th>uPL%</th><th style="width:30%">\u25c4 stop \u00b7\u00b7 target \u25ba</th></tr></thead><tbody>'
+      +'<table style="font-size:11px;width:100%"><thead><tr><th>sym</th><th>qty</th><th>entry \u2192 now</th><th>uPL%</th><th>held</th><th>price age</th><th style="width:26%">\u25c4 stop \u00b7\u00b7 target \u25ba</th></tr></thead><tbody>'
       +_opK.map(function(s){var q=_op[s]||{};var ep=q.entry||q.entry_price||0;var mk=(q.mark!=null?q.mark:ep);
         var up=(ep>0?(mk/ep-1)*100:0);
         // 7.0.8 THE MISSING LINK. The graph brain and the source overlay have been built and wired
@@ -1261,20 +1281,44 @@ async function openSleeve(bk,sk){try{__resetModalBox();const d=await jget('data/
         // its full chart: price, entry/target/stop overlay, the GRAPH BRAIN read (structure, peaks,
         // troughs, floors, ceilings, the 2h..1w ladder, cadence) and the multi-source tracing-paper
         // overlay. The data was always there; the door was missing.
-        return '<tr><td><a href="#" onclick="openChart(\''+s+'\','+(ep||0)+','+(mk||0)+');return false;" style="color:#4da3ff;text-decoration:underline dotted" title="open the full chart + graph brain for '+s+'">'+s+'</a></td><td>'+f(q.qty||0,4)+'</td><td class="dim" style="font-size:10px">$'+f(ep,4)+' \u2192 $'+f(mk,4)+'</td>'
+        return '<tr><td><a href="#" onclick="openChart(\''+s+'\','+(ep||0)+','+(mk||0)+');return false;" style="color:#4da3ff;text-decoration:underline dotted" title="open the full chart + graph brain for '+s+'">'+s+'</a></td><td>'+f(q.qty||0,4)+'</td><td class="dim" style="font-size:10px">'+__px(ep)+' \u2192 '+__px(mk)+'</td>'
           +'<td class="'+(up>=0?'pos':'neg')+'">'+(up>=0?'+':'')+f(up,2)+'%</td>'
-          +'<td>'+__posBar({entry:ep,mark:mk,target:q.target,stop:q.stop,upl_pct:up})+'</td></tr>';}).join('')
+          +'<td class="dim">'+__heldCell(q.t)+'</td>'+'<td style="font-size:10px" class="'+(q.stale_px===true?'neg':'dim')+'">'+(q.stale_px===true?'\u26a0 stale':(__ageStr(q.mark_t)||'\u2014'))+'</td>'+'<td>'+__posBar({entry:ep,mark:mk,target:q.target,stop:q.stop,upl_pct:up})+'</td></tr>';}).join('')
       +'</tbody></table>';
   } else _openHtml='<div class="dim" style="font-size:11px">no open positions in this sleeve right now</div>';
   $('chartHost').innerHTML=_openHtml+'<div style="font-weight:800;margin:10px 0 4px">CLOSED / ALL TRADES</div>'
-    +'<table><thead><tr><th>when (UTC)</th><th>side</th><th>sym</th><th>style</th><th>wager</th><th>pnl</th><th>net%</th><th>why</th></tr></thead><tbody>'
-    +(tr.length?tr.map(function(t){return '<tr><td class="dim" style="font-size:9px">'+String(t.t||'').replace('T',' ').slice(0,19)+'</td><td>'+t.side+'</td><td>'+t.sym+'</td><td>'+(t.style||'')+'</td><td>'+(t.wager_usd?('$'+t.wager_usd):'')+'</td><td class="'+((t.pnl||0)>=0?'pos':'neg')+'">'+(t.pnl!=null?('$'+t.pnl):'')+'</td><td>'+(t.realized_pct!=null?t.realized_pct+'%':'')+'</td><td class="dim" style="font-size:9px">'+(t.why||'')+' \u00b7 simulated</td></tr>';}).join(''):'<tr><td colspan="8" class="dim">no trades yet \u2014 gates armed, pool pending</td></tr>')
+    +'<table><thead><tr><th>when (UTC)</th><th>side</th><th>sym</th><th>style</th><th>wager</th><th>pnl</th><th>net%</th><th>held</th><th>why</th></tr></thead><tbody>'
+    +(tr.length?tr.map(function(t){return '<tr><td class="dim" style="font-size:9px">'+String(t.t||'').replace('T',' ').slice(0,19)+'</td><td>'+t.side+'</td><td>'+t.sym+'</td><td>'+(t.style||'')+'</td><td>'+(t.wager_usd?('$'+t.wager_usd):'')+'</td><td class="'+((t.pnl||0)>=0?'pos':'neg')+'">'+(t.pnl!=null?('$'+t.pnl):'')+'</td><td>'+(t.realized_pct!=null?t.realized_pct+'%':'')+'</td><td class="dim">'+(t.side==='SELL'?__heldCell(t.opened_t,t.t):'\u2014')+'</td><td class="dim" style="font-size:9px">'+(t.why||'')+' \u00b7 simulated'+(t.fill_capped?' <span style="color:#d4af37">\u25c9 capped'+(t.forgone_pct?(' \u2212'+t.forgone_pct+'%'):'')+'</span>':'')+(t.gap_fill_h?' <span style="color:#d4af37">\u26a0 gap '+t.gap_fill_h+'h</span>':'')+(t.px_age_min!=null&&t.px_age_min>15?' <span class="dim">px '+t.px_age_min+'m</span>':'')+'</td></tr>';}).join(''):'<tr><td colspan="9" class="dim">no trades yet \u2014 gates armed, pool pending</td></tr>')
     +'</tbody></table>';$('mStats').textContent='';}catch(e){__pfail(e)}}
 async function renderQuestions(){try{const el=$('questBody');if(!el)return;const d=await jget(files.qe);if(!d){el.textContent='first cycle pending';return;}
   const col={PASS:'pos',WATCH:'',FAIL:'neg',PENDING:'dim'};const sc=d.score||{};
   el.innerHTML='<div style="margin-bottom:8px"><b style="font-size:14px;color:'+(d.verdict==='TOWARD-EDGE'?'#00b894':(d.verdict==='AWAY-FROM-EDGE'?'#d63031':'#fdcb6e'))+'">'+d.verdict+'</b> · '+(sc.pass||0)+'✓ '+(sc.watch||0)+'~ '+(sc.fail||0)+'✗ '+(sc.pending||0)+'…</div>'
    +'<table><tbody>'+(d.questions||[]).map(function(q){return '<tr><td style="width:16px" class="'+(col[q.status]||'')+'"><b>'+(q.status==='PASS'?'✓':q.status==='FAIL'?'✗':q.status==='WATCH'?'~':'…')+'</b></td><td style="font-size:10px">'+q.q+'</td><td class="dim" style="font-size:9px">'+q.evidence+'</td></tr>';}).join('')+'</tbody></table>'
    +'<div class="dim" style="font-size:9px;margin-top:6px">every answer carries its number — the composite decides TOWARD or AWAY. Nothing here trades; everything here judges.</div>';}catch(e){__pfail(e)}}
+async function renderGraphAudit(){try{const el=$('gdaBody');if(!el)return;const d=await jget('data/GRAPH_DECISION_AUDIT.json');if(!d){el.textContent='first cycle pending';return;}
+  /* 7.1.4 — the operator's question made visible: "how well is our brain at reading our new graphs
+     and making decisions from it, not alongside it, or despite it". The coupling line states the
+     uncomfortable truth up front; the table grades each graph feature against real closed trades. */
+  const cs=d.coupling_status||{}, F=d.features||{};
+  const vc={PREDICTIVE:'pos',INVERSE:'neg',NEUTRAL:'dim',TOO_EARLY:'dim',NO_EVIDENCE:'dim'};
+  let h='<div style="padding:6px 9px;border:1px solid '+(cs.consumed_by_decisions?'#00b894':'#d4af37')+'55;border-radius:6px;background:rgba(212,175,55,.08);font-size:11px;margin-bottom:8px">'
+    +'<b>COUPLING: '+(cs.consumed_by_decisions?'the graph feeds selection':'the graph is DISPLAY-ONLY')+'</b><br><span class="dim">'+(cs.statement||'')+'</span></div>';
+  h+='<div style="font-size:11px;margin-bottom:4px">'+(d.trades_graded||0)+' of '+(d.trades_seen||0)+' closed trades graded'
+    +(d.trades_unreadable?(' \u00b7 '+d.trades_unreadable+' unreadable (no tape at entry)'):'')
+    +' \u00b7 a verdict needs n\u2265'+(d.min_n_for_verdict||25)+'</div>';
+  h+='<table style="font-size:11px"><thead><tr><th>graph feature</th><th>read at entry?</th><th>verdict</th><th>n</th><th>best bucket</th><th>worst bucket</th></tr></thead><tbody>';
+  Object.keys(F).forEach(function(k){const v=F[k]||{};const bs=Object.entries(v.buckets||{}).sort((a,b)=>b[1].mean_net_pct-a[1].mean_net_pct);
+    const bst=bs[0], wst=bs[bs.length-1];
+    h+='<tr><td><b>'+k.replace(/_/g,' ')+'</b></td>'
+      +'<td class="'+(v.read_by_selection?'pos':'neg')+'">'+(v.read_by_selection?'yes':'NO \u2014 drawn, ignored')+'</td>'
+      +'<td class="'+(vc[v.verdict]||'dim')+'"><b>'+v.verdict+'</b></td><td>'+(v.n||0)+'</td>'
+      +'<td class="dim" style="font-size:10px">'+(bst?(bst[0]+' '+(bst[1].mean_net_pct>=0?'+':'')+bst[1].mean_net_pct+'% n='+bst[1].n):'\u2014')+'</td>'
+      +'<td class="dim" style="font-size:10px">'+(wst&&bs.length>1?(wst[0]+' '+(wst[1].mean_net_pct>=0?'+':'')+wst[1].mean_net_pct+'% n='+wst[1].n):'\u2014')+'</td></tr>';
+    h+='<tr><td colspan="6" class="dim" style="font-size:9px;padding-bottom:6px">'+(v.why||'')+'</td></tr>';});
+  h+='</tbody></table>';
+  h+='<div style="margin-top:6px;padding:6px 9px;border-left:3px solid #4da3ff;font-size:11px"><b>NEXT STEP:</b> '+(d.next_step||'')+'</div>';
+  h+='<div class="dim" style="font-size:9px;margin-top:5px">'+(d.honesty||'')+' Entry-time structure is reconstructed from the tape using only prints that existed then, so no hindsight can leak in.</div>';
+  el.innerHTML=h;}catch(e){__pfail(e)}}
 async function renderGeometry(){try{const el=$('geoBody');if(!el)return;const d=await jget(files.ge);if(!d){el.textContent='first cycle pending';return;}
   const c=d.counts||{};
   el.innerHTML='<div style="margin-bottom:6px"><b class="pos">'+(c.TRADEABLE||0)+' TRADEABLE</b> · <span class="neg">'+(c['UNTRADEABLE:geometry']||0)+' geometry-locked</span> · <span class="neg">'+(c['UNTRADEABLE:evidence']||0)+' evidence-short</span> · <span class="dim">'+(c['STAND-DOWN']||0)+' stand-down</span> — of '+(d.n||0)+' fitted names</div>'
