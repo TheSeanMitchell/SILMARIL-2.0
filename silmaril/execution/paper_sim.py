@@ -1976,6 +1976,15 @@ def live_step(out_dir) -> Dict[str, Any]:
                  ", ".join("%s %d" % (k, v) for k, v in sorted(_c7.items()) if k != "OK") or "all clean"))
     except Exception as _e7:
         print("  price truth: NOT PUBLISHED (%s) — feed grading unavailable this cycle" % _e7)
+    # 7.1.7: the warm start must exist BEFORE the post-wipe blackout is evaluated below, since
+    # the blackout can only be lifted once the books have been seeded from real stored tape.
+    try:
+        from .warm_start import build_warm_start as _bws7
+        _ws7 = _bws7(out, samples)
+        _rec7 = [(_b, (_r or {}).get("recommended_sleeve")) for _b, _r in (_ws7.get("books") or {}).items()]
+        print("  warm start: " + (", ".join("%s→%s" % (b, r or "—") for b, r in _rec7) or "no books"))
+    except Exception as _we7:
+        print("  warm start: skipped (%s)" % _we7)
     global _WARM_SYMS
     marks, _WARM_SYMS, marks_health = _marks_from_samples(samples)
     # 2.7 TRUE post-wipe quiet period (measured from wipe time): take no trades for the first window after a
@@ -1994,8 +2003,38 @@ def live_step(out_dir) -> Dict[str, Any]:
         REGIMES = {}
     quiet_left = _post_wipe_quiet_left(out)
     if quiet_left > 0:
-        marks = {}   # empty marks => no entries and no exits this cycle; the engine sits quiet by design
-        marks_health["state"] = "QUIET after wipe — %d min left (by design)" % int(quiet_left)
+        # ── 7.1.7 THE BLACKOUT, RE-EXAMINED ──────────────────────────────────────────────
+        # QUIET_AFTER_WIPE_MIN is a flat 120-minute blackout in which marks are emptied and
+        # the engine sees nothing at all. It was written for a world where a wipe cleared the
+        # TAPE too — you cannot trade honestly on an empty tape, so you wait for prints.
+        # That world no longer exists: price_samples is LEARNING-class and survives every
+        # wipe by design, so the morning after a reset we already hold weeks of real prices,
+        # fitted fingerprints, and a backtested recommendation per book.
+        #
+        # Sitting blind for two hours on top of a full tape is not caution, it is just delay —
+        # and it is a large part of what the operator has been calling "the ridiculous wait".
+        # So the blackout now ENDS EARLY when the surviving tape can honestly support trading:
+        # enough names already satisfy the warmup rule, and the warm start has seeded the
+        # books from real evidence. If either is missing we serve the full window, unchanged.
+        _ready_names = len(_WARM_SYMS or ())
+        _need = int((_catalog(out).get("post_wipe") or {}).get("min_warm_names", 25))
+        _seeded = False
+        try:
+            _ws = json.loads((out / "WARM_START.json").read_text())
+            _seeded = any((b or {}).get("recommended_sleeve")
+                          for b in (_ws.get("books") or {}).values())
+        except Exception:
+            _seeded = False
+        if _ready_names >= _need and _seeded:
+            marks_health["state"] = ("READY after wipe — %d names already warm on the surviving "
+                                     "tape and every book seeded from backtest; blackout skipped "
+                                     "(%d min would have remained)" % (_ready_names, int(quiet_left)))
+            quiet_left = 0.0
+        else:
+            marks = {}   # empty marks => no entries and no exits this cycle; quiet by design
+            marks_health["state"] = ("QUIET after wipe — %d min left (by design): %d warm names "
+                                     "(need %d), warm-start seeded=%s"
+                                     % (int(quiet_left), _ready_names, _need, _seeded))
     try:
         feed_intel = feed_integrity(samples)
         (out / "FEED_INTEGRITY.json").write_text(json.dumps(feed_intel, indent=2))

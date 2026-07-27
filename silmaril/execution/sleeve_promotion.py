@@ -109,10 +109,40 @@ def build_sleeve_promotion(out_dir) -> Dict[str, Any]:
                         continue
                     if seed is None or sc > (_score(seed) or -1e9):
                         seed = r
+                # ── 7.1.7 THE WARM START ───────────────────────────────────────────────
+                # Right after a wipe every sleeve has zero closes, so _score() is None for
+                # all of them and `seed` stays None — the PROVISIONAL pick was effectively a
+                # coin flip, and the book then waited days for whichever sleeve happened to
+                # close three trades first, good or bad. WARM_START.json answers that from
+                # real stored tape: which personality had the best edge over doing nothing on
+                # THIS book's own names, and which resolved trades fastest. It is a
+                # hypothesis, never evidence — it seeds the hand and nothing else. The arming
+                # gate is untouched: three REAL forward closes still stand between this pick
+                # and a funded trade.
+                # The real "no forward evidence" test is whether ANY sleeve has actually closed
+                # a trade — not whether _score returned None. A freshly wiped sleeve carries
+                # delta_vs_hodl: 0.0, so _score gives 0.0 for every one of them and `seed`
+                # lands on whichever sorts first. That is the coin flip this release exists to
+                # remove, and it hid behind a `seed is None` check that could never be true.
+                _has_evidence = any(int(r.get("closed") or 0) > 0 for r in rows)
+                _ws_used = None
+                if seed is None or not _has_evidence:
+                    try:
+                        from .warm_start import recommended_sleeve as _rec
+                        _pick = _rec(out, bk)
+                        if _pick:
+                            for r in rows:
+                                if r.get("sleeve") == _pick:
+                                    seed, _ws_used = r, _pick
+                                    break
+                    except Exception:
+                        pass
                 if seed is not None:
                     sk = seed.get("sleeve")
                     cfg = (sleeves_def.get(sk) or {}) if isinstance(sleeves_def, dict) else {}
                     books[bk] = {
+                        "seed_source": ("warm_start (backtest hypothesis on this book's own tape)"
+                                        if _ws_used else "forward score"),
                         "sleeve": sk, "name": seed.get("name"),
                         "discipline": {k: cfg.get(k) for k in DISCIPLINE_KEYS
                                        if cfg.get(k) is not None} or None,

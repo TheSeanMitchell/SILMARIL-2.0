@@ -3636,6 +3636,10 @@ Reply in 3-5 bullets, no preamble.
                           # from losers? Measured every cycle, read-only, never trades.
                           ("graph→decision audit (is the graph helping?)",
                            "graph_decision_audit.build_graph_decision_audit"),
+                          # 7.1.7: which personality would have worked on each book's own tape,
+                          # and how fast it resolves — seeds PROVISIONAL, arms nothing.
+                          ("warm start (backtest seed, never evidence)",
+                           "warm_start.build_warm_start"),
                           ("sleeve promotion (workshop → book)", "sleeve_promotion.build_sleeve_promotion"),
                           # 7.0.3: publish the itemised, venue-sourced cost model every cycle.
                           ("fee model (real venue costs)", "fee_model.build_fee_model"),

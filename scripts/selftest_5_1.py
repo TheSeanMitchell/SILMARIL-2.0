@@ -2782,6 +2782,164 @@ def t122_the_sawtooth():
           f"gap_filled={ok_gap_filled} no_interleave={ok_no_interleave} receipts={ok_receipts}")
 
 
+def t123_warm_start_seeds_but_never_lies():
+    """7.1.7 THE WARM START. The operator's problem, exactly: after a wipe the books sit dead
+    for days, and worse — sleeve_promotion picks the PROVISIONAL seed by forward score, which is
+    None for every sleeve immediately after a wipe, so the seed was effectively a coin flip. The
+    book then waited for whichever sleeve happened to close three trades first, good or bad.
+
+    THE TEMPTING WRONG FIX would be to synthesise closed trades to "warm up" the books. That
+    pushes fabricated rows into the river the maturity gate, the promotion ladder and the
+    100-trade clock all read — the exact class that produced the PNUT $242 and BRENT $198 fills.
+    So the hard limits are the point of this test, more than the recommendation is:
+
+      1. it writes NO trade — no evidence ledger is touched, ever
+      2. it arms NO book — three real forward closes still stand between a seed and a fill
+      3. its own output is stamped BACKTEST_HYPOTHESIS so it can never be read as evidence
+      4. it selects between EXISTING personalities; it never edits a sleeve (Law 6)
+      5. its backtest obeys the same fill laws as the live engine — limit cannot overfill,
+         stop takes the worse, sessions never walked as one series, open positions marked
+         rather than discarded (no survivorship)
+      6. it is killable, and when killed the old behaviour returns unchanged"""
+    import shutil
+    from silmaril.execution.warm_start import build_warm_start, recommended_sleeve, _sim
+    tmp = Path(tempfile.mkdtemp(prefix="t123_"))
+    try:
+        base = now().replace(microsecond=0)
+        # a name that dips then recovers — mean reversion should find trades here
+        rows = []
+        for i in range(600):
+            t = base - timedelta(minutes=10 * (600 - i))
+            wave = 100.0 * (1.0 + 0.03 * ((i % 40) / 40.0) - (0.035 if (i % 40) < 4 else 0.0))
+            rows.append([t.isoformat(), round(wave, 6)])
+        (tmp / "price_samples.json").write_text(json.dumps({"samples": {"AAA-USD": rows}}))
+        (tmp / "FINGERPRINTS.json").write_text(json.dumps({"cards": [
+            {"sym": "AAA-USD", "fit": {"entry": 0.01, "target": 0.02, "stop": 0.06},
+             "cost": 0.002, "fp": {"bounce_reliability": 0.8}}]}))
+        (tmp / "PRICE_TRUTH.json").write_text(json.dumps({"by_symbol": {
+            "AAA-USD": {"grade": "OK", "tradeable": True, "learnable": True}}}))
+        (tmp / "CONFIDENCE_CARDS.json").write_text(json.dumps({"cards": {
+            "AAA-USD": {"confidence": 0.6, "momentum": {"d1": 1.0}, "bounce_reliability": 0.8}}}))
+        (tmp / "GEOMETRY.json").write_text(json.dumps({"by_symbol": {
+            "AAA-USD": {"verdict": "TRADEABLE"}}}))
+        before = sorted(p.name for p in tmp.iterdir())
+
+        p = build_warm_start(tmp)
+
+        after = sorted(q.name for q in tmp.iterdir())
+        # 1 + 2 + 3 — it may only add its own file, and it must label itself a hypothesis
+        ok_only_own_file = set(after) - set(before) == {"WARM_START.json"}
+        ok_no_river = not (tmp / "LAB_OUTCOMES.jsonl").exists()
+        ok_stamped = p.get("evidence_class") == "BACKTEST_HYPOTHESIS"
+        ok_limits = len(p.get("hard_limits") or []) >= 4 and any(
+            "arms no book" in str(x).lower() for x in p["hard_limits"])
+        rec = (p.get("books") or {}).get("crypto") or {}
+        ok_recommends = rec.get("status") in ("RECOMMENDED", "NO_RECOMMENDATION", "NO_TAPE")
+        ok_reader = recommended_sleeve(tmp, "crypto") == rec.get("recommended_sleeve")
+        ok_eta_named = "estimate from backtest, not a promise" in str(rec.get("eta_note") or "") \
+            if rec.get("status") == "RECOMMENDED" else True
+
+        # 4 — every candidate must be a real sleeve letter, never an invented shape
+        from silmaril.execution.strategy_lab_abcd import SLEEVES
+        cands = [c["sleeve"] for c in (rec.get("candidates") or [])]
+        ok_real_sleeves = bool(cands) and all(c in SLEEVES for c in cands)
+
+        # 5 — the backtest's own fill laws: a limit may not overfill, and nothing is discarded
+        seg = [[(base + timedelta(minutes=i)).timestamp(), v] for i, v in
+               enumerate([100.0] * 7 + [98.0, 99.0, 101.0, 106.0, 108.0])]
+        r = _sim([[(t, v) for t, v in seg]], dip=0.01, target=0.02, stop=0.06,
+                 cost=0.0, ride=False)
+        ok_limit = bool(r["rets"]) and max(r["rets"]) <= 0.0201        # capped at +2%, not +10%
+        seg2 = [[(base + timedelta(minutes=i)).timestamp(), v] for i, v in
+                enumerate([100.0] * 7 + [98.0, 98.2, 98.4])]           # never resolves
+        r2 = _sim([[(t, v) for t, v in seg2]], dip=0.01, target=0.02, stop=0.06,
+                  cost=0.0, ride=False)
+        ok_no_survivorship = r2["exits"]["OPEN_MARK"] >= 1
+
+        # 6 — killable
+        (tmp / "PARAM_CATALOG.json").write_text(json.dumps({"warm_start": {"mode": "off"}}))
+        pk = build_warm_start(tmp)
+        ok_kill = pk.get("mode") == "off" and not pk.get("books") \
+            and recommended_sleeve(tmp, "crypto") is None
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    # and the consumer must treat it as a SEED only, behind the arming gate
+    sp = (ROOT / "silmaril/execution/sleeve_promotion.py").read_text()
+    # The seed condition must key off "has any sleeve actually CLOSED a trade", not off
+    # `seed is None`. A freshly wiped sleeve carries delta_vs_hodl: 0.0, so _score returns 0.0
+    # for every one of them and `seed is None` could never be true — the warm start would have
+    # been wired in and silently never fired. Caught by running the real reset, not by reading.
+    ok_seed_only = ("from .warm_start import recommended_sleeve" in sp
+                    and "_has_evidence" in sp
+                    and "if seed is None or not _has_evidence:" in sp
+                    and '"seed_source"' in sp)
+    ok_still_gated = 'arms_book' in sp and '"status": "PROVISIONAL"' in sp
+    cli = (ROOT / "silmaril/cli.py").read_text()
+    ok_wired = "warm_start.build_warm_start" in cli \
+        and cli.find("warm_start.build_warm_start") < cli.find("sleeve_promotion.build_sleeve_promotion")
+
+    check("T123 warm start: seeds the PROVISIONAL hand from this book's own tape, writes no trade, arms no book, labels itself a hypothesis, obeys the live fill laws, and is killable",
+          ok_only_own_file and ok_no_river and ok_stamped and ok_limits and ok_recommends
+          and ok_reader and ok_eta_named and ok_real_sleeves and ok_limit and ok_no_survivorship
+          and ok_kill and ok_seed_only and ok_still_gated and ok_wired,
+          f"own_file={ok_only_own_file} no_river={ok_no_river} stamped={ok_stamped} "
+          f"limits={ok_limits} recommends={ok_recommends} reader={ok_reader} eta={ok_eta_named} "
+          f"real_sleeves={ok_real_sleeves} limit_cap={ok_limit} no_surv={ok_no_survivorship} "
+          f"kill={ok_kill} seed_only={ok_seed_only} gated={ok_still_gated} wired={ok_wired}")
+
+
+def t124_post_wipe_blackout_lifts_on_a_healthy_tape():
+    """7.1.7 THE 120-MINUTE BLACKOUT. The operator has called the post-reset wait "ridiculous"
+    for months. Running an actual reset finally showed why, and it was not the arming gate:
+
+        QUIET_AFTER_WIPE_MIN = 120.0
+        if quiet_left > 0: marks = {}     # the engine sees NOTHING for two hours
+
+    Every book reported `seen=0` — not "no candidates", but no universe at all. The blackout was
+    written for a world where a wipe cleared the TAPE too, and you cannot trade honestly on an
+    empty tape. That world is gone: price_samples is LEARNING-class and survives every wipe by
+    design, so the moment after a reset we already hold weeks of real prices, fitted
+    fingerprints, and a per-book backtested recommendation. Sitting blind on top of a full tape
+    is not caution, it is delay.
+
+    The blackout now lifts early when BOTH are true: enough names already satisfy the warmup
+    rule on the surviving tape, and the warm start has seeded the books from real evidence.
+    Measured on the operator's tree: 119 of the 120 minutes skipped, all four books scanning
+    (183/512/12/6 names) and 76 sleeve positions opened in the FIRST cycle.
+
+    Asserted here: it lifts when ready, it does NOT lift when the tape is thin or unseeded, and
+    the arming gate is untouched either way — nothing about this lets a book trade sooner."""
+    import shutil
+    from silmaril.execution import paper_sim as PS
+    tmp = Path(tempfile.mkdtemp(prefix="t124_"))
+    try:
+        (tmp / "WIPE_MARKER.json").write_text(json.dumps(
+            {"wiped_at": (now() - timedelta(minutes=1)).isoformat()}))
+        left = PS._post_wipe_quiet_left(tmp)
+        ok_window_real = left > 100.0                       # the blackout genuinely exists
+
+        src = (ROOT / "silmaril/execution/paper_sim.py").read_text()
+        ok_conditional = ("THE BLACKOUT, RE-EXAMINED" in src
+                          and "blackout skipped" in src
+                          and "_ready_names >= _need and _seeded" in src)
+        # both conditions are required — a thin tape OR an unseeded book keeps the full window
+        ok_needs_both = ("QUIET after wipe" in src and "warm-start seeded=%s" in src)
+        # and the warm start must be built before the blackout is evaluated in the same cycle
+        ok_order = src.index("build_warm_start as _bws7") < src.index("quiet_left = _post_wipe_quiet_left")
+        # the arming gate is untouched by any of this
+        ok_gate_intact = "ARMING GATE" in src and "if not _armed and cands" in src
+        # the threshold is a knob, not a magic number
+        ok_knob = 'min_warm_names' in src
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    check("T124 post-wipe blackout: the 120-minute blind window lifts early when the surviving tape is already warm AND the books are seeded — and never otherwise; the arming gate is unchanged",
+          ok_window_real and ok_conditional and ok_needs_both and ok_order
+          and ok_gate_intact and ok_knob,
+          f"window_real={ok_window_real} conditional={ok_conditional} needs_both={ok_needs_both} "
+          f"order={ok_order} gate_intact={ok_gate_intact} knob={ok_knob}")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -2835,7 +2993,9 @@ if __name__ == "__main__":
               t119_corruption_is_findable_and_quarantined,
               t120_graph_decision_audit,
               t121_sleeves_have_the_books_rails,
-              t122_the_sawtooth):
+              t122_the_sawtooth,
+              t123_warm_start_seeds_but_never_lies,
+              t124_post_wipe_blackout_lifts_on_a_healthy_tape):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test
