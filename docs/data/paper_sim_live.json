@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-07-27T06:28:55.996104+00:00",
+  "generated_at": "2026-07-27T06:48:52.300496+00:00",
   "marks_health": {
     "marked": 728,
     "entry_warm": 728,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.6,
+    "newest_sample_age_min": 0.5,
     "state": "OK",
-    "oscillating": 26,
+    "oscillating": 25,
     "oscillating_syms": [
       "1MWOJAK-USD",
+      "ANKR-USD",
       "ARE",
       "BF-B",
-      "BLUR-USD",
       "BXP",
       "CSGP",
       "DGB-USD",
-      "DIA-USD",
-      "FRT",
       "GRT-USD",
       "HST",
-      "ILV-USD"
+      "ILV-USD",
+      "INVH",
+      "IOTA-USD"
     ]
   },
   "equity_market": {
@@ -58,7 +58,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-27T06:28:52.435801+00:00",
+    "generated_at": "2026-07-27T06:48:48.683568+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -112,15 +112,39 @@
     },
     "decision_trace_live": [
       {
-        "sym": "XMR-USD",
-        "dip_pct": -0.62,
-        "conviction": 0.0517,
+        "sym": "STRK-USD",
+        "dip_pct": -8.75,
+        "conviction": 0.6,
         "fate": "candidate"
       },
       {
         "sym": "MANTA-USD",
-        "dip_pct": -0.53,
-        "conviction": 0.0443,
+        "dip_pct": -1.14,
+        "conviction": 0.0954,
+        "fate": "candidate"
+      },
+      {
+        "sym": "TIA-USD",
+        "dip_pct": -0.51,
+        "conviction": 0.0427,
+        "fate": "candidate"
+      },
+      {
+        "sym": "DYM-USD",
+        "dip_pct": -0.47,
+        "conviction": 0.0391,
+        "fate": "candidate"
+      },
+      {
+        "sym": "XMR-USD",
+        "dip_pct": -0.59,
+        "conviction": 0.0488,
+        "fate": "candidate"
+      },
+      {
+        "sym": "CRO-USD",
+        "dip_pct": -0.31,
+        "conviction": 0.0261,
         "fate": "candidate"
       }
     ],
@@ -132,13 +156,13 @@
     "open_positions": 0,
     "positions": [],
     "recent_trades": [],
-    "tradeable_universe": 24,
+    "tradeable_universe": 22,
     "universe_seen": 186
   },
   "stock": {
     "funnel": {
       "seen": 524,
-      "entry_warm": 510,
+      "entry_warm": 511,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {},
@@ -161,13 +185,22 @@
     "funnel": {
       "seen": 186,
       "entry_warm": 174,
-      "candidates_after_gates": 0,
+      "candidates_after_gates": 1,
       "bought": 0,
-      "rejections": {},
+      "rejections": {
+        "re-entry guard": 1
+      },
       "armed": true,
       "arming_why": "armed"
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "STRK-USD",
+        "dip_pct": -8.75,
+        "conviction": 0.6,
+        "fate": "candidate"
+      }
+    ],
     "equity": 10000.0,
     "cash": 10000.0,
     "realized_pnl": 26.01,
@@ -222,7 +255,7 @@
         "pred": null
       }
     ],
-    "tradeable_universe": 24,
+    "tradeable_universe": 22,
     "universe_seen": 186,
     "display_name": "GEKKO"
   },
@@ -274,8 +307,8 @@
   "combined_realized_pnl": 0.0,
   "backtest_3day_crypto": {
     "universe_total": 1074,
-    "tradeable": 26,
-    "ghosts_excluded": 1048,
+    "tradeable": 24,
+    "ghosts_excluded": 1050,
     "trades": 86,
     "win_rate_pct": 65.1,
     "mean_net_pct": 0.1,
@@ -284,7 +317,7 @@
       "STOP": 19,
       "TIMEOUT": 0
     },
-    "equity_after": 10066.5
+    "equity_after": 10066.52
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
