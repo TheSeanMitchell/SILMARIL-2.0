@@ -1,28 +1,30 @@
 {
   "version": "4.0",
-  "generated_at": "2026-07-27T19:17:11.519974+00:00",
-  "market_mode": "BALANCED",
-  "winner_engine": "default",
-  "winner_action": "NORMAL",
-  "winner_precedence_name": "ADVISORY",
-  "halt_opens": false,
-  "halt_opens_reasons": [],
+  "generated_at": "2026-07-27T19:42:15.961605+00:00",
+  "market_mode": "PRESERVATION",
+  "winner_engine": "market_state",
+  "winner_action": "preservation_halt",
+  "winner_precedence_name": "PRESERVATION",
+  "halt_opens": true,
+  "halt_opens_reasons": [
+    "market_state: market_state=PRESERVATION: inside closing-bell window"
+  ],
   "force_close": {},
   "elite_tickers": [],
   "urgency_tickers": [],
-  "elite_suppressed": false,
-  "elite_suppression_reason": "",
+  "elite_suppressed": true,
+  "elite_suppression_reason": "Elite mode suppressed: market_state=PRESERVATION is not compatible with concentration escalation.",
   "blocked_tickers": {},
   "vulnerable_tickers": [],
   "deployment_pressure": {
-    "score": 0.0375,
+    "score": 0.0,
     "high": false,
     "actions": [],
     "components": {
       "idle_cash": 0.0,
       "sgov_exposure": 0.0,
       "elite_pipeline": 0.0,
-      "market_mode_bias": 0.05,
+      "market_mode_bias": -0.2,
       "vulnerability_drag": -0.0
     },
     "totals": {
@@ -32,33 +34,33 @@
       "elite_count": 0,
       "vulnerable_count": 0
     },
-    "rationale": "mode=BALANCED \u00b7 score=0.04"
+    "rationale": "mode=PRESERVATION \u00b7 score=0.00"
   },
   "sizing": {
-    "base_multiplier": 1.0,
-    "min_conviction_floor": 0.4,
+    "base_multiplier": 0.4,
+    "min_conviction_floor": 0.75,
     "elite_multiplier": 1.5,
     "elite_concentration_cap": 0.2,
     "normal_concentration_cap": 0.12,
-    "deployment_pressure": 0.0375,
+    "deployment_pressure": 0.0,
     "concentration_limits": {
-      "max_per_sector": 3,
-      "max_per_asset_class": 8,
-      "max_sector_book_pct": 0.3
+      "max_per_sector": 1,
+      "max_per_asset_class": 3,
+      "max_sector_book_pct": 0.1
     }
   },
   "close_loop": {
-    "trail_tightness": 1.0,
+    "trail_tightness": 1.5,
     "bleed_exit_enabled": true,
     "stale_close_enabled": true,
-    "stale_close_age_days": 4,
+    "stale_close_age_days": 3,
     "force_close_vulnerable_critical": true
   },
   "sweep": {
-    "aggression_multiplier": 1.0,
+    "aggression_multiplier": 1.75,
     "instant_sweep_usd": 300.0,
     "instant_sweep_pct": 0.05,
-    "news_boost_multiplier": 1.0,
+    "news_boost_multiplier": 0.0,
     "force_sweep_floor": 10500.0,
     "redeploy_sgov": {
       "recommended": false,
@@ -67,72 +69,14 @@
     }
   },
   "urgency_priority_order": [
-    "AAVE-USD",
-    "ECL",
-    "ZBRA",
-    "KMI",
-    "FANG",
-    "XLM-USD",
-    "CTVA"
+    "GE",
+    "NTRS",
+    "AIZ"
   ],
   "urgency_by_ticker": {
-    "KMI": {
-      "ticker": "KMI",
-      "score": 0.1037,
-      "urgent": false,
-      "threshold": 0.65,
-      "components": {
-        "momentum_acceleration": 0.2123,
-        "breakout_velocity": 0.0,
-        "fresh_catalyst": 0.0,
-        "fresh_catalyst_raw": 0.0,
-        "intraday_thrust": 0.0,
-        "source_credibility": 0.8,
-        "narrative_persistence": 0.0
-      },
-      "decay_factor": 1.0,
-      "empirical_lift": 1.0,
-      "rationale": "4 sources"
-    },
-    "CTVA": {
-      "ticker": "CTVA",
-      "score": 0.04,
-      "urgent": false,
-      "threshold": 0.65,
-      "components": {
-        "momentum_acceleration": 0.0,
-        "breakout_velocity": 0.0,
-        "fresh_catalyst": 0.0,
-        "fresh_catalyst_raw": 0.0,
-        "intraday_thrust": 0.0,
-        "source_credibility": 0.8,
-        "narrative_persistence": 0.0
-      },
-      "decay_factor": 1.0,
-      "empirical_lift": 1.0,
-      "rationale": "4 sources"
-    },
-    "AAVE-USD": {
-      "ticker": "AAVE-USD",
-      "score": 0.3028,
-      "urgent": false,
-      "threshold": 0.65,
-      "components": {
-        "momentum_acceleration": 0.8427,
-        "breakout_velocity": 0.0,
-        "fresh_catalyst": 0.0,
-        "fresh_catalyst_raw": 0.0,
-        "intraday_thrust": 0.0,
-        "source_credibility": 1.0,
-        "narrative_persistence": 0.0
-      },
-      "decay_factor": 1.0,
-      "empirical_lift": 1.0,
-      "rationale": "acceleration 0.84; 5 sources"
-    },
-    "ZBRA": {
-      "ticker": "ZBRA",
-      "score": 0.15,
+    "NTRS": {
+      "ticker": "NTRS",
+      "score": 0.1,
       "urgent": false,
       "threshold": 0.65,
       "components": {
@@ -141,52 +85,16 @@
         "fresh_catalyst": 0.0,
         "fresh_catalyst_raw": 0.0,
         "intraday_thrust": 1.0,
-        "source_credibility": 1.0,
+        "source_credibility": 0.0,
         "narrative_persistence": 0.0
       },
       "decay_factor": 1.0,
       "empirical_lift": 1.0,
-      "rationale": "intraday thrust 1.00; 5 sources"
+      "rationale": "intraday thrust 1.00"
     },
-    "FANG": {
-      "ticker": "FANG",
-      "score": 0.0544,
-      "urgent": false,
-      "threshold": 0.65,
-      "components": {
-        "momentum_acceleration": 0.1145,
-        "breakout_velocity": 0.0,
-        "fresh_catalyst": 0.0,
-        "fresh_catalyst_raw": 0.0,
-        "intraday_thrust": 0.0,
-        "source_credibility": 0.4,
-        "narrative_persistence": 0.0
-      },
-      "decay_factor": 1.0,
-      "empirical_lift": 1.0,
-      "rationale": "no urgency signals"
-    },
-    "ECL": {
-      "ticker": "ECL",
-      "score": 0.2472,
-      "urgent": false,
-      "threshold": 0.65,
-      "components": {
-        "momentum_acceleration": 0.3241,
-        "breakout_velocity": 0.0,
-        "fresh_catalyst": 0.0,
-        "fresh_catalyst_raw": 0.0,
-        "intraday_thrust": 1.0,
-        "source_credibility": 1.0,
-        "narrative_persistence": 0.0
-      },
-      "decay_factor": 1.0,
-      "empirical_lift": 1.0,
-      "rationale": "intraday thrust 1.00; 5 sources"
-    },
-    "XLM-USD": {
-      "ticker": "XLM-USD",
-      "score": 0.04,
+    "AIZ": {
+      "ticker": "AIZ",
+      "score": 0.1,
       "urgent": false,
       "threshold": 0.65,
       "components": {
@@ -194,34 +102,52 @@
         "breakout_velocity": 0.0,
         "fresh_catalyst": 0.0,
         "fresh_catalyst_raw": 0.0,
-        "intraday_thrust": 0.0,
-        "source_credibility": 0.8,
+        "intraday_thrust": 1.0,
+        "source_credibility": 0.0,
         "narrative_persistence": 0.0
       },
       "decay_factor": 1.0,
       "empirical_lift": 1.0,
-      "rationale": "4 sources"
+      "rationale": "intraday thrust 1.00"
+    },
+    "GE": {
+      "ticker": "GE",
+      "score": 0.2385,
+      "urgent": false,
+      "threshold": 0.65,
+      "components": {
+        "momentum_acceleration": 0.4618,
+        "breakout_velocity": 0.0,
+        "fresh_catalyst": 0.0,
+        "fresh_catalyst_raw": 0.0,
+        "intraday_thrust": 1.0,
+        "source_credibility": 0.0,
+        "narrative_persistence": 0.0
+      },
+      "decay_factor": 1.0,
+      "empirical_lift": 1.0,
+      "rationale": "intraday thrust 1.00"
     }
   },
   "narrative": {
-    "dominant": "ai_rally",
-    "regime_shift": "ROTATION",
-    "confidence": 0.3445
+    "dominant": "risk_off",
+    "regime_shift": "RISK_ON",
+    "confidence": 0.3556
   },
   "sector_rotation": {
-    "rationale": "Token (strengthening) vs Communications (weakening)",
+    "rationale": "Token (strengthening) vs Innovation (weakening)",
     "top_pairs": [
-      {
-        "from": "Communications",
-        "to": "Token",
-        "strength": 0.7,
-        "rationale": "Communications -0.35 \u2192 Token +0.35"
-      },
       {
         "from": "Innovation",
         "to": "Token",
         "strength": 0.7,
         "rationale": "Innovation -0.35 \u2192 Token +0.35"
+      },
+      {
+        "from": "Crypto",
+        "to": "Token",
+        "strength": 0.7,
+        "rationale": "Crypto -0.35 \u2192 Token +0.35"
       },
       {
         "from": "Semiconductors",
@@ -231,60 +157,60 @@
       }
     ],
     "sector_lift": {
-      "Consumer Staples": 1.0628,
-      "Healthcare": 0.9612,
-      "Communication": 0.9768,
-      "Financials": 0.9945,
-      "FX": 0.9381,
-      "Industrials": 0.9715,
-      "Communications": 0.9125,
-      "Communication Services": 1.0,
-      "Materials": 0.9573,
-      "Energy": 0.9893,
-      "Staples": 0.9793,
+      "Industrials": 0.9711,
+      "Communication": 0.9724,
+      "Energy": 0.9595,
+      "Consumer Staples": 1.0197,
+      "Consumer Discretionary": 0.9836,
+      "Materials": 0.9591,
+      "Credit": 0.9285,
+      "Staples": 0.9765,
+      "Index": 0.9156,
+      "Financials": 0.9928,
       "Innovation": 0.9125,
-      "Real Estate": 0.967,
-      "Technology": 0.9168,
-      "Discretionary": 0.9527,
-      "Software": 0.9455,
-      "Token": 1.105,
-      "Semiconductors": 0.9125,
-      "Utilities": 0.9919,
-      "Index": 0.9145,
-      "Rates": 0.9331,
-      "Consumer Discretionary": 0.9477,
-      "Commodities": 0.9558,
-      "Health Care": 1.0682,
+      "FX": 0.938,
       "Crypto": 0.9125,
-      "Credit": 0.9292
+      "Real Estate": 0.9681,
+      "Token": 1.105,
+      "Healthcare": 0.9588,
+      "Discretionary": 0.9509,
+      "Technology": 0.9415,
+      "Communication Services": 1.043,
+      "Commodities": 0.9575,
+      "Semiconductors": 0.9125,
+      "Communications": 0.9125,
+      "Utilities": 0.9563,
+      "Health Care": 1.0682,
+      "Rates": 0.9331,
+      "Software": 0.9398
     },
     "sector_tag": {
-      "Consumer Staples": "neutral",
-      "Healthcare": "neutral",
-      "Communication": "neutral",
-      "Financials": "neutral",
-      "FX": "neutral",
       "Industrials": "neutral",
-      "Communications": "weakening",
-      "Communication Services": "neutral",
-      "Materials": "neutral",
+      "Communication": "neutral",
       "Energy": "neutral",
-      "Staples": "neutral",
-      "Innovation": "weakening",
-      "Real Estate": "neutral",
-      "Technology": "weakening",
-      "Discretionary": "neutral",
-      "Software": "neutral",
-      "Token": "strengthening",
-      "Semiconductors": "weakening",
-      "Utilities": "neutral",
-      "Index": "weakening",
-      "Rates": "weakening",
+      "Consumer Staples": "neutral",
       "Consumer Discretionary": "neutral",
-      "Commodities": "neutral",
-      "Health Care": "neutral",
+      "Materials": "neutral",
+      "Credit": "weakening",
+      "Staples": "neutral",
+      "Index": "weakening",
+      "Financials": "neutral",
+      "Innovation": "weakening",
+      "FX": "neutral",
       "Crypto": "weakening",
-      "Credit": "weakening"
+      "Real Estate": "neutral",
+      "Token": "strengthening",
+      "Healthcare": "neutral",
+      "Discretionary": "neutral",
+      "Technology": "neutral",
+      "Communication Services": "neutral",
+      "Commodities": "neutral",
+      "Semiconductors": "weakening",
+      "Communications": "weakening",
+      "Utilities": "neutral",
+      "Health Care": "neutral",
+      "Rates": "weakening",
+      "Software": "neutral"
     }
   },
   "deployment_floor": {},
@@ -303,7 +229,31 @@
   },
   "setup_classifications": {
     "per_ticker": {
-      "AIZ": {
+      "KMI": {
+        "archetype": "GENERIC",
+        "setup_lift": 1.0
+      },
+      "CTVA": {
+        "archetype": "GENERIC",
+        "setup_lift": 1.0
+      },
+      "AAVE-USD": {
+        "archetype": "GENERIC",
+        "setup_lift": 1.0
+      },
+      "ZBRA": {
+        "archetype": "GENERIC",
+        "setup_lift": 1.0
+      },
+      "FANG": {
+        "archetype": "GENERIC",
+        "setup_lift": 1.0
+      },
+      "ECL": {
+        "archetype": "GENERIC",
+        "setup_lift": 1.0
+      },
+      "XLM-USD": {
         "archetype": "GENERIC",
         "setup_lift": 1.0
       }
@@ -321,7 +271,17 @@
     }
   },
   "position_directives": [],
-  "rationale": "mode=BALANCED",
-  "directives": [],
+  "rationale": "mode=PRESERVATION | HALT_OPENS",
+  "directives": [
+    {
+      "precedence": 1,
+      "precedence_name": "PRESERVATION",
+      "engine": "market_state",
+      "action": "preservation_halt",
+      "ticker": null,
+      "payload": {},
+      "rationale": "market_state=PRESERVATION: inside closing-bell window"
+    }
+  ],
   "global_directives": []
 }
