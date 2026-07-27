@@ -1,15 +1,16 @@
 {
-  "generated_at": "2026-07-27T11:26:49.891999+00:00",
+  "generated_at": "2026-07-27T11:18:02.039919+00:00",
   "marks_health": {
     "marked": 728,
     "entry_warm": 728,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.6,
+    "newest_sample_age_min": 0.8,
     "state": "OK",
-    "oscillating": 27,
+    "oscillating": 28,
     "oscillating_syms": [
       "1MWOJAK-USD",
       "A-USD",
+      "ANKR-USD",
       "ARE",
       "ARKM-USD",
       "BF-B",
@@ -18,8 +19,7 @@
       "BXP",
       "CHZ-USD",
       "CSGP",
-      "DATA-USD",
-      "GLM-USD"
+      "DATA-USD"
     ]
   },
   "equity_market": {
@@ -58,22 +58,17 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-27T11:26:46.543180+00:00",
+    "generated_at": "2026-07-27T11:17:57.077598+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
     "window": 60,
-    "excluded_count": 6,
+    "excluded_count": 5,
     "excluded": [
       {
         "sym": "ANT-USD",
         "snapbacks": 2,
         "max_move_pct": 8.5
-      },
-      {
-        "sym": "MKR-USD",
-        "snapbacks": 1,
-        "max_move_pct": 6.6
       },
       {
         "sym": "ZRX-USD",
@@ -111,7 +106,7 @@
   "crypto": {
     "funnel": {
       "seen": 186,
-      "entry_warm": 172,
+      "entry_warm": 171,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {
@@ -122,9 +117,9 @@
     },
     "decision_trace_live": [
       {
-        "sym": "MANTA-USD",
-        "dip_pct": -0.52,
-        "conviction": 0.0437,
+        "sym": "MKR-USD",
+        "dip_pct": -6.2,
+        "conviction": 0.8333,
         "fate": "candidate"
       }
     ],
@@ -136,7 +131,7 @@
     "open_positions": 0,
     "positions": [],
     "recent_trades": [],
-    "tradeable_universe": 18,
+    "tradeable_universe": 19,
     "universe_seen": 186
   },
   "stock": {
@@ -164,26 +159,35 @@
   "aggressive": {
     "funnel": {
       "seen": 186,
-      "entry_warm": 172,
-      "candidates_after_gates": 0,
+      "entry_warm": 171,
+      "candidates_after_gates": 1,
       "bought": 0,
-      "rejections": {},
+      "rejections": {
+        "UNTRADEABLE:evidence": 1
+      },
       "armed": true,
       "arming_why": "armed"
     },
-    "decision_trace_live": [],
-    "equity": 10019.85,
+    "decision_trace_live": [
+      {
+        "sym": "MKR-USD",
+        "dip_pct": -6.2,
+        "conviction": 0.8333,
+        "fate": "candidate"
+      }
+    ],
+    "equity": 10017.67,
     "cash": 8600.0,
     "realized_pnl": 26.01,
     "reserve_usd": 26.01,
-    "return_pct": 0.2,
+    "return_pct": 0.18,
     "open_positions": 1,
     "positions": [
       {
         "sym": "EOS-USD",
         "qty": 21869.1763,
         "entry": 0.064017,
-        "mark": 0.064925,
+        "mark": 0.064825,
         "t": "2026-07-27T07:11:45.339399+00:00",
         "wager_usd": 1400.0,
         "target": 0.02,
@@ -192,7 +196,7 @@
         "style": null,
         "entry_regime": null,
         "exp_net_usd": 21.69,
-        "upl_pct": 1.42
+        "upl_pct": 1.26
       }
     ],
     "recent_trades": [
@@ -257,7 +261,7 @@
         "pred": null
       }
     ],
-    "tradeable_universe": 18,
+    "tradeable_universe": 19,
     "universe_seen": 186,
     "display_name": "GEKKO"
   },
@@ -309,17 +313,17 @@
   "combined_realized_pnl": 0.0,
   "backtest_3day_crypto": {
     "universe_total": 1074,
-    "tradeable": 20,
-    "ghosts_excluded": 1054,
-    "trades": 76,
-    "win_rate_pct": 59.2,
-    "mean_net_pct": -0.467,
+    "tradeable": 21,
+    "ghosts_excluded": 1053,
+    "trades": 89,
+    "win_rate_pct": 64.0,
+    "mean_net_pct": 0.004,
     "exits": {
-      "TAKE": 56,
-      "STOP": 20,
+      "TAKE": 68,
+      "STOP": 21,
       "TIMEOUT": 0
     },
-    "equity_after": 9645.45
+    "equity_after": 9995.29
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
