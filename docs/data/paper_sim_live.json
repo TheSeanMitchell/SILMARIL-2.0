@@ -1,73 +1,305 @@
 {
- "generated_at": "2026-07-27T21:30:03.221415+00:00",
- "seeded_by_reset": true,
- "post_wipe_quiet": {
-  "active": true,
-  "minutes_left": 120
- },
- "regimes": {},
- "marks_health": {
-  "warm_rule": "fresh reset \u2014 rebuilding live context"
- },
- "crypto": {
-  "positions": [],
-  "skipped": false,
-  "why": "",
-  "funnel": {
-   "seen": 0,
-   "entry_warm": 0,
-   "candidates_after_gates": 0,
-   "bought": 0,
-   "rejections": {}
-  }
- },
- "stock": {
-  "positions": [],
-  "skipped": false,
-  "why": "",
-  "funnel": {
-   "seen": 0,
-   "entry_warm": 0,
-   "candidates_after_gates": 0,
-   "bought": 0,
-   "rejections": {}
-  }
- },
- "metal": {
-  "positions": [],
-  "skipped": false,
-  "why": "",
-  "funnel": {
-   "seen": 0,
-   "entry_warm": 0,
-   "candidates_after_gates": 0,
-   "bought": 0,
-   "rejections": {}
-  }
- },
- "energy": {
-  "positions": [],
-  "skipped": false,
-  "why": "",
-  "funnel": {
-   "seen": 0,
-   "entry_warm": 0,
-   "candidates_after_gates": 0,
-   "bought": 0,
-   "rejections": {}
-  }
- },
- "aggressive": {
-  "positions": [],
-  "skipped": false,
-  "why": "",
-  "funnel": {
-   "seen": 0,
-   "entry_warm": 0,
-   "candidates_after_gates": 0,
-   "bought": 0,
-   "rejections": {}
-  }
- },
- "note": "seeded by reset_internal_clean \u2014 the first real engine cycle replaces this"
+  "generated_at": "2026-07-27T21:48:37.462687+00:00",
+  "marks_health": {
+    "marked": 728,
+    "entry_warm": 727,
+    "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
+    "newest_sample_age_min": 1.3,
+    "state": "READY after wipe \u2014 710 names already warm on the surviving tape and every book seeded from backtest; blackout skipped (101 min would have remained)",
+    "oscillating": 17,
+    "oscillating_syms": [
+      "1000MOG-USD",
+      "1INCH-USD",
+      "APE-USD",
+      "CELO-USD",
+      "CHZ-USD",
+      "CTSI-USD",
+      "DGB-USD",
+      "ENS-USD",
+      "GRT-USD",
+      "IOST-USD",
+      "KAITO-USD",
+      "LPT-USD"
+    ]
+  },
+  "equity_market": {
+    "status": "OPEN",
+    "why": "regular session"
+  },
+  "regimes": {
+    "crypto": "SIDEWAYS",
+    "stock": "SIDEWAYS",
+    "metal": "SIDEWAYS",
+    "energy": "DOWNTREND"
+  },
+  "start_cash_each": 10000.0,
+  "champion_strategy": "MR_d3_t5_s12",
+  "champion_crypto": "MR_d3_t5_s12",
+  "champion_stock": "HOLD_d4_t10",
+  "champion_metal": "MR_d3_t3_s4",
+  "champion_energy": "MR_d6_t2_s2",
+  "champion_live_params": {
+    "dir": "mr",
+    "entry": 0.03,
+    "target": 0.05,
+    "stop": 0.12,
+    "max_hold_min": 242.0
+  },
+  "heatshield": {
+    "active": true,
+    "floor_pct": 5.0,
+    "note": "no position stops out tighter than this floor \u2014 sits through heat for the bounce"
+  },
+  "timeout_exit": false,
+  "post_wipe_quiet": {
+    "active": false,
+    "minutes_left": 0.0,
+    "note": "engine intentionally quiet after a wipe \u2014 no trades until the window elapses, so the clean run starts from a known baseline"
+  },
+  "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
+  "feed_integrity": {
+    "generated_at": "2026-07-27T21:48:34.228271+00:00",
+    "spike_pct": 6.0,
+    "snapback_ret": 0.5,
+    "min_snapbacks": 1,
+    "window": 60,
+    "excluded_count": 6,
+    "excluded": [
+      {
+        "sym": "ANT-USD",
+        "snapbacks": 2,
+        "max_move_pct": 8.5
+      },
+      {
+        "sym": "MKR-USD",
+        "snapbacks": 1,
+        "max_move_pct": 6.6
+      },
+      {
+        "sym": "ZRX-USD",
+        "snapbacks": 1,
+        "max_move_pct": 7.8
+      },
+      {
+        "sym": "COTI-USD",
+        "snapbacks": 1,
+        "max_move_pct": 60.3
+      },
+      {
+        "sym": "HNT-USD",
+        "snapbacks": 1,
+        "max_move_pct": 63.8
+      },
+      {
+        "sym": "JAM-USD",
+        "snapbacks": 1,
+        "max_move_pct": 14.8
+      }
+    ],
+    "what": "names whose recent feed shows a >=6% move immediately reversed by >=50% (a stale round-trip) \u2014 a real market does not do that; these are bad-data feeds, excluded from trading so they cannot book fake P&L. A real move that HOLDS is not flagged."
+  },
+  "strategy": "CHAMPION: MR_d3_t5_s12",
+  "params": {
+    "drop": 0.02,
+    "bounce": 0.02,
+    "stop": 0.04,
+    "max_hold_min": 240.0,
+    "per_name_frac": 0.1,
+    "min_freshness": 0.8,
+    "min_cost": 0.002
+  },
+  "crypto": {
+    "funnel": {
+      "seen": 186,
+      "entry_warm": 168,
+      "candidates_after_gates": 0,
+      "bought": 0,
+      "rejections": {
+        "arming gate": 1
+      },
+      "armed": false,
+      "arming_why": "OBSERVE \u2014 pyramid law: the crypto workshop must promote a sleeve on real closed trades before this book may open. Best sleeve so far: \u2014 \u00b7 0/3 closes since wipe \u00b7 status WAITING. The book still scans, marks and manages exits; the sleeves are earning its license right now."
+    },
+    "decision_trace_live": [
+      {
+        "sym": "ENA-USD",
+        "dip_pct": -1.37,
+        "conviction": 0.1139,
+        "fate": "candidate"
+      },
+      {
+        "sym": "EOS-USD",
+        "dip_pct": -1.34,
+        "conviction": 0.1115,
+        "fate": "candidate"
+      },
+      {
+        "sym": "TIA-USD",
+        "dip_pct": -0.62,
+        "conviction": 0.0516,
+        "fate": "candidate"
+      },
+      {
+        "sym": "WLD-USD",
+        "dip_pct": -0.73,
+        "conviction": 0.0611,
+        "fate": "candidate"
+      },
+      {
+        "sym": "PENDLE-USD",
+        "dip_pct": -0.65,
+        "conviction": 0.0539,
+        "fate": "candidate"
+      },
+      {
+        "sym": "SOL-USD",
+        "dip_pct": -0.59,
+        "conviction": 0.0494,
+        "fate": "candidate"
+      },
+      {
+        "sym": "XMR-USD",
+        "dip_pct": -0.61,
+        "conviction": 0.0507,
+        "fate": "candidate"
+      },
+      {
+        "sym": "XRP-USD",
+        "dip_pct": -0.35,
+        "conviction": 0.029,
+        "fate": "candidate"
+      }
+    ],
+    "equity": 10000.0,
+    "cash": 10000.0,
+    "realized_pnl": 0.0,
+    "reserve_usd": 0.0,
+    "return_pct": 0.0,
+    "open_positions": 0,
+    "positions": [],
+    "recent_trades": [],
+    "tradeable_universe": 35,
+    "universe_seen": 186
+  },
+  "stock": {
+    "funnel": {
+      "seen": 524,
+      "entry_warm": 524,
+      "candidates_after_gates": 0,
+      "bought": 0,
+      "rejections": {},
+      "armed": false,
+      "arming_why": "OBSERVE \u2014 pyramid law: the stock workshop must promote a sleeve on real closed trades before this book may open. Best sleeve so far: \u2014 \u00b7 0/3 closes since wipe \u00b7 status WAITING. The book still scans, marks and manages exits; the sleeves are earning its license right now."
+    },
+    "decision_trace_live": [],
+    "equity": 10000.0,
+    "cash": 10000.0,
+    "realized_pnl": 0.0,
+    "reserve_usd": 0.0,
+    "return_pct": 0.0,
+    "open_positions": 0,
+    "positions": [],
+    "recent_trades": [],
+    "tradeable_universe": 0,
+    "universe_seen": 524
+  },
+  "aggressive": {
+    "funnel": {
+      "seen": 186,
+      "entry_warm": 168,
+      "candidates_after_gates": 2,
+      "bought": 0,
+      "rejections": {
+        "UNTRADEABLE:evidence": 2
+      },
+      "armed": true,
+      "arming_why": "armed"
+    },
+    "decision_trace_live": [
+      {
+        "sym": "ENA-USD",
+        "dip_pct": -1.37,
+        "conviction": 0.1139,
+        "fate": "candidate"
+      },
+      {
+        "sym": "EOS-USD",
+        "dip_pct": -1.34,
+        "conviction": 0.1115,
+        "fate": "candidate"
+      }
+    ],
+    "equity": 10000.0,
+    "cash": 10000.0,
+    "realized_pnl": 0.0,
+    "reserve_usd": 0.0,
+    "return_pct": 0.0,
+    "open_positions": 0,
+    "positions": [],
+    "recent_trades": [],
+    "tradeable_universe": 35,
+    "universe_seen": 186,
+    "display_name": "GEKKO"
+  },
+  "metal": {
+    "funnel": {
+      "seen": 12,
+      "entry_warm": 12,
+      "candidates_after_gates": 0,
+      "bought": 0,
+      "rejections": {},
+      "armed": false,
+      "arming_why": "OBSERVE \u2014 pyramid law: the metal workshop must promote a sleeve on real closed trades before this book may open. Best sleeve so far: \u2014 \u00b7 0/3 closes since wipe \u00b7 status WAITING. The book still scans, marks and manages exits; the sleeves are earning its license right now."
+    },
+    "decision_trace_live": [],
+    "equity": 10000.0,
+    "cash": 10000.0,
+    "realized_pnl": 0.0,
+    "reserve_usd": 0.0,
+    "return_pct": 0.0,
+    "open_positions": 0,
+    "positions": [],
+    "recent_trades": [],
+    "tradeable_universe": 5,
+    "universe_seen": 12
+  },
+  "energy": {
+    "funnel": {
+      "seen": 6,
+      "entry_warm": 6,
+      "candidates_after_gates": 0,
+      "bought": 0,
+      "rejections": {},
+      "armed": false,
+      "arming_why": "OBSERVE \u2014 pyramid law: the energy workshop must promote a sleeve on real closed trades before this book may open. Best sleeve so far: \u2014 \u00b7 0/3 closes since wipe \u00b7 status WAITING. The book still scans, marks and manages exits; the sleeves are earning its license right now."
+    },
+    "decision_trace_live": [],
+    "equity": 10000.0,
+    "cash": 10000.0,
+    "realized_pnl": 0.0,
+    "reserve_usd": 0.0,
+    "return_pct": 0.0,
+    "open_positions": 0,
+    "positions": [],
+    "recent_trades": [],
+    "tradeable_universe": 3,
+    "universe_seen": 6
+  },
+  "combined_equity": 40000.0,
+  "combined_realized_pnl": 0.0,
+  "backtest_3day_crypto": {
+    "universe_total": 1074,
+    "tradeable": 37,
+    "ghosts_excluded": 1037,
+    "trades": 109,
+    "win_rate_pct": 64.2,
+    "mean_net_pct": -0.393,
+    "exits": {
+      "TAKE": 79,
+      "STOP": 30,
+      "TIMEOUT": 0
+    },
+    "equity_after": 9573.64
+  },
+  "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
