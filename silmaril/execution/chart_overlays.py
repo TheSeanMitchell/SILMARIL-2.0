@@ -34,6 +34,56 @@ def build_chart_overlays(out_dir) -> Dict[str, Any]:
             "book": tr["book"], "strategy": tr["strategy"],
         })
 
+    # ── 1b) 7.1.6 SLEEVE FILLS ON THE CHART ───────────────────────────────────────────
+    # The operator: "the sleeves don't seem to be plotting their buy and sell points on the
+    # graph like the main accounts are doing." Correct — closed_trades() reads the funded
+    # BOOKS only, so the entire workshop's activity was invisible on every chart. That is the
+    # activity that matters most right now, because the books are unarmed and the sleeves are
+    # the only thing trading. A fill is a fill: it belongs on the picture of the name.
+    try:
+        lab = _load(out, "STRATEGY_LAB.json")
+        for key, b in (lab.get("sleeves") or {}).items():
+            book = key.split(":")[0]
+            sleeve = key.split(":")[-1]
+            opens = {}
+            for t in (b.get("trades") or []):
+                sym = t.get("sym")
+                if not sym:
+                    continue
+                if t.get("side") == "BUY":
+                    opens[sym] = t
+                elif t.get("side") == "SELL":
+                    o = opens.pop(sym, None)
+                    entry = t.get("entry") or (o or {}).get("entry")
+                    exitp = t.get("exit")
+                    if entry is None and exitp is None:
+                        continue          # legacy row with no prices — nothing to draw
+                    s2 = ov.setdefault(sym, {})
+                    s2.setdefault("trades", []).append({
+                        "entry": entry, "entry_t": (t.get("opened_t") or (o or {}).get("t")),
+                        "exit": exitp, "exit_t": t.get("t"),
+                        "pnl_pct": t.get("realized_pct"),
+                        "target": (entry * (1 + (t.get("target_pct") or 0) / 100.0)
+                                   if entry and t.get("target_pct") else None),
+                        "book": book, "strategy": "sleeve " + sleeve,
+                        "source": "sleeve",
+                        "fill_capped": bool(t.get("fill_capped")),
+                        "forgone_pct": t.get("forgone_pct"),
+                    })
+            # open sleeve positions get an entry marker too, so a held name shows where we got in
+            for sym, pos in (b.get("positions") or {}).items():
+                if not pos.get("entry"):
+                    continue
+                s2 = ov.setdefault(sym, {})
+                s2.setdefault("sleeve_open", []).append({
+                    "entry": pos.get("entry"), "entry_t": pos.get("t"),
+                    "target": (pos["entry"] * (1 + pos["target"]) if pos.get("target") else None),
+                    "stop": (pos["entry"] * (1 - pos["stop"]) if pos.get("stop") else None),
+                    "book": book, "sleeve": sleeve, "style": pos.get("style"),
+                })
+    except Exception:
+        pass
+
     # 2) live open positions (entry/target/stop/mark)
     live = _load(out, "paper_sim_live.json")
     def ts(nm):

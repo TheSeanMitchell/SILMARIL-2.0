@@ -2699,6 +2699,89 @@ def _cd(L, bk, sym):
     return L._cooldown_ok(bk, sym)[0]
 
 
+def t122_the_sawtooth():
+    """7.1.6 THE SAWTOOTH — five months, found. The operator described it precisely and
+    repeatedly: "every valuable always is either sinking or rising to the same price in between
+    every actual price point." That is a literal description of a series ALTERNATING WITH A
+    CONSTANT, and that is exactly what was happening.
+
+    XTZ-USD, from their 2026-07-27 tree:
+        price_samples.json  XTZ-USD   612 rows, irregular timestamps, 148 distinct prices — clean
+        ccxt_samples.json   XTZUSDT   299 rows on an EXACT 5-minute grid, FOUR distinct values
+    Both were merged into one canonical series. Every real print spiked away from the stuck
+    value and every grid row snapped back to it. That comb then fed the dossier sparkline, the
+    chart, peak detection, rhythm, fingerprints — everything.
+
+    TWO faults, both fixed and both asserted here:
+      1. THE FLAT TEST WAS ABSOLUTE, NOT RELATIVE. It rejected a candidate only at `levels <= 2`,
+         so a 299-row series stuck on 4 values sailed straight through. It is now a ratio: a
+         series whose distinct values are a tiny fraction of its rows is a stuck value, not a
+         price feed, however many rows it has.
+      2. THE REFERENCE COULD BE THE DEAD FEED. Reference selection let an outside venue pick the
+         spelling closest to its price — which handed the job to the frozen XTZUSDT purely
+         because its stuck value sat near the truth, demoting the real 612-print tape to
+         "alternate". Health is now screened FIRST and the primary tape wins by default.
+      3. And even two healthy feeds interleaved at slightly different prices draw a comb, so an
+         admitted spelling may now only FILL GAPS — it can never speak for a moment the
+         reference already covers."""
+    import shutil
+    from silmaril.execution.canon_keys import canonical_samples_report
+    tmp = Path(tempfile.mkdtemp(prefix="t122_"))
+    try:
+        base = now().replace(second=0, microsecond=0)
+        # the real tape: irregular timestamps, genuinely moving
+        prim = []
+        for i in range(120):
+            t = base - timedelta(minutes=10 * (120 - i)) + timedelta(seconds=(i * 37) % 300)
+            prim.append([t.isoformat(), 0.2200 + 0.0009 * ((i * 7) % 13)])
+        # the dead feed: exact 5-minute grid, four values, straddling the same window
+        grid = []
+        for i in range(240):
+            t = base - timedelta(minutes=5 * (240 - i))
+            grid.append([t.replace(second=0, microsecond=0).isoformat(), [0.2211, 0.2211, 0.2211, 0.2220][i % 4]])
+        (tmp / "price_samples.json").write_text(json.dumps({"samples": {"XTZ-USD": prim}}))
+        (tmp / "ccxt_samples.json").write_text(json.dumps({"samples": {"XTZUSDT": grid}}))
+        merged, rep = canonical_samples_report(tmp)
+
+        reasons = {(r["sym"], r["spelling"]): r["reason"] for r in rep["rejects"]}
+        ok_rejected = reasons.get(("XTZ-USD", "XTZUSDT")) == "FROZEN_SERIES"
+        rows = merged.get("XTZ-USD") or []
+        # the stuck values are unique to the dead feed — the real tape never produces them,
+        # so their presence (not the timestamp shape) is the honest test for contamination
+        _stuck = {0.2211, 0.2220}
+        ok_no_grid = not any(round(float(r[1]), 6) in _stuck for r in rows)
+        ys = [float(r[1]) for r in rows]
+        # the signature of the artifact: one value dominating a large share of the series
+        dom = max((ys.count(v) for v in set(ys)), default=0) / float(max(1, len(ys)))
+        ok_no_comb = dom < 0.30
+        ok_kept_real = len(rows) == len(prim)
+
+        # a HEALTHY second feed must still be admitted — but only to fill gaps, never to
+        # interleave. Otherwise the cure would blind us to genuinely deepening history.
+        gap = []
+        for i in range(40):
+            t = base - timedelta(hours=40) + timedelta(minutes=10 * i)   # entirely BEFORE the primary
+            gap.append([t.isoformat(), 0.2205 + 0.0008 * ((i * 5) % 11)])
+        overlap = [[(base - timedelta(minutes=10 * (120 - i)) + timedelta(seconds=5)).isoformat(),
+                    0.2201 + 0.0009 * ((i * 7) % 13)] for i in range(120)]
+        (tmp / "ccxt_samples.json").write_text(json.dumps({"samples": {"XTZUSDT": gap + overlap}}))
+        merged2, rep2 = canonical_samples_report(tmp)
+        rows2 = merged2.get("XTZ-USD") or []
+        ok_gap_filled = len(rows2) > len(prim)                      # the blind window was deepened
+        ok_no_interleave = len(rows2) <= len(prim) + len(gap) + 2   # but the covered window was not
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    src = (ROOT / "silmaril/execution/canon_keys.py").read_text()
+    ok_receipts = ("THE SAWTOOTH, FOUND" in src and "_gap_fill_rows" in src
+                   and "GAP_FILL_TOL_MIN" in src and "ORDER MATTERS, AND IT WAS WRONG" in src)
+    check("T122 the sawtooth: a stuck 5-minute-grid feed can no longer join a real tape, can no longer BE the reference, and a healthy feed may only fill gaps — the comb is gone",
+          ok_rejected and ok_no_grid and ok_no_comb and ok_kept_real
+          and ok_gap_filled and ok_no_interleave and ok_receipts,
+          f"rejected={ok_rejected} no_grid={ok_no_grid} no_comb={ok_no_comb} kept_real={ok_kept_real} "
+          f"gap_filled={ok_gap_filled} no_interleave={ok_no_interleave} receipts={ok_receipts}")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -2751,7 +2834,8 @@ if __name__ == "__main__":
               t117_no_fabricated_fills, t118_sleeves_respect_the_calendar,
               t119_corruption_is_findable_and_quarantined,
               t120_graph_decision_audit,
-              t121_sleeves_have_the_books_rails):
+              t121_sleeves_have_the_books_rails,
+              t122_the_sawtooth):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

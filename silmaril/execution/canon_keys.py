@@ -179,6 +179,51 @@ def _shape(rows: List) -> Dict[str, Any]:
 SCALE_TOL = 0.05
 
 
+GAP_FILL_TOL_MIN = 7.0      # a reference print within this many minutes already covers the moment
+
+
+def _gap_fill_rows(ref_rows: List, add_rows: List) -> List:
+    """Union that DEEPENS history without ever second-guessing a moment we already saw.
+
+    Rows from `add_rows` are kept only when the reference has no print within
+    GAP_FILL_TOL_MIN of that timestamp. This is what kills the sawtooth at the root: two
+    sources can no longer alternate inside the same minutes, because only one of them is
+    ever allowed to speak for a given moment — and it is always the primary tape."""
+    ref_t = []
+    for r in (ref_rows or []):
+        t = _ts(r[0]) if r and len(r) >= 2 else None
+        if t:
+            ref_t.append(t)
+    ref_t.sort()
+    if not ref_t:
+        return list(add_rows or [])
+    tol = GAP_FILL_TOL_MIN * 60.0
+    kept = list(ref_rows or [])
+    import bisect
+    for r in (add_rows or []):
+        try:
+            t = _ts(r[0])
+            if t is None:
+                continue
+            i = bisect.bisect_left(ref_t, t)
+            near = False
+            for j in (i - 1, i):
+                if 0 <= j < len(ref_t) and abs(ref_t[j] - t) <= tol:
+                    near = True
+                    break
+            if not near:
+                kept.append(r)
+        except Exception:
+            continue
+    seen, out = set(), []
+    for r in sorted(kept, key=lambda x: str(x[0])):
+        k = str(r[0])
+        if k not in seen:
+            seen.add(k)
+            out.append(r)
+    return out
+
+
 def canonical_samples_report(out_dir):
     """THE loader, with receipts. Returns (merged, report).
 
@@ -244,25 +289,39 @@ def canonical_samples_report(out_dir):
         if len(cl) == 1:
             merged[key] = cl[0]["rows"]
             continue
-        # 1) pick the REFERENCE spelling
+        # 1) pick the REFERENCE spelling.
+        #
+        # 7.1.6 ORDER MATTERS, AND IT WAS WRONG. This used to let an outside venue SELECT the
+        # reference: whichever spelling sat closest to the venue's price won the role. On XTZ-USD
+        # that handed the job to XTZUSDT — a series stuck on FOUR values across 299 rows — purely
+        # because its stuck value (0.2211) happened to sit near the true price. The real 612-print
+        # tape was then demoted to "alternate" and merged INTO the frozen one. That is how a dead
+        # feed became the spine of a chart.
+        #
+        # The order is now: health first, primary second, outside venue as VALIDATOR only. A
+        # series that cannot pass the flat test may never be the reference, no matter how
+        # plausible its number looks — and the tape the books mark against wins by default,
+        # which is the same doctrine that governs fills.
+        def _healthy(c):
+            sh = c["shape"]
+            if not c["live"] or sh["n"] < 10:
+                return False
+            if sh["levels"] <= 2 and sh["repeat"] >= 0.95:
+                return False
+            return not (sh["n"] >= 50 and (sh["levels"] / float(sh["n"])) < 0.05)
+
         arb = ext.get(key)
-        ref = None
-        if arb:
-            scored = [(abs((c["med"] or 0) / arb - 1.0), c) for c in cl if c["med"]]
-            if scored:
-                scored.sort(key=lambda x: x[0])
-                if scored[0][0] <= 0.15:            # an outside venue confirms this spelling
-                    ref = scored[0][1]
-                    ref["_why_ref"] = "matches outside venue (%.1f%% off)" % (scored[0][0] * 100)
-        if ref is None:
-            prim = [c for c in cl if c["primary"] and c["live"]]
-            if prim:
-                ref = max(prim, key=lambda c: c["shape"]["levels"])
-                ref["_why_ref"] = "primary tape (the series the books mark against)"
-            else:
-                usable = [c for c in cl if c["live"]] or cl
-                ref = max(usable, key=lambda c: c["shape"]["levels"])
-                ref["_why_ref"] = "deepest live series (no primary, no outside venue)"
+        healthy = [c for c in cl if _healthy(c)]
+        pool = healthy or [c for c in cl if c["live"]] or cl
+        prim = [c for c in pool if c["primary"]]
+        if prim:
+            ref = max(prim, key=lambda c: c["shape"]["levels"])
+            ref["_why_ref"] = "primary tape (the series the books mark against), health-screened"
+        else:
+            ref = max(pool, key=lambda c: c["shape"]["levels"])
+            ref["_why_ref"] = "deepest healthy series (no primary tape for this key)"
+        if not healthy:
+            ref["_why_ref"] += " — WARNING: no candidate passed the flat test"
         # if an outside venue exists and even the reference disagrees hard, say so out loud
         if arb and ref.get("med") and abs(ref["med"] / arb - 1.0) > 0.15:
             disputes.append({"sym": key, "our_px": round(ref["med"], 10),
@@ -276,11 +335,27 @@ def canonical_samples_report(out_dir):
             if c is ref:
                 continue
             sh = c["shape"]
-            if sh["levels"] <= 2 and sh["repeat"] >= 0.95:
+            # 7.1.6 THE SAWTOOTH, FOUND. For five months nearly every chart showed the same
+            # artifact — the operator described it exactly: "every valuable always is either
+            # sinking or rising to the same price in between every actual price point." That is
+            # a literal description of a series ALTERNATING WITH A CONSTANT, and that is what
+            # was happening. XTZ-USD: price_samples held 612 clean irregular prints; ccxt held
+            # 299 rows on an exact 5-minute grid carrying just FOUR distinct values. The old
+            # test rejected a candidate only at `levels <= 2`, so a 299-row series stuck on 4
+            # values sailed through and interleaved with the real tape. Every live print spiked
+            # away from the stuck value and every grid row snapped back to it.
+            # The test is now RATIO based: a series is a stuck value, not a price feed, when its
+            # distinct levels are a tiny fraction of its rows — however many rows it has.
+            _flat_ratio = (sh["levels"] / float(max(1, sh["n"])))
+            if (sh["levels"] <= 2 and sh["repeat"] >= 0.95) or (sh["n"] >= 50 and _flat_ratio < 0.05):
                 rejects.append({"sym": key, "spelling": c["spelling"], "file": c["file"],
-                                "reason": "FROZEN_SERIES", "levels": sh["levels"],
+                                "reason": "FROZEN_SERIES", "levels": sh["levels"], "rows": sh["n"],
+                                "distinct_ratio": round(_flat_ratio, 4),
                                 "repeat_pct": round(sh["repeat"] * 100, 1),
-                                "why": "a flat series adds no history and manufactures fake steps when interleaved"})
+                                "why": ("only %d distinct values across %d rows — a stuck value, not a "
+                                        "price feed. Interleaved with the real tape it manufactures the "
+                                        "sawtooth: every real print spikes away, every stuck row snaps back."
+                                        % (sh["levels"], sh["n"]))})
                 continue
             ratio, npair = _aligned_ratio(c["live"], ref["live"])
             if ratio is None or npair < 3:
@@ -295,7 +370,13 @@ def canonical_samples_report(out_dir):
                                 "ref_px": round(ref["med"] or 0, 10), "cand_px": round(c["med"] or 0, 10),
                                 "why": "different price scale at the same moments — a different instrument, not this one"})
                 continue
-            rows = _union_rows(rows, c["rows"])       # verified same asset: history joins
+            # 7.1.6 GAP-FILL ONLY. Even a perfectly healthy second feed produces visual sawtooth
+            # when its prints are interleaved with the primary's at slightly different prices —
+            # two honest sources disagreeing by a tick, alternating every few minutes, draws a
+            # comb. A second feed exists to see where we are BLIND, not to offer a second
+            # opinion at a moment we can already see. So an admitted spelling contributes only
+            # rows in windows the reference does not already cover.
+            rows = _gap_fill_rows(rows, c["rows"])
         merged[key] = rows
 
     report = {"generated_at": datetime.now(timezone.utc).isoformat(),

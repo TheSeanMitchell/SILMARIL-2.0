@@ -437,6 +437,12 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
                 marks: Dict[str, float], candidates: List[tuple],
                 conf_map: Dict[str, float], fastgreen: set,
                 surge: bool, strike_pool: List[tuple], cost_of) -> None:
+    # 7.1.6: these are read by BOTH the strike block and the mean-reversion block, and the
+    # strike block runs first — defining them lower down raised UnboundLocalError on the
+    # very first live cycle. Hoisted so every entry path sees them.
+    _book7 = bk.get("_book7")
+    _vetoes = bk.setdefault("_vetoes7", [])
+    tape = bk.get("_tape7") or {}
     now = _now()
     vault = bool(cfg.get("vault"))
 
@@ -457,8 +463,34 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
         except Exception:
             hold_h = 0.0
         striking = pos.get("style") == "STRIKE"
-        riding = (cfg["ride_winners"] and (sym in fastgreen) and chg >= tgt) or \
-                 (striking and chg >= tgt and surge)
+        # ── 7.1.6 THE TRAIL, NOT THE FLAG ────────────────────────────────────────────────
+        # The operator's STRK-USD trade, in full: bought at 0.030977, ran to 0.035183 (+13.6%),
+        # and exited at the +4% limit for $2.00 with "forgone 9.209%". Two separate faults, and
+        # the honest one first — the CAP was right: a take-profit is a limit order and cannot
+        # fill above its limit. But this sleeve is ADAPTIVE STRIKER, whose entire stated purpose
+        # is "the never-miss-the-big-day law", and it missed the big day.
+        #
+        # Why: the ride test asked "is this name hot RIGHT NOW?" (`sym in fastgreen`, a flag
+        # computed from the last hour, plus an industry `surge` flag). STRK's run happened
+        # overnight; by the 07:28 check the hour was cool, so `riding` was False and the hard
+        # target fired. A sleeve that exists to catch big days should ask "is this POSITION
+        # winning?", not "is the tape excited this minute".
+        #
+        # It now trails: once a position clears its target it stops being a target trade and
+        # becomes a trailing one — we record the best gain seen and exit only when the move
+        # gives back `trail_giveback`. Downside is unchanged (the stop still binds), the limit
+        # law is unchanged (a trail exit is a MARKET order and takes the mark), and the
+        # give-back is knob-gated.
+        _trail_give = float(cfg.get("trail_giveback", 0.25))
+        riding = False
+        if cfg["ride_winners"] and chg >= tgt:
+            _best = max(float(pos.get("peak_chg") or 0.0), chg)
+            pos["peak_chg"] = _best
+            # give back a quarter of the run (never more than the run itself) before letting go
+            riding = chg >= _best * (1.0 - _trail_give)
+            if not riding:
+                _sell(bk, sym, cur, "RIDE_TRAIL", vault, gap_h=None)
+                continue
         _gap_h = None
         try:
             _lt = _LASTPRINT.get(sym)
@@ -500,14 +532,24 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
                 continue
             _ok, _why = _cooldown_ok(bk, sym)
             if not _ok:
-                _vetoes.append({"sym": sym, "sleeve": cfg.get("sleeve"), "why": _why})
+                _vetoes.append({"sym": sym, "sleeve": cfg.get("_letter") or cfg.get("name"), "why": _why})
                 continue
             _ok, _why = _trajectory_ok(sym, tape.get(sym), cfg)
             if not _ok:
-                _vetoes.append({"sym": sym, "sleeve": cfg.get("sleeve"), "why": _why})
+                _vetoes.append({"sym": sym, "sleeve": cfg.get("_letter") or cfg.get("name"), "why": _why})
                 continue
             px = _tp
-            budget = min(_avail() * 0.30, _avail() - 25)
+            # 7.1.6 STRIKE SIZING. The STRK win was +3.688% on a $54.32 wager — two dollars —
+            # because the mean-reversion slots had already spent the sleeve down to pocket
+            # change ($3,621 + $3,440 of a $10k book) and the strike slots took what was left.
+            # A sleeve whose job is to catch the big day cannot be funded with crumbs: when it
+            # is right, being right has to matter. STRIKE now draws against a reserved slice of
+            # STARTING capital, not against whatever the other slots failed to spend.
+            _start = float(bk.get("start_equity") or 10000.0)
+            _reserve = _start * float(cfg.get("strike_reserve_frac", 0.15))
+            budget = max(0.0, min(_reserve, _avail() - 25))
+            if budget < _start * 0.02:                 # too thin to be worth the slot
+                continue
             if budget < 50:
                 break
             qty = budget / px
@@ -532,9 +574,6 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
     # queued the order to Monday's open and filled somewhere else entirely. Crypto is 24/7
     # and unaffected. This gate blocks ENTRIES only — exits and marks continue, exactly as a
     # real desk manages a position through a closed session.
-    _book7 = bk.get("_book7")
-    _vetoes = bk.setdefault("_vetoes7", [])
-    tape = bk.get("_tape7") or {}
     cap = cfg["cap"]
     open_mr = sum(1 for p in bk["positions"].values() if p.get("style") != "STRIKE")
     if open_mr < cap:
@@ -560,11 +599,11 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
                 continue
             _ok, _why = _cooldown_ok(bk, sym)
             if not _ok:
-                _vetoes.append({"sym": sym, "sleeve": cfg.get("sleeve"), "why": _why})
+                _vetoes.append({"sym": sym, "sleeve": cfg.get("_letter") or cfg.get("name"), "why": _why})
                 continue
             _ok, _why = _trajectory_ok(sym, tape.get(sym), cfg)
             if not _ok:
-                _vetoes.append({"sym": sym, "sleeve": cfg.get("sleeve"), "why": _why})
+                _vetoes.append({"sym": sym, "sleeve": cfg.get("_letter") or cfg.get("name"), "why": _why})
                 continue
             px = _tp
             budget = _avail() / max(1, cap - open_mr)
@@ -804,6 +843,8 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
             bk["_regime7"] = _regimes.get(book)
             bk["_book7"] = book
             bk["_tape7"] = _tape7
+            bk.setdefault("start_equity", 10000.0)
+            cfg = dict(cfg); cfg["_letter"] = sk
             _RIVER.update({"out": str(out), "sleeve": sk, "book": book})
             _run_sleeve(cfg, bk, marks, _cands_sk, conf_map, fastgreen, surge, strike_pool, cost_of)
             _RIVER.update({"out": None})
