@@ -1,0 +1,72 @@
+{
+  "generated_at": "2026-07-27T21:40:19.139377+00:00",
+  "all_green": true,
+  "verdict": "ALL GREEN \u2014 every safety invariant holds",
+  "green_streak": 1064,
+  "dod_target": 30,
+  "dod_met": true,
+  "checks": [
+    {
+      "id": "INV1",
+      "name": "books cash finite & non-negative",
+      "status": "PASS",
+      "detail": "5 books: cash finite & non-negative"
+    },
+    {
+      "id": "INV2",
+      "name": "open positions carry target + stop",
+      "status": "PASS",
+      "detail": "no open positions (vacuously safe)"
+    },
+    {
+      "id": "INV3",
+      "name": "position entry prices positive",
+      "status": "PASS",
+      "detail": "no open positions"
+    },
+    {
+      "id": "INV4",
+      "name": "no book over-allocated",
+      "status": "PASS",
+      "detail": "no book over-allocated (\u2264 $10500)"
+    },
+    {
+      "id": "INV5",
+      "name": "champion params in (0,1]",
+      "status": "PASS",
+      "detail": "4 champions: entry/target/stop in (0,1]"
+    },
+    {
+      "id": "INV6",
+      "name": "no trade entered on a synthetic candle",
+      "status": "PASS",
+      "detail": "no trades yet (vacuously safe)"
+    },
+    {
+      "id": "INV7",
+      "name": "GEKKO isolated from Master",
+      "status": "PASS",
+      "detail": "GEKKO absent from Master funded/allocated set"
+    },
+    {
+      "id": "INV8",
+      "name": "realized P&L accounting identity",
+      "status": "PASS",
+      "detail": "no closed trades yet"
+    },
+    {
+      "id": "INV9",
+      "name": "no equity runaway",
+      "status": "PASS",
+      "detail": "no book cash exceeds 10\u00d7 starting capital"
+    },
+    {
+      "id": "INV10",
+      "name": "market-hours guard (no weekend stock entries)",
+      "status": "OK",
+      "detail": "market-hours: no weekend stock entries (last 200 trades)"
+    }
+  ],
+  "reds": [],
+  "what": "Per-cycle logical-safety invariants. Contracts prove stores are shaped right; invariants prove the live state is doing nothing impossible. Any RED names the exact violation. Green for 30 cycles satisfies the DoD clause."
+}

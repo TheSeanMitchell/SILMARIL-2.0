@@ -1,0 +1,70 @@
+{
+  "generated_at": "2026-07-27T21:40:31.598602+00:00",
+  "what": "does reading the graph before entry actually separate winners from losers? Each closed trade's graph state is reconstructed from the tape AS OF ITS ENTRY (nothing after the entry is visible to the reconstruction, so no hindsight can leak in), then outcomes are graded inside each bucket.",
+  "coupling_status": {
+    "graph_brain_store": "CHART_INTEL.json",
+    "consumed_by_decisions": false,
+    "statement": "as of 7.1.4 the graph is a DISPLAY, not an input: CHART_INTEL.json is read by the dashboard and by nothing in the selection path. Sleeves select on confidence score, dip depth, geometry verdict, bounce reliability, reach-vs-cost and trend sign. Peaks, floors, ceilings, peak trajectory and cadence phase are drawn but never consulted.",
+    "features_read_by_selection": [
+      "trend"
+    ],
+    "features_drawn_but_ignored": [
+      "peak_trajectory",
+      "cadence_phase",
+      "range_position",
+      "floor_support",
+      "ceiling_overhead"
+    ]
+  },
+  "trades_seen": 0,
+  "trades_graded": 0,
+  "trades_unreadable": 0,
+  "min_n_for_verdict": 25,
+  "features": {
+    "peak_trajectory": {
+      "buckets": {},
+      "n": 0,
+      "verdict": "NO_EVIDENCE",
+      "why": "no closed trades carry this feature yet",
+      "read_by_selection": false
+    },
+    "trend": {
+      "buckets": {},
+      "n": 0,
+      "verdict": "NO_EVIDENCE",
+      "why": "no closed trades carry this feature yet",
+      "read_by_selection": true
+    },
+    "cadence_phase": {
+      "buckets": {},
+      "n": 0,
+      "verdict": "NO_EVIDENCE",
+      "why": "no closed trades carry this feature yet",
+      "read_by_selection": false
+    },
+    "range_position": {
+      "buckets": {},
+      "n": 0,
+      "verdict": "NO_EVIDENCE",
+      "why": "no closed trades carry this feature yet",
+      "read_by_selection": false
+    },
+    "floor_support": {
+      "buckets": {},
+      "n": 0,
+      "verdict": "NO_EVIDENCE",
+      "why": "no closed trades carry this feature yet",
+      "read_by_selection": false
+    },
+    "ceiling_overhead": {
+      "buckets": {},
+      "n": 0,
+      "verdict": "NO_EVIDENCE",
+      "why": "no closed trades carry this feature yet",
+      "read_by_selection": false
+    }
+  },
+  "promotion_candidates": [],
+  "next_step": "no feature has earned PREDICTIVE yet on this sample. Wiring the graph into selection now would be faith, not evidence \u2014 the honest move is to keep collecting closed trades and re-read this panel as n grows.",
+  "honesty": "this audit grades entries the system already took; it cannot say what would have happened on entries it never took. It answers 'did reading the graph help?', not 'is the graph complete?'"
+}
