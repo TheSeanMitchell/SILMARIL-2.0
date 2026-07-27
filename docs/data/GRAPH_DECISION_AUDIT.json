@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-27T12:36:34.312196+00:00",
+  "generated_at": "2026-07-27T12:56:28.529337+00:00",
   "what": "does reading the graph before entry actually separate winners from losers? Each closed trade's graph state is reconstructed from the tape AS OF ITS ENTRY (nothing after the entry is visible to the reconstruction, so no hindsight can leak in), then outcomes are graded inside each bucket.",
   "coupling_status": {
     "graph_brain_store": "CHART_INTEL.json",
@@ -76,27 +76,27 @@
     "cadence_phase": {
       "buckets": {
         "PEAK_DUE": {
-          "n": 26,
-          "wins": 13,
-          "win_pct": 50.0,
-          "mean_net_pct": 1.172
+          "n": 23,
+          "wins": 12,
+          "win_pct": 52.2,
+          "mean_net_pct": 1.799
+        },
+        "MID_CYCLE": {
+          "n": 25,
+          "wins": 11,
+          "win_pct": 44.0,
+          "mean_net_pct": 0.129
         },
         "JUST_PEAKED": {
           "n": 4,
           "wins": 0,
           "win_pct": 0.0,
           "mean_net_pct": -2.219
-        },
-        "MID_CYCLE": {
-          "n": 22,
-          "wins": 10,
-          "win_pct": 45.5,
-          "mean_net_pct": 0.641
         }
       },
       "n": 52,
-      "verdict": "NEUTRAL",
-      "why": "no meaningful separation between buckets (spread 0.531% over n=52) \u2014 on this evidence the feature does not yet distinguish good entries",
+      "verdict": "PREDICTIVE",
+      "why": "entries taken at PEAK_DUE averaged +1.799% vs +0.129% at MID_CYCLE (spread 1.670% over n=52) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": false
     },
     "range_position": {
@@ -168,10 +168,11 @@
   },
   "promotion_candidates": [
     "peak_trajectory",
+    "cadence_phase",
     "range_position",
     "floor_support",
     "ceiling_overhead"
   ],
-  "next_step": "EVIDENCE FOUND: peak_trajectory, range_position, floor_support, ceiling_overhead now separate winners from losers and are still not consulted at entry. These are the features to gate on next \u2014 with a knob, a kill switch, and an A/B, never silently.",
+  "next_step": "EVIDENCE FOUND: peak_trajectory, cadence_phase, range_position, floor_support, ceiling_overhead now separate winners from losers and are still not consulted at entry. These are the features to gate on next \u2014 with a knob, a kill switch, and an A/B, never silently.",
   "honesty": "this audit grades entries the system already took; it cannot say what would have happened on entries it never took. It answers 'did reading the graph help?', not 'is the graph complete?'"
 }
