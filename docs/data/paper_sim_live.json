@@ -1,17 +1,16 @@
 {
-  "generated_at": "2026-07-28T06:32:56.357270+00:00",
+  "generated_at": "2026-07-28T06:22:17.504389+00:00",
   "marks_health": {
-    "marked": 727,
+    "marked": 729,
     "entry_warm": 727,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.6,
+    "newest_sample_age_min": 1.3,
     "state": "OK",
-    "oscillating": 5,
+    "oscillating": 4,
     "oscillating_syms": [
-      "BLUR-USD",
+      "DGB-USD",
       "KAITO-USD",
       "LPT-USD",
-      "OP-USD",
       "TRUMP-USD"
     ]
   },
@@ -51,7 +50,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-28T06:32:52.420035+00:00",
+    "generated_at": "2026-07-28T06:22:13.743333+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -108,8 +107,8 @@
   },
   "crypto": {
     "funnel": {
-      "seen": 185,
-      "entry_warm": 180,
+      "seen": 187,
+      "entry_warm": 181,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {
@@ -120,9 +119,33 @@
     },
     "decision_trace_live": [
       {
-        "sym": "ETH-USD",
-        "dip_pct": -0.51,
-        "conviction": 0.0429,
+        "sym": "ETHFI-USD",
+        "dip_pct": -1.42,
+        "conviction": 0.4515,
+        "fate": "candidate"
+      },
+      {
+        "sym": "PENDLE-USD",
+        "dip_pct": -0.61,
+        "conviction": 0.0504,
+        "fate": "candidate"
+      },
+      {
+        "sym": "MANTA-USD",
+        "dip_pct": -0.68,
+        "conviction": 0.0564,
+        "fate": "candidate"
+      },
+      {
+        "sym": "TURBO-USD",
+        "dip_pct": -0.52,
+        "conviction": 0.0431,
+        "fate": "candidate"
+      },
+      {
+        "sym": "THETA-USD",
+        "dip_pct": -0.38,
+        "conviction": 0.0315,
         "fate": "candidate"
       }
     ],
@@ -134,8 +157,8 @@
     "open_positions": 0,
     "positions": [],
     "recent_trades": [],
-    "tradeable_universe": 31,
-    "universe_seen": 185
+    "tradeable_universe": 32,
+    "universe_seen": 187
   },
   "stock": {
     "funnel": {
@@ -161,15 +184,24 @@
   },
   "aggressive": {
     "funnel": {
-      "seen": 185,
-      "entry_warm": 180,
-      "candidates_after_gates": 0,
+      "seen": 187,
+      "entry_warm": 181,
+      "candidates_after_gates": 1,
       "bought": 0,
-      "rejections": {},
+      "rejections": {
+        "UNTRADEABLE:evidence": 1
+      },
       "armed": true,
       "arming_why": "armed"
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "ETHFI-USD",
+        "dip_pct": -1.42,
+        "conviction": 0.4515,
+        "fate": "candidate"
+      }
+    ],
     "equity": 10000.0,
     "cash": 10000.0,
     "realized_pnl": 0.0,
@@ -178,8 +210,8 @@
     "open_positions": 0,
     "positions": [],
     "recent_trades": [],
-    "tradeable_universe": 31,
-    "universe_seen": 185,
+    "tradeable_universe": 32,
+    "universe_seen": 187,
     "display_name": "GEKKO"
   },
   "metal": {
@@ -188,11 +220,26 @@
       "entry_warm": 12,
       "candidates_after_gates": 0,
       "bought": 0,
-      "rejections": {},
+      "rejections": {
+        "arming gate": 1
+      },
       "armed": false,
       "arming_why": "OBSERVE \u2014 pyramid law: the metal workshop must promote a sleeve on real closed trades before this book may open. Best sleeve so far: A \u00b7 0/3 closes since wipe \u00b7 status PROVISIONAL. The book still scans, marks and manages exits; the sleeves are earning its license right now."
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "XPT",
+        "dip_pct": -0.39,
+        "conviction": 0.0325,
+        "fate": "candidate"
+      },
+      {
+        "sym": "XCU",
+        "dip_pct": -0.36,
+        "conviction": 0.0302,
+        "fate": "candidate"
+      }
+    ],
     "equity": 10000.0,
     "cash": 10000.0,
     "realized_pnl": 0.0,
@@ -230,17 +277,17 @@
   "combined_realized_pnl": 0.0,
   "backtest_3day_crypto": {
     "universe_total": 1074,
-    "tradeable": 33,
-    "ghosts_excluded": 1041,
-    "trades": 105,
-    "win_rate_pct": 55.2,
-    "mean_net_pct": -1.042,
+    "tradeable": 34,
+    "ghosts_excluded": 1040,
+    "trades": 93,
+    "win_rate_pct": 55.9,
+    "mean_net_pct": -1.041,
     "exits": {
-      "TAKE": 67,
-      "STOP": 38,
+      "TAKE": 61,
+      "STOP": 32,
       "TIMEOUT": 0
     },
-    "equity_after": 8955.78
+    "equity_after": 9071.1
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
