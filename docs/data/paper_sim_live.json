@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-07-28T06:52:56.208534+00:00",
+  "generated_at": "2026-07-28T06:43:00.084246+00:00",
   "marks_health": {
     "marked": 727,
-    "entry_warm": 727,
+    "entry_warm": 726,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.6,
+    "newest_sample_age_min": 0.5,
     "state": "OK",
     "oscillating": 5,
     "oscillating_syms": [
@@ -51,12 +51,12 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-28T06:52:52.292338+00:00",
+    "generated_at": "2026-07-28T06:42:56.314885+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
     "window": 60,
-    "excluded_count": 6,
+    "excluded_count": 7,
     "excluded": [
       {
         "sym": "MOG-USD",
@@ -77,6 +77,11 @@
         "sym": "ZRX-USD",
         "snapbacks": 1,
         "max_move_pct": 7.8
+      },
+      {
+        "sym": "EIGEN-USD",
+        "snapbacks": 1,
+        "max_move_pct": 8.1
       },
       {
         "sym": "HNT-USD",
@@ -104,14 +109,36 @@
   "crypto": {
     "funnel": {
       "seen": 185,
-      "entry_warm": 180,
+      "entry_warm": 179,
       "candidates_after_gates": 0,
       "bought": 0,
-      "rejections": {},
+      "rejections": {
+        "regime throttle": 1,
+        "arming gate": 1
+      },
       "armed": false,
       "arming_why": "OBSERVE \u2014 pyramid law: the crypto workshop must promote a sleeve on real closed trades before this book may open. Best sleeve so far: \u2014 \u00b7 0/3 closes since wipe \u00b7 status NO_POSITIVE_SLEEVE. The book still scans, marks and manages exits; the sleeves are earning its license right now."
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "PENDLE-USD",
+        "dip_pct": -0.54,
+        "conviction": 0.0448,
+        "fate": "candidate"
+      },
+      {
+        "sym": "RUNE-USD",
+        "dip_pct": -0.46,
+        "conviction": 0.0383,
+        "fate": "candidate"
+      },
+      {
+        "sym": "THETA-USD",
+        "dip_pct": -0.36,
+        "conviction": 0.03,
+        "fate": "candidate"
+      }
+    ],
     "equity": 10000.0,
     "cash": 10000.0,
     "realized_pnl": 0.0,
@@ -148,7 +175,7 @@
   "aggressive": {
     "funnel": {
       "seen": 185,
-      "entry_warm": 180,
+      "entry_warm": 179,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {},
@@ -196,26 +223,11 @@
       "entry_warm": 6,
       "candidates_after_gates": 0,
       "bought": 0,
-      "rejections": {
-        "arming gate": 1
-      },
+      "rejections": {},
       "armed": false,
       "arming_why": "OBSERVE \u2014 pyramid law: the energy workshop must promote a sleeve on real closed trades before this book may open. Best sleeve so far: A \u00b7 0/3 closes since wipe \u00b7 status PROVISIONAL. The book still scans, marks and manages exits; the sleeves are earning its license right now."
     },
-    "decision_trace_live": [
-      {
-        "sym": "BRENT",
-        "dip_pct": -1.48,
-        "conviction": 0.2899,
-        "fate": "candidate"
-      },
-      {
-        "sym": "WTI",
-        "dip_pct": -1.36,
-        "conviction": 0.1134,
-        "fate": "candidate"
-      }
-    ],
+    "decision_trace_live": [],
     "equity": 10000.0,
     "cash": 10000.0,
     "realized_pnl": 0.0,
@@ -233,15 +245,15 @@
     "universe_total": 1074,
     "tradeable": 33,
     "ghosts_excluded": 1041,
-    "trades": 105,
-    "win_rate_pct": 55.2,
-    "mean_net_pct": -1.024,
+    "trades": 88,
+    "win_rate_pct": 55.7,
+    "mean_net_pct": -1.07,
     "exits": {
-      "TAKE": 67,
-      "STOP": 38,
+      "TAKE": 58,
+      "STOP": 30,
       "TIMEOUT": 0
     },
-    "equity_after": 8972.69
+    "equity_after": 9094.96
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
