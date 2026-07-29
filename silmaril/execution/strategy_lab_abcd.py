@@ -23,7 +23,7 @@ Master. Pure measurement.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -88,6 +88,56 @@ SLEEVES = {
                    "held up to 14 DAYS. Every round trip costs 0.2-0.4%, so churn is the quiet "
                    "killer; this sleeve pays that toll as few times as possible and lets time do "
                    "the work. The control against every fast strategy in the bench")},
+    # ══ 7.1.8 THE RATIO BENCH ═══════════════════════════════════════════════════════════
+    # Three sleeves built on ONE finding, which is arithmetic rather than prediction:
+    #
+    #     required win rate = stop / (target + stop)
+    #
+    # Every existing sleeve inherits a BLANKET 6% stop from the fingerprint default, while its
+    # target is measured per name. H PATIENT REVERT aims ~0.78% against that 6% stop, so it
+    # needs 6/6.78 = 88.5% just to break even. It delivers 88.6% — the highest win rate in the
+    # whole workshop — and still loses money, because it was set an impossible bar. That is not
+    # a broken sleeve; it is a broken ratio, and the ratio is the one number nobody measured.
+    #
+    # These three attack it from three different directions. All of them size the STOP from
+    # evidence instead of a constant, all of them refuse a shape whose arithmetic cannot pay,
+    # and all of them are knob-gated. They do not promise edge — they promise that when they
+    # win, winning is worth something, and that they never take a trade the maths forbids.
+    "L": {"name": "TOLLBOOTH", "cap": 5, "recycle_h": 24, "ride_winners": False,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": True,
+          "measured_stop": True, "min_rr": 1.6, "wr_margin": 0.08, "max_hold_h": 18,
+          "desc": ("7.1.8 RATIO BENCH #1 — the arithmetic-first sleeve. Stop is MEASURED from the "
+                   "name's own adverse excursion (how far it actually goes against you before the "
+                   "bounce arrives), never the 6% default. Requires target/stop >= 1.6, which caps "
+                   "the required win rate at ~38%, and additionally demands the name's measured "
+                   "bounce reliability beat that requirement by 8 points. Small, frequent, vaulted: "
+                   "it collects a modest toll many times with the maths on its side, instead of "
+                   "winning 9 times out of 10 for nothing. If H's problem is the ratio, L is the "
+                   "control that proves it")},
+    "M": {"name": "FLOOR ARTIST", "cap": 4, "recycle_h": 48, "ride_winners": True,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": False,
+          "structure_entry": True, "floor_tests": 3, "floor_prox_pct": 1.5,
+          "measured_stop": True, "stop_below_floor_pct": 0.6, "target_at_ceiling": True,
+          "desc": ("7.1.8 RATIO BENCH #2 — the first sleeve whose ENTRY is chosen by the graph. "
+                   "Buys only within 0.8% of a floor the tape has TESTED at least 3 times, places "
+                   "its stop just 0.6% BELOW that floor (the level's natural invalidation point, "
+                   "which is what makes the stop tight and honest rather than arbitrary), and takes "
+                   "profit at the nearest ceiling above. Reward and risk are both read off real "
+                   "structure, so the ratio is a property of the setup instead of a guess. This is "
+                   "the answer to 'make the graph drive decisions' — if floors and ceilings carry "
+                   "information, this sleeve converts it into money or proves it does not")},
+    "N": {"name": "CEILING SWEEP", "cap": 4, "recycle_h": 36, "ride_winners": True,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": True,
+          "measured_stop": True, "min_rr": 1.3, "sweep_at_ceiling": True,
+          "sweep_stall_cycles": 2, "sweep_min_net_pct": 0.35, "max_hold_h": 30,
+          "desc": ("7.1.8 RATIO BENCH #3 — the operator's own idea, implemented: 'is there a way to "
+                   "sweep profits when they don't hit their GOAL, but it would be profitable to take "
+                   "the new ceiling as it is established?' Yes. This sleeve exits on STRUCTURE, not "
+                   "on a fixed number: when price reaches a ceiling the tape has tested at least "
+                   "twice AND the last two cycles failed to make a new high, it takes the money — "
+                   "provided the fill clears fees with real margin. It also sweeps a profitable "
+                   "position whose cadence says its peak has already passed. Never sweeps a loss: "
+                   "the stop still owns the downside")},
     "H": {"name": "PATIENT REVERT", "cap": 3, "recycle_h": 168, "ride_winners": False,
           "conf_gate": 0.0, "strike_extra": 0, "vault": False, "patient": True,
           "desc": ("7.0: the operator's time-edge thesis — ONLY names with proven revert evidence "
@@ -393,6 +443,205 @@ def _trajectory_ok(sym: str, rows: List, cfg: Dict[str, Any]) -> tuple:
     return True, None
 
 
+# ── 7.1.8 THE RATIO BENCH MACHINERY ───────────────────────────────────────────────────
+# Everything below exists to replace ONE constant with evidence: the 6% blanket stop that set
+# an 88.5% break-even bar on H and made the whole workshop's arithmetic unwinnable.
+
+
+def _measured_stop(rows: List, dip: float, target: float,
+                   floor_pct: float = 0.004, cap_pct: float = 0.10) -> Optional[float]:
+    """How far does this name ACTUALLY go against you after a dip entry, before it either
+    bounces to target or keeps falling? Measured from its own tape as the 75th percentile of
+    adverse excursion — wide enough to survive normal noise, tight enough that the ratio can pay.
+
+    This is the number that was never measured. Everything used 6%."""
+    try:
+        live = [(str(t), float(p)) for t, p in (rows or [])
+                if p and float(p) > 0 and "T00:00:00" not in str(t)]
+        if len(live) < 60:
+            return None
+        px = [p for _t, p in live]
+        n = len(px)
+        excursions = []
+        i = 6
+        while i < n - 2:
+            ref = max(px[max(0, i - 6):i + 1])
+            if ref <= 0 or (px[i] / ref - 1.0) > -dip:
+                i += 1
+                continue
+            entry = px[i]
+            worst = 0.0
+            j = i + 1
+            while j < n:
+                ch = px[j] / entry - 1.0
+                if ch <= -cap_pct:                 # ran away; this entry's excursion is the cap
+                    worst = cap_pct
+                    break
+                worst = max(worst, -min(0.0, ch))
+                if ch >= target:                   # resolved upward — record what it cost to hold
+                    break
+                j += 1
+            excursions.append(worst)
+            i = j + 1 if j > i else i + 1
+        if len(excursions) < 8:
+            return None
+        excursions.sort()
+        p75 = excursions[int(len(excursions) * 0.75)]
+        return max(floor_pct, min(cap_pct, p75 * 1.15))     # small buffer past the 75th percentile
+    except Exception:
+        return None
+
+
+def _structure_levels(rows: List, lookback_h: float = 72.0) -> Dict[str, Any]:
+    """Floors and ceilings with their test counts, plus the last price — the same swing maths the
+    chart draws, so what a sleeve trades on is exactly what the operator sees."""
+    out = {"floors": [], "ceilings": [], "px": None}
+    try:
+        live = [(_parse(t), float(p)) for t, p in (rows or [])
+                if p and float(p) > 0 and "T00:00:00" not in str(t)]
+        live = [(t, p) for t, p in live if t]
+        if len(live) < 30:
+            return out
+        cut = _now() - timedelta(hours=lookback_h)
+        win = [(t, p) for t, p in live if t >= cut] or live[-200:]
+        ys = [p for _t, p in win]
+        out["px"] = ys[-1]
+        n = len(ys)
+        rets = sorted(abs(ys[i] / ys[i - 1] - 1) for i in range(1, n) if ys[i - 1] > 0)
+        sig = rets[len(rets) // 2] if rets else 0.001
+        prom, w = max(sig * 3, 0.002), max(2, n // 40)
+        peaks, troughs = [], []
+        for i in range(w, n - w):
+            seg = ys[i - w:i + w + 1]
+            if ys[i] == max(seg):
+                base = min(ys[max(0, i - w * 3):i + 1])
+                if base > 0 and ys[i] / base - 1 >= prom:
+                    peaks.append(ys[i])
+            if ys[i] == min(seg):
+                cap = max(ys[max(0, i - w * 3):i + 1])
+                if ys[i] > 0 and cap / ys[i] - 1 >= prom:
+                    troughs.append(ys[i])
+
+        def cluster(pts):
+            lv, tol = [], max(sig * 2, 0.004)
+            for px in pts:
+                for q in lv:
+                    if abs(px / q["level"] - 1) <= tol:
+                        q["level"] = (q["level"] * q["tested"] + px) / (q["tested"] + 1)
+                        q["tested"] += 1
+                        break
+                else:
+                    lv.append({"level": px, "tested": 1})
+            return sorted(lv, key=lambda q: -q["tested"])
+
+        out["floors"] = cluster(troughs)
+        out["ceilings"] = cluster(peaks)
+    except Exception as _e:
+        # 7.1.8: a bare `except: pass` here hid a missing timedelta import for a whole release —
+        # the helper returned "no structure" for every name and looked like a market condition.
+        # Never silent again.
+        try:
+            print("  _structure_levels(%s): %s" % (rows and "rows" or "empty", _e))
+        except Exception:
+            pass
+    return out
+
+
+def _ratio_shape(cfg: Dict[str, Any], sym: str, rows: List, dip: float, tgt: float,
+                 stp: float, cost: float, bounce_rel: Optional[float]) -> tuple:
+    """(ok, target, stop, why_not). The gate that decides whether a ratio-bench sleeve may take
+    this name at all, and with what shape. Returns the ORIGINAL shape untouched for every sleeve
+    that is not on the bench, so nothing existing changes behaviour."""
+    if not (cfg.get("measured_stop") or cfg.get("structure_entry")):
+        return True, tgt, stp, None
+
+    # ── M FLOOR ARTIST: both legs read off real structure ────────────────────────────
+    if cfg.get("structure_entry"):
+        S = _structure_levels(rows)
+        px = S.get("px")
+        if not px:
+            return False, tgt, stp, "no structure yet (needs ~30 prints)"
+        need = int(cfg.get("floor_tests", 3))
+        prox = float(cfg.get("floor_prox_pct", 0.8)) / 100.0
+        # A floor is SUPPORT: it must sit at or below the current price, and the price must be
+        # close enough above it that we are buying AT the level rather than halfway to the next
+        # one. A level above the price is broken support, not a floor — accepting those produced
+        # negative risk distances and nonsense ratios on the first live read.
+        floors = [f for f in S["floors"]
+                  if f["tested"] >= need and f["level"] <= px <= f["level"] * (1 + prox)]
+        if not floors:
+            return False, tgt, stp, ("no floor tested >=%dx sitting within %.1f%% under price"
+                                     % (need, prox * 100))
+        fl = max(floors, key=lambda f: f["level"])          # the nearest supporting floor
+        stop_px = fl["level"] * (1 - float(cfg.get("stop_below_floor_pct", 0.6)) / 100.0)
+        new_stop = max(0.003, (px - stop_px) / px)
+        ceils = [c for c in S["ceilings"] if c["level"] > px * 1.004 and c["tested"] >= 2]
+        if cfg.get("target_at_ceiling") and ceils:
+            cl = min(ceils, key=lambda c: c["level"])
+            new_tgt = (cl["level"] / px) - 1.0
+        else:
+            new_tgt = tgt
+        rr = new_tgt / max(new_stop, 1e-9)
+        if rr < float(cfg.get("min_rr", 1.3)):
+            return False, tgt, stp, ("floor setup pays %.2f:1, below the %.2f:1 this sleeve requires"
+                                     % (rr, float(cfg.get("min_rr", 1.3))))
+        return True, new_tgt, new_stop, None
+
+    # ── L TOLLBOOTH / N CEILING SWEEP: measured stop, then the ratio must clear ─────
+    ms = _measured_stop(rows, dip, tgt)
+    if ms is None:
+        return False, tgt, stp, "not enough dip history to MEASURE a stop (needs ~8 excursions)"
+    new_stop = ms
+    rr = tgt / max(new_stop, 1e-9)
+    min_rr = float(cfg.get("min_rr", 1.3))
+    if rr < min_rr:
+        return False, tgt, new_stop, ("measured stop %.2f%% against a %.2f%% target pays only "
+                                      "%.2f:1, below the %.2f:1 this sleeve requires"
+                                      % (new_stop * 100, tgt * 100, rr, min_rr))
+    req_wr = (new_stop + cost) / max(tgt + new_stop, 1e-9)
+    margin = float(cfg.get("wr_margin", 0.0))
+    if margin > 0:
+        if bounce_rel is None:
+            return False, tgt, new_stop, "no measured bounce reliability to compare against the required win rate"
+        if bounce_rel < req_wr + margin:
+            return False, tgt, new_stop, ("shape needs %.1f%% wins, name delivers %.1f%% — short of "
+                                          "the %.0f-point margin this sleeve demands"
+                                          % (req_wr * 100, bounce_rel * 100, margin * 100))
+    return True, tgt, new_stop, None
+
+
+def _ceiling_sweep(cfg: Dict[str, Any], pos: Dict[str, Any], rows: List, chg: float,
+                   cost: float) -> tuple:
+    """(should_sweep, why). N CEILING SWEEP's exit: take a real profit at an established ceiling
+    that has stopped making new highs, rather than holding for a number that may never come.
+    Never sweeps a loss — the stop still owns the downside."""
+    if not cfg.get("sweep_at_ceiling"):
+        return False, None
+    min_net = float(cfg.get("sweep_min_net_pct", 0.35)) / 100.0
+    if chg <= (cost + min_net):
+        return False, None                                   # not profitable enough to be worth it
+    S = _structure_levels(rows)
+    px = S.get("px")
+    if not px:
+        return False, None
+    ceils = [c for c in S["ceilings"] if c["tested"] >= 2]
+    if not ceils:
+        return False, None
+    near = min(ceils, key=lambda c: abs(c["level"] - px))
+    at_ceiling = abs(px / near["level"] - 1) <= 0.004
+    if not at_ceiling:
+        return False, None
+    # and it must have STOPPED climbing: the last N cycles made no new high
+    k = int(cfg.get("sweep_stall_cycles", 2)) + 1
+    live = [float(p) for t, p in (rows or [])
+            if p and float(p) > 0 and "T00:00:00" not in str(t)][-k:]
+    if len(live) < k or max(live[:-1]) < px:
+        return False, None                                   # still making highs — let it run
+    return True, ("swept at a ceiling tested %dx with no new high for %d cycles — +%.2f%% banked "
+                  "rather than held for a target that may not come"
+                  % (near["tested"], k - 1, chg * 100))
+
+
 def _market_open_for_symbol(sym: str, book: str = None) -> bool:
     """May we OPEN a position in this instrument right now?
 
@@ -498,6 +747,13 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
                 _gap_h = max(0.0, (now - _lt).total_seconds() / 3600.0)
         except Exception:
             _gap_h = None
+        # 7.1.8 N CEILING SWEEP: take a real profit at an established ceiling that has stopped
+        # making new highs, instead of holding for a number that may never arrive.
+        _sw, _swwhy = _ceiling_sweep(cfg, pos, tape.get(sym), chg, pos.get("cost", MIN_COST))
+        if _sw:
+            _sell(bk, sym, cur, "CEILING_SWEEP", vault, gap_h=_gap_h)
+            _vetoes.append({"sym": sym, "sleeve": cfg.get("_letter"), "why": _swwhy})
+            continue
         if chg >= tgt and not riding:
             _sell(bk, sym, cur, "TARGET", vault,
                   intended=pos["entry"] * (1.0 + tgt), gap_h=_gap_h); continue
@@ -622,6 +878,19 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
             elif cfg.get("patient") and _g7:
                 tgt = max(0.02, float(_g7.get("target_pct") or 3.0) / 100.0)
                 stp = max(float(_g7.get("stop_vol_pct") or 6.0) / 100.0, tgt * 1.2)  # WIDE, on purpose
+            # ── 7.1.8 THE RATIO BENCH: replace the blanket stop with a measured one, and refuse
+            # any shape whose arithmetic cannot pay. Non-bench sleeves are untouched.
+            if cfg.get("measured_stop") or cfg.get("structure_entry"):
+                _ok8, _t8, _s8, _why8 = _ratio_shape(
+                    cfg, sym, tape.get(sym), h1 if isinstance(h1, float) else 0.01,
+                    tgt, stp, cost_of(px),
+                    (bk.get("_bounce7") or {}).get(sym))
+                if not _ok8:
+                    bk["cash"] += budget            # refund; this name never becomes a position
+                    _vetoes.append({"sym": sym, "sleeve": cfg.get("_letter"),
+                                    "why": "ratio gate — " + str(_why8)})
+                    continue
+                tgt, stp = _t8, _s8
             bk["positions"][sym] = {"qty": qty, "entry": px, "cost": cost_of(px),
                                     "target": tgt, "stop": stp, "style": "MR",
                                     "t": now.isoformat(), "conf": round(conf_map.get(sym, 0.0), 3)}
@@ -844,6 +1113,19 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
             bk["_book7"] = book
             bk["_tape7"] = _tape7
             bk.setdefault("start_equity", 10000.0)
+            # 7.1.8: measured bounce reliability per name, so the ratio gate can compare a shape's
+            # REQUIRED win rate against what the name has actually delivered.
+            if "_bounce7" not in bk:
+                _br = {}
+                try:
+                    for _c in (json.loads((out / "FINGERPRINTS.json").read_text()).get("cards") or []):
+                        _v = ((_c.get("fp") or {}).get("bounce_reliability")
+                              if isinstance(_c.get("fp"), dict) else None)
+                        if _c.get("sym") and _v is not None:
+                            _br[_c["sym"]] = float(_v)
+                except Exception:
+                    pass
+                bk["_bounce7"] = _br
             cfg = dict(cfg); cfg["_letter"] = sk
             _RIVER.update({"out": str(out), "sleeve": sk, "book": book})
             _run_sleeve(cfg, bk, marks, _cands_sk, conf_map, fastgreen, surge, strike_pool, cost_of)
@@ -931,7 +1213,7 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                 _kind = ("cooldown" if "cooldown" in (_v.get("why") or "")
                          else "trajectory" if "trajectory veto" in (_v.get("why") or "") else "other")
                 _counts[_kind] = _counts.get(_kind, 0) + 1
-            _b.pop("_tape7", None); _b.pop("_book7", None)
+            _b.pop("_tape7", None); _b.pop("_book7", None); _b.pop("_bounce7", None)
         write_json_atomic(out / "SLEEVE_VETOES.json", {
             "generated_at": _now().isoformat(),
             "what": ("every entry a sleeve DECLINED this cycle and the exact rail that stopped it. "

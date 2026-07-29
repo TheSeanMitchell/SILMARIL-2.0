@@ -10,7 +10,16 @@ def main():
         cat = json.loads((DATA / "PARAM_CATALOG.json").read_text()).get("prune") or {}
     except Exception:
         cat = {}
-    keep = int(cat.get("intraday_keep_per_symbol", 2000))
+    # 7.1.8 THE RETENTION THAT WAS STARVING THE MEASUREMENTS. At ~10-minute sampling, 2,000
+    # intraday prints is about FOURTEEN DAYS — so the prune was capping the tape at two weeks
+    # while the ratio bench needs at least 8 completed dip->resolve excursions per name to
+    # MEASURE a stop. Measured on the operator's tree: only 15 of 193 fingerprinted names had
+    # enough history (92% came back "not enough dip history to measure"), which is the single
+    # biggest constraint on the whole geometry programme. 20,000 prints is roughly five months
+    # at the same cadence and costs ~10x the price_samples size (21MB -> a few hundred MB
+    # uncompressed, far less after the archive gzip), which is the right trade: history IS the
+    # asset. Lower it deliberately if the repo ever becomes the binding constraint.
+    keep = int(cat.get("intraday_keep_per_symbol", 20000))
     cap = int(cat.get("ledger_cap", 3000))
     ps = DATA / "price_samples.json"
     if ps.exists():

@@ -179,7 +179,19 @@ def _shape(rows: List) -> Dict[str, Any]:
 SCALE_TOL = 0.05
 
 
-GAP_FILL_TOL_MIN = 7.0      # a reference print within this many minutes already covers the moment
+GAP_FILL_TOL_MIN = 7.0        # floor only; the real tolerance is derived from our own cadence
+GAP_FILL_CADENCE_MULT = 1.25  # "already covered" = within 1.25x our own median sampling interval
+MAX_SERIES_AGE_DAYS = 14.0    # a series whose newest print is older than this is a corpse
+
+
+def _median_gap_min(rows: List) -> Optional[float]:
+    """Our own median sampling interval, in minutes. The gap-fill tolerance must be derived
+    from this, never hardcoded — see the note in _gap_fill_rows."""
+    ts = sorted(t for t in (_ts(r[0]) for r in (rows or []) if r and len(r) >= 2) if t)
+    if len(ts) < 5:
+        return None
+    d = sorted((ts[i] - ts[i - 1]) / 60.0 for i in range(1, len(ts)))
+    return d[len(d) // 2] or None
 
 
 def _gap_fill_rows(ref_rows: List, add_rows: List) -> List:
@@ -197,7 +209,16 @@ def _gap_fill_rows(ref_rows: List, add_rows: List) -> List:
     ref_t.sort()
     if not ref_t:
         return list(add_rows or [])
-    tol = GAP_FILL_TOL_MIN * 60.0
+    # 7.1.8 THE TOLERANCE WAS SMALLER THAN OUR OWN HEARTBEAT. 7.1.6 fixed interleaving by
+    # admitting an alternate spelling only where the reference had no print within 7 minutes.
+    # But we sample every 10-20 minutes, and the ccxt feeds arrive on an exact 5-minute grid —
+    # so EVERY grid row landed in a "gap" and was admitted anyway. The comb came straight back,
+    # and this time it was worse than cosmetic: BAT-USD's real tape never exceeded its +5%
+    # target, but the admitted feed sat ~5.4% higher, manufacturing a "+5.40% peak" that armed
+    # trailing exits and made the operator's audit report a target that was never hit.
+    # A moment is "already covered" relative to OUR OWN cadence, not to a constant.
+    _cad = _median_gap_min(ref_rows) or GAP_FILL_TOL_MIN
+    tol = max(GAP_FILL_TOL_MIN, _cad * GAP_FILL_CADENCE_MULT) * 60.0
     kept = list(ref_rows or [])
     import bisect
     for r in (add_rows or []):
@@ -335,6 +356,21 @@ def canonical_samples_report(out_dir):
             if c is ref:
                 continue
             sh = c["shape"]
+            # 7.1.8: a series whose newest print predates the window is a corpse. BATUSD's last
+            # print is dated 2023-06-27 — three years stale — and it was still a merge candidate.
+            _newest = None
+            for _r in reversed(c["live"] or []):
+                _newest = _ts(_r[0])
+                if _newest:
+                    break
+            if _newest is not None:
+                _age_d = (datetime.now(timezone.utc).timestamp() - _newest) / 86400.0
+                if _age_d > MAX_SERIES_AGE_DAYS:
+                    rejects.append({"sym": key, "spelling": c["spelling"], "file": c["file"],
+                                    "reason": "DEAD_SERIES", "age_days": round(_age_d, 1),
+                                    "why": ("newest print is %.1f days old — a corpse cannot inform "
+                                            "a live decision" % _age_d)})
+                    continue
             # 7.1.6 THE SAWTOOTH, FOUND. For five months nearly every chart showed the same
             # artifact — the operator described it exactly: "every valuable always is either
             # sinking or rising to the same price in between every actual price point." That is
