@@ -1,20 +1,22 @@
 {
-  "generated_at": "2026-07-30T00:18:40.258229+00:00",
+  "generated_at": "2026-07-30T00:05:22.809308+00:00",
   "marks_health": {
     "marked": 728,
-    "entry_warm": 728,
+    "entry_warm": 726,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 1.5,
+    "newest_sample_age_min": 0.6,
     "state": "OK",
-    "oscillating": 8,
+    "oscillating": 10,
     "oscillating_syms": [
       "1INCH-USD",
+      "CELO-USD",
       "COTI-USD",
       "DGB-USD",
-      "LPT-USD",
+      "FARTCOIN-USD",
+      "IOTA-USD",
       "ONE-USD",
-      "RENDER-USD",
       "TON-USD",
+      "WLFI-USD",
       "XEC-USD"
     ]
   },
@@ -25,7 +27,7 @@
   "regimes": {
     "crypto": "SIDEWAYS",
     "stock": "SIDEWAYS",
-    "metal": "DOWNTREND",
+    "metal": "SIDEWAYS",
     "energy": "SIDEWAYS"
   },
   "start_cash_each": 10000.0,
@@ -54,7 +56,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-30T00:18:35.746533+00:00",
+    "generated_at": "2026-07-30T00:05:19.185773+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -112,10 +114,12 @@
   "crypto": {
     "funnel": {
       "seen": 186,
-      "entry_warm": 178,
-      "candidates_after_gates": 1,
+      "entry_warm": 176,
+      "candidates_after_gates": 4,
       "bought": 0,
       "rejections": {
+        "position cap 0/2 for crypto": 1,
+        "UNTRADEABLE:geometry": 1,
         "trajectory": 1
       },
       "armed": true,
@@ -123,9 +127,27 @@
     },
     "decision_trace_live": [
       {
+        "sym": "UNI-USD",
+        "dip_pct": -1.37,
+        "conviction": 0.1973,
+        "fate": "candidate"
+      },
+      {
         "sym": "AAVE-USD",
-        "dip_pct": -0.55,
-        "conviction": 0.1459,
+        "dip_pct": -2.58,
+        "conviction": 0.3147,
+        "fate": "candidate"
+      },
+      {
+        "sym": "FET-USD",
+        "dip_pct": -1.43,
+        "conviction": 0.2026,
+        "fate": "candidate"
+      },
+      {
+        "sym": "NEO-USD",
+        "dip_pct": -0.36,
+        "conviction": 0.0304,
         "fate": "candidate"
       }
     ],
@@ -143,7 +165,7 @@
   "stock": {
     "funnel": {
       "seen": 524,
-      "entry_warm": 524,
+      "entry_warm": 522,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {},
@@ -165,14 +187,30 @@
   "aggressive": {
     "funnel": {
       "seen": 186,
-      "entry_warm": 178,
-      "candidates_after_gates": 0,
+      "entry_warm": 176,
+      "candidates_after_gates": 2,
       "bought": 0,
-      "rejections": {},
+      "rejections": {
+        "trajectory": 1,
+        "UNTRADEABLE:evidence": 1
+      },
       "armed": true,
       "arming_why": "armed"
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "AAVE-USD",
+        "dip_pct": -2.58,
+        "conviction": 0.3147,
+        "fate": "candidate"
+      },
+      {
+        "sym": "FET-USD",
+        "dip_pct": -1.43,
+        "conviction": 0.2026,
+        "fate": "candidate"
+      }
+    ],
     "equity": 10000.0,
     "cash": 10000.0,
     "realized_pnl": 0.0,
@@ -235,15 +273,15 @@
     "universe_total": 1074,
     "tradeable": 59,
     "ghosts_excluded": 1015,
-    "trades": 189,
-    "win_rate_pct": 56.6,
-    "mean_net_pct": -1.034,
+    "trades": 190,
+    "win_rate_pct": 56.8,
+    "mean_net_pct": -1.007,
     "exits": {
-      "TAKE": 116,
+      "TAKE": 117,
       "STOP": 73,
       "TIMEOUT": 0
     },
-    "equity_after": 8201.13
+    "equity_after": 8235.39
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
