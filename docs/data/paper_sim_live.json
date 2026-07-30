@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-07-30T12:48:00.568169+00:00",
+  "generated_at": "2026-07-30T12:37:22.243100+00:00",
   "marks_health": {
     "marked": 722,
     "entry_warm": 722,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.6,
+    "newest_sample_age_min": 1.3,
     "state": "OK",
-    "oscillating": 48,
+    "oscillating": 45,
     "oscillating_syms": [
       "1INCH-USD",
+      "AMD",
       "AMZN",
-      "ANET",
       "APH",
       "API3-USD",
       "ARKM-USD",
-      "AVGO",
       "BMY",
       "BSX",
       "CHZ-USD",
-      "CMG",
-      "CRM"
+      "CRM",
+      "DIA-USD",
+      "EEM"
     ]
   },
   "equity_market": {
@@ -58,7 +58,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-30T12:47:57.310864+00:00",
+    "generated_at": "2026-07-30T12:37:18.554266+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -101,10 +101,11 @@
   "crypto": {
     "funnel": {
       "seen": 180,
-      "entry_warm": 169,
-      "candidates_after_gates": 1,
+      "entry_warm": 170,
+      "candidates_after_gates": 4,
       "bought": 0,
       "rejections": {
+        "position cap 1/2 for crypto": 1,
         "UNTRADEABLE:evidence": 1
       },
       "armed": true,
@@ -113,23 +114,41 @@
     "decision_trace_live": [
       {
         "sym": "CRV-USD",
-        "dip_pct": -0.43,
-        "conviction": 0.2023,
+        "dip_pct": -0.57,
+        "conviction": 0.2141,
+        "fate": "candidate"
+      },
+      {
+        "sym": "NEAR-USD",
+        "dip_pct": -0.48,
+        "conviction": 0.1832,
+        "fate": "candidate"
+      },
+      {
+        "sym": "SEI-USD",
+        "dip_pct": -0.55,
+        "conviction": 0.1705,
+        "fate": "candidate"
+      },
+      {
+        "sym": "FET-USD",
+        "dip_pct": -0.64,
+        "conviction": 0.1251,
         "fate": "candidate"
       }
     ],
-    "equity": 10041.69,
+    "equity": 10025.96,
     "cash": 8235.5,
     "realized_pnl": 0.0,
     "reserve_usd": 0.0,
-    "return_pct": 0.42,
+    "return_pct": 0.26,
     "open_positions": 1,
     "positions": [
       {
         "sym": "ZIL-USD",
         "qty": 679738.1192,
         "entry": 0.002596,
-        "mark": 0.002657,
+        "mark": 0.002634,
         "t": "2026-07-30T03:10:22.685324+00:00",
         "wager_usd": 1764.5,
         "target": 0.06,
@@ -138,7 +157,7 @@
         "style": null,
         "entry_regime": null,
         "exp_net_usd": 97.4,
-        "upl_pct": 2.36
+        "upl_pct": 1.47
       }
     ],
     "recent_trades": [
@@ -164,7 +183,7 @@
   "stock": {
     "funnel": {
       "seen": 524,
-      "entry_warm": 489,
+      "entry_warm": 491,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {},
@@ -186,7 +205,7 @@
   "aggressive": {
     "funnel": {
       "seen": 180,
-      "entry_warm": 169,
+      "entry_warm": 170,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {},
@@ -209,7 +228,7 @@
   "metal": {
     "funnel": {
       "seen": 12,
-      "entry_warm": 10,
+      "entry_warm": 11,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {},
@@ -231,7 +250,7 @@
   "energy": {
     "funnel": {
       "seen": 6,
-      "entry_warm": 6,
+      "entry_warm": 5,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {
@@ -243,8 +262,8 @@
     "decision_trace_live": [
       {
         "sym": "NATGAS",
-        "dip_pct": -0.52,
-        "conviction": 0.0431,
+        "dip_pct": -0.66,
+        "conviction": 0.0554,
         "fate": "candidate"
       }
     ],
@@ -259,21 +278,21 @@
     "tradeable_universe": 3,
     "universe_seen": 6
   },
-  "combined_equity": 40041.69,
+  "combined_equity": 40025.96,
   "combined_realized_pnl": 0.0,
   "backtest_3day_crypto": {
     "universe_total": 1074,
     "tradeable": 54,
     "ghosts_excluded": 1020,
-    "trades": 181,
-    "win_rate_pct": 59.7,
-    "mean_net_pct": -0.795,
+    "trades": 177,
+    "win_rate_pct": 59.3,
+    "mean_net_pct": -0.805,
     "exits": {
-      "TAKE": 117,
-      "STOP": 64,
+      "TAKE": 114,
+      "STOP": 63,
       "TIMEOUT": 0
     },
-    "equity_after": 8648.41
+    "equity_after": 8660.89
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
