@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-07-30T02:11:07.897804+00:00",
+  "generated_at": "2026-07-30T02:30:25.935781+00:00",
   "marks_health": {
-    "marked": 728,
-    "entry_warm": 728,
+    "marked": 726,
+    "entry_warm": 726,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 1.5,
+    "newest_sample_age_min": 0.4,
     "state": "OK",
     "oscillating": 22,
     "oscillating_syms": [
-      "1MWOJAK-USD",
       "ALGN",
       "AMD",
       "CHZ-USD",
+      "COTI-USD",
       "CRM",
-      "D-USD",
       "GOOGL",
       "INTC",
       "KAITO-USD",
       "LMWR-USD",
       "META",
-      "MRVL"
+      "MRVL",
+      "MSFT"
     ]
   },
   "equity_market": {
@@ -58,7 +58,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-07-30T02:11:03.269602+00:00",
+    "generated_at": "2026-07-30T02:30:22.852037+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -115,15 +115,24 @@
   },
   "crypto": {
     "funnel": {
-      "seen": 186,
-      "entry_warm": 178,
-      "candidates_after_gates": 0,
+      "seen": 184,
+      "entry_warm": 176,
+      "candidates_after_gates": 1,
       "bought": 0,
-      "rejections": {},
+      "rejections": {
+        "UNTRADEABLE:evidence": 1
+      },
       "armed": true,
       "arming_why": "armed \u2014 promoted sleeve E (ADAPTIVE STRIKER) has real closed trades"
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "FLOW-USD",
+        "dip_pct": -0.93,
+        "conviction": 0.2027,
+        "fate": "candidate"
+      }
+    ],
     "equity": 10000.0,
     "cash": 10000.0,
     "realized_pnl": 0.0,
@@ -133,7 +142,7 @@
     "positions": [],
     "recent_trades": [],
     "tradeable_universe": 56,
-    "universe_seen": 186
+    "universe_seen": 184
   },
   "stock": {
     "funnel": {
@@ -159,8 +168,8 @@
   },
   "aggressive": {
     "funnel": {
-      "seen": 186,
-      "entry_warm": 178,
+      "seen": 184,
+      "entry_warm": 176,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {},
@@ -177,7 +186,7 @@
     "positions": [],
     "recent_trades": [],
     "tradeable_universe": 56,
-    "universe_seen": 186,
+    "universe_seen": 184,
     "display_name": "GEKKO"
   },
   "metal": {
@@ -186,11 +195,32 @@
       "entry_warm": 12,
       "candidates_after_gates": 0,
       "bought": 0,
-      "rejections": {},
+      "rejections": {
+        "arming gate": 1
+      },
       "armed": false,
       "arming_why": "OBSERVE \u2014 pyramid law: the metal workshop must promote a sleeve on real closed trades before this book may open. Best sleeve so far: J \u00b7 0/3 closes since wipe \u00b7 status PROVISIONAL. The book still scans, marks and manages exits; the sleeves are earning its license right now."
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "XAG",
+        "dip_pct": -0.75,
+        "conviction": 0.0623,
+        "fate": "candidate"
+      },
+      {
+        "sym": "XPT",
+        "dip_pct": -0.86,
+        "conviction": 0.072,
+        "fate": "candidate"
+      },
+      {
+        "sym": "XPD",
+        "dip_pct": -0.51,
+        "conviction": 0.0424,
+        "fate": "candidate"
+      }
+    ],
     "equity": 10000.0,
     "cash": 10000.0,
     "realized_pnl": 0.0,
@@ -216,9 +246,9 @@
     },
     "decision_trace_live": [
       {
-        "sym": "WTI",
-        "dip_pct": -0.81,
-        "conviction": 0.0671,
+        "sym": "BRENT",
+        "dip_pct": -0.57,
+        "conviction": 0.1723,
         "fate": "candidate"
       }
     ],
@@ -241,13 +271,13 @@
     "ghosts_excluded": 1016,
     "trades": 196,
     "win_rate_pct": 57.7,
-    "mean_net_pct": -0.951,
+    "mean_net_pct": -0.937,
     "exits": {
       "TAKE": 122,
       "STOP": 74,
       "TIMEOUT": 0
     },
-    "equity_after": 8276.01
+    "equity_after": 8298.45
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
