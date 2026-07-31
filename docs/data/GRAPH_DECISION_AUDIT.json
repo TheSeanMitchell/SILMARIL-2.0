@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-31T10:00:16.207438+00:00",
+  "generated_at": "2026-07-31T10:22:02.616337+00:00",
   "what": "does reading the graph before entry actually separate winners from losers? Each closed trade's graph state is reconstructed from the tape AS OF ITS ENTRY (nothing after the entry is visible to the reconstruction, so no hindsight can leak in), then outcomes are graded inside each bucket.",
   "coupling_status": {
     "graph_brain_store": "CHART_INTEL.json",
@@ -128,21 +128,21 @@
     "floor_support": {
       "buckets": {
         "AWAY_FROM_FLOOR": {
-          "n": 233,
-          "wins": 66,
-          "win_pct": 28.3,
-          "mean_net_pct": -2.027
+          "n": 231,
+          "wins": 64,
+          "win_pct": 27.7,
+          "mean_net_pct": -2.114
         },
         "ON_TESTED_FLOOR": {
-          "n": 57,
-          "wins": 23,
-          "win_pct": 40.4,
-          "mean_net_pct": -1.306
+          "n": 58,
+          "wins": 24,
+          "win_pct": 41.4,
+          "mean_net_pct": -1.091
         }
       },
-      "n": 290,
-      "verdict": "NEUTRAL",
-      "why": "no meaningful separation between buckets (spread 0.721% over n=290) \u2014 on this evidence the feature does not yet distinguish good entries",
+      "n": 289,
+      "verdict": "PREDICTIVE",
+      "why": "entries taken at ON_TESTED_FLOOR averaged -1.091% vs -2.114% at AWAY_FROM_FLOOR (spread 1.023% over n=289) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": false
     },
     "ceiling_overhead": {
@@ -170,8 +170,9 @@
     "peak_trajectory",
     "cadence_phase",
     "range_position",
+    "floor_support",
     "ceiling_overhead"
   ],
-  "next_step": "EVIDENCE FOUND: peak_trajectory, cadence_phase, range_position, ceiling_overhead now separate winners from losers and are still not consulted at entry. These are the features to gate on next \u2014 with a knob, a kill switch, and an A/B, never silently.",
+  "next_step": "EVIDENCE FOUND: peak_trajectory, cadence_phase, range_position, floor_support, ceiling_overhead now separate winners from losers and are still not consulted at entry. These are the features to gate on next \u2014 with a knob, a kill switch, and an A/B, never silently.",
   "honesty": "this audit grades entries the system already took; it cannot say what would have happened on entries it never took. It answers 'did reading the graph help?', not 'is the graph complete?'"
 }
