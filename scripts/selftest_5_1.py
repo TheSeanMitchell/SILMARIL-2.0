@@ -3215,6 +3215,57 @@ def _iso_le(a, b):
         return False
 
 
+def t128_sleeves_are_fed_their_own_thesis():
+    """7.2.1 THE FUNNEL THAT STARVED THE WORKSHOP.
+
+    Every sleeve — all twenty — was fed candidates from ONE place: `decision_trace_live`, the
+    funded book's mean-reversion DIP scan. On the operator's 2026-08-01 15:00 tree that list
+    contained **ZERO rows** for crypto. Not "no good candidates" — none at all. Seven sleeves
+    (L, N, O, Q, R, S, T) had therefore never taken a single trade since being added, and I had
+    shipped three of them calling them "hypotheses with better instruments" without checking
+    whether they could see anything to trade.
+
+    At the exact moment the pool read zero, R could have traded 5 names and T 7, out of 130 with
+    published structure. They never saw them, because a SUPPORT READER was being handed the
+    output of a dip scanner — the wrong question entirely.
+
+    Two further mis-feeds found while fixing it:
+      * the pool was sliced to `cap` (4 names) BEFORE the gate ran, while R passes ~5 of 130 —
+        so even a full funnel would have found nothing almost every cycle
+      * GRAPH_READ ranked the whole universe by deepest tape and published the top 400, which
+        gave crypto 130 symbols and metal 5, energy 3 — the non-crypto readers had almost no
+        universe at all. Quotas are now per book.
+
+    A sleeve with its own entry thesis now scans its own universe, still passing every rail
+    afterwards. Mean-reversion sleeves keep the dip funnel, because for them the dip IS the
+    thesis."""
+    from silmaril.execution import strategy_lab_abcd as L
+    src = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
+    gr = (ROOT / "silmaril/execution/graph_read.py").read_text()
+
+    ok_scanner = "def _own_universe" in src and "THE FUNNEL THAT STARVED THE WORKSHOP" in src
+    # it must apply ALWAYS for a thesis sleeve, not only when the dip funnel happens to be empty
+    ok_always = 'if cfg.get("graph_entry"):\n            pool = _own_universe(' in src
+    # and it must scan deeper than the cap, or a severe gate finds nothing
+    ok_deep = "_scan = max(cap * 30, 120)" in src and "pool[:_scan]" in src
+    # ...while still respecting the position cap
+    ok_capped = 'if sum(1 for p in bk["positions"].values() if p.get("style") != "STRIKE") >= cap:' in src
+    # mean-reversion sleeves must be UNTOUCHED
+    ok_mr_untouched = 'pool = [c for c in candidates if c[0] not in bk["positions"]]' in src
+    # per-book quotas so every book's readers get a universe
+    ok_quota = "PER-BOOK QUOTAS" in gr and "per_book = max(60," in gr
+    # the scanner must still price from the tape and refuse stale marks
+    # the scanner must price from the tape and refuse a stale mark (the fresh-price law)
+    _body = src.split("def _own_universe")[1].split("def _graph_shape")[0]
+    ok_rails = "_px_is_fresh(sym)" in _body and "marks.get(sym)" in _body
+
+    check("T128 sleeves are fed their own thesis: structure sleeves scan their own universe (not the dip funnel), scan deeper than their cap, respect it, keep every rail, and every book gets a published universe",
+          ok_scanner and ok_always and ok_deep and ok_capped and ok_mr_untouched
+          and ok_quota and ok_rails,
+          f"scanner={ok_scanner} always={ok_always} deep={ok_deep} capped={ok_capped} "
+          f"mr_untouched={ok_mr_untouched} quota={ok_quota} rails={ok_rails}")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -3273,7 +3324,8 @@ if __name__ == "__main__":
               t124_post_wipe_blackout_lifts_on_a_healthy_tape,
               t125_the_ratio_bench,
               t126_giveback_and_out_of_hours,
-              t127_graph_read_is_one_engine):
+              t127_graph_read_is_one_engine,
+              t128_sleeves_are_fed_their_own_thesis):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

@@ -630,6 +630,54 @@ def _structure_levels(rows: List, lookback_h: float = 72.0) -> Dict[str, Any]:
     return out
 
 
+def _own_universe(cfg: Dict[str, Any], book: str, marks: Dict[str, float],
+                  out: Any, cost_of) -> List[tuple]:
+    """7.2.1 THE FUNNEL THAT STARVED THE WORKSHOP.
+
+    Every sleeve — all twenty of them — was fed candidates from exactly one place:
+    `decision_trace_live`, the FUNDED BOOK's mean-reversion dip scan. Measured on the
+    operator's 2026-08-01 15:00 tree, that list contained **ZERO rows** for crypto. Not "no
+    good candidates" — no candidates at all. So the entire workshop sat idle, and seven
+    sleeves (L, N, O, Q, R, S, T) had never taken a single trade since being added.
+
+    That is not selectivity, it is starvation, and the design error is mine. A SUPPORT READER
+    does not want the names that dipped 0.5% this cycle; it wants the names sitting on a strong
+    tested floor with clear air above. At the moment the pool read zero, R could have traded 5
+    names, T could have traded 7, out of 130 with published structure. They never saw them.
+
+    So a sleeve with its OWN entry thesis now scans its OWN universe: every name in this book
+    with published structure, a fresh tape-priced mark, and a feed graded OK. It still passes
+    every rail afterwards — cooldown, trajectory, calendar, price truth, and its own gate. The
+    mean-reversion sleeves are untouched and keep using the dip funnel, because for them the
+    dip IS the thesis."""
+    try:
+        from .graph_read import load_reads
+        reads = load_reads(out) or {}
+    except Exception:
+        return []
+    if not reads:
+        return []
+    from .paper_sim import asset_class
+    out_rows = []
+    for sym, r in reads.items():
+        try:
+            if asset_class(sym) != book:
+                continue
+            px = marks.get(sym)
+            if not px or px <= 0 or not _px_is_fresh(sym):
+                continue
+            if not r.get("ok"):
+                continue
+            # rank by how deep in its own band the name is sitting — a structure sleeve's
+            # natural ordering, the way dip depth is a mean-reversion sleeve's
+            bp = r.get("band_pos")
+            out_rows.append((sym, px, (bp if bp is not None else 1.0), r.get("headroom_sigmas") or 0.0))
+        except Exception:
+            continue
+    out_rows.sort(key=lambda x: (x[2], -x[3]))       # lowest in band first, most headroom first
+    return [(s, px, 0.0, hs) for s, px, _bp, hs in out_rows]
+
+
 def _graph_shape(cfg: Dict[str, Any], sym: str, out: Any) -> tuple:
     """(ok, target, stop, why_not) for the READER BENCH — the entry a person would take.
 
@@ -1113,7 +1161,19 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
             pool.sort(key=lambda c: -conf_map.get(c[0], 0.0))
         else:
             pool.sort(key=lambda c: (c[2] or 0))
-        for sym, px, h1, cv in pool[: cap - open_mr]:
+        # 7.2.1: sleeves with their own entry thesis scan their own universe instead of
+        # inheriting the mean-reversion dip funnel that starved them to zero. ALWAYS, not only
+        # when the funnel is empty — for a structure sleeve the dip list is simply the wrong
+        # question, whether or not it happens to have rows in it today.
+        _scan = cap - open_mr
+        if cfg.get("graph_entry"):
+            pool = _own_universe(cfg, _book7, marks, bk.get("_out7"), cost_of)
+            # These gates are severe by design — measured on the operator's tape, R passed 5
+            # names out of 130 and S passed 1. Slicing to `cap` before the gate runs would
+            # therefore find nothing almost every cycle, which is exactly how a sleeve looks
+            # "broken" while being merely mis-fed. Scan deep, then let the gate be the filter.
+            _scan = max(cap * 30, 120)
+        for sym, px, h1, cv in pool[:_scan]:
             if not px or px <= 0:
                 continue
             _tp = marks.get(sym)
@@ -1167,6 +1227,8 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
                                     "why": "ratio gate — " + str(_why8)})
                     continue
                 tgt, stp = _t8, _s8
+            if sum(1 for p in bk["positions"].values() if p.get("style") != "STRIKE") >= cap:
+                break                          # cap reached; the deep scan stops here
             bk["positions"][sym] = {"qty": qty, "entry": px, "cost": cost_of(px),
                                     "target": tgt, "stop": stp, "style": "MR",
                                     "t": now.isoformat(), "conf": round(conf_map.get(sym, 0.0), 3)}

@@ -276,7 +276,7 @@ def read_graph(rows: List, lookback_h: float = LOOKBACK_H,
 
 
 def build_graph_read(out_dir, samples: Dict[str, List] = None,
-                     limit: int = 400) -> Dict[str, Any]:
+                     limit: int = 800) -> Dict[str, Any]:
     """Publish GRAPH_READ.json so the chart and the sleeves consume the SAME object.
 
     Two implementations of 'where are the floors' cannot stay honest — the dashboard computed
@@ -296,15 +296,35 @@ def build_graph_read(out_dir, samples: Dict[str, List] = None,
     except Exception:
         pass
 
-    by: Dict[str, Any] = {}
-    ranked = sorted((samples or {}).items(), key=lambda kv: -len(kv[1] or []))
-    for sym, rows in ranked[:limit]:
+    # 7.2.1 PER-BOOK QUOTAS. A flat "deepest 400 tapes" limit gave crypto 130 symbols and
+    # metal 5, energy 3 — because crypto tapes are the deepest. The reader sleeves in
+    # stock/metal/energy therefore had almost no structure to scan and looked broken while
+    # being merely unfed. Each book now gets its own quota, filled by deepest tape within
+    # that book, so every book's readers see a real universe.
+    try:
+        from .paper_sim import asset_class
+    except Exception:
+        def asset_class(_s):
+            return "crypto"
+    buckets: Dict[str, List] = {}
+    for sym, rows in (samples or {}).items():
         rec = truth.get(sym)
         if rec is not None and not rec.get("structure_ok", rec.get("tradeable", True)):
             continue                       # a broken feed has no structure worth publishing
-        r = read_graph(rows)
-        if r.get("ok"):
-            by[sym] = r
+        try:
+            bk = asset_class(sym)
+        except Exception:
+            continue
+        buckets.setdefault(bk, []).append((sym, rows))
+
+    by: Dict[str, Any] = {}
+    per_book = max(60, int(limit / max(1, len(buckets) or 1)))
+    for bk, items in buckets.items():
+        items.sort(key=lambda kv: -len(kv[1] or []))
+        for sym, rows in items[:per_book]:
+            r = read_graph(rows)
+            if r.get("ok"):
+                by[sym] = r
 
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
