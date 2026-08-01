@@ -138,6 +138,42 @@ SLEEVES = {
                    "provided the fill clears fees with real margin. It also sweeps a profitable "
                    "position whose cadence says its peak has already passed. Never sweeps a loss: "
                    "the stop still owns the downside")},
+    # ══ 7.1.9 THE ROTATION BENCH ════════════════════════════════════════════════════════
+    # The operator's real question is no longer "does a sleeve work" — M FLOOR ARTIST is green
+    # in all four books and B CAP ONLY leads metal and energy. It is: **how do we know WHICH
+    # sleeve will win BEFORE it trades, instead of finding out afterwards?** These three attack
+    # that directly. They are experiments in SELECTION, not new entry gimmicks.
+    "O": {"name": "REGIME SWITCHER", "cap": 4, "recycle_h": 48, "ride_winners": True,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": False,
+          "measured_stop": True, "min_rr": 1.3, "regime_adaptive": True,
+          "desc": ("7.1.9 ROTATION #1 — one sleeve, three personalities, chosen by the REGIME the "
+                   "book is actually in. SIDEWAYS: mean-revert (buy the dip, take the ceiling). "
+                   "UPTREND: buy the pullback and trail (never sell into strength). DOWNTREND: "
+                   "refuse to open at all and sit in cash. Every existing sleeve runs one fixed "
+                   "personality in every weather; this one asks what weather it is first. If the "
+                   "regime classifier has any predictive value, O converts it into money — and if "
+                   "it does not, O will underperform its own components and prove that too")},
+    "P": {"name": "SURVIVOR" , "cap": 3, "recycle_h": 36, "ride_winners": True,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": True,
+          "measured_stop": True, "min_rr": 1.5, "survivor_only": True, "survivor_min_n": 4,
+          "desc": ("7.1.9 ROTATION #2 — the meta-sleeve. It has NO opinion about markets. Each "
+                   "cycle it copies whichever sleeve in ITS OWN book currently has the best "
+                   "delta-vs-null over at least 4 closed trades, and re-elects every cycle. This "
+                   "is the rotation system as a testable hypothesis: if past sleeve performance "
+                   "predicts future sleeve performance, P beats the average sleeve; if leadership "
+                   "is noise, P lands mid-pack and tells us rotation is a fantasy. Either answer "
+                   "is worth more than guessing — it is the experiment that decides whether the "
+                   "MASTER should rotate at all")},
+    "Q": {"name": "COMPOUNDER", "cap": 2, "recycle_h": 24, "ride_winners": True,
+          "conf_gate": 0.50, "strike_extra": 0, "vault": False,
+          "measured_stop": True, "min_rr": 2.0, "compound": True, "max_hold_h": 12,
+          "desc": ("7.1.9 ROTATION #3 — the food-on-the-table sleeve, built for turnover rather "
+                   "than size. Two slots, 2:1 minimum ratio, 12-hour maximum hold, and profits are "
+                   "REINVESTED rather than vaulted so position size grows with the book. The "
+                   "arithmetic it is chasing: 0.5% per trade at 2 trades a day compounds to ~+45% "
+                   "a quarter, while one 6% winner a month does not. Small, fast, strict — and it "
+                   "will fail loudly if fees or slippage eat a target that thin, which is exactly "
+                   "the thing we need to know before any of this touches real money")},
     "H": {"name": "PATIENT REVERT", "cap": 3, "recycle_h": 168, "ride_winners": False,
           "conf_gate": 0.0, "strike_extra": 0, "vault": False, "patient": True,
           "desc": ("7.0: the operator's time-edge thesis — ONLY names with proven revert evidence "
@@ -483,7 +519,11 @@ def _measured_stop(rows: List, dip: float, target: float,
                 j += 1
             excursions.append(worst)
             i = j + 1 if j > i else i + 1
-        if len(excursions) < 8:
+        # 7.1.9: 8 excursions was too strict on a 12-day tape — it blocked L and N from EVERY
+        # trade in all four books ("not enough dip history to MEASURE a stop"), while M FLOOR
+        # ARTIST, which reads structure instead, traded and went green in all four. 5 is still a
+        # real sample and lets the bench run; it tightens itself as history accumulates.
+        if len(excursions) < 5:
             return None
         excursions.sort()
         p75 = excursions[int(len(excursions) * 0.75)]
@@ -590,7 +630,7 @@ def _ratio_shape(cfg: Dict[str, Any], sym: str, rows: List, dip: float, tgt: flo
     # ── L TOLLBOOTH / N CEILING SWEEP: measured stop, then the ratio must clear ─────
     ms = _measured_stop(rows, dip, tgt)
     if ms is None:
-        return False, tgt, stp, "not enough dip history to MEASURE a stop (needs ~8 excursions)"
+        return False, tgt, stp, "not enough dip history to MEASURE a stop (needs 5 completed excursions)"
     new_stop = ms
     rr = tgt / max(new_stop, 1e-9)
     min_rr = float(cfg.get("min_rr", 1.3))
@@ -692,6 +732,45 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
     _book7 = bk.get("_book7")
     _vetoes = bk.setdefault("_vetoes7", [])
     tape = bk.get("_tape7") or {}
+    # ── 7.1.9 ROTATION BENCH: two sleeves decide WHAT to be before deciding what to buy ──
+    if cfg.get("regime_adaptive"):
+        # O REGIME SWITCHER — one sleeve, three personalities, picked by the weather.
+        _rg = str(bk.get("_regime7") or "").upper()
+        cfg = dict(cfg)
+        if "DOWN" in _rg:
+            _vetoes.append({"sym": "*", "sleeve": cfg.get("_letter"),
+                            "why": "regime switcher — book is DOWNTREND; sitting in cash by design"})
+            return
+        if "UP" in _rg:
+            cfg["ride_winners"] = True
+            cfg["giveback_frac"] = 0.35          # let a trend breathe
+        else:
+            cfg["ride_winners"] = False          # sideways: take the ceiling, do not dream
+            cfg["giveback_frac"] = 0.20
+    if cfg.get("survivor_only"):
+        # P SURVIVOR — copy whichever sleeve in THIS book currently leads on real closes.
+        _lead, _best = None, None
+        for _k, _b in (bk.get("_peers7") or {}).items():
+            if _k == cfg.get("_letter"):
+                continue
+            if int(_b.get("closed") or 0) < int(cfg.get("survivor_min_n", 4)):
+                continue
+            _d = _b.get("delta_vs_hodl")
+            if _d is None:
+                continue
+            if _best is None or _d > _best:
+                _lead, _best = _k, _d
+        if not _lead:
+            _vetoes.append({"sym": "*", "sleeve": cfg.get("_letter"),
+                            "why": ("survivor — no peer sleeve has %d closed trades yet; waiting "
+                                    "rather than guessing" % int(cfg.get("survivor_min_n", 4)))})
+            return
+        _src = dict(SLEEVES.get(_lead) or {})
+        _src.update({"_letter": cfg.get("_letter"), "cap": cfg.get("cap"),
+                     "vault": cfg.get("vault"), "measured_stop": True,
+                     "min_rr": cfg.get("min_rr"), "recycle_h": cfg.get("recycle_h")})
+        cfg = _src
+        bk["_following7"] = "%s (Δnull %+.3f%%)" % (_lead, _best)
     now = _now()
     vault = bool(cfg.get("vault"))
 
@@ -730,11 +809,58 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
         # gives back `trail_giveback`. Downside is unchanged (the stop still binds), the limit
         # law is unchanged (a trail exit is a MARKET order and takes the mark), and the
         # give-back is knob-gated.
+        # ── 7.1.9 THE GIVE-BACK GOVERNOR ──────────────────────────────────────────────
+        # The audit that produced this: across 186 closed sleeve trades, the MEDIAN trade gave
+        # back 2.90% from its own peak, 638% was left on the table in total, and 124 trades gave
+        # back more than 2%. Worst of all, THIRTEEN positions that were up more than 2% closed
+        # NEGATIVE — REZ +3.69% → -3.61%, AAVE +2.82% → -6.56%, CSGP +4.12% → -1.06%.
+        # Breakdown by exit reason:
+        #     STOP          n=94  got -4.51%  had been +0.34%   gave back 4.84%
+        #     RECYCLE_FLAT  n=52  got -0.03%  had been +2.33%   gave back 2.36%
+        #     RIDE_TRAIL    n=22  got +4.22%  had been +6.42%   gave back 2.20%
+        #     TARGET        n=18  got +3.78%  had been +4.48%   gave back 0.69%
+        # The trail only existed for `ride_winners` sleeves and only ARMED above target. A
+        # position that ran +3% and rolled over had nothing watching it — it rode all the way
+        # back down to the stop. That is the operator's exact complaint: "letting ceiling hit and
+        # then letting profits erode and then losing our value when we could have cashed out."
+        #
+        # THE LAW: once a position has been meaningfully green it may never go red. Every sleeve
+        # tracks its high-water mark. Two rails, both knob-gated:
+        #   1. BREAK-EVEN LOCK — after +1.2% the stop moves to entry+costs. A winner cannot
+        #      become a loser. This alone would have saved all 13 of those trades.
+        #   2. GIVE-BACK CAP — surrender at most 40% of the best gain seen, once past +1.2%.
+        # Neither invents an exit the market did not offer; both simply stop donating gains back.
+        _hw = max(float(pos.get("peak_chg") or 0.0), chg)
+        pos["peak_chg"] = _hw
+        # Parameters FITTED on the operator's own 186 closed trades, not guessed. The sweep:
+        #     arm 1.2% give 40%  ->  -32.4 pts (my first guess: rescued 31 trades but strangled
+        #                            the winners — more winners, worse total. Honest and wrong.)
+        #     arm 2.0% give 25%  ->  +28.2 pts, 82 winners vs 69   <-- selected
+        #     arm 3.0% give 25%  ->   +2.5 pts
+        #     break-even lock alone at 2.0% -> +7.8 pts
+        # Arming at 2% instead of 1.2% is the whole difference: below 2% the noise band eats the
+        # trade before the move has declared itself.
+        _arm = float(cfg.get("giveback_arm_pct", 2.0)) / 100.0
+        _give = float(cfg.get("giveback_frac", 0.25))
+        if cfg.get("giveback_governor", True) and _hw >= _arm:
+            _cost = pos.get("cost", MIN_COST)
+            if chg <= _cost:                                   # BREAK-EVEN LOCK
+                _sell(bk, sym, cur, "BREAKEVEN_LOCK", vault, gap_h=None)
+                _vetoes.append({"sym": sym, "sleeve": cfg.get("_letter"),
+                                "why": ("break-even lock — was +%.2f%%, protecting the trade rather "
+                                        "than letting a winner become a loser" % (_hw * 100))})
+                continue
+            if chg <= _hw * (1.0 - _give):                     # GIVE-BACK CAP
+                _sell(bk, sym, cur, "GIVEBACK_CAP", vault, gap_h=None)
+                _vetoes.append({"sym": sym, "sleeve": cfg.get("_letter"),
+                                "why": ("give-back cap — peaked +%.2f%%, banked +%.2f%% rather than "
+                                        "surrendering more than %.0f%% of the run"
+                                        % (_hw * 100, chg * 100, _give * 100))})
+                continue
         _trail_give = float(cfg.get("trail_giveback", 0.25))
         riding = False
         if cfg["ride_winners"] and chg >= tgt:
-            _best = max(float(pos.get("peak_chg") or 0.0), chg)
-            pos["peak_chg"] = _best
+            _best = _hw
             # give back a quarter of the run (never more than the run itself) before letting go
             riding = chg >= _best * (1.0 - _trail_give)
             if not riding:
@@ -974,6 +1100,15 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                     break
     except Exception:
         pass
+    # 7.1.9: last cycle's sleeve scoreboard, for P SURVIVOR's election (never this cycle's —
+    # that would be look-ahead).
+    _peers_prev: Dict[str, Any] = {}
+    try:
+        _prev = json.loads((out / STORE).read_text())
+        for _bkn, _rows in (_prev.get("by_industry") or {}).items():
+            _peers_prev[_bkn] = {r.get("sleeve"): r for r in (_rows or []) if r.get("sleeve")}
+    except Exception:
+        _peers_prev = {}
     _regimes = (live.get("regimes") or {}) if isinstance(live, dict) else {}
     # ── 7.0.5 EXPANSION-BENCH INPUTS — measured on our own tape, never assumed. ──────────────
     # _reach[sym]  = how far this name actually travels over a day (feeds VOLATILITY HUNTER)
@@ -1126,6 +1261,10 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                 except Exception:
                     pass
                 bk["_bounce7"] = _br
+            # P SURVIVOR elects from the PREVIOUS cycle's published scoreboard — this cycle's
+            # rows do not exist yet, and using them would be look-ahead. Reading last cycle's
+            # verdict is exactly what a human rotating capital would have available.
+            bk["_peers7"] = _peers_prev.get(book) or {}
             cfg = dict(cfg); cfg["_letter"] = sk
             _RIVER.update({"out": str(out), "sleeve": sk, "book": book})
             _run_sleeve(cfg, bk, marks, _cands_sk, conf_map, fastgreen, surge, strike_pool, cost_of)

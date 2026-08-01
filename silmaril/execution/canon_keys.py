@@ -245,6 +245,61 @@ def _gap_fill_rows(ref_rows: List, add_rows: List) -> List:
     return out
 
 
+_US_EQUITY_HINT = ("-USD", "USDT", "USDC")
+
+
+_SPOT_NOT_EQUITY = {"BRENT", "WTI", "NATGAS", "GASOIL", "XAU", "XAG", "XPT", "XPD", "XCU"}
+
+
+def _is_equity_key(sym: str) -> bool:
+    """Equity-class: follows the NYSE session. NOT crypto (24/7) and NOT spot commodities
+    (24/5) — those keep every print, because for them an out-of-session price is real."""
+    s = (sym or "").upper()
+    if s in _SPOT_NOT_EQUITY:
+        return False
+    if any(x in s for x in _US_EQUITY_HINT) or (s.startswith("X") and len(s) == 3):
+        return False
+    return s.isalpha() or ("-" in s and len(s) <= 6)
+
+
+def _dedupe_closed_session(rows: List) -> List:
+    """7.1.9 THE OUT-OF-HOURS COMB — the stock sawtooth, found.
+
+    NWS on the operator's tree: 570 prints, and **487 of them (85%) were taken OUTSIDE the
+    regular session**. Outside hours a provider does not return a live price — it returns the
+    last close. Ours returned two different closes alternating as the provider updated its own
+    cache, so the tape recorded 30.19 → 29.75 → 30.19 → 29.75 for hours. Forty-two V-shaped
+    round trips back to the identical price. That is not the market; nothing traded. It is the
+    same comb the crypto feeds produced, arriving through a different door — and it fed peaks,
+    troughs, floors and cadence for every equity we track.
+
+    The fix keeps the FIRST print of each closed-session block and drops the rest. A closed
+    market has exactly one honest price: its last one. The in-session tape is untouched, so
+    nothing real is lost — 83 real NWS prints stay, 487 repeated stale ones collapse."""
+    out, run_key, kept_run = [], None, False
+    for r in (rows or []):
+        try:
+            t = _ts(r[0])
+            if t is None:
+                out.append(r)
+                continue
+            d = datetime.fromtimestamp(t, tz=timezone.utc)
+            mins = d.hour * 60 + d.minute
+            in_session = d.weekday() < 5 and (13 * 60 + 30) <= mins <= (20 * 60)
+            if in_session:
+                out.append(r)
+                run_key, kept_run = None, False
+                continue
+            # closed: keep only the first print of each contiguous closed block
+            key = d.strftime("%Y-%m-%d") + ("A" if mins < 13 * 60 + 30 else "B")
+            if key != run_key:
+                out.append(r)
+                run_key, kept_run = key, True
+        except Exception:
+            out.append(r)
+    return out
+
+
 def canonical_samples_report(out_dir):
     """THE loader, with receipts. Returns (merged, report).
 
@@ -308,7 +363,18 @@ def canonical_samples_report(out_dir):
 
     for key, cl in cands.items():
         if len(cl) == 1:
-            merged[key] = cl[0]["rows"]
+            _r1 = cl[0]["rows"]
+            if _is_equity_key(key):
+                _b1 = len(_r1)
+                _r1 = _dedupe_closed_session(_r1)
+                if _b1 != len(_r1):
+                    rejects.append({"sym": key, "spelling": key, "file": "closed-session dedupe",
+                                    "reason": "OUT_OF_HOURS_REPEAT", "dropped": _b1 - len(_r1),
+                                    "why": ("%d repeated closed-session prints collapsed to one per "
+                                            "block — outside the session a provider returns its last "
+                                            "close, and two alternating caches draw a comb that is "
+                                            "not trading" % (_b1 - len(_r1)))})
+            merged[key] = _r1
             continue
         # 1) pick the REFERENCE spelling.
         #
@@ -413,6 +479,16 @@ def canonical_samples_report(out_dir):
             # opinion at a moment we can already see. So an admitted spelling contributes only
             # rows in windows the reference does not already cover.
             rows = _gap_fill_rows(rows, c["rows"])
+        if _is_equity_key(key):
+            _before = len(rows)
+            rows = _dedupe_closed_session(rows)
+            if _before != len(rows):
+                rejects.append({"sym": key, "spelling": key, "file": "closed-session dedupe",
+                                "reason": "OUT_OF_HOURS_REPEAT", "dropped": _before - len(rows),
+                                "why": ("%d repeated closed-session prints collapsed to one per block — "
+                                        "outside the session a provider returns its last close, and two "
+                                        "alternating caches draw a comb that is not trading"
+                                        % (_before - len(rows)))})
         merged[key] = rows
 
     report = {"generated_at": datetime.now(timezone.utc).isoformat(),

@@ -182,8 +182,14 @@ def build_master_account(out_dir) -> Dict[str, Any]:
             "qty": qty, "entry": eff, "cost": cost, "book": bk, "style": style,
             "target": round(tgt, 4), "stop": 0.05,
             "exp_hold_min": card.get("expected_hold_min"), "t": _iso(), "hw": 0.0}
+        # 7.1.9 THE ORPHAN SELL. The master's BUY row carried no price and no qty, so any panel
+        # keyed on those fields rendered the matching SELL as a sale with no purchase — the
+        # operator's "$9 trade with no logged buy". The position was real and the P&L was right;
+        # the RECORD was incomplete. A trade row must always carry what it filled at and how much.
         trow = {"side": "BUY", "sym": sym, "book": bk, "why": why,
                 "wager_usd": round(budget, 2), "style": style,
+                "price": round(eff, 10), "qty": round(qty, 8),
+                "entry": round(eff, 10), "cost_pct": round(cost * 100, 4),
                 "target_pct": round(tgt * 100, 3), "simulated": True,
                 "t": _iso()}
         if mirror:

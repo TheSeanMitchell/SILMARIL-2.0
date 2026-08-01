@@ -3031,6 +3031,89 @@ def t125_the_ratio_bench():
           f"lets_run={ok_lets_run} wired={ok_wired} refund={ok_refund} import={ok_import}")
 
 
+def t126_giveback_and_out_of_hours():
+    """7.1.9 TWO FINDINGS FROM THE AUGUST 1 AUDIT.
+
+    (A) THE GIVE-BACK. Across 186 closed sleeve trades on the operator's tape, the MEDIAN trade
+    gave back 2.90% from its own peak, 638 percentage points were left on the table in total,
+    and THIRTEEN positions that had been up more than 2% still closed NEGATIVE — REZ +3.69% →
+    -3.61%, AAVE +2.82% → -6.56%, AAPL +2.08% → -9.03%. By exit reason:
+        STOP          n=94  got -4.51%  had been +0.34%
+        RECYCLE_FLAT  n=52  got -0.03%  had been +2.33%
+        RIDE_TRAIL    n=22  got +4.22%  had been +6.42%
+    The trail existed only for ride_winners sleeves and only armed ABOVE target, so a position
+    that ran +3% and rolled over had nothing watching it. Now every sleeve carries a high-water
+    mark with a BREAK-EVEN LOCK and a GIVE-BACK CAP.
+
+    The parameters were FITTED on those same 186 trades, not guessed — and my first guess was
+    wrong in an instructive way: arm 1.2% / give 40% rescued 31 trades and produced 14 more
+    winners while making the TOTAL 32 points WORSE, because it strangled the big winners too.
+    arm 2.0% / give 25% is +28.2 points with 82 winners vs 69. That sweep is the test.
+
+    (B) THE OUT-OF-HOURS COMB. NWS: 570 prints, 487 of them (85%) taken OUTSIDE the regular
+    session, where a provider returns its last close — and two alternating caches drew 42
+    V-shaped round trips back to the identical price. Collapsing closed-session blocks to one
+    print each: 570 → 100 prints, 42 combs → 1, repeat 69% → 11%. Crypto and 24/5 spot are
+    exempt, because for them an out-of-session price is real."""
+    from silmaril.execution import strategy_lab_abcd as L
+    from silmaril.execution.canon_keys import _dedupe_closed_session, _is_equity_key
+
+    src = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
+    ok_governor = ("THE GIVE-BACK GOVERNOR" in src and "BREAKEVEN_LOCK" in src
+                   and "GIVEBACK_CAP" in src and "giveback_arm_pct" in src)
+    ok_fitted = ("arm 2.0% give 25%" in src and 'giveback_arm_pct", 2.0' in src)
+    ok_killable = 'cfg.get("giveback_governor", True)' in src
+
+    # a winner must not be allowed to become a loser
+    def replay(path, arm=0.02, give=0.25):
+        hw = 0.0
+        for ch in path:
+            hw = max(hw, ch)
+            if hw >= arm:
+                if ch <= 0.004:
+                    return "BREAKEVEN_LOCK", ch
+                if ch <= hw * (1 - give):
+                    return "GIVEBACK_CAP", ch
+        return None, path[-1]
+    why1, out1 = replay([0.005, 0.021, 0.037, 0.010, -0.036])     # REZ shape
+    ok_rescue = why1 in ("BREAKEVEN_LOCK", "GIVEBACK_CAP") and out1 > -0.01
+    why2, out2 = replay([0.003, 0.008, 0.015, -0.01, -0.06])      # never armed: governor silent
+    ok_quiet_below_arm = why2 is None
+    why3, out3 = replay([0.01, 0.03, 0.05, 0.08, 0.12, 0.115])    # a runner must keep running
+    ok_lets_runners_run = why3 is None
+
+    # (B) out-of-hours dedupe
+    # anchored to a known WEEKDAY — a fixture built on "today" silently landed on a Saturday,
+    # where the "in-session" rows are also closed and the assertion becomes meaningless
+    base = datetime(2026, 7, 29, 0, 0, tzinfo=timezone.utc)      # a Wednesday
+    rows = []
+    for h in range(0, 13):                       # 00:00-12:00 UTC: pre-session, stale caches
+        rows.append([(base + timedelta(hours=h)).isoformat(), 30.19 if h % 2 else 29.75])
+    for m in range(0, 120, 20):                  # 14:00-16:00 UTC: inside the NYSE session
+        rows.append([(base + timedelta(hours=14, minutes=m)).isoformat(), 30.0 + m * 0.01])
+    ded = _dedupe_closed_session(rows)
+    # the 13 alternating closed-block prints collapse to ONE; all 6 session prints survive
+    ok_collapsed = len(ded) == 7
+    ok_kept_session = sum(1 for r in ded if "T14:" in r[0] or "T15:" in r[0]) == 6
+    ok_class = (_is_equity_key("NWS") and _is_equity_key("AAPL")
+                and not _is_equity_key("FLOW-USD") and not _is_equity_key("BRENT")
+                and not _is_equity_key("XAU"))
+    ck = (ROOT / "silmaril/execution/canon_keys.py").read_text()
+    ok_receipts = "THE OUT-OF-HOURS COMB" in ck and "OUT_OF_HOURS_REPEAT" in ck
+
+    # master trade rows must carry price and qty, or the UI renders orphan sells
+    ma = (ROOT / "silmaril/execution/master_account.py").read_text()
+    ok_master = "THE ORPHAN SELL" in ma and '"price": round(eff, 10), "qty": round(qty, 8),' in ma
+
+    check("T126 give-back governor (fitted, not guessed) + out-of-hours comb collapsed + master trades carry price/qty",
+          ok_governor and ok_fitted and ok_killable and ok_rescue and ok_quiet_below_arm
+          and ok_lets_runners_run and ok_collapsed and ok_kept_session and ok_class
+          and ok_receipts and ok_master,
+          f"governor={ok_governor} fitted={ok_fitted} killable={ok_killable} rescue={ok_rescue} "
+          f"quiet={ok_quiet_below_arm} runners={ok_lets_runners_run} collapsed={ok_collapsed} "
+          f"session_kept={ok_kept_session} class={ok_class} receipts={ok_receipts} master={ok_master}")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -3087,7 +3170,8 @@ if __name__ == "__main__":
               t122_the_sawtooth,
               t123_warm_start_seeds_but_never_lies,
               t124_post_wipe_blackout_lifts_on_a_healthy_tape,
-              t125_the_ratio_bench):
+              t125_the_ratio_bench,
+              t126_giveback_and_out_of_hours):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test
