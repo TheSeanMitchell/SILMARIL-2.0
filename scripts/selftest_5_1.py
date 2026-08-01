@@ -3114,6 +3114,107 @@ def t126_giveback_and_out_of_hours():
           f"session_kept={ok_kept_session} class={ok_class} receipts={ok_receipts} master={ok_master}")
 
 
+def t127_graph_read_is_one_engine():
+    """7.2.0 ONE STRUCTURE ENGINE — and the audit failure that forced it.
+
+    THE CLAIM I MADE AND SHOULD NOT HAVE: "M FLOOR ARTIST is green in all four books." It was
+    measured on `return_pct`, which is EQUITY-based and therefore includes unrealized marks on
+    open positions. On realized fee-paid P&L — Law 1, the only score — M was crypto -$12.92,
+    stock -$50.56, metal +$21.11, energy +$4.76: **total -$37.60**. Six sleeves on that board
+    carried a headline with the opposite sign to their realized P&L, and metal:B CAP ONLY showed
+    +1.163% with ZERO closed trades, every cent of it unrealized. The board was not lying; I read
+    the wrong column and repeated it confidently. Both numbers ship now.
+
+    THE BUG THAT MADE MY AUDITS UNRELIABLE: `_structure_levels` anchored its 72-hour window to
+    `_now()` rather than to the data it was handed. Live that is ~harmless (now == last print).
+    For every backtest, warm start, graph→decision audit and reconstruction it silently used a
+    window containing few or none of the supplied rows, then fell back to `live[-200:]` without
+    saying so. Measured on PENDLE-USD: the same tape truncated 2 days back reported 0 floors at
+    >=3 tests; truncated 5 days back reported 3. Not a market changing — a lens changing.
+
+    `graph_read.read_graph` anchors to the LAST PRINT with an explicit `as_of`, so the same tape
+    reads the same way live, in a backtest, and in an audit six days later. That property is
+    asserted here directly, because without it no structure verdict this project produces can be
+    trusted — including the ones that praised M."""
+    import shutil
+    from silmaril.execution.graph_read import read_graph, _live, build_graph_read
+
+    base = now().replace(microsecond=0)
+    rows = []
+    for i in range(600):
+        t0 = base - timedelta(minutes=10 * (600 - i))
+        # a range with repeatedly tested support and resistance
+        v = 100.0 + 2.0 * ((i % 50) / 50.0) - (1.6 if (i % 50) < 5 else 0.0)
+        rows.append([t0.isoformat(), round(v, 6)])
+
+    r = read_graph(rows)
+    ok_reads = r.get("ok") and r.get("nearest_floor") and r.get("verdict")
+
+    # (1) THE ANCHORING PROPERTY: truncating the tape must equal reading it as_of that moment
+    lv = _live(rows)
+    mid = lv[int(len(lv) * 0.7)][0]
+    a = read_graph([x for x in rows if _iso_le(x[0], mid)])
+    b = read_graph(rows, as_of=mid)
+    def sig(x):
+        return ((x.get("nearest_floor") or {}).get("level"),
+                (x.get("nearest_ceiling") or {}).get("level"),
+                x.get("band_pos"), x.get("break_state"), x.get("approach"))
+    ok_anchored = a.get("ok") and b.get("ok") and sig(a) == sig(b)
+
+    # (2) it must NOT drift with wall-clock: the same call twice is the same answer
+    ok_stable = sig(read_graph(rows)) == sig(read_graph(rows))
+
+    # (3) resistance must be strictly ABOVE price — the 209%-of-band nonsense
+    bad = 0
+    for x in (a, b, r):
+        nc = x.get("nearest_ceiling") or {}
+        if nc and nc.get("level", 0) <= x.get("px", 0):
+            bad += 1
+        bp = x.get("band_pos")
+        if bp is not None and not (0.0 <= bp <= 1.0):
+            bad += 1
+        hp = x.get("headroom_pct")
+        if hp is not None and hp < 0:
+            bad += 1
+    ok_sane = bad == 0
+
+    # (4) the reader bench must consume the PUBLISHED object, not a private copy
+    src = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
+    ok_one_engine = ("from .graph_read import load_reads" in src
+                     and "_graph_shape(cfg, sym, bk.get(\"_out7\"))" in src)
+    ok_sleeves = all(k in src for k in ('"R": {"name": "SUPPORT READER"',
+                                        '"S": {"name": "BOUNCE READER"',
+                                        '"T": {"name": "CEILING READER"'))
+    # every refusal must name the thing on the chart that caused it
+    ok_reasons = all(k in src for k in ("is weak (", "has BROKEN", "of the way up the band",
+                                        "sigma of clear air", "catching the knife"))
+    # (5) graph_read must be rebuilt BEFORE the sleeves read it
+    cli = (ROOT / "silmaril/cli.py").read_text()
+    ok_order = (cli.find("graph_read.build_graph_read") > 0
+                and cli.find("graph_read.build_graph_read") < cli.find("strategy_lab_abcd.build_strategy_lab"))
+    # (6) the board must publish realized alongside the equity headline
+    ok_honest_board = ('"realized_pct": round(_realized_pct, 3)' in src
+                       and "REALIZED IS THE SCORE" in src)
+
+    check("T127 one structure engine: anchored to the data (not wall-clock), stable, sane levels, published once and read by both chart and sleeves, with realized P&L never hidden behind equity",
+          ok_reads and ok_anchored and ok_stable and ok_sane and ok_one_engine and ok_sleeves
+          and ok_reasons and ok_order and ok_honest_board,
+          f"reads={ok_reads} anchored={ok_anchored} stable={ok_stable} sane={ok_sane} "
+          f"one_engine={ok_one_engine} sleeves={ok_sleeves} reasons={ok_reasons} "
+          f"order={ok_order} honest_board={ok_honest_board}")
+
+
+def _iso_le(a, b):
+    from datetime import datetime as _dt
+    try:
+        d = _dt.fromisoformat(str(a).replace("Z", "+00:00"))
+        if not d.tzinfo:
+            d = d.replace(tzinfo=timezone.utc)
+        return d <= b
+    except Exception:
+        return False
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -3171,7 +3272,8 @@ if __name__ == "__main__":
               t123_warm_start_seeds_but_never_lies,
               t124_post_wipe_blackout_lifts_on_a_healthy_tape,
               t125_the_ratio_bench,
-              t126_giveback_and_out_of_hours):
+              t126_giveback_and_out_of_hours,
+              t127_graph_read_is_one_engine):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

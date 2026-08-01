@@ -174,6 +174,49 @@ SLEEVES = {
                    "a quarter, while one 6% winner a month does not. Small, fast, strict — and it "
                    "will fail loudly if fees or slippage eat a target that thin, which is exactly "
                    "the thing we need to know before any of this touches real money")},
+    # ══ 7.2.0 THE READER BENCH — sleeves that read the chart the way a person does ══════
+    # Built on GRAPH_READ.json, the single structure object the CHART DRAWS AND THE SLEEVES
+    # TRADE ON. Not a second opinion computed in parallel — literally the same numbers, so a
+    # disagreement between the picture and the decision is now a bug with a name.
+    #
+    # Each of these is a specific human reading, written down. They are deliberately narrow:
+    # a rule you can argue with is worth more than a score you cannot inspect.
+    "R": {"name": "SUPPORT READER", "cap": 4, "recycle_h": 48, "ride_winners": True,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": False,
+          "graph_entry": "support", "min_strength": 2.5, "max_band_pos": 0.30,
+          "min_headroom_sigmas": 3.0, "min_rr": 1.5, "stop_below_floor_pct": 0.5,
+          "desc": ("7.2.0 M FLOOR ARTIST 2.0 — everything M does, plus the four things M was "
+                   "blind to. (1) LEVEL STRENGTH: a floor tested 6x two days ago is weaker "
+                   "evidence than one tested 3x in the last hour, and M could not tell them "
+                   "apart. (2) BREAK STATE: M would happily buy a floor that had just given "
+                   "way; R refuses anything BROKEN and prefers TESTING or INTACT. (3) HEADROOM "
+                   "IN THE NAME'S OWN NOISE: a 1% target under a ceiling 0.4% away is not a "
+                   "trade however good the ratio looks, so R demands 3 sigma of clear air. "
+                   "(4) BAND POSITION: buy in the bottom third between floor and ceiling, not "
+                   "merely 'near a floor'. This is the sleeve M should have been")},
+    "S": {"name": "BOUNCE READER", "cap": 3, "recycle_h": 36, "ride_winners": True,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": False,
+          "graph_entry": "bounce", "min_strength": 2.0, "max_band_pos": 0.35,
+          "min_headroom_sigmas": 2.5, "min_rr": 1.4, "stop_below_floor_pct": 0.6,
+          "desc": ("7.2.0 THE PATIENT HAND — the difference between catching support and "
+                   "catching a knife, which is a question of TIMING, not of level. R will buy "
+                   "while price is still falling into a floor; S waits for the tape to actually "
+                   "turn (approach = LIFTING_OFF or FLAT_AT off an intact level) and for the "
+                   "trough sequence to stop stepping down. It will take fewer trades and enter "
+                   "later and worse on price. If patience is worth more than price, S beats R; "
+                   "if it is not, S proves that, and the pair is the experiment")},
+    "T": {"name": "CEILING READER", "cap": 3, "recycle_h": 24, "ride_winners": False,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": True,
+          "graph_entry": "support", "min_strength": 2.0, "max_band_pos": 0.40,
+          "min_headroom_sigmas": 2.0, "min_rr": 1.3, "stop_below_floor_pct": 0.6,
+          "exit_at_ceiling": True, "ceiling_prox_pct": 0.35,
+          "desc": ("7.2.0 THE FULL HUMAN LOOP — buy low against structure AND sell into the "
+                   "ceiling, rather than at an arbitrary percentage. T exits when price reaches "
+                   "the resistance the chart actually shows, or when a new ceiling forms "
+                   "underneath the old one (the tape telling you the run is over). This is the "
+                   "operator's own description: 'buying low, and getting excited and when "
+                   "realizing the ceiling is hitting, selling.' Vaulted, so what it takes off "
+                   "the table stays off it")},
     "H": {"name": "PATIENT REVERT", "cap": 3, "recycle_h": 168, "ride_winners": False,
           "conf_gate": 0.0, "strike_extra": 0, "vault": False, "patient": True,
           "desc": ("7.0: the operator's time-edge thesis — ONLY names with proven revert evidence "
@@ -587,6 +630,100 @@ def _structure_levels(rows: List, lookback_h: float = 72.0) -> Dict[str, Any]:
     return out
 
 
+def _graph_shape(cfg: Dict[str, Any], sym: str, out: Any) -> tuple:
+    """(ok, target, stop, why_not) for the READER BENCH — the entry a person would take.
+
+    Reads GRAPH_READ.json, the SAME object the chart draws. Both legs come off real structure:
+    the target is the ceiling the chart shows, the stop sits under the floor the chart shows.
+    Every refusal names the specific thing on the chart that stopped it, so the operator can
+    look at the picture and check the verdict by eye."""
+    try:
+        from .graph_read import load_reads
+        r = (load_reads(out) or {}).get(sym)
+    except Exception:
+        r = None
+    if not r or not r.get("ok"):
+        return False, None, None, "no published structure for this name yet"
+
+    nf, nc = r.get("nearest_floor"), r.get("nearest_ceiling")
+    if not nf:
+        return False, None, None, "no support below price on the chart"
+    if not nc:
+        return False, None, None, "no resistance above price — nothing to sell into"
+
+    # (1) the floor must be STRONG — tests weighted by how recently it was respected
+    need_str = float(cfg.get("min_strength", 2.0))
+    if float(nf.get("strength") or 0) < need_str:
+        return False, None, None, ("support %.6g is weak (%dx, strength %.1f, last touched %.1fh "
+                                   "ago; needs %.1f)" % (nf["level"], nf["tested"], nf["strength"],
+                                                         nf.get("age_h") or 0, need_str))
+    # (2) it must not have just given way — the single most dangerous thing to buy
+    if r.get("break_state") == "BROKEN":
+        return False, None, None, ("support %.6g has BROKEN (price %.2f%% through it) — a floor "
+                                   "that just failed is not support"
+                                   % (nf["level"], r.get("broke_by_pct") or 0))
+    # (3) we must be LOW in the band, not merely near a level
+    bp = r.get("band_pos")
+    if bp is None:
+        return False, None, None, "cannot locate price between floor and ceiling"
+    if bp > float(cfg.get("max_band_pos", 0.30)):
+        return False, None, None, ("price sits %.0f%% of the way up the band; this sleeve buys "
+                                   "the bottom %.0f%%" % (bp * 100, float(cfg.get("max_band_pos", 0.30)) * 100))
+    # (4) clear air to the ceiling, measured in the name's OWN noise
+    hs = r.get("headroom_sigmas")
+    need_hs = float(cfg.get("min_headroom_sigmas", 2.5))
+    if hs is None or hs < need_hs:
+        return False, None, None, ("only %.1f sigma of clear air to resistance %.6g (needs %.1f) "
+                                   "— the target is inside the noise"
+                                   % (hs or 0.0, nc["level"], need_hs))
+    # (5) S BOUNCE READER additionally waits for the turn — timing, not level
+    if cfg.get("graph_entry") == "bounce":
+        if r.get("approach") == "FALLING_INTO":
+            return False, None, None, ("still falling into support at %.2f%%/print — waiting for "
+                                       "the tape to turn rather than catching the knife"
+                                       % (r.get("approach_slope_pct") or 0))
+        if r.get("trough_trajectory") == "FALLING":
+            return False, None, None, "troughs are still stepping down — the base has not formed"
+
+    px = float(r["px"])
+    stop_px = nf["level"] * (1.0 - float(cfg.get("stop_below_floor_pct", 0.5)) / 100.0)
+    stop = max(0.003, (px - stop_px) / px)
+    tgt = (nc["level"] / px) - 1.0
+    rr = tgt / max(stop, 1e-9)
+    if rr < float(cfg.get("min_rr", 1.4)):
+        return False, None, None, ("chart pays %.2f:1 (%.2f%% up to %.6g, %.2f%% down to under "
+                                   "%.6g) — below the %.2f:1 this sleeve requires"
+                                   % (rr, tgt * 100, nc["level"], stop * 100, nf["level"],
+                                      float(cfg.get("min_rr", 1.4))))
+    return True, tgt, stop, None
+
+
+def _ceiling_exit(cfg: Dict[str, Any], sym: str, out: Any, chg: float, cost: float) -> tuple:
+    """T CEILING READER's exit: sell into the resistance the chart shows, or when a NEW ceiling
+    forms below the old one — the tape's way of saying the run is finished. Never sells a loss."""
+    if not cfg.get("exit_at_ceiling"):
+        return False, None
+    if chg <= cost:
+        return False, None
+    try:
+        from .graph_read import load_reads
+        r = (load_reads(out) or {}).get(sym)
+    except Exception:
+        r = None
+    if not r or not r.get("ok"):
+        return False, None
+    hp = r.get("headroom_pct")
+    if hp is not None and hp <= float(cfg.get("ceiling_prox_pct", 0.35)):
+        nc = r.get("nearest_ceiling") or {}
+        return True, ("reached resistance %.6g (%dx tested, %.2f%% headroom left) — selling into "
+                      "the ceiling the chart shows rather than a number we invented"
+                      % (nc.get("level") or 0, nc.get("tested") or 0, hp))
+    if r.get("peak_trajectory") == "FALLING" and r.get("cadence_phase") == "JUST_PEAKED":
+        return True, ("peaks are stepping down and the cycle has just turned — banking +%.2f%% "
+                      "rather than waiting for a high that is not coming" % (chg * 100))
+    return False, None
+
+
 def _ratio_shape(cfg: Dict[str, Any], sym: str, rows: List, dip: float, tgt: float,
                  stp: float, cost: float, bounce_rel: Optional[float]) -> tuple:
     """(ok, target, stop, why_not). The gate that decides whether a ratio-bench sleeve may take
@@ -875,6 +1012,11 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
             _gap_h = None
         # 7.1.8 N CEILING SWEEP: take a real profit at an established ceiling that has stopped
         # making new highs, instead of holding for a number that may never arrive.
+        _ce, _cewhy = _ceiling_exit(cfg, sym, bk.get("_out7"), chg, pos.get("cost", MIN_COST))
+        if _ce:
+            _sell(bk, sym, cur, "CEILING_READ", vault, gap_h=_gap_h)
+            _vetoes.append({"sym": sym, "sleeve": cfg.get("_letter"), "why": _cewhy})
+            continue
         _sw, _swwhy = _ceiling_sweep(cfg, pos, tape.get(sym), chg, pos.get("cost", MIN_COST))
         if _sw:
             _sell(bk, sym, cur, "CEILING_SWEEP", vault, gap_h=_gap_h)
@@ -1006,7 +1148,15 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
                 stp = max(float(_g7.get("stop_vol_pct") or 6.0) / 100.0, tgt * 1.2)  # WIDE, on purpose
             # ── 7.1.8 THE RATIO BENCH: replace the blanket stop with a measured one, and refuse
             # any shape whose arithmetic cannot pay. Non-bench sleeves are untouched.
-            if cfg.get("measured_stop") or cfg.get("structure_entry"):
+            if cfg.get("graph_entry"):
+                _okg, _tg, _sg, _whyg = _graph_shape(cfg, sym, bk.get("_out7"))
+                if not _okg:
+                    bk["cash"] += budget          # refund; this name never becomes a position
+                    _vetoes.append({"sym": sym, "sleeve": cfg.get("_letter"),
+                                    "why": "graph read — " + str(_whyg)})
+                    continue
+                tgt, stp = _tg, _sg
+            elif cfg.get("measured_stop") or cfg.get("structure_entry"):
                 _ok8, _t8, _s8, _why8 = _ratio_shape(
                     cfg, sym, tape.get(sym), h1 if isinstance(h1, float) else 0.01,
                     tgt, stp, cost_of(px),
@@ -1247,6 +1397,7 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
             bk["_regime7"] = _regimes.get(book)
             bk["_book7"] = book
             bk["_tape7"] = _tape7
+            bk["_out7"] = str(out)
             bk.setdefault("start_equity", 10000.0)
             # 7.1.8: measured bounce reliability per name, so the ratio gate can compare a shape's
             # REQUIRED win rate against what the name has actually delivered.
@@ -1271,11 +1422,25 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
             _RIVER.update({"out": None})
             eq = _equity(bk, marks) + bk.get("vault_usd", 0.0)
             ret = (eq / START - 1) * 100
+            # ── 7.2.0 REALIZED IS THE SCORE (Law 1), AND IT MUST BE VISIBLE ─────────────
+            # `ret` is equity-based, so it includes UNREALIZED marks on open positions. That
+            # is legitimate as a mark-to-market number and dishonest as a headline: on the
+            # 2026-08-01 tree six sleeves carried a headline with the OPPOSITE SIGN to their
+            # realized P&L — metal:B CAP ONLY showed +1.163% with ZERO closed trades, all of
+            # it unrealized. I read that board myself and told the operator "M FLOOR ARTIST is
+            # green in all four books" when M's realized was crypto -$12.92 and stock -$50.56.
+            # It was not the board lying to me; it was me reading the wrong column. Both
+            # numbers ship from now on, and the split is explicit.
+            _real = float(bk.get("realized_pnl", 0.0))
+            _realized_pct = (_real / START) * 100.0
+            _unreal_pct = ret - _realized_pct
             closed = [t for t in bk["trades"] if t["side"] == "SELL"]
             wins = sum(1 for t in closed if t["pnl"] > 0)
             rows.append({
                 "sleeve": sk, "name": cfg["name"], "cap": cfg["cap"],
                 "equity": round(eq, 2), "return_pct": round(ret, 3),
+                "realized_pct": round(_realized_pct, 3), "unrealized_pct": round(_unreal_pct, 3),
+                "realized_usd": round(_real, 2),
                 "realized_pnl": round(bk["realized_pnl"], 2),
                 "vault_usd": round(bk.get("vault_usd", 0.0), 2),
                 "delta_vs_hodl": (round(ret - float(hodl), 3)
@@ -1353,6 +1518,7 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                          else "trajectory" if "trajectory veto" in (_v.get("why") or "") else "other")
                 _counts[_kind] = _counts.get(_kind, 0) + 1
             _b.pop("_tape7", None); _b.pop("_book7", None); _b.pop("_bounce7", None)
+            _b.pop("_out7", None); _b.pop("_peers7", None); _b.pop("_geo7", None)
         write_json_atomic(out / "SLEEVE_VETOES.json", {
             "generated_at": _now().isoformat(),
             "what": ("every entry a sleeve DECLINED this cycle and the exact rail that stopped it. "

@@ -3626,6 +3626,12 @@ Reply in 3-5 bullets, no preamble.
                           ("gate evidence tally", "gate_evidence.build_gate_evidence"),
                           ("conductor C1 shadow scoring", "conductor_c1.build_conductor_c1"),
                           ("conductor report card (A/B honesty)", "conductor_report_card.build_conductor_report_card"),
+                          # 7.2.0: ONE structure object — the chart draws it and the READER
+                          # BENCH trades on it. It must be rebuilt BEFORE the sleeve lab runs,
+                          # or the readers consume LAST cycle's structure and act on a picture
+                          # the operator is no longer looking at.
+                          ("graph read (structure the sleeves trade on)",
+                           "graph_read.build_graph_read"),
                           ("strategy lab A/B/C/D", "strategy_lab_abcd.build_strategy_lab"),
                           # 7.0.2 PYRAMID RUNG 2 — must run AFTER the lab: the workshop's best
                           # sleeve hands its discipline up to its industry book.
