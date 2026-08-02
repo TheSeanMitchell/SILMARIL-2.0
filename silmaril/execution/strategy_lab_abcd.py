@@ -631,7 +631,7 @@ def _structure_levels(rows: List, lookback_h: float = 72.0) -> Dict[str, Any]:
 
 
 def _own_universe(cfg: Dict[str, Any], book: str, marks: Dict[str, float],
-                  out: Any, cost_of) -> List[tuple]:
+                  out: Any, cost_of, held: set = None) -> List[tuple]:
     """7.2.1 THE FUNNEL THAT STARVED THE WORKSHOP.
 
     Every sleeve — all twenty of them — was fed candidates from exactly one place:
@@ -659,8 +659,17 @@ def _own_universe(cfg: Dict[str, Any], book: str, marks: Dict[str, float],
         return []
     from .paper_sim import asset_class
     out_rows = []
+    held = held or set()
     for sym, r in reads.items():
         try:
+            if sym in held:
+                # 7.2.2 SECOND LEAK, same origin. bk["positions"] is keyed by SYMBOL, so
+                # buying a name we already hold OVERWRITES the existing position and its
+                # capital simply disappears. The mean-reversion path filtered held names out
+                # of its pool; the universe scanner I added in 7.2.1 did not. crypto:R bought
+                # BONK and KSM twice and lost $5,000 of a $10,000 book that way — on top of
+                # the cap-guard leak, in the same release.
+                continue
             if asset_class(sym) != book:
                 continue
             px = marks.get(sym)
@@ -676,6 +685,53 @@ def _own_universe(cfg: Dict[str, Any], book: str, marks: Dict[str, float],
             continue
     out_rows.sort(key=lambda x: (x[2], -x[3]))       # lowest in band first, most headroom first
     return [(s, px, 0.0, hs) for s, px, _bp, hs in out_rows]
+
+
+def _resting_fill(rows: List, entry: float, level_chg: float, since_iso: str,
+                  cur: float) -> tuple:
+    """7.2.2 THE RESTING ORDER — the difference between a real exit and a glance.
+
+    Every exit in this engine was evaluated ONLY at the moment a cycle happened to look. A real
+    stop or limit does not work that way: it SITS IN THE BOOK and fills when price crosses it.
+    Measured across 44 governor exits on the operator's tape, that gap cost **0.360% per exit**,
+    and in the worst case a "BREAKEVEN_LOCK" — an order whose entire purpose is to exit at
+    break-even — booked **-3.64%** on ONDO-USD because the cycle next looked after price had
+    already fallen through. Labelling that a break-even lock was not honest.
+
+    So: walk the tape between the last cycle and now. If price CROSSED the resting level, fill
+    at the level. If it GAPPED straight past it, fill at the first print beyond — the worse of
+    the two, because a gap is real and slippage is worn, never gifted. Returns
+    (fill_chg, crossed) where crossed says whether a resting order would have triggered at all."""
+    try:
+        seg = []
+        for r in (rows or []):
+            if not r or len(r) < 2 or not r[1]:
+                continue
+            t = str(r[0])
+            if "T00:00:00" in t or (since_iso and t <= since_iso):
+                continue
+            seg.append(float(r[1]))
+        if not seg:
+            return None, False
+        # A resting order only triggers on a DOWNWARD CROSS. It must have been above the level
+        # first — otherwise the entry print itself "crosses" it and every position exits at once.
+        above = False
+        prev = None
+        for p in seg:
+            ch = p / entry - 1.0
+            if ch > level_chg:
+                above = True
+                prev = ch
+                continue
+            if above:
+                # crossed on this step: a resting order fills AT its level when price passes
+                # smoothly through, or at this print if the move gapped straight past it. Take
+                # the worse of the two — slippage is worn, never gifted.
+                return min(level_chg, ch), True
+            prev = ch
+        return None, False
+    except Exception:
+        return None, False
 
 
 def _graph_shape(cfg: Dict[str, Any], sym: str, out: Any) -> tuple:
@@ -1017,6 +1073,8 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
         # Neither invents an exit the market did not offer; both simply stop donating gains back.
         _hw = max(float(pos.get("peak_chg") or 0.0), chg)
         pos["peak_chg"] = _hw
+        _prev_seen = pos.get("_last_seen")
+        pos["_last_seen"] = now.isoformat()
         # Parameters FITTED on the operator's own 186 closed trades, not guessed. The sweep:
         #     arm 1.2% give 40%  ->  -32.4 pts (my first guess: rescued 31 trades but strangled
         #                            the winners — more winners, worse total. Honest and wrong.)
@@ -1030,13 +1088,21 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
         if cfg.get("giveback_governor", True) and _hw >= _arm:
             _cost = pos.get("cost", MIN_COST)
             if chg <= _cost:                                   # BREAK-EVEN LOCK
-                _sell(bk, sym, cur, "BREAKEVEN_LOCK", vault, gap_h=None)
+                # 7.2.2: fill where a RESTING order would have, not where we happened to look
+                _fc, _cr = _resting_fill(tape.get(sym), pos["entry"], _cost,
+                                         str(_prev_seen or pos.get("t") or ""), cur)
+                _px_fill = pos["entry"] * (1.0 + _fc) if _cr and _fc is not None else cur
+                _sell(bk, sym, _px_fill, "BREAKEVEN_LOCK", vault, gap_h=None)
                 _vetoes.append({"sym": sym, "sleeve": cfg.get("_letter"),
                                 "why": ("break-even lock — was +%.2f%%, protecting the trade rather "
                                         "than letting a winner become a loser" % (_hw * 100))})
                 continue
             if chg <= _hw * (1.0 - _give):                     # GIVE-BACK CAP
-                _sell(bk, sym, cur, "GIVEBACK_CAP", vault, gap_h=None)
+                _lvl = _hw * (1.0 - _give)
+                _fc, _cr = _resting_fill(tape.get(sym), pos["entry"], _lvl,
+                                         str(_prev_seen or pos.get("t") or ""), cur)
+                _px_fill = pos["entry"] * (1.0 + _fc) if _cr and _fc is not None else cur
+                _sell(bk, sym, _px_fill, "GIVEBACK_CAP", vault, gap_h=None)
                 _vetoes.append({"sym": sym, "sleeve": cfg.get("_letter"),
                                 "why": ("give-back cap — peaked +%.2f%%, banked +%.2f%% rather than "
                                         "surrendering more than %.0f%% of the run"
@@ -1167,7 +1233,8 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
         # question, whether or not it happens to have rows in it today.
         _scan = cap - open_mr
         if cfg.get("graph_entry"):
-            pool = _own_universe(cfg, _book7, marks, bk.get("_out7"), cost_of)
+            pool = _own_universe(cfg, _book7, marks, bk.get("_out7"), cost_of,
+                                 held=set(bk["positions"].keys()))
             # These gates are severe by design — measured on the operator's tape, R passed 5
             # names out of 130 and S passed 1. Slicing to `cap` before the gate runs would
             # therefore find nothing almost every cycle, which is exactly how a sleeve looks
@@ -1190,7 +1257,19 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
                 _vetoes.append({"sym": sym, "sleeve": cfg.get("_letter") or cfg.get("name"), "why": _why})
                 continue
             px = _tp
-            budget = _avail() / max(1, cap - open_mr)
+            # ── 7.2.2 THE CAPITAL LEAK I INTRODUCED IN 7.2.1 ────────────────────────────
+            # 7.2.1 let thesis sleeves scan deep (120+ names) and added a cap guard to stop
+            # once full — but the guard sat AFTER `bk["cash"] -= budget` and simply `break`ed.
+            # Every cycle the sleeve deducted a budget for a position it then never created.
+            # crypto:R ended with $3.55 cash and four positions worth ~$3,289 out of a $10,000
+            # book: about $6,700 evaporated, and the headline read -64% while realized was
+            # +0.07%. This is exactly the failure the operator predicted when they told me to
+            # be skeptical of my own work. The cap is now checked BEFORE any money moves, and
+            # a live count is used rather than the stale `open_mr` from before the loop.
+            _open_now = sum(1 for q in bk["positions"].values() if q.get("style") != "STRIKE")
+            if _open_now >= cap:
+                break                                  # full: stop scanning, spend nothing
+            budget = _avail() / max(1, cap - _open_now)
             budget = min(budget, _avail() * 0.95)
             if budget < 50:
                 break
@@ -1227,8 +1306,9 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
                                     "why": "ratio gate — " + str(_why8)})
                     continue
                 tgt, stp = _t8, _s8
-            if sum(1 for p in bk["positions"].values() if p.get("style") != "STRIKE") >= cap:
-                break                          # cap reached; the deep scan stops here
+            if sym in bk["positions"]:
+                bk["cash"] += budget           # never overwrite a live position; refund and skip
+                continue
             bk["positions"][sym] = {"qty": qty, "entry": px, "cost": cost_of(px),
                                     "target": tgt, "stop": stp, "style": "MR",
                                     "t": now.isoformat(), "conf": round(conf_map.get(sym, 0.0), 3)}

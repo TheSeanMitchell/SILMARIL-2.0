@@ -3632,7 +3632,10 @@ Reply in 3-5 bullets, no preamble.
                           # the operator is no longer looking at.
                           ("graph read (structure the sleeves trade on)",
                            "graph_read.build_graph_read"),
+                          # 7.2.2 THE INSPECTOR — a skeptic that reads the RECORD, not the laws.
+                          # Runs AFTER the sleeves so it audits this cycle's own output.
                           ("strategy lab A/B/C/D", "strategy_lab_abcd.build_strategy_lab"),
+                          ("inspector (pattern-recognition audit)", "inspector.build_inspector"),
                           # 7.0.2 PYRAMID RUNG 2 — must run AFTER the lab: the workshop's best
                           # sleeve hands its discipline up to its industry book.
                           # 7.0.6: the graph brain runs BEFORE the books act, so every entry

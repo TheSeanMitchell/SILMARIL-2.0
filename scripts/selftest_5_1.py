@@ -3249,7 +3249,11 @@ def t128_sleeves_are_fed_their_own_thesis():
     # and it must scan deeper than the cap, or a severe gate finds nothing
     ok_deep = "_scan = max(cap * 30, 120)" in src and "pool[:_scan]" in src
     # ...while still respecting the position cap
-    ok_capped = 'if sum(1 for p in bk["positions"].values() if p.get("style") != "STRIKE") >= cap:' in src
+    # 7.2.2 AMENDMENT: the cap guard moved BEFORE the cash deduction (it used to sit after and
+    # `break` without refunding — see T129). The correct assertion is now that the live count is
+    # checked before any money moves, not that the old post-deduction guard still exists.
+    ok_capped = ("_open_now >= cap" in src
+                 and src.find("_open_now >= cap") < src.find('bk["cash"] -= budget', src.find("_open_now >= cap")))
     # mean-reversion sleeves must be UNTOUCHED
     ok_mr_untouched = 'pool = [c for c in candidates if c[0] not in bk["positions"]]' in src
     # per-book quotas so every book's readers get a universe
@@ -3264,6 +3268,80 @@ def t128_sleeves_are_fed_their_own_thesis():
           and ok_quota and ok_rails,
           f"scanner={ok_scanner} always={ok_always} deep={ok_deep} capped={ok_capped} "
           f"mr_untouched={ok_mr_untouched} quota={ok_quota} rails={ok_rails}")
+
+
+def t129_capital_is_conserved_and_the_inspector_watches():
+    """7.2.2 TWO CAPITAL LEAKS I SHIPPED IN 7.2.1, found by auditing my own release.
+
+    The operator told me to be skeptical of my own work. Both of these came from the ONE fix I
+    made yesterday to let thesis sleeves scan their own universe:
+
+      LEAK 1 — THE CAP GUARD. The deep scan (120+ names) needed a stop once the position cap was
+      full. I put that guard AFTER `bk["cash"] -= budget` and simply `break`ed. Every cycle the
+      sleeve deducted a budget for a position it never created.
+
+      LEAK 2 — THE OVERWRITE. `bk["positions"]` is keyed by SYMBOL. The mean-reversion path
+      filtered already-held names out of its pool; the universe scanner I added did not. Buying
+      a held name overwrote the live position and its capital vanished.
+
+    Together: crypto:R ended with $3.55 cash and $3,289 of positions out of a $10,000 book —
+    about $6,700 gone — while its headline read -64.5% and its realized read +0.07%. Two
+    unrelated-looking symptoms, one release, both mine.
+
+    THE INVARIANT, which nothing checked before: for every sleeve,
+        cash + position_value + vault - realized_pnl  ==  starting equity
+    Money can move between those buckets. It cannot leave. This test asserts it on synthetic
+    books driven through the real entry path, and the INSPECTOR asserts it on the live tree
+    every cycle so the next one shows up as a finding rather than a mystery."""
+    from silmaril.execution import strategy_lab_abcd as L
+    src = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
+
+    # LEAK 1: the cap must be checked BEFORE any deduction
+    i_cap = src.find("_open_now >= cap")
+    i_ded = src.find('bk["cash"] -= budget', i_cap)
+    ok_cap_first = 0 < i_cap < i_ded
+
+    # every path between deduction and position creation must refund
+    import re
+    seg = src[i_ded:src.index('bk["positions"][sym] = {"qty": qty, "entry": px', i_ded)]
+    exits = len(re.findall(r"\n\s+(continue|break)\b", seg))
+    refunds = seg.count('bk["cash"] += budget')
+    ok_balanced = exits == refunds
+
+    # LEAK 2: held names excluded, plus an overwrite guard at the write itself
+    ok_excl = "held: set = None" in src and "if sym in held:" in src
+    ok_guard = ('if sym in bk["positions"]:\n                bk["cash"] += budget' in src)
+
+    # the invariant, exercised on a synthetic book
+    bk = {"cash": 10000.0, "positions": {}, "trades": [], "realized_pnl": 0.0,
+          "vault_usd": 0.0, "start_equity": 10000.0}
+    bk["cash"] -= 2500.0
+    bk["positions"]["AAA"] = {"qty": 100.0, "entry": 25.0, "cost": 0.002, "style": "MR",
+                              "t": now().isoformat()}
+    val = sum(p["qty"] * p["entry"] for p in bk["positions"].values())
+    ok_invariant = abs((bk["cash"] + val + bk["vault_usd"] - bk["realized_pnl"]) - 10000.0) < 1e-6
+
+    # the inspector must exist, run read-only, and check this class
+    insp = (ROOT / "silmaril/execution/inspector.py")
+    ok_inspector = insp.exists()
+    if ok_inspector:
+        isrc = insp.read_text()
+        ok_inspector = all(k in isrc for k in ("SILENT_SLEEVE", "GOAL_MISS",
+                                               "LABEL_CONTRADICTION", "IMPOSSIBLE_FILL",
+                                               "HEADLINE_SIGN_FLIP", "WINNER_TO_LOSER",
+                                               "FEED_COMB", "STRUCTURE_PATTERN"))
+        ok_readonly = ("takes no trade" in isrc and "changes no behaviour" in isrc)
+    else:
+        ok_readonly = False
+    cli = (ROOT / "silmaril/cli.py").read_text()
+    ok_wired = "inspector.build_inspector" in cli
+
+    check("T129 capital is conserved (cap checked before any deduction, held names excluded, no position overwrite) and the INSPECTOR audits the record every cycle",
+          ok_cap_first and ok_balanced and ok_excl and ok_guard and ok_invariant
+          and ok_inspector and ok_readonly and ok_wired,
+          f"cap_first={ok_cap_first} balanced={ok_balanced}({exits}/{refunds}) excl={ok_excl} "
+          f"guard={ok_guard} invariant={ok_invariant} inspector={ok_inspector} "
+          f"readonly={ok_readonly} wired={ok_wired}")
 
 
 if __name__ == "__main__":
@@ -3325,7 +3403,8 @@ if __name__ == "__main__":
               t125_the_ratio_bench,
               t126_giveback_and_out_of_hours,
               t127_graph_read_is_one_engine,
-              t128_sleeves_are_fed_their_own_thesis):
+              t128_sleeves_are_fed_their_own_thesis,
+              t129_capital_is_conserved_and_the_inspector_watches):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

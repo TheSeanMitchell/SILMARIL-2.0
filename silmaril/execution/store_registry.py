@@ -39,6 +39,9 @@ LEARNING = {
     "CALIBRATION.json", "GRAVEYARD.json", "CONDUCTOR_STATE.json", "CONDUCTOR_REPORT_CARD.json",
     "knowledge_graph.json", "RESEARCH_QUEUE.json", "ROTATION_HYPOTHESES.json",
     "CENSUS_ROSTER.json", "INVARIANTS_STATE.json",
+    # 7.2.2: the inspector's findings are DERIVED — regenerated every cycle from the record —
+    # but registering them explicitly keeps T32's total-coverage law honest rather than relying
+    # on the unknown->DERIVED default.
     # ── 7.1: same wired-but-contradicted class, caught by the fresh-tree battery. The reset
     # script deliberately PRESERVES VENUE_UNIVERSE.json (deleting the listings would make every
     # close UNROUTABLE until the next 09:2x refresh), but the registry classed it DERIVED — so
