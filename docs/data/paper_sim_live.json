@@ -1,13 +1,14 @@
 {
-  "generated_at": "2026-08-02T05:31:56.079759+00:00",
+  "generated_at": "2026-08-02T05:20:40.308100+00:00",
   "marks_health": {
     "marked": 201,
     "entry_warm": 201,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 1.3,
+    "newest_sample_age_min": 0.7,
     "state": "OK",
     "oscillating": 14,
     "oscillating_syms": [
+      "1000MOG-USD",
       "1INCH-USD",
       "A-USD",
       "BLUR-USD",
@@ -15,11 +16,10 @@
       "EIGEN-USD",
       "JUP-USD",
       "KAITO-USD",
-      "MINA-USD",
       "MOG-USD",
       "OM-USD",
-      "OP-USD",
-      "TROLL-USD"
+      "ONT-USD",
+      "OP-USD"
     ]
   },
   "equity_market": {
@@ -58,12 +58,12 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-08-02T05:31:51.687873+00:00",
+    "generated_at": "2026-08-02T05:20:36.799642+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
     "window": 60,
-    "excluded_count": 11,
+    "excluded_count": 12,
     "excluded": [
       {
         "sym": "SYK",
@@ -106,6 +106,11 @@
         "max_move_pct": 7.8
       },
       {
+        "sym": "RVN-USD",
+        "snapbacks": 1,
+        "max_move_pct": 6.5
+      },
+      {
         "sym": "1MWOJAK-USD",
         "snapbacks": 1,
         "max_move_pct": 20.1
@@ -137,34 +142,48 @@
     "funnel": {
       "seen": 179,
       "entry_warm": 165,
-      "candidates_after_gates": 1,
+      "candidates_after_gates": 3,
       "bought": 0,
       "rejections": {
-        "UNTRADEABLE:evidence": 1
+        "position cap 2/4 for crypto": 1,
+        "UNTRADEABLE:evidence": 1,
+        "re-entry guard": 1
       },
       "armed": true,
       "arming_why": "armed \u2014 promoted sleeve M (FLOOR ARTIST) has real closed trades"
     },
     "decision_trace_live": [
       {
+        "sym": "YFI-USD",
+        "dip_pct": -1.07,
+        "conviction": 0.4227,
+        "fate": "candidate"
+      },
+      {
+        "sym": "ZIL-USD",
+        "dip_pct": -0.7,
+        "conviction": 0.0583,
+        "fate": "candidate"
+      },
+      {
         "sym": "EOS-USD",
-        "dip_pct": -0.9,
-        "conviction": 0.0753,
+        "dip_pct": -0.87,
+        "conviction": 0.0727,
         "fate": "candidate"
       }
     ],
-    "equity": 9886.23,
+    "equity": 9892.67,
     "cash": 6946.58,
     "realized_pnl": -29.2,
     "reserve_usd": 84.86,
-    "return_pct": -1.14,
+    "return_pct": -1.07,
     "open_positions": 2,
     "positions": [
       {
         "sym": "ONDO-USD",
         "qty": 4299.0327,
         "entry": 0.387638,
-        "mark": 0.39312,
+        "mark": 0.394,
         "t": "2026-08-01T06:22:22.186336+00:00",
         "wager_usd": 1666.47,
         "target": 0.0353,
@@ -173,13 +192,13 @@
         "style": null,
         "entry_regime": null,
         "exp_net_usd": 51.82,
-        "upl_pct": 1.41
+        "upl_pct": 1.64
       },
       {
         "sym": "FLOW-USD",
         "qty": 44406.867,
         "entry": 0.028664,
-        "mark": 0.02814,
+        "mark": 0.0282,
         "t": "2026-08-02T00:45:57.860227+00:00",
         "wager_usd": 1272.89,
         "target": 0.06,
@@ -188,7 +207,7 @@
         "style": null,
         "entry_regime": null,
         "exp_net_usd": 66.84,
-        "upl_pct": -1.83
+        "upl_pct": -1.62
       }
     ],
     "recent_trades": [
@@ -483,7 +502,7 @@
     "universe": 0,
     "universe_seen": 0
   },
-  "combined_equity": 39886.23,
+  "combined_equity": 39892.67,
   "combined_realized_pnl": 11.52,
   "backtest_3day_crypto": {
     "universe_total": 1075,
@@ -491,13 +510,13 @@
     "ghosts_excluded": 1023,
     "trades": 162,
     "win_rate_pct": 61.7,
-    "mean_net_pct": -0.478,
+    "mean_net_pct": -0.479,
     "exits": {
       "TAKE": 109,
       "STOP": 53,
       "TIMEOUT": 0
     },
-    "equity_after": 9245.63
+    "equity_after": 9243.0
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
