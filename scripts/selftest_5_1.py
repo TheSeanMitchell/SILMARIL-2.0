@@ -3344,6 +3344,86 @@ def t129_capital_is_conserved_and_the_inspector_watches():
           f"readonly={ok_readonly} wired={ok_wired}")
 
 
+def t130_harvest_banks_only_real_money():
+    """7.2.3 MAKING A WIN STAY A WIN — and the number that had to be refused first.
+
+    The operator saw stock:E at +$438.40 and asked, reasonably, whether that could be swept and
+    called a monthly success. Audited against the tape:
+
+        realized (banked, fee-paid) ... +$102.83   <- money
+        unrealized (open marks) ....... +$335.57   <- four positions, not yet money
+        headline ...................... +$438.40
+
+    Sweeping $438 would have put $335 in the vault that was never earned, and this project has
+    watched marks evaporate 17 times (positions up >2% that closed negative). So harvest banks
+    REALIZED profit only — which is also the reason wins historically slid back to $10k: the
+    gain was never banked, so there was nothing to protect.
+
+    The vault is non-spendable by construction: `_avail()` returns `cash`, and harvest moves
+    money from `cash` to `vault_usd`. No path in the engine spends the vault.
+
+    Also asserted: the give-back arm now scales with the position's OWN target. A flat 2.0% arm
+    meant a 1%-target position could never be protected — the RECYCLE_FLAT bleed of 84 trades
+    that averaged +1.96% peak and exited at -0.11%. Re-swept on 378 real closed trades, arming
+    at 40% of target (capped 2.0%) moved the book from -275.4%/168 winners to -138.1%/211."""
+    import shutil
+    from silmaril.execution.harvest import build_harvest
+    tmp = Path(tempfile.mkdtemp(prefix="t130_"))
+    try:
+        # a book with a big MARK and a small BANKED gain — the stock:E shape exactly
+        lab = {"sleeves": {"stock:E": {
+            "cash": 176.42, "vault_usd": 0.0, "realized_pnl": 102.83, "start_equity": 10000.0,
+            "positions": {"BSX": {"qty": 79.8571, "entry": 44.76, "cost": 0.002, "style": "MR"}},
+            "trades": []}}}
+        (tmp / "STRATEGY_LAB.json").write_text(json.dumps(lab))
+        marks = {"BSX": 48.345}                      # +8% mark, ~+$286 unrealized
+        p = build_harvest(tmp, marks)
+        after = json.loads((tmp / "STRATEGY_LAB.json").read_text())["sleeves"]["stock:E"]
+        ok_refused = (after["vault_usd"] == 0.0 and not p.get("harvested_now"))
+        row = [r for r in p["books"] if r["book"] == "stock:E"][0]
+        ok_explains = "only" in row["verdict"] and "REAL" in row["verdict"]
+        ok_split = abs(row["realized"] - 102.83) < 0.01 and row["unrealized"] > 200
+
+        # now the same book with the gain genuinely BANKED — it must sweep
+        lab["sleeves"]["stock:E"] = {"cash": 10350.0, "vault_usd": 0.0, "realized_pnl": 350.0,
+                                     "start_equity": 10000.0, "positions": {}, "trades": []}
+        (tmp / "STRATEGY_LAB.json").write_text(json.dumps(lab))
+        p2 = build_harvest(tmp, {})
+        a2 = json.loads((tmp / "STRATEGY_LAB.json").read_text())["sleeves"]["stock:E"]
+        ok_swept = (a2["vault_usd"] >= 300.0 and a2["cash"] <= 10050.0
+                    and len(p2.get("harvested_now") or []) == 1)
+        ok_capital = abs((a2["cash"] + a2["vault_usd"] - a2["realized_pnl"]) - 10000.0) < 0.02
+        ok_journal = (tmp / "HARVEST_LEDGER.jsonl").exists()
+
+        # cooldown: a second immediate run must not churn the vault
+        p3 = build_harvest(tmp, {})
+        ok_cooldown = not (p3.get("harvested_now") or [])
+
+        # killable
+        (tmp / "PARAM_CATALOG.json").write_text(json.dumps({"harvest": {"mode": "off"}}))
+        p4 = build_harvest(tmp, {})
+        ok_kill = p4.get("mode") == "off" and not p4.get("harvested_now")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    src = (ROOT / "silmaril/execution/strategy_lab_abcd.py").read_text()
+    ok_arm = ("THE ARM MUST SCALE WITH THE TARGET" in src
+              and 'giveback_arm_frac", 0.40' in src
+              and "_tgt_ref * float(cfg.get" in src)
+    hv = (ROOT / "silmaril/execution/harvest.py").read_text()
+    ok_vault_law = "non-spendable" in hv and "REALIZED profit only" in hv
+    cli = (ROOT / "silmaril/cli.py").read_text()
+    ok_wired = ("harvest.build_harvest" in cli
+                and cli.find("strategy_lab_abcd.build_strategy_lab") < cli.find("harvest.build_harvest"))
+
+    check("T130 harvest banks only REALIZED profit into a non-spendable vault (refusing a $335 mark), is cooldown-guarded and killable, and the give-back arm scales with the position's own target",
+          ok_refused and ok_explains and ok_split and ok_swept and ok_capital and ok_journal
+          and ok_cooldown and ok_kill and ok_arm and ok_vault_law and ok_wired,
+          f"refused_mark={ok_refused} explains={ok_explains} split={ok_split} swept={ok_swept} "
+          f"capital={ok_capital} journal={ok_journal} cooldown={ok_cooldown} kill={ok_kill} "
+          f"arm={ok_arm} vault_law={ok_vault_law} wired={ok_wired}")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -3404,7 +3484,8 @@ if __name__ == "__main__":
               t126_giveback_and_out_of_hours,
               t127_graph_read_is_one_engine,
               t128_sleeves_are_fed_their_own_thesis,
-              t129_capital_is_conserved_and_the_inspector_watches):
+              t129_capital_is_conserved_and_the_inspector_watches,
+              t130_harvest_banks_only_real_money):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test

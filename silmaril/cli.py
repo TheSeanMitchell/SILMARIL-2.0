@@ -3635,6 +3635,9 @@ Reply in 3-5 bullets, no preamble.
                           # 7.2.2 THE INSPECTOR — a skeptic that reads the RECORD, not the laws.
                           # Runs AFTER the sleeves so it audits this cycle's own output.
                           ("strategy lab A/B/C/D", "strategy_lab_abcd.build_strategy_lab"),
+                          # 7.2.3: bank REALIZED profit into the non-spendable vault so a win
+                          # cannot slide back. Runs after the sleeves, before the inspector.
+                          ("harvest checkpoint (bank realized wins)", "harvest.build_harvest"),
                           ("inspector (pattern-recognition audit)", "inspector.build_inspector"),
                           # 7.0.2 PYRAMID RUNG 2 — must run AFTER the lab: the workshop's best
                           # sleeve hands its discipline up to its industry book.

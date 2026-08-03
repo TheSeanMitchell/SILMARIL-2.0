@@ -1083,7 +1083,19 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
         #     break-even lock alone at 2.0% -> +7.8 pts
         # Arming at 2% instead of 1.2% is the whole difference: below 2% the noise band eats the
         # trade before the move has declared itself.
-        _arm = float(cfg.get("giveback_arm_pct", 2.0)) / 100.0
+        # ── 7.2.3 THE ARM MUST SCALE WITH THE TARGET ──────────────────────────────────
+        # A flat 2.0% arm meant a position with a 1% target was NEVER protected: it could not
+        # reach the arm before its own goal. That is exactly the RECYCLE_FLAT bleed the August
+        # audit found — 84 closed trades that averaged **+1.96% peak** and exited at **-0.11%**,
+        # every one of them peaking just under the global arm and then recycled flat.
+        # Re-swept across 378 real closed trades, arming at 40% of the position's OWN target
+        # (capped at 2.0%, so a big target still arms sensibly) gives:
+        #     flat 2.0% arm        -275.4%   168 winners   <- what shipped in 7.1.9
+        #     arm = target x0.40   -138.1%   211 winners   <- +137.3 pts, +43 winners
+        # Same trades, same give-back fraction; only the arm changed.
+        _tgt_ref = float(pos.get("target") or cfg.get("target") or 0.05)
+        _arm_cap = float(cfg.get("giveback_arm_pct", 2.0)) / 100.0
+        _arm = min(_arm_cap, max(0.004, _tgt_ref * float(cfg.get("giveback_arm_frac", 0.40))))
         _give = float(cfg.get("giveback_frac", 0.25))
         if cfg.get("giveback_governor", True) and _hw >= _arm:
             _cost = pos.get("cost", MIN_COST)
