@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-03T19:18:34.952597+00:00",
+  "generated_at": "2026-08-03T19:04:21.606057+00:00",
   "what": "does reading the graph before entry actually separate winners from losers? Each closed trade's graph state is reconstructed from the tape AS OF ITS ENTRY (nothing after the entry is visible to the reconstruction, so no hindsight can leak in), then outcomes are graded inside each bucket.",
   "coupling_status": {
     "graph_brain_store": "CHART_INTEL.json",
@@ -16,96 +16,96 @@
       "ceiling_overhead"
     ]
   },
-  "trades_seen": 833,
-  "trades_graded": 759,
-  "trades_unreadable": 74,
+  "trades_seen": 821,
+  "trades_graded": 753,
+  "trades_unreadable": 68,
   "min_n_for_verdict": 25,
   "features": {
     "peak_trajectory": {
       "buckets": {
         "FALLING": {
-          "n": 301,
+          "n": 299,
           "wins": 123,
-          "win_pct": 40.9,
+          "win_pct": 41.1,
           "mean_net_pct": -1.188
         },
         "RISING": {
-          "n": 347,
+          "n": 344,
           "wins": 179,
-          "win_pct": 51.6,
-          "mean_net_pct": -0.317
+          "win_pct": 52.0,
+          "mean_net_pct": -0.053
         },
         "FLAT": {
-          "n": 78,
+          "n": 77,
           "wins": 28,
-          "win_pct": 35.9,
-          "mean_net_pct": -1.454
+          "win_pct": 36.4,
+          "mean_net_pct": -1.438
         }
       },
-      "n": 726,
+      "n": 720,
       "verdict": "PREDICTIVE",
-      "why": "entries taken at RISING averaged -0.317% vs -1.454% at FLAT (spread 1.137% over n=726) \u2014 reading this before entry would have separated winners from losers",
+      "why": "entries taken at RISING averaged -0.053% vs -1.438% at FLAT (spread 1.385% over n=720) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": false
     },
     "trend": {
       "buckets": {
+        "UP": {
+          "n": 237,
+          "wins": 119,
+          "win_pct": 50.2,
+          "mean_net_pct": -0.494
+        },
         "SIDEWAYS": {
-          "n": 317,
+          "n": 311,
           "wins": 152,
-          "win_pct": 47.9,
-          "mean_net_pct": -0.509
+          "win_pct": 48.9,
+          "mean_net_pct": -0.4
         },
         "DOWN": {
           "n": 205,
           "wins": 68,
           "win_pct": 33.2,
           "mean_net_pct": -1.536
-        },
-        "UP": {
-          "n": 237,
-          "wins": 119,
-          "win_pct": 50.2,
-          "mean_net_pct": -0.747
         }
       },
-      "n": 759,
+      "n": 753,
       "verdict": "PREDICTIVE",
-      "why": "entries taken at SIDEWAYS averaged -0.509% vs -1.536% at DOWN (spread 1.027% over n=759) \u2014 reading this before entry would have separated winners from losers",
+      "why": "entries taken at SIDEWAYS averaged -0.400% vs -1.536% at DOWN (spread 1.136% over n=753) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": true
     },
     "cadence_phase": {
       "buckets": {
         "PEAK_DUE": {
-          "n": 382,
+          "n": 381,
           "wins": 173,
-          "win_pct": 45.3,
-          "mean_net_pct": -0.956
+          "win_pct": 45.4,
+          "mean_net_pct": -0.81
         },
         "MID_CYCLE": {
-          "n": 275,
+          "n": 273,
           "wins": 116,
-          "win_pct": 42.2,
-          "mean_net_pct": -0.866
+          "win_pct": 42.5,
+          "mean_net_pct": -0.798
         },
         "JUST_PEAKED": {
-          "n": 43,
+          "n": 40,
           "wins": 27,
-          "win_pct": 62.8,
-          "mean_net_pct": -0.072
+          "win_pct": 67.5,
+          "mean_net_pct": 0.422
         }
       },
-      "n": 700,
-      "verdict": "NEUTRAL",
-      "why": "no meaningful separation between buckets (spread 0.884% over n=700) \u2014 on this evidence the feature does not yet distinguish good entries",
+      "n": 694,
+      "verdict": "PREDICTIVE",
+      "why": "entries taken at JUST_PEAKED averaged +0.422% vs -0.810% at PEAK_DUE (spread 1.232% over n=694) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": false
     },
     "range_position": {
       "buckets": {
         "LOW_THIRD": {
-          "n": 329,
+          "n": 326,
           "wins": 109,
-          "win_pct": 33.1,
-          "mean_net_pct": -1.959
+          "win_pct": 33.4,
+          "mean_net_pct": -1.828
         },
         "MID_THIRD": {
           "n": 190,
@@ -114,64 +114,65 @@
           "mean_net_pct": -0.133
         },
         "HIGH_THIRD": {
-          "n": 240,
+          "n": 237,
           "wins": 128,
-          "win_pct": 53.3,
-          "mean_net_pct": 0.069
+          "win_pct": 54.0,
+          "mean_net_pct": 0.274
         }
       },
-      "n": 759,
+      "n": 753,
       "verdict": "PREDICTIVE",
-      "why": "entries taken at HIGH_THIRD averaged +0.069% vs -1.959% at LOW_THIRD (spread 2.028% over n=759) \u2014 reading this before entry would have separated winners from losers",
+      "why": "entries taken at HIGH_THIRD averaged +0.274% vs -1.828% at LOW_THIRD (spread 2.102% over n=753) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": false
     },
     "floor_support": {
       "buckets": {
         "AWAY_FROM_FLOOR": {
-          "n": 481,
+          "n": 476,
           "wins": 197,
-          "win_pct": 41.0,
-          "mean_net_pct": -1.23
+          "win_pct": 41.4,
+          "mean_net_pct": -1.074
         },
         "ON_TESTED_FLOOR": {
           "n": 205,
           "wins": 108,
           "win_pct": 52.7,
-          "mean_net_pct": -0.093
+          "mean_net_pct": -0.069
         }
       },
-      "n": 686,
+      "n": 681,
       "verdict": "PREDICTIVE",
-      "why": "entries taken at ON_TESTED_FLOOR averaged -0.093% vs -1.230% at AWAY_FROM_FLOOR (spread 1.137% over n=686) \u2014 reading this before entry would have separated winners from losers",
+      "why": "entries taken at ON_TESTED_FLOOR averaged -0.069% vs -1.074% at AWAY_FROM_FLOOR (spread 1.005% over n=681) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": false
     },
     "ceiling_overhead": {
       "buckets": {
         "CLEAR_OVERHEAD": {
-          "n": 365,
+          "n": 361,
           "wins": 131,
-          "win_pct": 35.9,
-          "mean_net_pct": -1.364
+          "win_pct": 36.3,
+          "mean_net_pct": -1.212
         },
         "UNDER_TESTED_CEILING": {
-          "n": 324,
+          "n": 322,
           "wins": 185,
-          "win_pct": 57.1,
-          "mean_net_pct": -0.163
+          "win_pct": 57.5,
+          "mean_net_pct": -0.05
         }
       },
-      "n": 689,
+      "n": 683,
       "verdict": "PREDICTIVE",
-      "why": "entries taken at UNDER_TESTED_CEILING averaged -0.163% vs -1.364% at CLEAR_OVERHEAD (spread 1.201% over n=689) \u2014 reading this before entry would have separated winners from losers",
+      "why": "entries taken at UNDER_TESTED_CEILING averaged -0.050% vs -1.212% at CLEAR_OVERHEAD (spread 1.162% over n=683) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": false
     }
   },
   "promotion_candidates": [
     "peak_trajectory",
+    "cadence_phase",
     "range_position",
     "floor_support",
     "ceiling_overhead"
   ],
-  "next_step": "EVIDENCE FOUND: peak_trajectory, range_position, floor_support, ceiling_overhead now separate winners from losers and are still not consulted at entry. These are the features to gate on next \u2014 with a knob, a kill switch, and an A/B, never silently.",
+  "next_step": "EVIDENCE FOUND: peak_trajectory, cadence_phase, range_position, floor_support, ceiling_overhead now separate winners from losers and are still not consulted at entry. These are the features to gate on next \u2014 with a knob, a kill switch, and an A/B, never silently.",
   "honesty": "this audit grades entries the system already took; it cannot say what would have happened on entries it never took. It answers 'did reading the graph help?', not 'is the graph complete?'"
 }
