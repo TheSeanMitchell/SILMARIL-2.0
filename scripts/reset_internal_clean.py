@@ -120,7 +120,10 @@ def main():
         # fresh-tree harness the first time this sweep ran: it removed PARAM_CATALOG.json and
         # PROJECT_META.json and nine tripwires went red at once.)
         _NEVER_SWEEP = {"PARAM_CATALOG.json", "PROJECT_META.json", "STORE_REGISTRY.json",
-                        "VENUE_UNIVERSE.json", "WIPE_MARKER.json"}
+                        "VENUE_UNIVERSE.json", "WIPE_MARKER.json",
+                        # 7.2.5: permanent records of things that ALREADY HAPPENED. A reset
+                        # restarts the books; it does not un-happen a harvest or a repair.
+                        "HARVEST_LEDGER.jsonl", "CAPITAL_REPAIR.jsonl", "CANON_MIGRATIONS.jsonl"}
         for _fn, _cls in _reg.items():
             if _cls != "DERIVED" or _fn in _NEVER_SWEEP:
                 continue
@@ -184,6 +187,41 @@ def main():
         print("  store registry rebuilt — classes now authoritative for the preserved set")
     except Exception as _e:
         print(f"  store registry NOT rebuilt ({_e}) — it will refresh on the next cycle")
+    # ── 7.2.5 SAY WHAT HAPPENED, IN PLAIN WORDS ──────────────────────────────────────
+    # The operator has run resets for five months without a clear statement of what survived
+    # and what restarted. That ambiguity is why "did the reset work?" keeps being a question.
+    try:
+        import os as _os
+        def _mb(fn):
+            fp = DATA / fn
+            return (fp.stat().st_size / 1e6) if fp.exists() else 0.0
+        print("")
+        print("=" * 66)
+        print("WHAT THIS RESET DID")
+        print("=" * 66)
+        print("  RESTARTED AT $10,000 (the paper money):")
+        print("    - the four industry books (crypto / stock / metal / energy)")
+        print("    - all 20 sleeves in each book, and the Master account")
+        print("    - every open position and every closed-trade record")
+        print("")
+        print("  KEPT (this is what takes weeks to accumulate — never wiped by a standard reset):")
+        print("    - price_samples.json ......... %6.1f MB of real price history" % _mb("price_samples.json"))
+        print("    - ccxt_samples.json .......... %6.1f MB of exchange history" % _mb("ccxt_samples.json"))
+        print("    - fingerprints, chart history, venue listings, every knob in PARAM_CATALOG")
+        print("    - HARVEST_LEDGER / CAPITAL_REPAIR / CANON_MIGRATIONS (things that happened)")
+        print("")
+        print("  REBUILDS ITSELF ON THE NEXT DAILY RUN (nothing to do):")
+        print("    - GRAPH_READ, PRICE_TRUTH, WARM_START, SLEEVE_VETOES, INSPECTOR, HARVEST")
+        print("")
+        print("  WHAT TO EXPECT NEXT:")
+        print("    - cycle 1: warm start picks each book's opening sleeve from real stored tape")
+        print("    - cycle 1: sleeves begin taking positions (the blackout is skipped when the")
+        print("               surviving tape is already warm)")
+        print("    - the four FUNDED books stay quiet until a sleeve earns 3 real closes.")
+        print("               That is the pyramid law working, not a fault.")
+        print("=" * 66)
+    except Exception:
+        pass
     print("CLEAN. Books pristine at $10k; all graph/fingerprint/favicon history intact.")
 
 if __name__ == "__main__":
