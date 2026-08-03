@@ -3424,6 +3424,79 @@ def t130_harvest_banks_only_real_money():
           f"arm={ok_arm} vault_law={ok_vault_law} wired={ok_wired}")
 
 
+def t131_every_operator_script_is_reachable():
+    """7.2.4 THE SCRIPTS THE OPERATOR COULD NOT RUN.
+
+    The operator deploys exclusively by drag-and-drop through the GitHub web UI. No terminal, no
+    local checkout. Across several releases I shipped a script and wrote "run this once" in the
+    report — and never gave them a way to run it:
+
+        scripts/repair_capital_leak.py    $26,130 of leaked paper capital, unrepaired for 2 days
+        scripts/quarantine_bad_fills.py   the fabricated PNUT/BRENT fills in the learning river
+        scripts/daily_block.py            the auto-block the daily worksheet is built around
+        scripts/click_path_check.js       the harness that proves every chart link opens
+
+    Four scripts, zero workflows. The instructions were not merely inconvenient, they were
+    impossible to follow, and the capital repair sat undone because of it. That is a delivery
+    bug, and it is the kind that no amount of code correctness compensates for.
+
+    THE LAW: if a script exists for the operator to run, it must be reachable from the Actions
+    tab. This test walks scripts/ and asserts that every operator-facing script is either
+    invoked by some workflow, or explicitly listed as internal (imported by other code, not run
+    by hand). A new script with no home now fails the battery instead of failing silently in a
+    report footnote."""
+    wf_dir = ROOT / ".github/workflows"
+    scripts_dir = ROOT / "scripts"
+    if not wf_dir.exists() or not scripts_dir.exists():
+        check("T131 operator scripts reachable (dirs missing)", False, "scripts/ or workflows/ absent")
+        return
+
+    workflows_text = "\n".join(p.read_text() for p in wf_dir.glob("*.yml"))
+
+    # Scripts that are NOT operator-facing. Each is listed with the reason it does not need a
+    # workflow, because a silent exclusion list is how the original gap hid: these are one-time
+    # migrations from superseded releases, already applied, kept only as a historical record.
+    INTERNAL = {
+        "__init__.py",
+        # one-time migrations, already run against this repo, superseded by later releases:
+        "cleanup_5_0_final.py", "cleanup_5_1_docs.py", "cleanup_clutter.py",
+        "cleanup_root.py", "cleanup_root_docs.py", "cleanup_workflows.py",
+        "migrate_alpha_2_2.py", "migrate_to_alpha_3_0.py",
+        # superseded by reset_internal_clean.yml (which HAS a workflow):
+        "pristine_reset.py", "reset_compounders_10k.py", "heal_starting_balance.py",
+    }
+
+    unreachable = []
+    for p in sorted(scripts_dir.glob("*")):
+        if not p.is_file() or p.name in INTERNAL:
+            continue
+        if p.suffix not in (".py", ".js", ".sh"):
+            continue
+        if p.name not in workflows_text:
+            unreachable.append(p.name)
+
+    ok_reachable = not unreachable
+
+    # and the toolbox itself must exist, be manual-only, and be SAFE BY DEFAULT
+    tb = wf_dir / "maintenance.yml"
+    ok_toolbox = tb.exists()
+    ok_safe = ok_dry = ok_no_cron = False
+    if ok_toolbox:
+        t_ = tb.read_text()
+        ok_safe = "DRY RUN" in t_ and "default: 'false'" in t_
+        # a mutating tool must only apply when explicitly asked
+        ok_dry = ("--apply" in t_ and "github.event.inputs.apply" in t_)
+        ok_no_cron = not any(l.strip().startswith("- cron:")
+                             for l in t_.splitlines() if not l.strip().startswith("#"))
+        # commit only on apply
+        ok_dry = ok_dry and "if: ${{ github.event.inputs.apply == 'true' }}" in t_
+
+    check("T131 every operator-facing script is reachable from the Actions tab, and the maintenance lane is manual, dry-run by default, and commits only when applied",
+          ok_reachable and ok_toolbox and ok_safe and ok_dry and ok_no_cron,
+          f"unreachable={unreachable} toolbox={ok_toolbox} safe_default={ok_safe} "
+          f"apply_gated={ok_dry} no_cron={ok_no_cron}")
+
+
 if __name__ == "__main__":
     for t in (t1_core_never_hostage, t2_gekko_sells, t3_stale_no_fiction_fill,
               t4_validation_by_strategy, t5_cooldown_semantics, t6_content_age,
@@ -3485,7 +3558,8 @@ if __name__ == "__main__":
               t127_graph_read_is_one_engine,
               t128_sleeves_are_fed_their_own_thesis,
               t129_capital_is_conserved_and_the_inspector_watches,
-              t130_harvest_banks_only_real_money):
+              t130_harvest_banks_only_real_money,
+              t131_every_operator_script_is_reachable):
         try:
             t()
         except Exception as e:  # a crashing test is a failing test
