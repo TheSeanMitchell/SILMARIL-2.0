@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-03T13:37:51.974915+00:00",
+  "generated_at": "2026-08-03T14:02:02.377115+00:00",
   "what": "does reading the graph before entry actually separate winners from losers? Each closed trade's graph state is reconstructed from the tape AS OF ITS ENTRY (nothing after the entry is visible to the reconstruction, so no hindsight can leak in), then outcomes are graded inside each bucket.",
   "coupling_status": {
     "graph_brain_store": "CHART_INTEL.json",
@@ -17,8 +17,8 @@
     ]
   },
   "trades_seen": 745,
-  "trades_graded": 703,
-  "trades_unreadable": 42,
+  "trades_graded": 707,
+  "trades_unreadable": 38,
   "min_n_for_verdict": 25,
   "features": {
     "peak_trajectory": {
@@ -56,10 +56,10 @@
           "mean_net_pct": -0.809
         },
         "SIDEWAYS": {
-          "n": 281,
+          "n": 285,
           "wins": 136,
-          "win_pct": 48.4,
-          "mean_net_pct": -0.281
+          "win_pct": 47.7,
+          "mean_net_pct": -0.316
         },
         "DOWN": {
           "n": 183,
@@ -68,9 +68,9 @@
           "mean_net_pct": -1.672
         }
       },
-      "n": 703,
+      "n": 707,
       "verdict": "PREDICTIVE",
-      "why": "entries taken at SIDEWAYS averaged -0.281% vs -1.672% at DOWN (spread 1.391% over n=703) \u2014 reading this before entry would have separated winners from losers",
+      "why": "entries taken at SIDEWAYS averaged -0.316% vs -1.672% at DOWN (spread 1.356% over n=707) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": true
     },
     "cadence_phase": {
@@ -82,21 +82,21 @@
           "mean_net_pct": -0.821
         },
         "MID_CYCLE": {
-          "n": 250,
+          "n": 247,
           "wins": 105,
-          "win_pct": 42.0,
-          "mean_net_pct": -0.991
+          "win_pct": 42.5,
+          "mean_net_pct": -0.922
         },
         "JUST_PEAKED": {
-          "n": 40,
+          "n": 43,
           "wins": 26,
-          "win_pct": 65.0,
-          "mean_net_pct": 0.222
+          "win_pct": 60.5,
+          "mean_net_pct": -0.259
         }
       },
       "n": 656,
-      "verdict": "PREDICTIVE",
-      "why": "entries taken at JUST_PEAKED averaged +0.222% vs -0.991% at MID_CYCLE (spread 1.213% over n=656) \u2014 reading this before entry would have separated winners from losers",
+      "verdict": "NEUTRAL",
+      "why": "no meaningful separation between buckets (spread 0.663% over n=656) \u2014 on this evidence the feature does not yet distinguish good entries",
       "read_by_selection": false
     },
     "range_position": {
@@ -108,10 +108,10 @@
           "mean_net_pct": -1.698
         },
         "MID_THIRD": {
-          "n": 180,
+          "n": 184,
           "wins": 84,
-          "win_pct": 46.7,
-          "mean_net_pct": -0.64
+          "win_pct": 45.7,
+          "mean_net_pct": -0.687
         },
         "HIGH_THIRD": {
           "n": 220,
@@ -120,18 +120,18 @@
           "mean_net_pct": 0.234
         }
       },
-      "n": 703,
+      "n": 707,
       "verdict": "PREDICTIVE",
-      "why": "entries taken at HIGH_THIRD averaged +0.234% vs -1.698% at LOW_THIRD (spread 1.932% over n=703) \u2014 reading this before entry would have separated winners from losers",
+      "why": "entries taken at HIGH_THIRD averaged +0.234% vs -1.698% at LOW_THIRD (spread 1.932% over n=707) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": false
     },
     "floor_support": {
       "buckets": {
         "AWAY_FROM_FLOOR": {
-          "n": 448,
+          "n": 449,
           "wins": 179,
-          "win_pct": 40.0,
-          "mean_net_pct": -1.166
+          "win_pct": 39.9,
+          "mean_net_pct": -1.178
         },
         "ON_TESTED_FLOOR": {
           "n": 196,
@@ -140,9 +140,9 @@
           "mean_net_pct": -0.023
         }
       },
-      "n": 644,
+      "n": 645,
       "verdict": "PREDICTIVE",
-      "why": "entries taken at ON_TESTED_FLOOR averaged -0.023% vs -1.166% at AWAY_FROM_FLOOR (spread 1.143% over n=644) \u2014 reading this before entry would have separated winners from losers",
+      "why": "entries taken at ON_TESTED_FLOOR averaged -0.023% vs -1.178% at AWAY_FROM_FLOOR (spread 1.155% over n=645) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": false
     },
     "ceiling_overhead": {
@@ -168,11 +168,10 @@
   },
   "promotion_candidates": [
     "peak_trajectory",
-    "cadence_phase",
     "range_position",
     "floor_support",
     "ceiling_overhead"
   ],
-  "next_step": "EVIDENCE FOUND: peak_trajectory, cadence_phase, range_position, floor_support, ceiling_overhead now separate winners from losers and are still not consulted at entry. These are the features to gate on next \u2014 with a knob, a kill switch, and an A/B, never silently.",
+  "next_step": "EVIDENCE FOUND: peak_trajectory, range_position, floor_support, ceiling_overhead now separate winners from losers and are still not consulted at entry. These are the features to gate on next \u2014 with a knob, a kill switch, and an A/B, never silently.",
   "honesty": "this audit grades entries the system already took; it cannot say what would have happened on entries it never took. It answers 'did reading the graph help?', not 'is the graph complete?'"
 }
