@@ -1,0 +1,166 @@
+name: Maintenance Toolbox (one-time repairs & reports)
+
+# ══ 7.2.4 THE SCRIPTS YOU COULD NOT RUN ══════════════════════════════════════════════
+# The operator deploys exclusively by drag-and-drop through the GitHub web UI. They have no
+# terminal and no local checkout. Across several releases I shipped scripts and then wrote
+# "run this once" in the report:
+#
+#     scripts/repair_capital_leak.py    — $26,130 of leaked paper capital, still unrepaired
+#     scripts/quarantine_bad_fills.py   — the fabricated PNUT/BRENT fills in the learning river
+#     scripts/daily_block.py            — the auto-block for the daily worksheet
+#     scripts/click_path_check.js       — the harness that proves every chart link works
+#
+# NONE of them had a workflow. They were unrunnable, and the instructions were therefore
+# useless — the capital repair sat undone for two days because of it. This lane exists so that
+# every operator-facing script is reachable from the Actions tab with a dropdown.
+#
+# SAFE BY DEFAULT: every mutating tool runs DRY-RUN unless `apply` is set to true, and nothing
+# is committed on a dry run. Read-only tools ignore `apply` entirely.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tool:
+        description: 'Which maintenance tool to run'
+        required: true
+        default: 'repair_capital_leak'
+        type: choice
+        options:
+          - repair_capital_leak      # restore paper capital deducted for positions never created
+          - quarantine_bad_fills     # exclude fabricated limit fills from the learning river
+          - daily_block              # print the auto-block for the daily worksheet (read-only)
+          - click_path_check         # prove every chart link actually opens (read-only)
+          - inspector                # run the pattern-recognition audit now (read-only)
+          - harvest_now              # bank realized profit into the non-spendable vault
+          - manual_sweep             # force the SWEEP switch on a strong market day
+          - backfill_history         # jumpstart fingerprints/charts from stored history
+          - train_from_backtest      # ingest backtest outcomes into agent training
+      apply:
+        description: 'false = DRY RUN (default, changes nothing) · true = actually apply'
+        required: true
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+
+# Own lane group, cancel-in-progress false — same law as every other workflow: runs may stack,
+# a running job is never killed, and state safety comes from atomic writes + rebase-retry push.
+concurrency:
+  group: silmaril-maintenance
+  cancel-in-progress: false
+
+jobs:
+  run-tool:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🔒 SERIAL LANE LOCK — wait for other state lanes to finish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Never cancel anyone, never overlap a state writer. Same mutex the other lanes use.
+          for i in $(seq 1 60); do
+            BUSY=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?status=in_progress&per_page=50" \
+              --jq '[.workflow_runs[] | select(.id != ${{ github.run_id }})
+                     | select(.name | test("Daily Run|Reset Internal|Compact|Backfill|Venue"))] | length' 2>/dev/null || echo 0)
+            if [ "${BUSY:-0}" = "0" ]; then echo "lanes clear"; break; fi
+            echo "waiting on $BUSY state lane(s)… ($i/60)"; sleep 20
+          done
+
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Install deps
+        run: pip install -r requirements.txt || true
+
+      - name: Show what is about to happen
+        run: |
+          echo "TOOL : ${{ github.event.inputs.tool }}"
+          echo "APPLY: ${{ github.event.inputs.apply }}"
+          if [ "${{ github.event.inputs.apply }}" != "true" ]; then
+            echo "::notice::DRY RUN — nothing will be written or committed. Re-run with apply=true to act."
+          fi
+
+      # ── repair_capital_leak ────────────────────────────────────────────────────────
+      - name: 💰 Repair capital leak
+        if: ${{ github.event.inputs.tool == 'repair_capital_leak' }}
+        run: |
+          if [ "${{ github.event.inputs.apply }}" = "true" ]; then
+            python scripts/repair_capital_leak.py docs/data --apply
+          else
+            python scripts/repair_capital_leak.py docs/data
+          fi
+
+      # ── quarantine_bad_fills ───────────────────────────────────────────────────────
+      - name: 🧹 Quarantine fabricated fills
+        if: ${{ github.event.inputs.tool == 'quarantine_bad_fills' }}
+        run: |
+          if [ "${{ github.event.inputs.apply }}" = "true" ]; then
+            python scripts/quarantine_bad_fills.py docs/data --apply
+          else
+            python scripts/quarantine_bad_fills.py docs/data
+          fi
+
+      # ── read-only reports ──────────────────────────────────────────────────────────
+      - name: 📋 Daily block (paste into the worksheet)
+        if: ${{ github.event.inputs.tool == 'daily_block' }}
+        run: python scripts/daily_block.py docs/data
+
+      - name: 🖱 Click path check (every chart link)
+        if: ${{ github.event.inputs.tool == 'click_path_check' }}
+        run: node scripts/click_path_check.js docs
+
+      - name: 🔎 Inspector (pattern-recognition audit)
+        if: ${{ github.event.inputs.tool == 'inspector' }}
+        run: |
+          python -m silmaril.execution.inspector docs/data
+
+      # ── harvest ────────────────────────────────────────────────────────────────────
+      - name: 🏦 Harvest realized profit into the vault
+        if: ${{ github.event.inputs.tool == 'harvest_now' }}
+        run: |
+          if [ "${{ github.event.inputs.apply }}" = "true" ]; then
+            python -m silmaril.execution.harvest docs/data
+          else
+            echo "::notice::Harvest is a WRITE. Re-run with apply=true to bank realized profit."
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          # dry run: report what WOULD be banked without touching the store
+          lab = json.loads(Path('docs/data/STRATEGY_LAB.json').read_text())
+          for k, b in sorted((lab.get('sleeves') or {}).items(),
+                             key=lambda kv: -(kv[1].get('realized_pnl') or 0))[:12]:
+              real = float(b.get('realized_pnl') or 0)
+              vault = float(b.get('vault_usd') or 0)
+              print("  %-11s realized $%9.2f  already vaulted $%8.2f  bankable now $%8.2f"
+                    % (k, real, vault, max(0.0, real - vault)))
+          PY
+          fi
+
+      # ── the three legacy-but-live tools the operator has asked about ───────────────
+      - name: 🧹 Manual sweep
+        if: ${{ github.event.inputs.tool == 'manual_sweep' }}
+        run: python scripts/manual_sweep.py
+
+      - name: 📚 Backfill history (jumpstart fingerprints & charts)
+        if: ${{ github.event.inputs.tool == 'backfill_history' }}
+        run: python scripts/backfill_history.py
+
+      - name: 🎓 Train from backtest
+        if: ${{ github.event.inputs.tool == 'train_from_backtest' }}
+        run: python scripts/train_from_backtest.py --ingest-only
+
+      # ── commit, only when something was actually applied ───────────────────────────
+      - name: Commit if changed
+        if: ${{ github.event.inputs.apply == 'true' }}
+        run: |
+          git config user.name "silmaril-bot"
+          git config user.email "bot@silmaril"
+          git add -A
+          git commit -m "maintenance: ${{ github.event.inputs.tool }} (applied)" || echo "nothing to commit"
+          n=0; until [ $n -ge 5 ]; do
+            git pull --rebase origin main || git rebase --abort || true
+            git push && break
+            n=$((n+1)); sleep $((n*7))
+          done
