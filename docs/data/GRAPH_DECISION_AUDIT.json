@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-03T15:17:04.660736+00:00",
+  "generated_at": "2026-08-03T15:39:22.811619+00:00",
   "what": "does reading the graph before entry actually separate winners from losers? Each closed trade's graph state is reconstructed from the tape AS OF ITS ENTRY (nothing after the entry is visible to the reconstruction, so no hindsight can leak in), then outcomes are graded inside each bucket.",
   "coupling_status": {
     "graph_brain_store": "CHART_INTEL.json",
@@ -16,9 +16,9 @@
       "ceiling_overhead"
     ]
   },
-  "trades_seen": 769,
-  "trades_graded": 719,
-  "trades_unreadable": 50,
+  "trades_seen": 773,
+  "trades_graded": 721,
+  "trades_unreadable": 52,
   "min_n_for_verdict": 25,
   "features": {
     "peak_trajectory": {
@@ -56,10 +56,10 @@
           "mean_net_pct": -0.64
         },
         "SIDEWAYS": {
-          "n": 297,
-          "wins": 142,
-          "win_pct": 47.8,
-          "mean_net_pct": -0.407
+          "n": 299,
+          "wins": 144,
+          "win_pct": 48.2,
+          "mean_net_pct": -0.391
         },
         "DOWN": {
           "n": 184,
@@ -68,9 +68,9 @@
           "mean_net_pct": -1.659
         }
       },
-      "n": 719,
+      "n": 721,
       "verdict": "PREDICTIVE",
-      "why": "entries taken at SIDEWAYS averaged -0.407% vs -1.659% at DOWN (spread 1.252% over n=719) \u2014 reading this before entry would have separated winners from losers",
+      "why": "entries taken at SIDEWAYS averaged -0.391% vs -1.659% at DOWN (spread 1.268% over n=721) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": true
     },
     "cadence_phase": {
@@ -82,30 +82,30 @@
           "mean_net_pct": -0.776
         },
         "MID_CYCLE": {
-          "n": 250,
+          "n": 253,
           "wins": 106,
-          "win_pct": 42.4,
-          "mean_net_pct": -0.916
+          "win_pct": 41.9,
+          "mean_net_pct": -0.984
         },
         "JUST_PEAKED": {
-          "n": 45,
+          "n": 42,
           "wins": 27,
-          "win_pct": 60.0,
-          "mean_net_pct": -0.29
+          "win_pct": 64.3,
+          "mean_net_pct": 0.165
         }
       },
       "n": 664,
-      "verdict": "NEUTRAL",
-      "why": "no meaningful separation between buckets (spread 0.626% over n=664) \u2014 on this evidence the feature does not yet distinguish good entries",
+      "verdict": "PREDICTIVE",
+      "why": "entries taken at JUST_PEAKED averaged +0.165% vs -0.984% at MID_CYCLE (spread 1.149% over n=664) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": false
     },
     "range_position": {
       "buckets": {
         "LOW_THIRD": {
-          "n": 310,
-          "wins": 111,
-          "win_pct": 35.8,
-          "mean_net_pct": -1.759
+          "n": 312,
+          "wins": 113,
+          "win_pct": 36.2,
+          "mean_net_pct": -1.735
         },
         "MID_THIRD": {
           "n": 181,
@@ -120,9 +120,9 @@
           "mean_net_pct": 0.262
         }
       },
-      "n": 719,
+      "n": 721,
       "verdict": "PREDICTIVE",
-      "why": "entries taken at HIGH_THIRD averaged +0.262% vs -1.759% at LOW_THIRD (spread 2.021% over n=719) \u2014 reading this before entry would have separated winners from losers",
+      "why": "entries taken at HIGH_THIRD averaged +0.262% vs -1.735% at LOW_THIRD (spread 1.997% over n=721) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": false
     },
     "floor_support": {
@@ -168,10 +168,11 @@
   },
   "promotion_candidates": [
     "peak_trajectory",
+    "cadence_phase",
     "range_position",
     "floor_support",
     "ceiling_overhead"
   ],
-  "next_step": "EVIDENCE FOUND: peak_trajectory, range_position, floor_support, ceiling_overhead now separate winners from losers and are still not consulted at entry. These are the features to gate on next \u2014 with a knob, a kill switch, and an A/B, never silently.",
+  "next_step": "EVIDENCE FOUND: peak_trajectory, cadence_phase, range_position, floor_support, ceiling_overhead now separate winners from losers and are still not consulted at entry. These are the features to gate on next \u2014 with a knob, a kill switch, and an A/B, never silently.",
   "honesty": "this audit grades entries the system already took; it cannot say what would have happened on entries it never took. It answers 'did reading the graph help?', not 'is the graph complete?'"
 }
