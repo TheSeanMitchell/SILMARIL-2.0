@@ -1,15 +1,31 @@
 {
-  "generated_at": "2026-08-04T00:38:22.414299+00:00",
+  "generated_at": "2026-08-04T00:48:53.291362+00:00",
   "what": "a skeptic that reads the RECORD rather than the laws. selftest asks 'is each law still enforced?'; the inspector asks 'does this look like a working system?' \u2014 on real data, every cycle.",
-  "closed_trades_examined": 1,
-  "symbols_with_structure": 367,
+  "closed_trades_examined": 12,
+  "symbols_with_structure": 366,
   "counts": {
     "HIGH": 2,
     "MEDIUM": 1,
-    "INFO": 1
+    "INFO": 2
   },
   "verdict": "ATTENTION \u2014 2 critical/high finding(s)",
-  "structure_pattern": {},
+  "structure_pattern": {
+    "band_low": {
+      "n": 6,
+      "mean_net_pct": -0.351,
+      "win_pct": 50.0
+    },
+    "support_weak": {
+      "n": 5,
+      "mean_net_pct": -0.077,
+      "win_pct": 60.0
+    },
+    "break_intact": {
+      "n": 6,
+      "mean_net_pct": -0.22,
+      "win_pct": 50.0
+    }
+  },
   "findings": [
     {
       "severity": "HIGH",
@@ -20,22 +36,22 @@
         {
           "sym": "OP-USD",
           "v_round_trips": 48,
-          "prints": 551
+          "prints": 552
         },
         {
           "sym": "1INCH-USD",
           "v_round_trips": 24,
-          "prints": 551
+          "prints": 552
         },
         {
           "sym": "ARKM-USD",
           "v_round_trips": 16,
-          "prints": 554
+          "prints": 555
         },
         {
           "sym": "MOG-USD",
           "v_round_trips": 9,
-          "prints": 458
+          "prints": 459
         }
       ],
       "action": "Check canon_keys rejections (FROZEN/DEAD/OUT_OF_HOURS) for these symbols."
@@ -43,101 +59,71 @@
     {
       "severity": "HIGH",
       "code": "SILENT_SLEEVE",
-      "title": "30 sleeve-books took no trades AND refused nothing",
+      "title": "12 sleeve-books took no trades AND refused nothing",
       "detail": "A sleeve that is merely picky leaves refusals behind. Zero trades with zero refusals means it never saw a candidate \u2014 the disconnection pattern that hid L/N/O/Q/R/S/T for three releases.",
       "evidence": [
-        "energy:A",
-        "energy:B",
-        "energy:C",
         "energy:D",
         "energy:E",
         "energy:F",
-        "energy:H",
-        "energy:I",
         "energy:J",
-        "energy:K",
-        "metal:A",
-        "metal:B",
-        "metal:C",
         "metal:D",
         "metal:E",
         "metal:F",
-        "metal:H",
-        "metal:I",
         "metal:J",
-        "metal:K",
-        "stock:A",
-        "stock:B",
-        "stock:C",
-        "stock:D"
+        "stock:D",
+        "stock:E",
+        "stock:F",
+        "stock:J"
       ],
       "action": "Check what feeds this sleeve's candidate pool; a thesis sleeve should scan its own universe, not inherit the mean-reversion dip funnel."
     },
     {
       "severity": "MEDIUM",
       "code": "HEADLINE_SIGN_FLIP",
-      "title": "13 sleeves show a headline with the opposite sign to realized P&L",
+      "title": "7 sleeves show a headline with the opposite sign to realized P&L",
       "detail": "The headline is equity-based and includes unrealized marks. Law 1 says realized fee-paid P&L is the only score. Quoting the headline is how 'M FLOOR ARTIST is green in all four books' was said about a sleeve that was net negative.",
       "evidence": [
         {
           "sleeve": "crypto:E",
-          "headline_pct": 0.914,
-          "realized_pct": 0.0,
-          "closed": 0
-        },
-        {
-          "sleeve": "crypto:K",
-          "headline_pct": 0.914,
-          "realized_pct": 0.0,
-          "closed": 0
-        },
-        {
-          "sleeve": "crypto:I",
-          "headline_pct": 0.769,
+          "headline_pct": 0.529,
           "realized_pct": 0.0,
           "closed": 0
         },
         {
           "sleeve": "crypto:D",
-          "headline_pct": 0.663,
+          "headline_pct": 0.359,
           "realized_pct": 0.0,
           "closed": 0
         },
         {
           "sleeve": "crypto:F",
-          "headline_pct": 0.663,
+          "headline_pct": 0.359,
           "realized_pct": 0.0,
           "closed": 0
         },
         {
           "sleeve": "crypto:N",
-          "headline_pct": 0.373,
+          "headline_pct": 0.173,
           "realized_pct": 0.0,
           "closed": 0
         },
         {
           "sleeve": "crypto:O",
-          "headline_pct": 0.373,
+          "headline_pct": 0.173,
           "realized_pct": 0.0,
           "closed": 0
         },
         {
-          "sleeve": "crypto:B",
-          "headline_pct": 0.331,
+          "sleeve": "crypto:M",
+          "headline_pct": 0.097,
           "realized_pct": 0.0,
           "closed": 0
         },
         {
-          "sleeve": "crypto:C",
-          "headline_pct": 0.331,
-          "realized_pct": 0.0,
-          "closed": 0
-        },
-        {
-          "sleeve": "crypto:A",
-          "headline_pct": 0.33,
-          "realized_pct": 0.0,
-          "closed": 0
+          "sleeve": "crypto:H",
+          "headline_pct": -0.518,
+          "realized_pct": 0.129,
+          "closed": 1
         }
       ],
       "action": "Judge sleeves on realized_pct. Treat the headline as mark-to-market only."
@@ -145,10 +131,36 @@
     {
       "severity": "INFO",
       "code": "GIVEBACK_OK",
-      "title": "no winner closed negative; median give-back 1.92%",
+      "title": "no winner closed negative; median give-back 1.51%",
       "detail": "The give-back governor is holding.",
       "evidence": [],
       "action": null
+    },
+    {
+      "severity": "INFO",
+      "code": "STRUCTURE_PATTERN",
+      "title": "graded 7 closed trades against the structure at their symbol; no separation yet",
+      "detail": "This is the steering signal: which chart states preceded winners and which preceded losers. It is a CURRENT-structure approximation, not an entry-time reconstruction, so treat it as a direction to investigate rather than proof.",
+      "evidence": [
+        {
+          "band_low": {
+            "n": 6,
+            "mean_net_pct": -0.351,
+            "win_pct": 50.0
+          },
+          "support_weak": {
+            "n": 5,
+            "mean_net_pct": -0.077,
+            "win_pct": 60.0
+          },
+          "break_intact": {
+            "n": 6,
+            "mean_net_pct": -0.22,
+            "win_pct": 50.0
+          }
+        }
+      ],
+      "action": "Keep collecting; no bucket separates yet."
     }
   ],
   "honesty": "this auditor changes no behaviour and takes no trade. Its structure patterns use CURRENT structure, not the structure at entry time, so they point at questions rather than answering them."
