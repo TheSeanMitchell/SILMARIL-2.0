@@ -1,21 +1,21 @@
 {
-  "generated_at": "2026-08-04T12:10:55.163199+00:00",
+  "generated_at": "2026-08-04T12:30:14.873876+00:00",
   "marks_health": {
     "marked": 202,
     "entry_warm": 202,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.8,
+    "newest_sample_age_min": 1.2,
     "state": "OK",
     "oscillating": 8,
     "oscillating_syms": [
       "1INCH-USD",
       "AIXBT-USD",
       "ARKM-USD",
-      "AVNT-USD",
-      "NPC-USD",
       "OP-USD",
       "STRK-USD",
-      "WIF-USD"
+      "UNI-USD",
+      "WIF-USD",
+      "XOM"
     ]
   },
   "equity_market": {
@@ -54,7 +54,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-08-04T12:10:49.097438+00:00",
+    "generated_at": "2026-08-04T12:30:09.891525+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -122,53 +122,67 @@
   "crypto": {
     "funnel": {
       "seen": 180,
-      "entry_warm": 172,
-      "candidates_after_gates": 4,
+      "entry_warm": 173,
+      "candidates_after_gates": 6,
       "bought": 0,
       "rejections": {
-        "position cap 2/2 for crypto": 1
+        "post-STOP cooldown": 1,
+        "position cap 1/2 for crypto": 1,
+        "UNTRADEABLE:evidence": 1
       },
       "armed": true,
       "arming_why": "armed \u2014 promoted sleeve K (POSITION TRADER) has real closed trades"
     },
     "decision_trace_live": [
       {
-        "sym": "HBAR-USD",
-        "dip_pct": -0.45,
-        "conviction": 0.0375,
+        "sym": "ATOM-USD",
+        "dip_pct": -0.65,
+        "conviction": 0.0544,
+        "fate": "candidate"
+      },
+      {
+        "sym": "EOS-USD",
+        "dip_pct": -0.52,
+        "conviction": 0.0432,
         "fate": "candidate"
       },
       {
         "sym": "YFI-USD",
-        "dip_pct": -0.55,
-        "conviction": 0.0455,
+        "dip_pct": -0.88,
+        "conviction": 0.0736,
         "fate": "candidate"
       },
       {
         "sym": "XMR-USD",
-        "dip_pct": -0.46,
-        "conviction": 0.0383,
+        "dip_pct": -0.51,
+        "conviction": 0.0422,
+        "fate": "candidate"
+      },
+      {
+        "sym": "NEO-USD",
+        "dip_pct": -0.52,
+        "conviction": 0.0432,
         "fate": "candidate"
       },
       {
         "sym": "GALA-USD",
-        "dip_pct": -0.85,
-        "conviction": 0.0706,
+        "dip_pct": -1.04,
+        "conviction": 0.0863,
         "fate": "candidate"
       }
     ],
-    "equity": 9900.13,
-    "cash": 6557.71,
-    "realized_pnl": 0.0,
+    "equity": 9890.05,
+    "cash": 8222.69,
+    "realized_pnl": -94.71,
     "reserve_usd": 0.0,
-    "return_pct": -1.0,
-    "open_positions": 2,
+    "return_pct": -1.1,
+    "open_positions": 1,
     "positions": [
       {
         "sym": "INJ-USD",
         "qty": 337.1825,
         "entry": 4.990175,
-        "mark": 4.944,
+        "mark": 4.945,
         "t": "2026-08-04T07:39:54.583327+00:00",
         "wager_usd": 1682.6,
         "target": 0.0381,
@@ -177,25 +191,37 @@
         "style": null,
         "entry_regime": null,
         "exp_net_usd": 56.03,
-        "upl_pct": -0.93
-      },
-      {
-        "sym": "MKR-USD",
-        "qty": 1.1032,
-        "entry": 1595.017897,
-        "mark": 1518.606201,
-        "t": "2026-08-04T07:59:10.489338+00:00",
-        "wager_usd": 1759.69,
-        "target": 0.034,
-        "stop": 0.051000000000000004,
-        "conviction": 0.1024,
-        "style": null,
-        "entry_regime": null,
-        "exp_net_usd": 52.12,
-        "upl_pct": -4.79
+        "upl_pct": -0.91
       }
     ],
     "recent_trades": [
+      {
+        "side": "SELL",
+        "sym": "MKR-USD",
+        "integrity": "ok",
+        "qty": 1.103243,
+        "price": 1509.166846,
+        "pnl": -94.71,
+        "realized_pct": -5.382,
+        "t": "2026-08-04T12:30:10.345146+00:00",
+        "wager_usd": 1759.69,
+        "fee_pct": 0.263,
+        "venue": "unroutable",
+        "venue_routed_by": "not present in the venue map \u2014 not buyable on Binance.US/Coinbase/Robinhood",
+        "fee_usd": 4.6255,
+        "realized_gross_pct": -5.133,
+        "target_pct": 3.4,
+        "target_net_pct": 3.129,
+        "pct_of_goal": -172.0,
+        "stop_pct": 5.1,
+        "best_pct": 0.131,
+        "left_on_table_pct": 5.265,
+        "exit_reason": "STOP",
+        "mark_seen": 1511.1529541,
+        "champion_entry": null,
+        "champion_exit": "MR_d4_t5_s12",
+        "champion_changed": false
+      },
       {
         "side": "BUY",
         "sym": "MKR-USD",
@@ -233,7 +259,7 @@
   "stock": {
     "funnel": {
       "seen": 14,
-      "entry_warm": 14,
+      "entry_warm": 13,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {},
@@ -255,33 +281,26 @@
   "aggressive": {
     "funnel": {
       "seen": 180,
-      "entry_warm": 172,
-      "candidates_after_gates": 1,
+      "entry_warm": 173,
+      "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {},
       "armed": true,
       "arming_why": "armed"
     },
-    "decision_trace_live": [
-      {
-        "sym": "MKR-USD",
-        "dip_pct": -4.11,
-        "conviction": 0.3423,
-        "fate": "candidate"
-      }
-    ],
-    "equity": 9997.3,
+    "decision_trace_live": [],
+    "equity": 9990.44,
     "cash": 8600.0,
     "realized_pnl": 0.0,
     "reserve_usd": 0.0,
-    "return_pct": -0.03,
+    "return_pct": -0.1,
     "open_positions": 1,
     "positions": [
       {
         "sym": "MKR-USD",
         "qty": 0.9201,
         "entry": 1521.54577,
-        "mark": 1518.606201,
+        "mark": 1511.152954,
         "t": "2026-08-04T12:10:52.631224+00:00",
         "wager_usd": 1400.0,
         "target": 0.02,
@@ -290,7 +309,7 @@
         "style": null,
         "entry_regime": null,
         "exp_net_usd": 22.03,
-        "upl_pct": -0.19
+        "upl_pct": -0.68
       }
     ],
     "recent_trades": [
@@ -322,7 +341,7 @@
       "bought": 0,
       "rejections": {},
       "armed": false,
-      "arming_why": "OBSERVE \u2014 pyramid law: the metal workshop must promote a sleeve on real closed trades before this book may open. Best sleeve so far: J \u00b7 0/3 closes since wipe \u00b7 status PROVISIONAL. The book still scans, marks and manages exits; the sleeves are earning its license right now."
+      "arming_why": "OBSERVE \u2014 pyramid law: the metal workshop must promote a sleeve on real closed trades before this book may open. Best sleeve so far: A \u00b7 0/3 closes since wipe \u00b7 status PROVISIONAL. The book still scans, marks and manages exits; the sleeves are earning its license right now."
     },
     "decision_trace_live": [],
     "equity": 10000.0,
@@ -352,20 +371,20 @@
     "decision_trace_live": [
       {
         "sym": "WTI",
-        "dip_pct": -5.31,
-        "conviction": 0.4426,
+        "dip_pct": -2.77,
+        "conviction": 0.2308,
         "fate": "candidate"
       },
       {
         "sym": "BRENT",
-        "dip_pct": -4.91,
-        "conviction": 0.4093,
+        "dip_pct": -2.31,
+        "conviction": 0.1927,
         "fate": "candidate"
       },
       {
         "sym": "NATGAS",
-        "dip_pct": -1.06,
-        "conviction": 0.0884,
+        "dip_pct": -1.39,
+        "conviction": 0.1156,
         "fate": "candidate"
       }
     ],
@@ -380,21 +399,21 @@
     "tradeable_universe": 3,
     "universe_seen": 3
   },
-  "combined_equity": 39900.13,
-  "combined_realized_pnl": 0.0,
+  "combined_equity": 39890.05,
+  "combined_realized_pnl": -94.71,
   "backtest_3day_crypto": {
     "universe_total": 1075,
     "tradeable": 54,
     "ghosts_excluded": 1021,
-    "trades": 170,
-    "win_rate_pct": 62.9,
-    "mean_net_pct": -0.301,
+    "trades": 171,
+    "win_rate_pct": 63.2,
+    "mean_net_pct": -0.286,
     "exits": {
-      "TAKE": 116,
+      "TAKE": 117,
       "STOP": 54,
       "TIMEOUT": 0
     },
-    "equity_after": 9487.49
+    "equity_after": 9509.45
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
