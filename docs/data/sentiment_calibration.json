@@ -1,71 +1,80 @@
 {
   "version": "sentiment-ledger-1.0",
-  "generated_at": "2026-08-04T23:38:21.457513+00:00",
-  "ledger_rows": 625,
-  "recorded_this_cycle": 0,
-  "graded_this_cycle": 0,
+  "generated_at": "2026-08-05T07:35:52.183258+00:00",
+  "ledger_rows": 1250,
+  "recorded_this_cycle": 625,
+  "graded_this_cycle": 89,
   "calibration": {
-    "graded_total": 0,
-    "graded_clean": 0,
+    "graded_total": 89,
+    "graded_clean": 89,
     "graded_stale": 0,
     "by_bin": [
       {
         "bin": "very_neg",
-        "n": 0,
-        "mean_return": 0.0,
+        "n": 1,
+        "mean_return": -0.24,
         "hit_rate": 0.0,
         "t_stat": 0.0,
-        "verdict": "none"
+        "verdict": "thin"
       },
       {
         "bin": "neg",
-        "n": 0,
-        "mean_return": 0.0,
-        "hit_rate": 0.0,
-        "t_stat": 0.0,
-        "verdict": "none"
+        "n": 12,
+        "mean_return": -0.338,
+        "hit_rate": 0.1667,
+        "t_stat": -3.64,
+        "verdict": "significant"
       },
       {
         "bin": "neutral",
-        "n": 0,
-        "mean_return": 0.0,
-        "hit_rate": 0.0,
-        "t_stat": 0.0,
-        "verdict": "none"
+        "n": 39,
+        "mean_return": -0.4649,
+        "hit_rate": 0.1795,
+        "t_stat": -2.008,
+        "verdict": "significant"
       },
       {
         "bin": "pos",
-        "n": 0,
-        "mean_return": 0.0,
-        "hit_rate": 0.0,
-        "t_stat": 0.0,
-        "verdict": "none"
+        "n": 29,
+        "mean_return": -0.3033,
+        "hit_rate": 0.1724,
+        "t_stat": -3.247,
+        "verdict": "significant"
       },
       {
         "bin": "very_pos",
-        "n": 0,
-        "mean_return": 0.0,
-        "hit_rate": 0.0,
-        "t_stat": 0.0,
-        "verdict": "none"
+        "n": 8,
+        "mean_return": -0.4888,
+        "hit_rate": 0.25,
+        "t_stat": -2.531,
+        "verdict": "significant"
       }
     ],
     "overhype": {
-      "strong_pos_n": 0,
-      "overhype_rate": null,
-      "legit_rate": null,
-      "strong_neg_n": 0,
-      "bad_news_confirmed_rate": null
+      "strong_pos_n": 8,
+      "overhype_rate": 0.75,
+      "legit_rate": 0.25,
+      "strong_neg_n": 1,
+      "bad_news_confirmed_rate": 1.0
     },
-    "by_realized_horizon": [],
-    "sentiment_return_correlation": null
+    "by_realized_horizon": [
+      {
+        "horizon": "1d",
+        "n": 89,
+        "mean_return": -0.3948,
+        "hit_rate": 0.1798,
+        "t_stat": -3.641,
+        "verdict": "significant"
+      }
+    ],
+    "sentiment_return_correlation": -0.0044
   },
   "responsiveness_now": {
     "n_with_sentiment": 625,
-    "avg_sentiment_on_BUY_consensus": 0.1349,
-    "avg_sentiment_on_SELL_consensus": -0.064,
-    "avg_sentiment_on_HOLD_ABSTAIN": 0.0051,
-    "sentiment_vs_consensus_score_corr": 0.4387
+    "avg_sentiment_on_BUY_consensus": 0.0425,
+    "avg_sentiment_on_SELL_consensus": -0.0326,
+    "avg_sentiment_on_HOLD_ABSTAIN": 0.0108,
+    "sentiment_vs_consensus_score_corr": 0.2268
   },
   "deal_journal_proxy": {
     "news_vs_silence": {
@@ -87,8 +96,9 @@
     "deals_count": 0
   },
   "notes": [
-    "Calibration is ACCUMULATING. Sentiment was never persisted historically, so there is no backfill \u2014 grades begin from clean forward data. Expect ~10-20 trading days before bin verdicts leave 'thin'.",
-    "Live responsiveness: avg sentiment is 0.1349 on BUY consensus vs 0.0051 on HOLD/ABSTAIN \u2014 the news\u2192vote wire is active.",
-    "This cycle: recorded 0 ticker-day snapshots, graded 0 prior rows. Ledger holds 625 rows."
+    "Sentiment is not yet predictive of realized return (r=-0.0044, 89 clean).",
+    "Of 8 strongly-positive-sentiment names, 75% FELL (overhype) vs 25% rose (legit signal).",
+    "Live responsiveness: avg sentiment is 0.0425 on BUY consensus vs 0.0108 on HOLD/ABSTAIN \u2014 the news\u2192vote wire is active.",
+    "This cycle: recorded 625 ticker-day snapshots, graded 89 prior rows. Ledger holds 1250 rows."
   ]
 }
