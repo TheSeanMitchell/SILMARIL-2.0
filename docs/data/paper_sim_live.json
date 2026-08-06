@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-08-06T11:36:47.681563+00:00",
+  "generated_at": "2026-08-06T11:56:24.302379+00:00",
   "marks_health": {
-    "marked": 206,
-    "entry_warm": 206,
+    "marked": 205,
+    "entry_warm": 205,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 1.2,
+    "newest_sample_age_min": 0.4,
     "state": "OK",
-    "oscillating": 10,
+    "oscillating": 11,
     "oscillating_syms": [
       "1000MOG-USD",
       "1INCH-USD",
@@ -14,10 +14,11 @@
       "ARKM-USD",
       "COTI-USD",
       "CTSI-USD",
+      "DGB-USD",
       "MOG-USD",
       "NEIRO-USD",
       "OP-USD",
-      "RENDER-USD"
+      "RARE-USD"
     ]
   },
   "equity_market": {
@@ -56,7 +57,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-08-06T11:36:42.488340+00:00",
+    "generated_at": "2026-08-06T11:56:19.616323+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -138,24 +139,15 @@
   },
   "crypto": {
     "funnel": {
-      "seen": 184,
-      "entry_warm": 174,
-      "candidates_after_gates": 1,
+      "seen": 183,
+      "entry_warm": 172,
+      "candidates_after_gates": 0,
       "bought": 0,
-      "rejections": {
-        "position cap 2/2 for crypto": 1
-      },
+      "rejections": {},
       "armed": true,
       "arming_why": "armed \u2014 promoted sleeve K (POSITION TRADER) has real closed trades"
     },
-    "decision_trace_live": [
-      {
-        "sym": "ENJ-USD",
-        "dip_pct": -0.88,
-        "conviction": 0.0731,
-        "fate": "candidate"
-      }
-    ],
+    "decision_trace_live": [],
     "equity": 9701.79,
     "cash": 6361.66,
     "realized_pnl": -204.56,
@@ -442,8 +434,8 @@
         "pred": null
       }
     ],
-    "tradeable_universe": 53,
-    "universe_seen": 184
+    "tradeable_universe": 52,
+    "universe_seen": 183
   },
   "stock": {
     "funnel": {
@@ -545,8 +537,8 @@
   },
   "aggressive": {
     "funnel": {
-      "seen": 184,
-      "entry_warm": 174,
+      "seen": 183,
+      "entry_warm": 172,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {},
@@ -981,18 +973,18 @@
         "pred": null
       }
     ],
-    "tradeable_universe": 53,
-    "universe_seen": 184,
+    "tradeable_universe": 52,
+    "universe_seen": 183,
     "display_name": "GEKKO"
   },
   "metal": {
     "funnel": {
       "seen": 5,
       "entry_warm": 5,
-      "candidates_after_gates": 1,
+      "candidates_after_gates": 2,
       "bought": 0,
       "rejections": {
-        "regime throttle": 1,
+        "position cap 3/4 for metal": 1,
         "UNTRADEABLE:evidence": 1
       },
       "armed": true,
@@ -1001,14 +993,14 @@
     "decision_trace_live": [
       {
         "sym": "XCU",
-        "dip_pct": -1.33,
-        "conviction": 0.1107,
+        "dip_pct": -1.12,
+        "conviction": 0.0931,
         "fate": "candidate"
       },
       {
         "sym": "XPD",
-        "dip_pct": -0.86,
-        "conviction": 0.072,
+        "dip_pct": -0.83,
+        "conviction": 0.069,
         "fate": "candidate"
       }
     ],
@@ -1287,13 +1279,22 @@
     "funnel": {
       "seen": 3,
       "entry_warm": 3,
-      "candidates_after_gates": 0,
+      "candidates_after_gates": 1,
       "bought": 0,
-      "rejections": {},
+      "rejections": {
+        "UNTRADEABLE:evidence": 1
+      },
       "armed": true,
       "arming_why": "armed \u2014 promoted sleeve G (GEOMETRY SNIPER) has real closed trades"
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "BRENT",
+        "dip_pct": -0.9,
+        "conviction": 0.0747,
+        "fate": "candidate"
+      }
+    ],
     "equity": 9984.82,
     "cash": 8356.9,
     "realized_pnl": 0.0,
@@ -1348,17 +1349,17 @@
   "combined_realized_pnl": -189.98,
   "backtest_3day_crypto": {
     "universe_total": 1075,
-    "tradeable": 55,
-    "ghosts_excluded": 1020,
-    "trades": 138,
-    "win_rate_pct": 79.0,
-    "mean_net_pct": 0.777,
+    "tradeable": 54,
+    "ghosts_excluded": 1021,
+    "trades": 131,
+    "win_rate_pct": 80.2,
+    "mean_net_pct": 0.915,
     "exits": {
-      "TAKE": 118,
-      "STOP": 20,
+      "TAKE": 114,
+      "STOP": 17,
       "TIMEOUT": 0
     },
-    "equity_after": 11118.38
+    "equity_after": 11259.28
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
