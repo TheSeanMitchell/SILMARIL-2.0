@@ -1,18 +1,11 @@
 {
-  "generated_at": "2026-08-11T08:55:55.216264+00:00",
+  "generated_at": "2026-08-11T09:57:20.031292+00:00",
   "status_label": "OBSERVATIONAL \u2014 what we kept after fees, and what different thresholds would yield.",
   "fee_model_bps_round_trip": 54.0,
   "fee_per_1k_trade": 5.4,
   "breakeven_pct_per_trade": 0.54,
   "notional_assumed": 1000.0,
   "daily_takehome": [
-    {
-      "day": "2026-08-04",
-      "gross": -61.27,
-      "fees": -19.96,
-      "net_takehome": -81.23,
-      "trips": 2
-    },
     {
       "day": "2026-08-05",
       "gross": -144.97,
@@ -54,6 +47,13 @@
       "fees": -19.17,
       "net_takehome": -4.88,
       "trips": 2
+    },
+    {
+      "day": "2026-08-11",
+      "gross": 3.27,
+      "fees": -10.5,
+      "net_takehome": -7.23,
+      "trips": 1
     }
   ],
   "threshold_sweep": {
@@ -63,11 +63,11 @@
         "drop_pct": 1.0,
         "bounce_pct": 3.0,
         "signals": 1231,
-        "avg_captured_pct": 0.39,
-        "gross_per_trade": 3.9,
+        "avg_captured_pct": 0.388,
+        "gross_per_trade": 3.88,
         "fee_per_trade": 5.4,
-        "net_per_trade": -1.5,
-        "total_net_est": -1843.05,
+        "net_per_trade": -1.52,
+        "total_net_est": -1869.89,
         "clears_fees": false
       },
       {
@@ -299,12 +299,8 @@
     {
       "label": "Kraken taker / market order",
       "bps_round_trip": 60.0,
-      "lifetime_net": -587.05,
+      "lifetime_net": -512.0,
       "per_day": [
-        {
-          "day": "2026-08-04",
-          "net": -83.45
-        },
         {
           "day": "2026-08-05",
           "net": -177.59
@@ -328,18 +324,18 @@
         {
           "day": "2026-08-10",
           "net": -7.01
+        },
+        {
+          "day": "2026-08-11",
+          "net": -8.4
         }
       ]
     },
     {
       "label": "our current model",
       "bps_round_trip": 54.0,
-      "lifetime_net": -575.6,
+      "lifetime_net": -501.6,
       "per_day": [
-        {
-          "day": "2026-08-04",
-          "net": -81.23
-        },
         {
           "day": "2026-08-05",
           "net": -174.33
@@ -363,18 +359,18 @@
         {
           "day": "2026-08-10",
           "net": -4.88
+        },
+        {
+          "day": "2026-08-11",
+          "net": -7.23
         }
       ]
     },
     {
       "label": "Kraken maker / limit order",
       "bps_round_trip": 40.0,
-      "lifetime_net": -548.89,
+      "lifetime_net": -477.34,
       "per_day": [
-        {
-          "day": "2026-08-04",
-          "net": -76.06
-        },
         {
           "day": "2026-08-05",
           "net": -166.72
@@ -398,18 +394,18 @@
         {
           "day": "2026-08-10",
           "net": 0.09
+        },
+        {
+          "day": "2026-08-11",
+          "net": -4.51
         }
       ]
     },
     {
       "label": "Binance.US 0.10% flat",
       "bps_round_trip": 20.0,
-      "lifetime_net": -510.72,
+      "lifetime_net": -442.68,
       "per_day": [
-        {
-          "day": "2026-08-04",
-          "net": -68.66
-        },
         {
           "day": "2026-08-05",
           "net": -155.84
@@ -433,6 +429,10 @@
         {
           "day": "2026-08-10",
           "net": 7.19
+        },
+        {
+          "day": "2026-08-11",
+          "net": -0.62
         }
       ]
     }
@@ -441,7 +441,7 @@
     {
       "drop_pct": 1.0,
       "signals": 1231,
-      "net_per_trade_lowfee": 1.9,
+      "net_per_trade_lowfee": 1.88,
       "clears_fees": true
     },
     {
@@ -505,7 +505,7 @@
       "clears_fees": true
     }
   ],
-  "gross_total_window": -472.56,
+  "gross_total_window": -408.02,
   "what": "BOX A = real net take-home per day after fees. BOX B = simulated trade-count + net-per-trade after fees at each drop/bounce threshold.",
   "how_to_read": "Every trade must clear 0.54% just to pay its fees. In BOX B, rows where clears_fees is false LOSE money on average \u2014 that's the fat to cut. A higher drop trigger means fewer signals (lower 'signals') but usually a higher net_per_trade \u2014 the 'fewer but deeper' tradeoff, in dollars.",
   "honest_note": "BOX A is real realized history. BOX B is a simulation over real price paths across the top-45 crypto names \u2014 it shows opportunity economics, not a guarantee, and total_net_est assumes a $1k trade per signal (real capital caps how many you can hold at once, so treat totals as an upper sketch and net_per_trade as the honest per-trade truth). Bounce targets here are evaluated against actual forward price paths; they are not yet auto-tuned by trajectory \u2014 that is the judge-mode step."
