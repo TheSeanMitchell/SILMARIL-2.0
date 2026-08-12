@@ -1,30 +1,28 @@
 {
   "version": "4.0",
-  "generated_at": "2026-08-12T03:57:04.767822+00:00",
-  "market_mode": "PRESERVATION",
-  "winner_engine": "market_state",
-  "winner_action": "preservation_halt",
-  "winner_precedence_name": "PRESERVATION",
-  "halt_opens": true,
-  "halt_opens_reasons": [
-    "market_state: market_state=PRESERVATION: in danger window (overnight_thin)"
-  ],
+  "generated_at": "2026-08-12T04:17:38.176782+00:00",
+  "market_mode": "ATTACK",
+  "winner_engine": "default",
+  "winner_action": "NORMAL",
+  "winner_precedence_name": "ADVISORY",
+  "halt_opens": false,
+  "halt_opens_reasons": [],
   "force_close": {},
   "elite_tickers": [],
   "urgency_tickers": [],
-  "elite_suppressed": true,
-  "elite_suppression_reason": "Elite mode suppressed: market_state=PRESERVATION is not compatible with concentration escalation.",
+  "elite_suppressed": false,
+  "elite_suppression_reason": "",
   "blocked_tickers": {},
   "vulnerable_tickers": [],
   "deployment_pressure": {
-    "score": 0.0,
+    "score": 0.15,
     "high": false,
     "actions": [],
     "components": {
       "idle_cash": 0.0,
       "sgov_exposure": 0.0,
       "elite_pipeline": 0.0,
-      "market_mode_bias": -0.2,
+      "market_mode_bias": 0.2,
       "vulnerability_drag": -0.0
     },
     "totals": {
@@ -34,33 +32,33 @@
       "elite_count": 0,
       "vulnerable_count": 0
     },
-    "rationale": "mode=PRESERVATION \u00b7 score=0.00"
+    "rationale": "mode=ATTACK \u00b7 score=0.15"
   },
   "sizing": {
-    "base_multiplier": 0.4,
-    "min_conviction_floor": 0.75,
+    "base_multiplier": 1.2,
+    "min_conviction_floor": 0.35,
     "elite_multiplier": 1.5,
     "elite_concentration_cap": 0.2,
     "normal_concentration_cap": 0.12,
-    "deployment_pressure": 0.0,
+    "deployment_pressure": 0.15,
     "concentration_limits": {
-      "max_per_sector": 1,
-      "max_per_asset_class": 3,
-      "max_sector_book_pct": 0.1
+      "max_per_sector": 4,
+      "max_per_asset_class": 10,
+      "max_sector_book_pct": 0.4
     }
   },
   "close_loop": {
-    "trail_tightness": 1.5,
+    "trail_tightness": 0.85,
     "bleed_exit_enabled": true,
     "stale_close_enabled": true,
-    "stale_close_age_days": 3,
+    "stale_close_age_days": 5,
     "force_close_vulnerable_critical": true
   },
   "sweep": {
-    "aggression_multiplier": 1.75,
+    "aggression_multiplier": 0.8,
     "instant_sweep_usd": 300.0,
     "instant_sweep_pct": 0.05,
-    "news_boost_multiplier": 0.0,
+    "news_boost_multiplier": 1.2,
     "force_sweep_floor": 10500.0,
     "redeploy_sgov": {
       "recommended": false,
@@ -69,31 +67,9 @@
     }
   },
   "urgency_priority_order": [
-    "FXA",
-    "HYG",
-    "XMR-USD",
-    "EOG",
-    "EA"
+    "EOG"
   ],
   "urgency_by_ticker": {
-    "XMR-USD": {
-      "ticker": "XMR-USD",
-      "score": 0.1173,
-      "urgent": false,
-      "threshold": 0.65,
-      "components": {
-        "momentum_acceleration": 0.2242,
-        "breakout_velocity": 0.0,
-        "fresh_catalyst": 0.0,
-        "fresh_catalyst_raw": 0.0,
-        "intraday_thrust": 0.0,
-        "source_credibility": 1.0,
-        "narrative_persistence": 0.0
-      },
-      "decay_factor": 1.0,
-      "empirical_lift": 1.0,
-      "rationale": "5 sources"
-    },
     "EOG": {
       "ticker": "EOG",
       "score": 0.1,
@@ -111,66 +87,12 @@
       "decay_factor": 1.0,
       "empirical_lift": 1.0,
       "rationale": "intraday thrust 1.00"
-    },
-    "HYG": {
-      "ticker": "HYG",
-      "score": 0.1395,
-      "urgent": false,
-      "threshold": 0.65,
-      "components": {
-        "momentum_acceleration": 0.1317,
-        "breakout_velocity": 0.0,
-        "fresh_catalyst": 0.0,
-        "fresh_catalyst_raw": 0.0,
-        "intraday_thrust": 1.0,
-        "source_credibility": 0.0,
-        "narrative_persistence": 0.0
-      },
-      "decay_factor": 1.0,
-      "empirical_lift": 1.0,
-      "rationale": "intraday thrust 1.00"
-    },
-    "EA": {
-      "ticker": "EA",
-      "score": 0.0318,
-      "urgent": false,
-      "threshold": 0.65,
-      "components": {
-        "momentum_acceleration": 0.1058,
-        "breakout_velocity": 0.0,
-        "fresh_catalyst": 0.0,
-        "fresh_catalyst_raw": 0.0,
-        "intraday_thrust": 0.0003,
-        "source_credibility": 0.0,
-        "narrative_persistence": 0.0
-      },
-      "decay_factor": 1.0,
-      "empirical_lift": 1.0,
-      "rationale": "no urgency signals"
-    },
-    "FXA": {
-      "ticker": "FXA",
-      "score": 0.1618,
-      "urgent": false,
-      "threshold": 0.65,
-      "components": {
-        "momentum_acceleration": 0.2061,
-        "breakout_velocity": 0.0,
-        "fresh_catalyst": 0.0,
-        "fresh_catalyst_raw": 0.0,
-        "intraday_thrust": 1.0,
-        "source_credibility": 0.0,
-        "narrative_persistence": 0.0
-      },
-      "decay_factor": 1.0,
-      "empirical_lift": 1.0,
-      "rationale": "intraday thrust 1.00"
     }
   },
   "narrative": {
-    "dominant": "risk_off",
+    "dominant": "risk_on",
     "regime_shift": "RISK_ON",
-    "confidence": 0.3814
+    "confidence": 0.5127
   },
   "sector_rotation": {
     "rationale": "Software (strengthening) vs Utilities (weakening)",
@@ -178,99 +100,99 @@
       {
         "from": "Utilities",
         "to": "Software",
-        "strength": 0.7056,
-        "rationale": "Utilities -0.36 \u2192 Software +0.35"
+        "strength": 0.8434,
+        "rationale": "Utilities -0.49 \u2192 Software +0.35"
       },
       {
         "from": "Utilities",
         "to": "Token",
-        "strength": 0.7056,
-        "rationale": "Utilities -0.36 \u2192 Token +0.35"
+        "strength": 0.8434,
+        "rationale": "Utilities -0.49 \u2192 Token +0.35"
       },
       {
-        "from": "Staples",
+        "from": "Utilities",
+        "to": "Communication Services",
+        "strength": 0.8084,
+        "rationale": "Utilities -0.49 \u2192 Communication Services +0.32"
+      },
+      {
+        "from": "Crypto",
         "to": "Software",
         "strength": 0.7,
-        "rationale": "Staples -0.35 \u2192 Software +0.35"
+        "rationale": "Crypto -0.35 \u2192 Software +0.35"
       },
       {
-        "from": "Staples",
+        "from": "Crypto",
         "to": "Token",
         "strength": 0.7,
-        "rationale": "Staples -0.35 \u2192 Token +0.35"
-      },
-      {
-        "from": "Real Estate",
-        "to": "Software",
-        "strength": 0.7,
-        "rationale": "Real Estate -0.35 \u2192 Software +0.35"
+        "rationale": "Crypto -0.35 \u2192 Token +0.35"
       }
     ],
     "sector_lift": {
-      "Semiconductors": 0.9446,
-      "Technology": 1.0169,
-      "Materials": 0.9928,
-      "Communications": 0.9603,
-      "Commodities": 1.0458,
-      "FX": 0.9315,
-      "Health Care": 1.0564,
-      "Energy": 0.974,
-      "Rates": 0.9164,
-      "Financials": 0.9435,
-      "Consumer Discretionary": 0.9969,
-      "Discretionary": 0.9643,
-      "Communication": 0.9701,
-      "Innovation": 1.0507,
-      "Communication Services": 1.0473,
-      "Industrials": 0.9693,
-      "Healthcare": 0.9925,
+      "Discretionary": 0.9646,
+      "Communication Services": 1.0945,
+      "Communication": 0.9704,
+      "Energy": 0.9742,
+      "Rates": 0.9166,
+      "Commodities": 1.0461,
       "Token": 1.105,
-      "Staples": 0.9125,
-      "Consumer Staples": 1.0037,
-      "Real Estate": 0.9125,
-      "Credit": 0.9221,
-      "Utilities": 0.9111,
-      "Software": 1.105,
+      "Communications": 0.9605,
+      "Semiconductors": 0.9449,
+      "Consumer Staples": 0.9687,
+      "Credit": 0.9223,
+      "Utilities": 0.8767,
+      "Technology": 1.0585,
+      "Healthcare": 0.9928,
+      "Financials": 0.9437,
+      "FX": 0.9318,
+      "Consumer Discretionary": 1.0376,
+      "Industrials": 0.9696,
+      "Materials": 0.993,
       "Crypto": 0.9125,
-      "Index": 0.961
+      "Index": 0.9613,
+      "Staples": 0.9125,
+      "Software": 1.105,
+      "Real Estate": 0.9125,
+      "Health Care": 1.0623,
+      "Innovation": 1.0511
     },
     "sector_tag": {
-      "Semiconductors": "neutral",
-      "Technology": "neutral",
-      "Materials": "neutral",
-      "Communications": "neutral",
-      "Commodities": "neutral",
-      "FX": "weakening",
-      "Health Care": "neutral",
+      "Discretionary": "neutral",
+      "Communication Services": "strengthening",
+      "Communication": "neutral",
       "Energy": "neutral",
       "Rates": "weakening",
-      "Financials": "neutral",
-      "Consumer Discretionary": "neutral",
-      "Discretionary": "neutral",
-      "Communication": "neutral",
-      "Innovation": "neutral",
-      "Communication Services": "neutral",
-      "Industrials": "neutral",
-      "Healthcare": "neutral",
+      "Commodities": "neutral",
       "Token": "strengthening",
-      "Staples": "weakening",
+      "Communications": "neutral",
+      "Semiconductors": "neutral",
       "Consumer Staples": "neutral",
-      "Real Estate": "weakening",
       "Credit": "weakening",
       "Utilities": "weakening",
-      "Software": "strengthening",
+      "Technology": "neutral",
+      "Healthcare": "neutral",
+      "Financials": "neutral",
+      "FX": "weakening",
+      "Consumer Discretionary": "neutral",
+      "Industrials": "neutral",
+      "Materials": "neutral",
       "Crypto": "weakening",
-      "Index": "neutral"
+      "Index": "neutral",
+      "Staples": "weakening",
+      "Software": "strengthening",
+      "Real Estate": "weakening",
+      "Health Care": "neutral",
+      "Innovation": "neutral"
     }
   },
   "deployment_floor": {},
   "orchestrator": {
-    "system_objective_today": "DEFENSE_HARDENING",
-    "posture": "DEFENSIVE",
-    "target_market_exposure_pct": 0.5,
+    "system_objective_today": "DEPLOY_SELECTIVELY",
+    "posture": "OFFENSIVE",
+    "target_market_exposure_pct": 0.75,
     "max_sector_concentration_pct": 0.4,
     "max_position_concentration_pct": 0.15,
-    "deployment_pacing": "deploy_minimal",
+    "deployment_pacing": "deploy_fast",
     "account_priority_order": [
       "LEGACY",
       "HARVEST_3",
@@ -279,15 +201,23 @@
   },
   "setup_classifications": {
     "per_ticker": {
-      "HLT": {
-        "archetype": "GENERIC",
-        "setup_lift": 1.0
-      },
-      "AVGO": {
+      "XMR-USD": {
         "archetype": "GENERIC",
         "setup_lift": 1.0
       },
       "EOG": {
+        "archetype": "GENERIC",
+        "setup_lift": 1.0
+      },
+      "HYG": {
+        "archetype": "GENERIC",
+        "setup_lift": 1.0
+      },
+      "EA": {
+        "archetype": "GENERIC",
+        "setup_lift": 1.0
+      },
+      "FXA": {
         "archetype": "GENERIC",
         "setup_lift": 1.0
       }
@@ -305,17 +235,7 @@
     }
   },
   "position_directives": [],
-  "rationale": "mode=PRESERVATION | HALT_OPENS",
-  "directives": [
-    {
-      "precedence": 1,
-      "precedence_name": "PRESERVATION",
-      "engine": "market_state",
-      "action": "preservation_halt",
-      "ticker": null,
-      "payload": {},
-      "rationale": "market_state=PRESERVATION: in danger window (overnight_thin)"
-    }
-  ],
+  "rationale": "mode=ATTACK",
+  "directives": [],
   "global_directives": []
 }
