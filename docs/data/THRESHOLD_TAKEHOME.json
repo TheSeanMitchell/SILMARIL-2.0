@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-13T02:51:15.095785+00:00",
+  "generated_at": "2026-08-13T03:51:42.010141+00:00",
   "status_label": "OBSERVATIONAL \u2014 what we kept after fees, and what different thresholds would yield.",
   "fee_model_bps_round_trip": 54.0,
   "fee_per_1k_trade": 5.4,
@@ -50,10 +50,10 @@
     },
     {
       "day": "2026-08-12",
-      "gross": -60.28,
-      "fees": -13.4,
-      "net_takehome": -73.68,
-      "trips": 2
+      "gross": -134.03,
+      "fees": -18.54,
+      "net_takehome": -152.57,
+      "trips": 3
     }
   ],
   "threshold_sweep": {
@@ -62,34 +62,34 @@
       {
         "drop_pct": 1.0,
         "bounce_pct": 3.0,
-        "signals": 1408,
-        "avg_captured_pct": 0.284,
-        "gross_per_trade": 2.84,
+        "signals": 1419,
+        "avg_captured_pct": 0.275,
+        "gross_per_trade": 2.75,
         "fee_per_trade": 5.4,
-        "net_per_trade": -2.56,
-        "total_net_est": -3604.27,
+        "net_per_trade": -2.65,
+        "total_net_est": -3755.49,
         "clears_fees": false
       },
       {
         "drop_pct": 1.5,
         "bounce_pct": 3.0,
-        "signals": 512,
-        "avg_captured_pct": 0.501,
-        "gross_per_trade": 5.01,
+        "signals": 515,
+        "avg_captured_pct": 0.491,
+        "gross_per_trade": 4.91,
         "fee_per_trade": 5.4,
-        "net_per_trade": -0.39,
-        "total_net_est": -197.98,
+        "net_per_trade": -0.49,
+        "total_net_est": -250.62,
         "clears_fees": false
       },
       {
         "drop_pct": 2.0,
         "bounce_pct": 3.0,
-        "signals": 253,
-        "avg_captured_pct": 1.0,
-        "gross_per_trade": 10.0,
+        "signals": 254,
+        "avg_captured_pct": 0.993,
+        "gross_per_trade": 9.93,
         "fee_per_trade": 5.4,
-        "net_per_trade": 4.6,
-        "total_net_est": 1164.65,
+        "net_per_trade": 4.53,
+        "total_net_est": 1151.53,
         "clears_fees": true
       },
       {
@@ -299,7 +299,7 @@
     {
       "label": "Kraken taker / market order",
       "bps_round_trip": 60.0,
-      "lifetime_net": -324.29,
+      "lifetime_net": -403.75,
       "per_day": [
         {
           "day": "2026-08-06",
@@ -327,14 +327,14 @@
         },
         {
           "day": "2026-08-12",
-          "net": -75.17
+          "net": -154.63
         }
       ]
     },
     {
       "label": "our current model",
       "bps_round_trip": 54.0,
-      "lifetime_net": -314.58,
+      "lifetime_net": -393.47,
       "per_day": [
         {
           "day": "2026-08-06",
@@ -362,14 +362,14 @@
         },
         {
           "day": "2026-08-12",
-          "net": -73.68
+          "net": -152.57
         }
       ]
     },
     {
       "label": "Kraken maker / limit order",
       "bps_round_trip": 40.0,
-      "lifetime_net": -291.93,
+      "lifetime_net": -369.48,
       "per_day": [
         {
           "day": "2026-08-06",
@@ -397,14 +397,14 @@
         },
         {
           "day": "2026-08-12",
-          "net": -70.21
+          "net": -147.76
         }
       ]
     },
     {
       "label": "Binance.US 0.10% flat",
       "bps_round_trip": 20.0,
-      "lifetime_net": -259.56,
+      "lifetime_net": -335.22,
       "per_day": [
         {
           "day": "2026-08-06",
@@ -432,7 +432,7 @@
         },
         {
           "day": "2026-08-12",
-          "net": -65.24
+          "net": -140.9
         }
       ]
     }
@@ -440,20 +440,20 @@
   "low_fee_drop_sweep": [
     {
       "drop_pct": 1.0,
-      "signals": 1408,
-      "net_per_trade_lowfee": 0.84,
+      "signals": 1419,
+      "net_per_trade_lowfee": 0.75,
       "clears_fees": true
     },
     {
       "drop_pct": 1.5,
-      "signals": 512,
-      "net_per_trade_lowfee": 3.01,
+      "signals": 515,
+      "net_per_trade_lowfee": 2.91,
       "clears_fees": true
     },
     {
       "drop_pct": 2.0,
-      "signals": 253,
-      "net_per_trade_lowfee": 8.0,
+      "signals": 254,
+      "net_per_trade_lowfee": 7.93,
       "clears_fees": true
     },
     {
@@ -505,7 +505,7 @@
       "clears_fees": true
     }
   ],
-  "gross_total_window": -227.2,
+  "gross_total_window": -300.95,
   "what": "BOX A = real net take-home per day after fees. BOX B = simulated trade-count + net-per-trade after fees at each drop/bounce threshold.",
   "how_to_read": "Every trade must clear 0.54% just to pay its fees. In BOX B, rows where clears_fees is false LOSE money on average \u2014 that's the fat to cut. A higher drop trigger means fewer signals (lower 'signals') but usually a higher net_per_trade \u2014 the 'fewer but deeper' tradeoff, in dollars.",
   "honest_note": "BOX A is real realized history. BOX B is a simulation over real price paths across the top-45 crypto names \u2014 it shows opportunity economics, not a guarantee, and total_net_est assumes a $1k trade per signal (real capital caps how many you can hold at once, so treat totals as an upper sketch and net_per_trade as the honest per-trade truth). Bounce targets here are evaluated against actual forward price paths; they are not yet auto-tuned by trajectory \u2014 that is the judge-mode step."
