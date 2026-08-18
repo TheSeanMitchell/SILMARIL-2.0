@@ -1,73 +1,73 @@
 {
-  "generated_at": "2026-08-18T11:33:23.231986+00:00",
+  "generated_at": "2026-08-18T11:22:38.674562+00:00",
   "what": "a skeptic that reads the RECORD rather than the laws. selftest asks 'is each law still enforced?'; the inspector asks 'does this look like a working system?' \u2014 on real data, every cycle.",
-  "closed_trades_examined": 2221,
+  "closed_trades_examined": 2219,
   "symbols_with_structure": 366,
   "counts": {
-    "HIGH": 3,
+    "HIGH": 4,
     "MEDIUM": 2
   },
-  "verdict": "ATTENTION \u2014 3 critical/high finding(s)",
+  "verdict": "ATTENTION \u2014 4 critical/high finding(s)",
   "structure_pattern": {
     "band_high": {
-      "n": 460,
-      "mean_net_pct": -0.731,
-      "win_pct": 49.3
+      "n": 350,
+      "mean_net_pct": -0.698,
+      "win_pct": 50.3
     },
     "support_weak": {
-      "n": 1540,
-      "mean_net_pct": -0.253,
-      "win_pct": 53.6
+      "n": 1470,
+      "mean_net_pct": -0.252,
+      "win_pct": 54.1
     },
     "break_intact": {
-      "n": 958,
-      "mean_net_pct": -0.312,
-      "win_pct": 54.7
+      "n": 835,
+      "mean_net_pct": -0.326,
+      "win_pct": 55.4
     },
     "approach_flat_at": {
-      "n": 521,
-      "mean_net_pct": -0.217,
-      "win_pct": 53.4
-    },
-    "band_mid": {
-      "n": 598,
-      "mean_net_pct": -0.142,
-      "win_pct": 54.5
-    },
-    "approach_lifting_off": {
-      "n": 1131,
-      "mean_net_pct": -0.349,
-      "win_pct": 50.2
-    },
-    "support_strong": {
-      "n": 480,
-      "mean_net_pct": -0.201,
+      "n": 537,
+      "mean_net_pct": -0.173,
       "win_pct": 54.0
     },
+    "band_mid": {
+      "n": 544,
+      "mean_net_pct": -0.285,
+      "win_pct": 54.4
+    },
+    "approach_lifting_off": {
+      "n": 1090,
+      "mean_net_pct": -0.277,
+      "win_pct": 51.3
+    },
+    "support_strong": {
+      "n": 526,
+      "mean_net_pct": -0.201,
+      "win_pct": 53.2
+    },
     "break_testing": {
-      "n": 925,
-      "mean_net_pct": -0.094,
-      "win_pct": 54.6
+      "n": 1013,
+      "mean_net_pct": -0.092,
+      "win_pct": 53.7
     },
     "band_low": {
-      "n": 854,
-      "mean_net_pct": -0.102,
-      "win_pct": 54.7
-    },
-    "approach_falling_into": {
-      "n": 436,
-      "mean_net_pct": 0.109,
-      "win_pct": 62.8
-    },
-    "break_none": {
-      "n": 68,
-      "mean_net_pct": 0.378,
-      "win_pct": 51.5
+      "n": 992,
+      "mean_net_pct": -0.091,
+      "win_pct": 54.5
     },
     "break_broken": {
-      "n": 137,
-      "mean_net_pct": -0.725,
-      "win_pct": 40.9
+      "n": 148,
+      "mean_net_pct": -0.743,
+      "win_pct": 46.6
+    },
+    "approach_falling_into": {
+      "n": 459,
+      "mean_net_pct": -0.147,
+      "win_pct": 58.6
+    },
+    "break_none": {
+      "n": 90,
+      "mean_net_pct": 0.149,
+      "win_pct": 46.7
     }
   },
   "findings": [
@@ -78,24 +78,24 @@
       "detail": "Price leaving a level and returning to it EXACTLY, repeatedly, is not trading \u2014 it is two sources alternating or a stale cache being re-read. This is the five-month sawtooth in both its forms.",
       "evidence": [
         {
-          "sym": "1INCH-USD",
+          "sym": "MOG-USD",
           "v_round_trips": 12,
-          "prints": 542
+          "prints": 433
         },
         {
           "sym": "OP-USD",
           "v_round_trips": 11,
-          "prints": 539
+          "prints": 538
         },
         {
-          "sym": "MOG-USD",
+          "sym": "1INCH-USD",
           "v_round_trips": 11,
-          "prints": 434
+          "prints": 541
         },
         {
           "sym": "ARKM-USD",
-          "v_round_trips": 10,
-          "prints": 540
+          "v_round_trips": 9,
+          "prints": 539
         }
       ],
       "action": "Check canon_keys rejections (FROZEN/DEAD/OUT_OF_HOURS) for these symbols."
@@ -153,9 +153,21 @@
     },
     {
       "severity": "HIGH",
+      "code": "SILENT_SLEEVE",
+      "title": "3 sleeve-books took no trades AND refused nothing",
+      "detail": "A sleeve that is merely picky leaves refusals behind. Zero trades with zero refusals means it never saw a candidate \u2014 the disconnection pattern that hid L/N/O/Q/R/S/T for three releases.",
+      "evidence": [
+        "energy:Q",
+        "metal:Q",
+        "stock:Q"
+      ],
+      "action": "Check what feeds this sleeve's candidate pool; a thesis sleeve should scan its own universe, not inherit the mean-reversion dip funnel."
+    },
+    {
+      "severity": "HIGH",
       "code": "WINNER_TO_LOSER",
       "title": "1 positions were up more than 2% and still closed negative",
-      "detail": "Median give-back across 1211 closed trades is 1.02% of peak. A winner becoming a loser is not a market condition; it is a missing rail.",
+      "detail": "Median give-back across 1210 closed trades is 1.02% of peak. A winner becoming a loser is not a market condition; it is a missing rail.",
       "evidence": [
         {
           "sleeve": "crypto:G",
@@ -181,13 +193,13 @@
         },
         {
           "sleeve": "metal:E",
-          "headline_pct": -1.309,
+          "headline_pct": -1.363,
           "realized_pct": 0.533,
           "closed": 8
         },
         {
           "sleeve": "energy:H",
-          "headline_pct": 0.21,
+          "headline_pct": 0.163,
           "realized_pct": -0.521,
           "closed": 15
         }
@@ -197,10 +209,10 @@
     {
       "severity": "MEDIUM",
       "code": "STRUCTURE_PATTERN",
-      "title": "graded 2088 closed trades against the structure at their symbol; 1 readable separations",
+      "title": "graded 2086 closed trades against the structure at their symbol; 1 readable separations",
       "detail": "This is the steering signal: which chart states preceded winners and which preceded losers. It is a CURRENT-structure approximation, not an entry-time reconstruction, so treat it as a direction to investigate rather than proof.",
       "evidence": [
-        "entries at band_low averaged -0.10% vs -0.73% at band_high (n=854/460)"
+        "entries at band_low averaged -0.09% vs -0.70% at band_high (n=992/350)"
       ],
       "action": "Consider tightening the sleeves toward the better bucket, with a knob and an A/B."
     }
