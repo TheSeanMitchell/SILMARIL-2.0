@@ -1,11 +1,12 @@
 {
   "version": "alpha21-attribution-1.0",
-  "generated_at": "2026-08-18T02:01:39.281169+00:00",
+  "generated_at": "2026-08-18T01:52:48.493773+00:00",
   "answers": {
     "q1_agents_that_create_profit": [
       "BARON",
       "KESTREL",
-      "OBSIDIAN"
+      "OBSIDIAN",
+      "WEAVER"
     ],
     "q2_agents_that_destroy_profit": [
       "FORGE",
@@ -107,15 +108,6 @@
       "trusted": false
     },
     {
-      "agent": "THUNDERHEAD",
-      "grade": "I",
-      "verdict": "INSUFFICIENT",
-      "mean_return_pct": -0.0213,
-      "win_rate": 0.364,
-      "samples": 11,
-      "trusted": false
-    },
-    {
       "agent": "FORGE",
       "grade": "I",
       "verdict": "INSUFFICIENT",
@@ -125,22 +117,31 @@
       "trusted": true
     },
     {
-      "agent": "GOLDSMITH",
+      "agent": "THUNDERHEAD",
       "grade": "I",
       "verdict": "INSUFFICIENT",
-      "mean_return_pct": -0.0535,
-      "win_rate": 0.0,
-      "samples": 6,
+      "mean_return_pct": -0.0384,
+      "win_rate": 0.4,
+      "samples": 10,
       "trusted": false
     },
     {
       "agent": "HEX",
       "grade": "C",
       "verdict": "NO EDGE",
-      "mean_return_pct": -0.0662,
-      "win_rate": 0.447,
-      "samples": 76,
+      "mean_return_pct": -0.0556,
+      "win_rate": 0.459,
+      "samples": 74,
       "trusted": true
+    },
+    {
+      "agent": "GOLDSMITH",
+      "grade": "I",
+      "verdict": "INSUFFICIENT",
+      "mean_return_pct": -0.0847,
+      "win_rate": 0.0,
+      "samples": 6,
+      "trusted": false
     },
     {
       "agent": "SHEPHERD",
@@ -164,17 +165,17 @@
       "agent": "AEGIS",
       "grade": "I",
       "verdict": "INSUFFICIENT",
-      "mean_return_pct": -0.1445,
-      "win_rate": 0.441,
-      "samples": 1273,
+      "mean_return_pct": -0.1408,
+      "win_rate": 0.443,
+      "samples": 1250,
       "trusted": true
     },
     {
       "agent": "WEAVER",
-      "grade": "F",
-      "verdict": "NEGATIVE EDGE",
-      "mean_return_pct": -0.1718,
-      "win_rate": 0.424,
+      "grade": "A",
+      "verdict": "REAL EDGE",
+      "mean_return_pct": -0.1714,
+      "win_rate": 0.429,
       "samples": 191,
       "trusted": true
     },
@@ -182,18 +183,18 @@
       "agent": "KESTREL+",
       "grade": "I",
       "verdict": "INSUFFICIENT",
-      "mean_return_pct": -0.2518,
-      "win_rate": 0.39,
-      "samples": 341,
+      "mean_return_pct": -0.2265,
+      "win_rate": 0.391,
+      "samples": 338,
       "trusted": true
     },
     {
       "agent": "ZENITH",
-      "grade": "F",
-      "verdict": "NEGATIVE EDGE",
-      "mean_return_pct": -0.2561,
-      "win_rate": 0.401,
-      "samples": 287,
+      "grade": "C",
+      "verdict": "NO EDGE",
+      "mean_return_pct": -0.2598,
+      "win_rate": 0.397,
+      "samples": 282,
       "trusted": true
     },
     {
@@ -207,8 +208,8 @@
     },
     {
       "agent": "SYNTH",
-      "grade": "F",
-      "verdict": "NEGATIVE EDGE",
+      "grade": "C",
+      "verdict": "NO EDGE",
       "mean_return_pct": -0.268,
       "win_rate": 0.405,
       "samples": 168,
@@ -216,30 +217,30 @@
     },
     {
       "agent": "FABLEBOY_5",
-      "grade": "F",
-      "verdict": "NEGATIVE EDGE",
-      "mean_return_pct": -0.3009,
-      "win_rate": 0.398,
-      "samples": 171,
-      "trusted": true
-    },
-    {
-      "agent": "SPECK",
-      "grade": "F",
-      "verdict": "NEGATIVE EDGE",
-      "mean_return_pct": -0.4201,
-      "win_rate": 0.412,
-      "samples": 51,
+      "grade": "C",
+      "verdict": "NO EDGE",
+      "mean_return_pct": -0.2716,
+      "win_rate": 0.422,
+      "samples": 199,
       "trusted": true
     },
     {
       "agent": "VEIL",
       "grade": "I",
       "verdict": "INSUFFICIENT",
-      "mean_return_pct": -0.4532,
-      "win_rate": 0.3,
-      "samples": 10,
+      "mean_return_pct": -0.3448,
+      "win_rate": 0.385,
+      "samples": 13,
       "trusted": false
+    },
+    {
+      "agent": "SPECK",
+      "grade": "I",
+      "verdict": "INSUFFICIENT",
+      "mean_return_pct": -0.3873,
+      "win_rate": 0.463,
+      "samples": 54,
+      "trusted": true
     }
   ],
   "missed_examples_by_failure": {
@@ -260,9 +261,19 @@
   "learning_loop": {
     "status": "UNVERIFIED: not enough graded agents have a recorded weight yet",
     "recommended_agent_weights": {
+      "WEAVER": {
+        "grade": "A",
+        "current_weight": 0.945,
+        "recommended_weight": 1.3
+      },
       "HEX": {
         "grade": "C",
         "current_weight": 1.134,
+        "recommended_weight": 1.0
+      },
+      "SYNTH": {
+        "grade": "C",
+        "current_weight": 0.96,
         "recommended_weight": 1.0
       },
       "OBSIDIAN": {
@@ -271,29 +282,14 @@
         "recommended_weight": 1.0
       },
       "FABLEBOY_5": {
-        "grade": "F",
+        "grade": "C",
         "current_weight": 0.995,
-        "recommended_weight": 0.55
-      },
-      "SPECK": {
-        "grade": "F",
-        "current_weight": 0.958,
-        "recommended_weight": 0.55
-      },
-      "WEAVER": {
-        "grade": "F",
-        "current_weight": 0.945,
-        "recommended_weight": 0.55
+        "recommended_weight": 1.0
       },
       "ZENITH": {
-        "grade": "F",
+        "grade": "C",
         "current_weight": 1.0,
-        "recommended_weight": 0.55
-      },
-      "SYNTH": {
-        "grade": "F",
-        "current_weight": 0.96,
-        "recommended_weight": 0.55
+        "recommended_weight": 1.0
       }
     },
     "note": "Grade-derived weights are the ADJUST arm. Wire these into cli.py's weight_lookup to close Measure->Learn->Adjust."
