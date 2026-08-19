@@ -61,12 +61,31 @@ def _parse(t) -> Optional[datetime]:
         return None
 
 
-def _pct_cut(vals: List[float], pct: float) -> Optional[float]:
+def _pct_cut(vals: List[float], pct: float, min_pool: int = 4) -> Optional[float]:
+    """7.3 THE IMPOSSIBLE-FLOOR FIX — the bug that kept the Master at $9,991 forever.
+
+    THE INCIDENT: this required a pool of 20 before it would rank anything. The books'
+    tradeable universes are crypto 18, metal 5, energy 3, stock 0. NOT ONE BOOK CAN
+    EVER REACH 20. The Master was not being cautious; it was structurally incapable of
+    accepting a single trade, and it logged "pool<20 — gate stands down" 288 times
+    while reporting itself healthy. A gate that can never open is not a gate, it is a
+    wall with a sign on it.
+
+    THE FIX: the floor scales to what a book actually has. Four names is enough to
+    rank four names. Below that there is genuinely nothing to choose between, so the
+    gate still stands down — but now it stands down on a real condition rather than
+    on an arithmetic impossibility. With a thin pool the percentile is TIGHTENED (the
+    cut can never be looser than the single best name), so a small book must clear a
+    higher bar, not a lower one.
+    KILL: master_brain.min_pool restores any floor you like, including 20."""
     v = sorted(x for x in vals if x is not None)
-    if len(v) < 20:
-        return None                      # small pool → gate stands down, honestly
+    if len(v) < max(2, int(min_pool)):
+        return None
     i = min(len(v) - 1, max(0, int(len(v) * pct / 100.0)))
-    return v[i]
+    cut = v[i]
+    if len(v) < 8:                       # thin pool: demand the top name outright
+        cut = max(cut, v[-1])
+    return cut
 
 
 def build_master_account(out_dir) -> Dict[str, Any]:
@@ -236,7 +255,7 @@ def build_master_account(out_dir) -> Dict[str, Any]:
         _score_of = ((lambda c: ((c.get("evidence") or {}).get("evidence_score") or 0.0))
                      if _cal_q else (lambda c: (c.get("confidence") or 0.0)))
         scores = [_score_of(c) for _, c in pool]
-        cut = _pct_cut(scores, gate_pct)
+        cut = _pct_cut(scores, gate_pct, int(kb.get("min_pool", 4)))
         regime = ((live.get("regimes") or {}) if isinstance(live, dict) else {}).get(bk)
         fast = bool((mtf_books.get(bk) or {}).get("fast_green"))
         shift = fast and not bool(book["prev_fast"].get(bk))
@@ -272,10 +291,20 @@ def build_master_account(out_dir) -> Dict[str, Any]:
             sc = c.get("confidence") or 0.0
             why_no = None
             if cut is None:
-                why_no = "pool<20 — gate stands down, no forced picks"
+                why_no = ("pool below the %d-name floor — genuinely nothing to rank"
+                          % int(kb.get("min_pool", 4)))
             elif sc < cut:
                 why_no = f"below top-{int(100-gate_pct)}% cut ({sc:.3f} < {cut:.3f})"
-            elif (c.get("expected_hold_min") or 1e9) > max_hold:
+            # 7.3 THE UNKNOWN-IS-NOT-INFINITE FIX. This read
+            #     (c.get("expected_hold_min") or 1e9) > max_hold
+            # so a candidate whose hold estimate was simply MISSING became a 1e9-minute
+            # hold and was rejected as a "long-hold setup". The ledger shows the tell in
+            # plain sight: "long-hold setup (Nonem > 720m)" — rejected 92 times for a
+            # number that was never measured. Missing evidence is not damning evidence.
+            # An unknown hold now passes THIS gate and is still judged by every other
+            # one (percentile, revert evidence, geometry, venue, regime, cap).
+            elif (c.get("expected_hold_min") is not None
+                  and float(c.get("expected_hold_min")) > max_hold):
                 why_no = f"long-hold setup ({c.get('expected_hold_min')}m > {int(max_hold)}m) — will not revert in time"
             elif not ((c.get("bounce_reliability") or 0) >= min_br
                       or (c.get("rhythm_tradeability") or 0) >= 0.5):

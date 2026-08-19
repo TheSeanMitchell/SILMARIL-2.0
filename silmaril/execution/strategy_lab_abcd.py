@@ -223,6 +223,62 @@ SLEEVES = {
                    "(bounce-reliability ≥0.75 or evidence floor ≥65%), WIDE vol-native stop "
                    "uncapped, hold up to 7 DAYS for the revert WE KNOW comes. If patience is the "
                    "edge, this sleeve proves it; if it isn't, this sleeve pays the tuition")},
+    # == 7.3 THE EVIDENCE BENCH (U-Z) =============================================
+    # Six sleeves designed FROM this project's own audited trades (2,403 closes,
+    # re-scored at the REAL venue fee model: 0.068% equity / 0.325% crypto). Each
+    # encodes exactly ONE measured effect, with the numbers named in its desc.
+    #
+    # THE MINING DEBT, STATED UP FRONT: these were designed on the same tape that
+    # produced the evidence. So Law 15 is UPGRADED for them - disproven if trailing
+    # this book's A sleeve after 40 closes, and NEVER called proven without
+    # delta-vs-null > 0 AND per-trade t >= 3.0 on FORWARD closes only.
+    "U": {"name": "PATIENCE FLOOR", "cap": 4, "recycle_h": 96, "ride_winners": True,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": False, "min_hold_h": 24,
+          "desc": ("7.3 EVIDENCE - the hold-time curve. Holds under 2h averaged -0.45%/trade "
+                   "(t=-5.29, n=605): pure noise-stopouts. 12-24h averaged +0.40% (t=+2.78) "
+                   "and 24-48h +0.57% (t=+2.54). U has one law: before hour 24 NOTHING but "
+                   "the hard stop may close the position. The market is not allowed to shake "
+                   "it out with noise it would have recovered from by lunch")},
+    "V": {"name": "WIDE STOP EARLY HARVEST", "cap": 4, "recycle_h": 72, "ride_winners": True,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": False,
+          "measured_stop": True, "min_rr": 1.2, "wide_stop_mult": 2.0,
+          "giveback_frac": 0.15, "giveback_arm_pct": 1.0,
+          "desc": ("7.3 EVIDENCE - the exit asymmetry, inverted. 880 STOP exits averaged "
+                   "-2.01% while 745 give-back exits banked +1.82%: the book gave its losers "
+                   "twice the rope it gave its winners. V doubles the measured stop distance "
+                   "(hit rarely, and only when genuinely wrong) and harvests winners at a "
+                   "tight 15% give-back instead of waiting for a distant target")},
+    "W": {"name": "HIGH GROUND", "cap": 4, "recycle_h": 48, "ride_winners": True,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": False,
+          "trend_only": True, "min_band_pos": 0.60,
+          "desc": ("7.3 EVIDENCE - the honestly-graded graph audit. Entries in the TOP third "
+                   "of the range with trend UP were the only green bucket; buying the LOW "
+                   "third (the dip) won 35.7% and lost -0.96%/trade. Every reader sleeve "
+                   "R/S/T buys the dip and they are the four largest losses in the workshop. "
+                   "W buys STRENGTH: top 40% of the 48h range, confirmed uptrend, never the "
+                   "falling knife")},
+    "X": {"name": "QUIET TAPE", "cap": 4, "recycle_h": 72, "ride_winners": True,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": False, "news_fade_veto": 0.5,
+          "desc": ("7.3 EVIDENCE - the newsfade finding (in-sample t=-2.51 over n=582, "
+                   "overlapping windows, so it carries the mining debt and must replicate). "
+                   "A net-bullish headline day preceded WEAK 3-5 day returns: by the time the "
+                   "wire is excited the move has been sold. X refuses any name the crowd "
+                   "bought today - silence is the entry condition")},
+    "Y": {"name": "INSIDER TAILWIND", "cap": 3, "recycle_h": 120, "ride_winners": True,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": False, "insider_gate": 1.0,
+          "desc": ("7.3 EXTERNAL EVIDENCE (weakest of the six, and labelled so): only names "
+                   "with recent Form 4 insider filing activity, scored by this project's own "
+                   "EDGAR fetcher. NOTE the scorer counts FILINGS, not parsed transaction "
+                   "codes - a pass here justifies building the real XML parser, nothing more. "
+                   "Trades will be rare and live almost entirely in the stock book; that "
+                   "scarcity is the design, not a defect")},
+    "Z": {"name": "REGIME GATE", "cap": 5, "recycle_h": 48, "ride_winners": True,
+          "conf_gate": 0.0, "strike_extra": 0, "vault": False, "regime_gate": "UPTREND",
+          "desc": ("7.3 EVIDENCE - the rotation law as a sleeve, which is the operator's "
+                   "original wish finally measured. Entries taken while the book's regime "
+                   "read UP averaged +0.66%/trade; SIDEWAYS -0.29%; DOWN -0.98% (honest "
+                   "entry-time grading, n=2,292). Z trades ONLY while this book's regime "
+                   "reads UPTREND. Everything else is cash, and cash is a position")},
 }
 
 
@@ -963,6 +1019,62 @@ def _market_open_for(book: str) -> bool:
     return any(_market_open_for_symbol(x, book) for x in probe)
 
 
+def _uz_entry_gates(cfg: Dict[str, Any], sym: str, bk: Dict[str, Any],
+                    rows: List) -> tuple:
+    """7.3 THE EVIDENCE BENCH entry gates (U-Z). Returns (may_enter, why_not).
+    Every veto is a measured effect, and every veto is written to SLEEVE_VETOES."""
+    # Z REGIME GATE - entries only while this book's regime reads UPTREND
+    _rg = cfg.get("regime_gate")
+    if _rg and str(bk.get("_regime7") or "").upper() != str(_rg).upper():
+        return False, ("regime gate - book reads %s, entries only in %s (measured: UP-regime "
+                       "entries +0.66%%/trade vs DOWN -0.98%%)"
+                       % (bk.get("_regime7"), _rg))
+    # W HIGH GROUND - top of the 48h range only; the dip was the losing bucket
+    _mbp = cfg.get("min_band_pos")
+    if _mbp:
+        try:
+            _cut = _now() - timedelta(hours=48)
+            _px48 = []
+            for _t, _p in (rows or []):
+                if not _p or _p <= 0:
+                    continue
+                _pt = _parse(_t)
+                if _pt and _pt >= _cut:
+                    _px48.append(_p)
+            if len(_px48) < 12:
+                return False, "high ground - not enough 48h tape to place the range"
+            _lo, _hi = min(_px48), max(_px48)
+            _pos = (_px48[-1] - _lo) / (_hi - _lo) if _hi > _lo else 0.5
+            if _pos < float(_mbp):
+                return False, ("high ground - sitting at %.0f%% of the 48h range, need "
+                               ">= %.0f%% (only top-third entries graded green)"
+                               % (_pos * 100, float(_mbp) * 100))
+        except Exception:
+            return False, "high ground - range unreadable; no entry on a blind read"
+    # X QUIET TAPE - refuse names the crowd bought today (newsfade, in-sample t=-2.51)
+    _nfv = cfg.get("news_fade_veto")
+    if _nfv is not None:
+        _sent = (bk.get("_news7") or {}).get(str(sym).upper())
+        if _sent is not None and _sent >= float(_nfv):
+            return False, ("quiet tape - net-bullish headlines today (sentiment %.2f >= "
+                           "%.2f); the crowd already bought this one" % (_sent, float(_nfv)))
+    # Y INSIDER TAILWIND - Form 4 activity required; EDGAR calls budgeted per cycle
+    _ig = cfg.get("insider_gate")
+    if _ig is not None:
+        if int(bk.get("_f4_calls", 0)) >= 25:
+            return False, "insider gate - EDGAR scan budget (25 names) spent this cycle"
+        bk["_f4_calls"] = int(bk.get("_f4_calls", 0)) + 1
+        try:
+            from ..ingestion.form4 import get_insider_buy_score
+            _sc = float(get_insider_buy_score(str(sym).split("-")[0]) or 0.0)
+        except Exception:
+            _sc = 0.0
+        if _sc < float(_ig):
+            return False, ("insider gate - filing-activity score %.1f < %.1f; no insider "
+                           "buying, no trade" % (_sc, float(_ig)))
+    return True, ""
+
+
 def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
                 marks: Dict[str, float], candidates: List[tuple],
                 conf_map: Dict[str, float], fastgreen: set,
@@ -1032,6 +1144,12 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
         except Exception:
             hold_h = 0.0
         striking = pos.get("style") == "STRIKE"
+        # 7.3 U PATIENCE FLOOR: holds under 2h averaged -0.45%/trade (t=-5.29, n=605)
+        # because ordinary noise tripped exits that would have recovered. Before the
+        # floor, ONLY the hard stop may act - no trail, no give-back, no recycle.
+        _minh = cfg.get("min_hold_h")
+        if _minh and hold_h < float(_minh) and chg > -stop:
+            continue
         # ── 7.1.6 THE TRAIL, NOT THE FLAG ────────────────────────────────────────────────
         # The operator's STRK-USD trade, in full: bought at 0.030977, ran to 0.035183 (+13.6%),
         # and exited at the +4% limit for $2.00 with "forgone 9.209%". Two separate faults, and
@@ -1272,6 +1390,12 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
             if not _ok:
                 _vetoes.append({"sym": sym, "sleeve": cfg.get("_letter") or cfg.get("name"), "why": _why})
                 continue
+            # 7.3 THE EVIDENCE BENCH: U-Z gates, each one a measured effect
+            _ok, _why = _uz_entry_gates(cfg, sym, bk, tape.get(sym))
+            if not _ok:
+                _vetoes.append({"sym": sym, "sleeve": cfg.get("_letter") or cfg.get("name"),
+                                "why": _why})
+                continue
             px = _tp
             # ── 7.2.2 THE CAPITAL LEAK I INTRODUCED IN 7.2.1 ────────────────────────────
             # 7.2.1 let thesis sleeves scan deep (120+ names) and added a cap guard to stop
@@ -1325,6 +1449,11 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
                                     "why": "ratio gate — " + str(_why8)})
                     continue
                 tgt, stp = _t8, _s8
+            # 7.3 V WIDE STOP: 880 STOP exits averaged -2.01% against 745 give-backs at
+            # +1.82%. V pushes the stop out of noise range and takes profit early instead.
+            _wsm = cfg.get("wide_stop_mult")
+            if _wsm:
+                stp = min(float(stp) * float(_wsm), 0.25)
             if sym in bk["positions"]:
                 bk["cash"] += budget           # never overwrite a live position; refund and skip
                 continue
@@ -1402,6 +1531,19 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                 .get("BENCH_HODL", {}).get("return_pct"))
     except Exception:
         pass
+
+    # 7.3 X QUIET TAPE: today's net headline sentiment per name, from the project's
+    # own news wire. Absent name -> no veto (silence is the default, not a guess).
+    _news7 = {}
+    try:
+        _nh = json.loads((out / "news_history.json").read_text())
+        for _tic, _rows in (_nh or {}).items():
+            if isinstance(_rows, list) and _rows:
+                _sv = _rows[-1].get("sent")
+                if _sv is not None:
+                    _news7[str(_tic).upper()] = float(_sv)
+    except Exception:
+        _news7 = {}
 
     _geo = {}
     try:
@@ -1581,6 +1723,8 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                                  or ((_geo.get(c[0]) or {}).get("p_floor_pct") or 0) >= 65)]
             bk["_geo7"] = {c[0]: _geo.get(c[0]) for c in _cands_sk} if (cfg.get("geometry") or cfg.get("patient")) else None
             bk["_regime7"] = _regimes.get(book)
+            bk["_news7"] = _news7                    # 7.3 X QUIET TAPE
+            bk["_f4_calls"] = 0                      # 7.3 Y per-cycle EDGAR budget
             bk["_book7"] = book
             bk["_tape7"] = _tape7
             bk["_out7"] = str(out)
@@ -1705,6 +1849,7 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                 _counts[_kind] = _counts.get(_kind, 0) + 1
             _b.pop("_tape7", None); _b.pop("_book7", None); _b.pop("_bounce7", None)
             _b.pop("_out7", None); _b.pop("_peers7", None); _b.pop("_geo7", None)
+            _b.pop("_news7", None); _b.pop("_f4_calls", None)
         write_json_atomic(out / "SLEEVE_VETOES.json", {
             "generated_at": _now().isoformat(),
             "what": ("every entry a sleeve DECLINED this cycle and the exact rail that stopped it. "

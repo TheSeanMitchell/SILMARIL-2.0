@@ -280,7 +280,19 @@ def build_graph_decision_audit(out_dir, samples: Dict[str, List] = None) -> Dict
     trades = _closed_trades(out)
     graded, unreadable = [], 0
     for t in trades:
-        at = _ts(t.get("opened_t")) or _ts(t.get("closed_t"))
+        # 7.3 NO-HINDSIGHT LAW. This line used to read
+        #     at = _ts(t.get("opened_t")) or _ts(t.get("closed_t"))
+        # and the river rows out of LAB_OUTCOMES.jsonl set opened_t to None by
+        # construction, so half of every batch was graded with the chart rebuilt AT
+        # THE EXIT. A winning trade closed high is by definition in the high third of
+        # its range, so the "feature" being measured was the answer. Graded at entry
+        # the same feature separates by 0.082%; graded at exit it printed an
+        # 84.1%/20.1% split that does not exist. Every PREDICTIVE verdict this module
+        # published came from that fallback. A trade with no entry time is UNGRADABLE.
+        at = _ts(t.get("opened_t"))
+        if not at:
+            unreadable += 1
+            continue
         ser = tape.get(t.get("sym")) or []
         if not at or not ser:
             unreadable += 1
