@@ -1202,9 +1202,13 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
                 continue
             if budget < 50:
                 break
-            qty = budget / px
+            # 7.2.7 BOTH SIDES, REAL VENUE: the entry pays its half of the round trip
+            # at the cost the venue would really charge, exactly as paper_sim.buy does.
+            _c7 = cost_of(px, sym, _book7)
+            _eff7 = px * (1.0 + _c7 / 2.0)
+            qty = budget / _eff7
             bk["cash"] -= budget
-            bk["positions"][sym] = {"qty": qty, "entry": px, "cost": cost_of(px),
+            bk["positions"][sym] = {"qty": qty, "entry": _eff7, "raw_entry": px, "cost": _c7,
                                     "target": 0.04, "stop": 0.05, "style": "STRIKE",
                                     "t": now.isoformat(), "conf": round(conf_map.get(sym, 0.0), 3)}
             bk["trades"].append({"side": "BUY", "sym": sym, "style": "STRIKE", "simulated": True,
@@ -1285,7 +1289,10 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
             budget = min(budget, _avail() * 0.95)
             if budget < 50:
                 break
-            qty = budget / px
+            # 7.2.7 BOTH SIDES, REAL VENUE — see cost_of() below.
+            _c7 = cost_of(px, sym, _book7)
+            _eff7 = px * (1.0 + _c7 / 2.0)
+            qty = budget / _eff7
             bk["cash"] -= budget
             # ── 7.0 STOP-LOSS LAB: the sleeve's stop philosophy BINDS at entry ──
             tgt, stp = 0.05, 0.06
@@ -1310,7 +1317,7 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
             elif cfg.get("measured_stop") or cfg.get("structure_entry"):
                 _ok8, _t8, _s8, _why8 = _ratio_shape(
                     cfg, sym, tape.get(sym), h1 if isinstance(h1, float) else 0.01,
-                    tgt, stp, cost_of(px),
+                    tgt, stp, _c7,
                     (bk.get("_bounce7") or {}).get(sym))
                 if not _ok8:
                     bk["cash"] += budget            # refund; this name never becomes a position
@@ -1321,7 +1328,7 @@ def _run_sleeve(cfg: Dict[str, Any], bk: Dict[str, Any],
             if sym in bk["positions"]:
                 bk["cash"] += budget           # never overwrite a live position; refund and skip
                 continue
-            bk["positions"][sym] = {"qty": qty, "entry": px, "cost": cost_of(px),
+            bk["positions"][sym] = {"qty": qty, "entry": _eff7, "raw_entry": px, "cost": _c7,
                                     "target": tgt, "stop": stp, "style": "MR",
                                     "t": now.isoformat(), "conf": round(conf_map.get(sym, 0.0), 3)}
             bk["trades"].append({"side": "BUY", "sym": sym, "style": "MR", "simulated": True,
@@ -1361,7 +1368,32 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
         pass
     fastgreen = {s for s, v in mtf_syms.items() if v.get("fast_green")}
 
-    def cost_of(px):
+    # ── 7.2.7 THE REAL-VENUE COST LAW ─────────────────────────────────────────────
+    # THE ERROR THIS FIXES, stated plainly because it changed a verdict:
+    # this blanket returned 0.4% (px>=$1) / 0.6% (px<$1) for EVERY book, and the
+    # workshop was judged against it. Meanwhile fee_model.py — this repo's own
+    # itemised, venue-routed model — says the real round trip is:
+    #
+    #     stock / metal / energy   0.068%   ($0 commission + measured spread + slip)
+    #     crypto                   0.325%   (Binance.US taker 0.10%/side + spread)
+    #
+    # So the equity books were charged SIX TIMES their real cost, and an audit run
+    # against that blanket concluded fast trading could not pay. Re-scored at the
+    # real model the same 2,403 closed trades say something different: energy
+    # +$2,739, metal +$992, stock +$625, crypto -$16,836. The problem was never
+    # turnover — it was CRYPTO turnover, where the fee is genuinely 5x the equity
+    # fee and the gross edge is negative (-0.22%/trade, t=-3.09) on top.
+    #
+    # A cost model that is wrong in the expensive direction does not make a system
+    # "conservative". It makes it blind to the trades that actually work.
+    def cost_of(px, sym=None, book=None):
+        c = _cost_for_sym(sym, book) if sym else None
+        if c and c > 0:
+            return c
+        if book in ("stock", "metal", "energy"):
+            return 0.0007          # $0-commission equity floor, ~ fee_model's 0.068%
+        if book == "crypto":
+            return 0.0033          # Binance.US taker round trip + spread
         return 0.004 if px >= 1 else 0.006
 
     hodl = None
