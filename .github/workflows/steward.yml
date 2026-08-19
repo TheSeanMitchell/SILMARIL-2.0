@@ -1,0 +1,55 @@
+name: STEWARD (the one lane)
+
+# SILMARIL 8.0. One workflow, once a day, after the US close. It replaces the
+# twelve lanes of the retired engine. There is no reset workflow on purpose:
+# nine wipes in sixteen days destroyed more evidence than any bug — the epoch
+# is set once and the clock only runs forward.
+
+on:
+  schedule:
+    - cron: "35 21 * * *"     # 21:35 UTC — after NYSE close; completed bars only
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: steward
+  cancel-in-progress: false    # a running cycle is never killed
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install --quiet yfinance requests
+
+      - name: Invariants first — no proof, no trading
+        run: python -m steward.cli verify
+
+      - name: Regression battery — the laws hold or nothing runs
+        run: python scripts/test_steward.py
+
+      - name: Daily cycle
+        env:
+          SEC_USER_AGENT_EMAIL: ${{ secrets.SEC_USER_AGENT_EMAIL }}
+        run: python -m steward.cli run
+
+      - name: Commit (retried — a finished cycle is never silently discarded)
+        run: |
+          git config user.name "steward"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/steward.html docs/data/steward_*.json* docs/data/steward_ledger.jsonl REGISTRATION.md || true
+          git commit -m "steward: daily cycle $(date -u +%Y-%m-%d)" || { echo "nothing to commit"; exit 0; }
+          for i in 1 2 3; do
+            git push && exit 0
+            git pull --rebase -X theirs || true
+          done
+          git push
