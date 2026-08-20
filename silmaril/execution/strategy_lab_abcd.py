@@ -1019,6 +1019,38 @@ def _market_open_for(book: str) -> bool:
     return any(_market_open_for_symbol(x, book) for x in probe)
 
 
+def _book_null_pct(tape: Dict[str, Any], syms: List[str], since_iso: str) -> Optional[float]:
+    """7.4 THE MISSING NULL. Equal-weight buy-and-hold of THIS book's own tradeable
+    names, from `since_iso` to now, on the same tape the sleeves trade.
+
+    WHY THIS EXISTS: delta_vs_hodl was hard-gated to `book == "crypto"`, so stock,
+    metal and energy printed a DASH where the only number that matters should be.
+    A sleeve showing "+7.895%" with no comparison is not information: SPY returned
+    +1.5% and QQQ +2.3% over the same window, and without that on the card nobody
+    can tell a real sleeve from a rising tide. Crypto was measured against a 50/50
+    BTC-ETH hold and was honestly shown to be LOSING to it by 8.4 points; the other
+    three books were never measured at all.
+
+    Fees are deliberately NOT charged here: a null is what you get for doing nothing,
+    and doing nothing costs nothing. That makes this the harder, honest bar."""
+    rets = []
+    for sym in syms:
+        rows = (tape or {}).get(sym) or []
+        first = last = None
+        for t, p in rows:
+            if not p or p <= 0:
+                continue
+            if first is None and str(t) >= str(since_iso):
+                first = p
+            if str(t) >= str(since_iso):
+                last = p
+        if first and last and first > 0:
+            rets.append((last / first - 1.0) * 100.0)
+    if len(rets) < 2:
+        return None
+    return sum(rets) / len(rets)
+
+
 def _uz_entry_gates(cfg: Dict[str, Any], sym: str, bk: Dict[str, Any],
                     rows: List) -> tuple:
     """7.3 THE EVIDENCE BENCH entry gates (U-Z). Returns (may_enter, why_not).
@@ -1623,6 +1655,18 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
         except Exception:
             _cost7[sym] = None
         return _cost7[sym]
+    # 7.4 per-book nulls, measured from the wipe epoch on the same tape the sleeves see
+    _book_nulls: Dict[str, Any] = {}
+    _since = str(st.get("wipe_epoch") or st.get("created_at") or "")
+    for _bk7 in BOOKS:
+        try:
+            _u7 = sorted({t.get("sym") for _k, _b in st["sleeves"].items()
+                          if _k.startswith(_bk7 + ":")
+                          for t in (_b.get("trades") or []) if t.get("sym")})
+            _book_nulls[_bk7] = _book_null_pct(_samp, _u7, _since)
+        except Exception:
+            _book_nulls[_bk7] = None
+
     by_industry: Dict[str, List[Dict[str, Any]]] = {}
     for book in BOOKS:
         b = live.get(book) or {}
@@ -1763,6 +1807,7 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
             # numbers ship from now on, and the split is explicit.
             _real = float(bk.get("realized_pnl", 0.0))
             _realized_pct = (_real / START) * 100.0
+            _null = _book_nulls.get(book)
             _unreal_pct = ret - _realized_pct
             closed = [t for t in bk["trades"] if t["side"] == "SELL"]
             wins = sum(1 for t in closed if t["pnl"] > 0)
@@ -1773,8 +1818,16 @@ def build_strategy_lab(out_dir, marks_raw=None, candidates=None) -> Dict[str, An
                 "realized_usd": round(_real, 2),
                 "realized_pnl": round(bk["realized_pnl"], 2),
                 "vault_usd": round(bk.get("vault_usd", 0.0), 2),
+                # 7.4: crypto keeps its published 50/50 BTC-ETH null; every other book
+                # now gets one built from its OWN universe instead of a dash.
                 "delta_vs_hodl": (round(ret - float(hodl), 3)
-                                  if (hodl is not None and book == "crypto") else None),
+                                  if (hodl is not None and book == "crypto")
+                                  else (round(ret - float(_null), 3)
+                                        if _null is not None else None)),
+                "null_pct": (round(float(hodl), 3) if book == "crypto" and hodl is not None
+                             else (round(float(_null), 3) if _null is not None else None)),
+                "null_label": ("50/50 BTC-ETH hold" if book == "crypto"
+                               else "equal-weight hold of this book's universe"),
                 "open": len(bk["positions"]), "closed": len(closed),
                 "win_rate": round(wins / len(closed) * 100, 1) if closed else None,
                 "max_dd_pct": bk.get("max_dd_pct", 0.0),
