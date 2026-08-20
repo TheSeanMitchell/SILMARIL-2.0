@@ -35,6 +35,7 @@ on:
           - manual_sweep             # force the SWEEP switch on a strong market day
           - backfill_history         # jumpstart fingerprints/charts from stored history
           - train_from_backtest      # ingest backtest outcomes into agent training
+          - restate_fees             # 7.5 re-price EVERY closed trade at the real venue cost
       apply:
         description: 'false = DRY RUN (default, changes nothing) · true = actually apply'
         required: true
@@ -150,6 +151,21 @@ jobs:
       - name: 🎓 Train from backtest
         if: ${{ github.event.inputs.tool == 'train_from_backtest' }}
         run: python scripts/train_from_backtest.py --ingest-only
+
+      # ── restate_fees (7.5) ─────────────────────────────────────────────────────────
+      # Re-prices every closed trade at the real per-symbol venue cost, both sides, and
+      # rebuilds cash + realized P&L. RESTATEMENT, not re-simulation: same trades,
+      # corrected pricing. Backs STRATEGY_LAB.json up to .pre_restate before writing.
+      # Run it ONCE. Running it twice is harmless (the second pass re-prices the same
+      # trades to the same numbers) but there is no reason to.
+      - name: 🧾 Restate every trade at real fees
+        if: ${{ github.event.inputs.tool == 'restate_fees' }}
+        run: |
+          if [ "${{ github.event.inputs.apply }}" = "true" ]; then
+            python scripts/restate_fees.py --write
+          else
+            python scripts/restate_fees.py
+          fi
 
       # ── commit, only when something was actually applied ───────────────────────────
       - name: Commit if changed
