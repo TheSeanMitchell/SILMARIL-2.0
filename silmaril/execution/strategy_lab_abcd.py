@@ -327,7 +327,18 @@ def _load_state(out: Path) -> Dict[str, Any]:
 
 
 def _equity(bk: Dict[str, Any], marks: Dict[str, float]) -> float:
-    held = sum(p["qty"] * marks.get(s, p["entry"]) for s, p in bk["positions"].items())
+    # 7.6 THE LAST-CLOSE LAW (same fault as paper_sim): if a name drops out of this
+    # cycle's marks, price it at the LAST MARK stamped on the position, never at its
+    # own entry. Pricing a holding at cost reports it as flat and can freeze a whole
+    # book at exactly its seed value — which is what the metal and energy books did.
+    held = 0.0
+    for s, p in bk["positions"].items():
+        px = marks.get(s)
+        if px is None:
+            px = p.get("mark")
+        if px is None:
+            px = p["entry"]
+        held += p["qty"] * px
     return bk["cash"] + held
 
 

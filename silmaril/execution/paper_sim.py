@@ -786,8 +786,21 @@ class PaperBook:
         del self.positions[sym]
         return pnl
 
-    def equity(self, marks):
-        held = sum(p["qty"] * marks.get(s, p["entry"]) for s, p in self.positions.items())
+    def equity(self, marks, carry=None):
+        """7.6 THE LAST-CLOSE LAW: a position is priced by a fresh mark, else by its
+        last known close. Falling back to `entry` prices a holding at its own cost —
+        it reports every open position as flat and froze whole books at exactly
+        $10,000.00. `entry` remains the final backstop only when the tape has never
+        printed this name at all, which cannot happen for a name we filled."""
+        carry = carry or {}
+        held = 0.0
+        for s, p in self.positions.items():
+            px = marks.get(s)
+            if px is None:
+                px = carry.get(s)
+            if px is None:
+                px = p["entry"]
+            held += p["qty"] * px
         return self.cash + held
 
     def save(self, path):
@@ -1055,6 +1068,36 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         pass
     now = datetime.now(timezone.utc)
     side_marks = {s: v for s, v in marks.items() if asset_class(s) == uc}
+    # ── 7.6 THE LAST-CLOSE LAW ──────────────────────────────────────────────────
+    # THE INCIDENT: the metal and energy books both read EXACTLY $10,000.00 / +0.00%
+    # while holding CPER at -3.5% and PALL at -3.5%. Cause: out of session a provider
+    # repeats the same closing print, canon_keys correctly collapses those repeats
+    # (OUT_OF_HOURS_REPEAT), and the collapse leaves the symbol's newest timestamp
+    # hours old. The 90-minute freshness gate then drops it from `marks`, and BOTH
+    # the position display and PaperBook.equity() fell back to `p["entry"]` — pricing
+    # a position at its own cost, which is the one number guaranteed to be wrong.
+    # Every equity/ETF book silently froze at cost basis after every 4pm close.
+    #
+    # THE LAW: a fresh mark prices a position. Failing that, its LAST KNOWN CLOSE
+    # prices it — exactly as a broker statement marks an out-of-session holding.
+    # Entry is never a mark. `_stale_marks` records which ones fell back, so the
+    # UI can say so instead of quietly implying the position has not moved.
+    _carry, _stale_marks = {}, {}
+    try:
+        for _s7, _p7 in (pbook.positions or {}).items():
+            if _s7 in side_marks:
+                continue
+            _rows7 = samples.get(_s7) or []
+            _last7 = None
+            for _t7, _px7 in reversed(_rows7):
+                if _px7 and float(_px7) > 0 and "T00:00:00" not in str(_t7):
+                    _last7 = (float(_px7), str(_t7))
+                    break
+            if _last7:
+                _carry[_s7] = _last7[0]
+                _stale_marks[_s7] = _last7[1]
+    except Exception:
+        _carry, _stale_marks = {}, {}
     actions = []
 
     def px_of(sym):
@@ -1352,6 +1395,8 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                 scored.append((s, lp, h1, cv))
         cands = sorted(scored, key=lambda x: (x[3] if x[3] is not None else 0.0), reverse=True)
     mk = {s: v[0] for s, v in side_marks.items()}
+    for _s7, _v7 in _carry.items():          # 7.6: last close, never entry
+        mk.setdefault(_s7, _v7)
     cat = _catalog(out)
     try:
         _WARM_KNOB.update({k: v for k, v in (cat.get("warmup") or {}).items()
@@ -1885,7 +1930,13 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
                 d_["fate"] = "BOUGHT"
     except Exception:
         _dtrace = []
+    _carried_held = [s for s in (pbook.positions or {}) if s in _carry]
     funnel = {"seen": len(side_marks),
+              # 7.6: how many HELD names are priced from a carried last close rather
+              # than a fresh print. Non-zero is normal out of session; non-zero
+              # DURING a session means the feed for those names is down.
+              "marks_carried": len(_carried_held),
+              "marks_carried_syms": sorted(_carried_held)[:12],
               "entry_warm": sum(1 for s_ in side_marks if s_ in _WARM_SYMS),
               "candidates_after_gates": len(cands), "bought": _bought, "rejections": _rej,
               # 7.1: the license, stated on the funnel itself so no panel ever has to guess
@@ -1907,7 +1958,11 @@ def _run_side(out, marks, samples, book: str, params=None, champion=None) -> Dic
         "return_pct": round((eq / START_CASH - 1) * 100, 2),
         "open_positions": len(pbook.positions),
         "positions": [{"sym": s, "qty": round(p["qty"], 4), "entry": round(p["entry"], 6),
-                       "mark": round(side_marks.get(s, (p["entry"], 0))[0], 6),
+                       # 7.6: fresh mark -> carried last close -> (never) entry
+                       "mark": round(side_marks.get(s, (mk.get(s, p["entry"]), 0))[0]
+                                     if s in side_marks else mk.get(s, p["entry"]), 6),
+                       "mark_stale_since": _stale_marks.get(s),
+                       "mark_is_carried": s in _carry,
                        "t": p.get("t"),
                        "wager_usd": p.get("wager_usd"),
                        "target": p.get("target"), "stop": p.get("stop"),
@@ -2062,13 +2117,46 @@ def live_step(out_dir) -> Dict[str, Any]:
         if bk != "crypto" and eq_status == "CLOSED":
             # market holiday/weekend: equity books hold state, take no actions, burn no work. Crypto runs 24/7.
             _pb = PaperBook.load(out / f"paper_book_{bk}.json")
+            # ── 7.6b THE LAST-CLOSE LAW, CLOSED-SESSION PATH ────────────────────
+            # This branch used to report `_pb.equity({})` — an EMPTY mark map, so
+            # every holding was priced at its own ENTRY — and `positions: []`, so
+            # the dashboard also showed "0 open" while the book held real risk.
+            # Every weekend and holiday, three books reported themselves flat with
+            # nothing open. A closed market does not un-own a position: it is
+            # marked at its last close, exactly as a broker statement marks it.
+            _cmk, _cstale = {}, {}
+            for _s7, _p7 in (_pb.positions or {}).items():
+                _fresh7 = marks.get(_s7)
+                if _fresh7 is not None:
+                    _cmk[_s7] = _fresh7[0] if isinstance(_fresh7, (list, tuple)) else _fresh7
+                    continue
+                for _t7, _px7 in reversed(samples.get(_s7) or []):
+                    if _px7 and float(_px7) > 0 and "T00:00:00" not in str(_t7):
+                        _cmk[_s7] = float(_px7)
+                        _cstale[_s7] = str(_t7)
+                        break
             results[bk] = {"skipped": True, "why": "market closed — " + eq_reason,
                            "funnel": {"seen": sum(1 for s_ in marks if asset_class(s_) == bk),
                                        "entry_warm": 0, "candidates_after_gates": 0, "bought": 0,
+                                       "marks_carried": len(_cstale),
                                        "rejections": {"market closed": 1}},
                            "decision_trace_live": [],
-                           "equity": _pb.equity({}), "realized_pnl": _pb.realized_pnl,
-                           "positions": [], "recent_trades": [], "actions": [],
+                           "equity": round(_pb.equity(_cmk), 2),
+                           "realized_pnl": _pb.realized_pnl,
+                           "cash": round(_pb.cash, 2),
+                           "reserve_usd": round(float(getattr(_pb, "reserve_usd", 0.0)), 2),
+                           "open_positions": len(_pb.positions or {}),
+                           "positions": [{"sym": _s7, "qty": round(_p7["qty"], 4),
+                                          "entry": round(_p7["entry"], 6),
+                                          "mark": round(_cmk.get(_s7, _p7["entry"]), 6),
+                                          "mark_stale_since": _cstale.get(_s7),
+                                          "mark_is_carried": _s7 in _cstale,
+                                          "t": _p7.get("t"),
+                                          "wager_usd": _p7.get("wager_usd"),
+                                          "target": _p7.get("target"), "stop": _p7.get("stop"),
+                                          "style": _p7.get("style")}
+                                         for _s7, _p7 in (_pb.positions or {}).items()],
+                           "recent_trades": [], "actions": [],
                            "universe": 0, "universe_seen": 0}
             champ_names.setdefault(bk, "market closed")
             continue
