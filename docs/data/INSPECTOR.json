@@ -1,94 +1,77 @@
 {
-  "generated_at": "2026-08-24T15:55:05.948659+00:00",
+  "generated_at": "2026-08-24T15:44:28.395755+00:00",
   "what": "a skeptic that reads the RECORD rather than the laws. selftest asks 'is each law still enforced?'; the inspector asks 'does this look like a working system?' \u2014 on real data, every cycle.",
-  "closed_trades_examined": 3873,
-  "symbols_with_structure": 377,
+  "closed_trades_examined": 3830,
+  "symbols_with_structure": 378,
   "counts": {
-    "CRITICAL": 1,
     "HIGH": 4,
     "MEDIUM": 1,
     "INFO": 1
   },
-  "verdict": "ATTENTION \u2014 5 critical/high finding(s)",
+  "verdict": "ATTENTION \u2014 4 critical/high finding(s)",
   "structure_pattern": {
     "band_mid": {
-      "n": 1330,
-      "mean_net_pct": -0.194,
-      "win_pct": 46.7
+      "n": 1405,
+      "mean_net_pct": -0.234,
+      "win_pct": 43.4
     },
     "support_strong": {
-      "n": 1284,
-      "mean_net_pct": -0.457,
-      "win_pct": 40.5
-    },
-    "break_intact": {
-      "n": 1373,
-      "mean_net_pct": -0.275,
-      "win_pct": 47.1
-    },
-    "approach_lifting_off": {
-      "n": 1282,
-      "mean_net_pct": -0.359,
-      "win_pct": 45.2
-    },
-    "band_low": {
-      "n": 1333,
-      "mean_net_pct": -0.131,
-      "win_pct": 43.7
-    },
-    "support_weak": {
-      "n": 2188,
-      "mean_net_pct": -0.106,
-      "win_pct": 49.2
+      "n": 1151,
+      "mean_net_pct": -0.547,
+      "win_pct": 41.4
     },
     "break_testing": {
-      "n": 1665,
-      "mean_net_pct": -0.092,
-      "win_pct": 45.7
+      "n": 1061,
+      "mean_net_pct": -0.391,
+      "win_pct": 44.9
     },
     "approach_falling_into": {
-      "n": 1178,
-      "mean_net_pct": -0.138,
-      "win_pct": 50.3
+      "n": 1166,
+      "mean_net_pct": -0.338,
+      "win_pct": 47.9
     },
-    "band_high": {
-      "n": 574,
-      "mean_net_pct": -0.557,
-      "win_pct": 45.5
+    "band_low": {
+      "n": 799,
+      "mean_net_pct": -0.307,
+      "win_pct": 45.9
+    },
+    "break_intact": {
+      "n": 2143,
+      "mean_net_pct": -0.104,
+      "win_pct": 47.5
+    },
+    "approach_lifting_off": {
+      "n": 1364,
+      "mean_net_pct": -0.066,
+      "win_pct": 47.7
+    },
+    "support_weak": {
+      "n": 2293,
+      "mean_net_pct": -0.057,
+      "win_pct": 48.1
     },
     "approach_flat_at": {
-      "n": 1190,
-      "mean_net_pct": -0.108,
-      "win_pct": 45.0
+      "n": 1089,
+      "mean_net_pct": -0.181,
+      "win_pct": 44.5
     },
     "break_broken": {
-      "n": 434,
-      "mean_net_pct": -0.666,
-      "win_pct": 43.5
+      "n": 240,
+      "mean_net_pct": -0.516,
+      "win_pct": 35.8
+    },
+    "band_high": {
+      "n": 905,
+      "mean_net_pct": -0.224,
+      "win_pct": 44.4
     },
     "break_none": {
-      "n": 178,
-      "mean_net_pct": 0.386,
-      "win_pct": 62.4
+      "n": 175,
+      "mean_net_pct": 0.449,
+      "win_pct": 65.1
     }
   },
   "findings": [
-    {
-      "severity": "CRITICAL",
-      "code": "GOAL_MISS",
-      "title": "1 open positions crossed their target with no exit and no trail armed",
-      "detail": "The tape shows price at or above the target while the position is still open and carries no high-water mark. Either the exit path did not run or the trail failed to arm.",
-      "evidence": [
-        {
-          "sleeve": "crypto:U",
-          "sym": "MINA-USD",
-          "peak_pct": 9.12,
-          "target_pct": 5.0,
-          "now_pct": 9.12
-        }
-      ],
-      "action": "Trace the exit path for these symbols; a crossed target must either sell or arm a trail."
-    },
     {
       "severity": "HIGH",
       "code": "FEED_COMB",
@@ -98,17 +81,17 @@
         {
           "sym": "1INCH-USD",
           "v_round_trips": 36,
-          "prints": 497
+          "prints": 498
+        },
+        {
+          "sym": "MOG-USD",
+          "v_round_trips": 13,
+          "prints": 390
         },
         {
           "sym": "ARKM-USD",
           "v_round_trips": 11,
-          "prints": 455
-        },
-        {
-          "sym": "MOG-USD",
-          "v_round_trips": 9,
-          "prints": 394
+          "prints": 458
         }
       ],
       "action": "Check canon_keys rejections (FROZEN/DEAD/OUT_OF_HOURS) for these symbols."
@@ -116,7 +99,7 @@
     {
       "severity": "HIGH",
       "code": "LABEL_CONTRADICTION",
-      "title": "125 exits contradict their own label",
+      "title": "120 exits contradict their own label",
       "detail": "An exit reason is a claim about why we sold. When the number disagrees with the name, either the fill model or the label is wrong \u2014 and both mislead every audit downstream.",
       "evidence": [
         {
@@ -176,13 +159,6 @@
           "contradiction": "a break-even lock that books a real loss"
         },
         {
-          "sleeve": "crypto:A",
-          "sym": "MINA-USD",
-          "why": "BREAKEVEN_LOCK",
-          "net_pct": -1.887,
-          "contradiction": "a break-even lock that books a real loss"
-        },
-        {
           "sleeve": "crypto:B",
           "sym": "STRK-USD",
           "why": "GIVEBACK_CAP",
@@ -202,6 +178,13 @@
           "why": "GIVEBACK_CAP",
           "net_pct": -6.233,
           "contradiction": "a profit-taking exit that booked a loss"
+        },
+        {
+          "sleeve": "crypto:B",
+          "sym": "JTO-USD",
+          "why": "BREAKEVEN_LOCK",
+          "net_pct": -6.924,
+          "contradiction": "a break-even lock that books a real loss"
         }
       ],
       "action": "Model these as RESTING orders: fill where price crossed the level, taking the worse of level and observed print."
@@ -209,20 +192,18 @@
     {
       "severity": "HIGH",
       "code": "SILENT_SLEEVE",
-      "title": "3 sleeve-books took no trades AND refused nothing",
+      "title": "1 sleeve-books took no trades AND refused nothing",
       "detail": "A sleeve that is merely picky leaves refusals behind. Zero trades with zero refusals means it never saw a candidate \u2014 the disconnection pattern that hid L/N/O/Q/R/S/T for three releases.",
       "evidence": [
-        "energy:Q",
-        "metal:Q",
-        "stock:Q"
+        "metal:P"
       ],
       "action": "Check what feeds this sleeve's candidate pool; a thesis sleeve should scan its own universe, not inherit the mean-reversion dip funnel."
     },
     {
       "severity": "HIGH",
       "code": "WINNER_TO_LOSER",
-      "title": "70 positions were up more than 2% and still closed negative",
-      "detail": "Median give-back across 1870 closed trades is 1.43% of peak. A winner becoming a loser is not a market condition; it is a missing rail.",
+      "title": "69 positions were up more than 2% and still closed negative",
+      "detail": "Median give-back across 1843 closed trades is 1.44% of peak. A winner becoming a loser is not a market condition; it is a missing rail.",
       "evidence": [
         {
           "sleeve": "crypto:A",
@@ -268,10 +249,10 @@
         },
         {
           "sleeve": "crypto:A",
-          "sym": "MINA-USD",
+          "sym": "LDO-USD",
           "why": "BREAKEVEN_LOCK",
-          "peak_pct": 3.61,
-          "closed_pct": -1.89
+          "peak_pct": 2.42,
+          "closed_pct": -0.59
         },
         {
           "sleeve": "crypto:B",
@@ -314,44 +295,50 @@
     {
       "severity": "MEDIUM",
       "code": "HEADLINE_SIGN_FLIP",
-      "title": "6 sleeves show a headline with the opposite sign to realized P&L",
+      "title": "7 sleeves show a headline with the opposite sign to realized P&L",
       "detail": "The headline is equity-based and includes unrealized marks. Law 1 says realized fee-paid P&L is the only score. Quoting the headline is how 'M FLOOR ARTIST is green in all four books' was said about a sleeve that was net negative.",
       "evidence": [
         {
           "sleeve": "stock:U",
-          "headline_pct": 0.126,
-          "realized_pct": -0.104,
+          "headline_pct": 0.125,
+          "realized_pct": -0.063,
           "closed": 1
         },
         {
-          "sleeve": "stock:X",
-          "headline_pct": -0.202,
-          "realized_pct": 0.253,
-          "closed": 4
-        },
-        {
           "sleeve": "stock:P",
-          "headline_pct": -0.335,
+          "headline_pct": -0.268,
           "realized_pct": 0.417,
           "closed": 3
         },
         {
+          "sleeve": "stock:X",
+          "headline_pct": -0.371,
+          "realized_pct": 0.253,
+          "closed": 4
+        },
+        {
           "sleeve": "metal:E",
-          "headline_pct": 0.3,
+          "headline_pct": 0.438,
           "realized_pct": -0.098,
           "closed": 10
         },
         {
+          "sleeve": "metal:K",
+          "headline_pct": 0.292,
+          "realized_pct": -3.077,
+          "closed": 8
+        },
+        {
           "sleeve": "metal:R",
-          "headline_pct": 0.059,
+          "headline_pct": 0.141,
           "realized_pct": -2.718,
           "closed": 36
         },
         {
-          "sleeve": "metal:K",
-          "headline_pct": 0.057,
-          "realized_pct": -3.077,
-          "closed": 8
+          "sleeve": "energy:H",
+          "headline_pct": -0.103,
+          "realized_pct": 1.224,
+          "closed": 26
         }
       ],
       "action": "Judge sleeves on realized_pct. Treat the headline as mark-to-market only."
@@ -359,69 +346,69 @@
     {
       "severity": "INFO",
       "code": "STRUCTURE_PATTERN",
-      "title": "graded 3650 closed trades against the structure at their symbol; no separation yet",
+      "title": "graded 3619 closed trades against the structure at their symbol; no separation yet",
       "detail": "This is the steering signal: which chart states preceded winners and which preceded losers. It is a CURRENT-structure approximation, not an entry-time reconstruction, so treat it as a direction to investigate rather than proof.",
       "evidence": [
         {
           "band_mid": {
-            "n": 1330,
-            "mean_net_pct": -0.194,
-            "win_pct": 46.7
+            "n": 1405,
+            "mean_net_pct": -0.234,
+            "win_pct": 43.4
           },
           "support_strong": {
-            "n": 1284,
-            "mean_net_pct": -0.457,
-            "win_pct": 40.5
-          },
-          "break_intact": {
-            "n": 1373,
-            "mean_net_pct": -0.275,
-            "win_pct": 47.1
-          },
-          "approach_lifting_off": {
-            "n": 1282,
-            "mean_net_pct": -0.359,
-            "win_pct": 45.2
-          },
-          "band_low": {
-            "n": 1333,
-            "mean_net_pct": -0.131,
-            "win_pct": 43.7
-          },
-          "support_weak": {
-            "n": 2188,
-            "mean_net_pct": -0.106,
-            "win_pct": 49.2
+            "n": 1151,
+            "mean_net_pct": -0.547,
+            "win_pct": 41.4
           },
           "break_testing": {
-            "n": 1665,
-            "mean_net_pct": -0.092,
-            "win_pct": 45.7
+            "n": 1061,
+            "mean_net_pct": -0.391,
+            "win_pct": 44.9
           },
           "approach_falling_into": {
-            "n": 1178,
-            "mean_net_pct": -0.138,
-            "win_pct": 50.3
+            "n": 1166,
+            "mean_net_pct": -0.338,
+            "win_pct": 47.9
           },
-          "band_high": {
-            "n": 574,
-            "mean_net_pct": -0.557,
-            "win_pct": 45.5
+          "band_low": {
+            "n": 799,
+            "mean_net_pct": -0.307,
+            "win_pct": 45.9
+          },
+          "break_intact": {
+            "n": 2143,
+            "mean_net_pct": -0.104,
+            "win_pct": 47.5
+          },
+          "approach_lifting_off": {
+            "n": 1364,
+            "mean_net_pct": -0.066,
+            "win_pct": 47.7
+          },
+          "support_weak": {
+            "n": 2293,
+            "mean_net_pct": -0.057,
+            "win_pct": 48.1
           },
           "approach_flat_at": {
-            "n": 1190,
-            "mean_net_pct": -0.108,
-            "win_pct": 45.0
+            "n": 1089,
+            "mean_net_pct": -0.181,
+            "win_pct": 44.5
           },
           "break_broken": {
-            "n": 434,
-            "mean_net_pct": -0.666,
-            "win_pct": 43.5
+            "n": 240,
+            "mean_net_pct": -0.516,
+            "win_pct": 35.8
+          },
+          "band_high": {
+            "n": 905,
+            "mean_net_pct": -0.224,
+            "win_pct": 44.4
           },
           "break_none": {
-            "n": 178,
-            "mean_net_pct": 0.386,
-            "win_pct": 62.4
+            "n": 175,
+            "mean_net_pct": 0.449,
+            "win_pct": 65.1
           }
         }
       ],
