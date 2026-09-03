@@ -1,22 +1,25 @@
 {
-  "generated_at": "2026-09-03T09:14:57.042288+00:00",
+  "generated_at": "2026-09-03T09:38:27.127159+00:00",
   "marks_health": {
     "marked": 200,
     "entry_warm": 200,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.6,
+    "newest_sample_age_min": 1.1,
     "state": "OK",
-    "oscillating": 9,
+    "oscillating": 12,
     "oscillating_syms": [
       "1MWOJAK-USD",
-      "DGB-USD",
       "MASK-USD",
       "MOG-USD",
       "OM-USD",
-      "PROM-USD",
-      "RENDER-USD",
+      "ONG-USD",
+      "PURR-USD",
       "REQ-USD",
-      "VOXEL-USD"
+      "T-USD",
+      "USDUC-USD",
+      "VELO-USD",
+      "VOXEL-USD",
+      "XEC-USD"
     ]
   },
   "equity_market": {
@@ -55,7 +58,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-09-03T09:14:51.557121+00:00",
+    "generated_at": "2026-09-03T09:38:21.768444+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -105,7 +108,7 @@
       "seen": 178,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 169,
+      "entry_warm": 166,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {
@@ -116,15 +119,21 @@
     },
     "decision_trace_live": [
       {
-        "sym": "MINA-USD",
-        "dip_pct": -1.5,
-        "conviction": 0.2501,
+        "sym": "EOS-USD",
+        "dip_pct": -0.55,
+        "conviction": 0.2123,
         "fate": "candidate"
       },
       {
         "sym": "ETHFI-USD",
-        "dip_pct": -1.59,
-        "conviction": 0.2751,
+        "dip_pct": -0.88,
+        "conviction": 0.2166,
+        "fate": "candidate"
+      },
+      {
+        "sym": "QNT-USD",
+        "dip_pct": -0.51,
+        "conviction": 0.0424,
         "fate": "candidate"
       }
     ],
@@ -1220,23 +1229,14 @@
       "seen": 178,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 169,
-      "candidates_after_gates": 1,
+      "entry_warm": 166,
+      "candidates_after_gates": 0,
       "bought": 0,
-      "rejections": {
-        "UNTRADEABLE:evidence": 1
-      },
+      "rejections": {},
       "armed": true,
       "arming_why": "armed"
     },
-    "decision_trace_live": [
-      {
-        "sym": "ETHFI-USD",
-        "dip_pct": -1.59,
-        "conviction": 0.2751,
-        "fate": "candidate"
-      }
-    ],
+    "decision_trace_live": [],
     "equity": 8534.75,
     "cash": 8534.75,
     "realized_pnl": -569.05,
@@ -1836,14 +1836,23 @@
         "CPER"
       ],
       "entry_warm": 5,
-      "candidates_after_gates": 0,
+      "candidates_after_gates": 1,
       "bought": 0,
-      "rejections": {},
+      "rejections": {
+        "UNTRADEABLE:evidence": 1
+      },
       "armed": true,
       "arming_why": "armed \u2014 promoted sleeve J (TREND RIDER) has real closed trades"
     },
-    "decision_trace_live": [],
-    "equity": 9897.2,
+    "decision_trace_live": [
+      {
+        "sym": "XPT",
+        "dip_pct": -0.41,
+        "conviction": 0.0345,
+        "fate": "candidate"
+      }
+    ],
+    "equity": 9896.66,
     "cash": 7302.43,
     "realized_pnl": 192.68,
     "reserve_usd": 192.68,
@@ -1871,7 +1880,7 @@
         "sym": "XAU",
         "qty": 0.2113,
         "entry": 4719.92194,
-        "mark": 4481.399902,
+        "mark": 4478.799805,
         "mark_stale_since": null,
         "mark_is_carried": false,
         "t": "2026-08-24T16:31:47.544999+00:00",
@@ -1882,7 +1891,7 @@
         "style": "range-play",
         "entry_regime": "SIDEWAYS",
         "exp_net_usd": 12.6,
-        "upl_pct": -5.05
+        "upl_pct": -5.11
       }
     ],
     "recent_trades": [
@@ -3204,21 +3213,21 @@
     "tradeable_universe": 3,
     "universe_seen": 3
   },
-  "combined_equity": 38964.04,
+  "combined_equity": 38963.5,
   "combined_realized_pnl": -44.87,
   "backtest_3day_crypto": {
     "universe_total": 1082,
     "tradeable": 77,
     "ghosts_excluded": 1005,
-    "trades": 399,
-    "win_rate_pct": 71.2,
-    "mean_net_pct": -0.102,
+    "trades": 398,
+    "win_rate_pct": 71.1,
+    "mean_net_pct": -0.1,
     "exits": {
-      "TAKE": 293,
+      "TAKE": 292,
       "STOP": 106,
       "TIMEOUT": 0
     },
-    "equity_after": 9576.4
+    "equity_after": 9585.54
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
