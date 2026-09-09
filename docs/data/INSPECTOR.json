@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-09-09T18:51:24.468773+00:00",
+  "generated_at": "2026-09-09T18:36:08.113895+00:00",
   "what": "a skeptic that reads the RECORD rather than the laws. selftest asks 'is each law still enforced?'; the inspector asks 'does this look like a working system?' \u2014 on real data, every cycle.",
-  "closed_trades_examined": 7478,
+  "closed_trades_examined": 7451,
   "symbols_with_structure": 375,
   "counts": {
     "CRITICAL": 1,
@@ -10,87 +10,80 @@
   },
   "verdict": "ATTENTION \u2014 5 critical/high finding(s)",
   "structure_pattern": {
-    "support_weak": {
-      "n": 4874,
-      "mean_net_pct": -0.231,
-      "win_pct": 47.7
+    "support_strong": {
+      "n": 1371,
+      "mean_net_pct": -0.565,
+      "win_pct": 38.5
     },
     "break_intact": {
-      "n": 3510,
-      "mean_net_pct": -0.079,
-      "win_pct": 49.9
+      "n": 3072,
+      "mean_net_pct": -0.149,
+      "win_pct": 51.0
     },
     "approach_lifting_off": {
-      "n": 3483,
-      "mean_net_pct": -0.257,
-      "win_pct": 47.9
-    },
-    "band_high": {
-      "n": 1627,
-      "mean_net_pct": 0.07,
-      "win_pct": 52.5
-    },
-    "break_broken": {
-      "n": 827,
-      "mean_net_pct": -0.432,
-      "win_pct": 48.2
-    },
-    "band_low": {
-      "n": 2404,
-      "mean_net_pct": -0.455,
-      "win_pct": 43.3
-    },
-    "support_strong": {
-      "n": 1813,
-      "mean_net_pct": -0.422,
-      "win_pct": 42.0
-    },
-    "break_testing": {
-      "n": 2350,
-      "mean_net_pct": -0.534,
-      "win_pct": 39.9
-    },
-    "approach_flat_at": {
-      "n": 1780,
-      "mean_net_pct": -0.487,
-      "win_pct": 40.9
-    },
-    "approach_falling_into": {
-      "n": 1770,
-      "mean_net_pct": -0.196,
-      "win_pct": 47.6
+      "n": 3906,
+      "mean_net_pct": -0.308,
+      "win_pct": 45.8
     },
     "band_mid": {
-      "n": 2173,
-      "mean_net_pct": -0.265,
-      "win_pct": 45.3
+      "n": 2157,
+      "mean_net_pct": -0.352,
+      "win_pct": 44.3
+    },
+    "support_weak": {
+      "n": 5122,
+      "mean_net_pct": -0.201,
+      "win_pct": 48.0
+    },
+    "break_testing": {
+      "n": 2775,
+      "mean_net_pct": -0.33,
+      "win_pct": 42.6
+    },
+    "band_low": {
+      "n": 2410,
+      "mean_net_pct": -0.376,
+      "win_pct": 43.8
+    },
+    "approach_falling_into": {
+      "n": 1636,
+      "mean_net_pct": -0.075,
+      "win_pct": 50.5
+    },
+    "break_broken": {
+      "n": 646,
+      "mean_net_pct": -0.672,
+      "win_pct": 37.0
+    },
+    "band_high": {
+      "n": 1326,
+      "mean_net_pct": 0.054,
+      "win_pct": 50.2
     },
     "break_none": {
-      "n": 346,
-      "mean_net_pct": -0.629,
-      "win_pct": 43.9
+      "n": 532,
+      "mean_net_pct": -0.603,
+      "win_pct": 44.4
+    },
+    "approach_flat_at": {
+      "n": 1483,
+      "mean_net_pct": -0.539,
+      "win_pct": 41.1
     }
   },
   "findings": [
     {
       "severity": "CRITICAL",
       "code": "GOAL_MISS",
-      "title": "2 open positions crossed their target with no exit and no trail armed",
+      "title": "1 open positions crossed their target with no exit and no trail armed",
       "detail": "The tape shows price at or above the target while the position is still open and carries no high-water mark. Either the exit path did not run or the trail failed to arm.",
       "evidence": [
         {
           "sleeve": "crypto:U",
-          "sym": "STRK-USD",
-          "peak_pct": 9.47,
+          "sym": "XTZ-USD",
+          "peak_pct": 7.72,
           "target_pct": 5.0,
-          "now_pct": 7.71
-        },
-        {
-          "sleeve": "metal:U",
-          "sym": "XPT",
-          "peak_pct": 5.03,
-          "target_pct": 5.0,
-          "now_pct": 4.1
+          "now_pct": 5.92
         }
       ],
       "action": "Trace the exit path for these symbols; a crossed target must either sell or arm a trail."
@@ -103,8 +96,8 @@
       "evidence": [
         {
           "sym": "MOG-USD",
-          "v_round_trips": 19,
-          "prints": 343
+          "v_round_trips": 22,
+          "prints": 341
         },
         {
           "sym": "XAG",
@@ -117,7 +110,7 @@
     {
       "severity": "HIGH",
       "code": "LABEL_CONTRADICTION",
-      "title": "147 exits contradict their own label",
+      "title": "146 exits contradict their own label",
       "detail": "An exit reason is a claim about why we sold. When the number disagrees with the name, either the fill model or the label is wrong \u2014 and both mislead every audit downstream.",
       "evidence": [
         {
@@ -226,8 +219,8 @@
     {
       "severity": "HIGH",
       "code": "WINNER_TO_LOSER",
-      "title": "30 positions were up more than 2% and still closed negative",
-      "detail": "Median give-back across 1674 closed trades is 1.10% of peak. A winner becoming a loser is not a market condition; it is a missing rail.",
+      "title": "23 positions were up more than 2% and still closed negative",
+      "detail": "Median give-back across 1645 closed trades is 1.10% of peak. A winner becoming a loser is not a market condition; it is a missing rail.",
       "evidence": [
         {
           "sleeve": "crypto:A",
@@ -272,6 +265,13 @@
           "closed_pct": -0.69
         },
         {
+          "sleeve": "crypto:E",
+          "sym": "WAVES-USD",
+          "why": "BREAKEVEN_LOCK",
+          "peak_pct": 2.43,
+          "closed_pct": -0.43
+        },
+        {
           "sleeve": "crypto:F",
           "sym": "AAVE-USD",
           "why": "BREAKEVEN_LOCK",
@@ -293,13 +293,6 @@
           "closed_pct": -0.47
         },
         {
-          "sleeve": "crypto:G",
-          "sym": "STRK-USD",
-          "why": "BREAKEVEN_LOCK",
-          "peak_pct": 2.89,
-          "closed_pct": -0.07
-        },
-        {
           "sleeve": "crypto:M",
           "sym": "STRK-USD",
           "why": "BREAKEVEN_LOCK",
@@ -319,20 +312,32 @@
     {
       "severity": "MEDIUM",
       "code": "HEADLINE_SIGN_FLIP",
-      "title": "2 sleeves show a headline with the opposite sign to realized P&L",
+      "title": "4 sleeves show a headline with the opposite sign to realized P&L",
       "detail": "The headline is equity-based and includes unrealized marks. Law 1 says realized fee-paid P&L is the only score. Quoting the headline is how 'M FLOOR ARTIST is green in all four books' was said about a sleeve that was net negative.",
       "evidence": [
         {
           "sleeve": "crypto:J",
-          "headline_pct": -0.545,
-          "realized_pct": 1.2,
-          "closed": 115
+          "headline_pct": -0.374,
+          "realized_pct": 2.969,
+          "closed": 110
+        },
+        {
+          "sleeve": "crypto:C",
+          "headline_pct": -2.596,
+          "realized_pct": 2.464,
+          "closed": 159
         },
         {
           "sleeve": "crypto:B",
-          "headline_pct": -2.177,
+          "headline_pct": -4.107,
           "realized_pct": 0.605,
           "closed": 149
+        },
+        {
+          "sleeve": "stock:A",
+          "headline_pct": -1.576,
+          "realized_pct": 0.185,
+          "closed": 29
         }
       ],
       "action": "Judge sleeves on realized_pct. Treat the headline as mark-to-market only."
@@ -340,10 +345,10 @@
     {
       "severity": "MEDIUM",
       "code": "STRUCTURE_PATTERN",
-      "title": "graded 7033 closed trades against the structure at their symbol; 1 readable separations",
+      "title": "graded 7025 closed trades against the structure at their symbol; 1 readable separations",
       "detail": "This is the steering signal: which chart states preceded winners and which preceded losers. It is a CURRENT-structure approximation, not an entry-time reconstruction, so treat it as a direction to investigate rather than proof.",
       "evidence": [
-        "entries at band_high averaged +0.07% vs -0.46% at band_low (n=1627/2404)"
+        "entries at break_intact averaged -0.15% vs -0.67% at break_broken (n=3072/646)"
       ],
       "action": "Consider tightening the sleeves toward the better bucket, with a knob and an A/B."
     }
