@@ -1,14 +1,13 @@
 {
-  "generated_at": "2026-09-13T13:07:23.590497+00:00",
+  "generated_at": "2026-09-13T12:57:08.171759+00:00",
   "marks_health": {
-    "marked": 206,
-    "entry_warm": 204,
+    "marked": 204,
+    "entry_warm": 203,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.4,
+    "newest_sample_age_min": 1.0,
     "state": "OK",
-    "oscillating": 12,
+    "oscillating": 11,
     "oscillating_syms": [
-      "0G-USD",
       "1000MOG-USD",
       "1MWOJAK-USD",
       "API3-USD",
@@ -17,9 +16,9 @@
       "POL-USD",
       "TFUEL-USD",
       "TON-USD",
+      "USDUC-USD",
       "VOXEL-USD",
-      "WLFI-USD",
-      "XDC-USD"
+      "WLFI-USD"
     ]
   },
   "equity_market": {
@@ -58,12 +57,12 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-09-13T13:07:20.598267+00:00",
+    "generated_at": "2026-09-13T12:57:04.916698+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
     "window": 60,
-    "excluded_count": 7,
+    "excluded_count": 6,
     "excluded": [
       {
         "sym": "MOG-USD",
@@ -91,11 +90,6 @@
         "max_move_pct": 7.8
       },
       {
-        "sym": "CTSI-USD",
-        "snapbacks": 1,
-        "max_move_pct": 12.7
-      },
-      {
         "sym": "JAM-USD",
         "snapbacks": 1,
         "max_move_pct": 14.8
@@ -115,24 +109,50 @@
   },
   "crypto": {
     "funnel": {
-      "seen": 184,
+      "seen": 182,
       "marks_carried": 0,
       "marks_carried_syms": [],
       "entry_warm": 170,
-      "candidates_after_gates": 1,
+      "candidates_after_gates": 5,
       "bought": 0,
       "rejections": {
+        "position cap 0/4 for crypto": 1,
         "SIZER RED: entries halted": 1,
-        "UNTRADEABLE:evidence": 1
+        "UNTRADEABLE:evidence": 3,
+        "falling knife": 1
       },
       "armed": true,
       "arming_why": "armed \u2014 promoted sleeve U (PATIENCE FLOOR) has real closed trades"
     },
     "decision_trace_live": [
       {
+        "sym": "XTZ-USD",
+        "dip_pct": -1.05,
+        "conviction": 0.3099,
+        "fate": "candidate"
+      },
+      {
+        "sym": "SUSHI-USD",
+        "dip_pct": -1.2,
+        "conviction": 0.3498,
+        "fate": "candidate"
+      },
+      {
+        "sym": "KAVA-USD",
+        "dip_pct": -3.03,
+        "conviction": 0.2525,
+        "fate": "candidate"
+      },
+      {
         "sym": "XMR-USD",
-        "dip_pct": -1.26,
-        "conviction": 0.1053,
+        "dip_pct": -1.19,
+        "conviction": 0.0994,
+        "fate": "candidate"
+      },
+      {
+        "sym": "LTC-USD",
+        "dip_pct": -0.58,
+        "conviction": 0.0482,
         "fate": "candidate"
       }
     ],
@@ -715,8 +735,8 @@
         "champion_changed": false
       }
     ],
-    "tradeable_universe": 74,
-    "universe_seen": 184
+    "tradeable_universe": 73,
+    "universe_seen": 182
   },
   "stock": {
     "skipped": true,
@@ -759,7 +779,7 @@
   },
   "aggressive": {
     "funnel": {
-      "seen": 184,
+      "seen": 182,
       "marks_carried": 0,
       "marks_carried_syms": [],
       "entry_warm": 170,
@@ -767,16 +787,16 @@
       "bought": 0,
       "rejections": {
         "SIZER RED: entries halted": 1,
-        "UNTRADEABLE:evidence": 1
+        "falling knife": 1
       },
       "armed": true,
       "arming_why": "armed"
     },
     "decision_trace_live": [
       {
-        "sym": "XMR-USD",
-        "dip_pct": -1.26,
-        "conviction": 0.1053,
+        "sym": "KAVA-USD",
+        "dip_pct": -3.03,
+        "conviction": 0.2525,
         "fate": "candidate"
       }
     ],
@@ -1370,8 +1390,8 @@
         "pred": null
       }
     ],
-    "tradeable_universe": 74,
-    "universe_seen": 184,
+    "tradeable_universe": 73,
+    "universe_seen": 182,
     "display_name": "GEKKO"
   },
   "metal": {
@@ -1444,15 +1464,15 @@
     "universe_total": 1084,
     "tradeable": 76,
     "ghosts_excluded": 1008,
-    "trades": 436,
-    "win_rate_pct": 66.5,
-    "mean_net_pct": -0.233,
+    "trades": 435,
+    "win_rate_pct": 66.7,
+    "mean_net_pct": -0.195,
     "exits": {
       "TAKE": 299,
-      "STOP": 137,
+      "STOP": 136,
       "TIMEOUT": 0
     },
-    "equity_after": 9008.79
+    "equity_after": 9160.28
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
