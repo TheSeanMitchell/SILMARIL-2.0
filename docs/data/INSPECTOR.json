@@ -1,76 +1,93 @@
 {
-  "generated_at": "2026-09-14T18:05:40.885968+00:00",
+  "generated_at": "2026-09-14T17:51:43.750157+00:00",
   "what": "a skeptic that reads the RECORD rather than the laws. selftest asks 'is each law still enforced?'; the inspector asks 'does this look like a working system?' \u2014 on real data, every cycle.",
-  "closed_trades_examined": 8583,
-  "symbols_with_structure": 383,
+  "closed_trades_examined": 8591,
+  "symbols_with_structure": 382,
   "counts": {
-    "HIGH": 4,
+    "CRITICAL": 1,
+    "HIGH": 3,
     "MEDIUM": 2
   },
   "verdict": "ATTENTION \u2014 4 critical/high finding(s)",
   "structure_pattern": {
-    "band_mid": {
-      "n": 2827,
-      "mean_net_pct": -0.361,
-      "win_pct": 47.3
-    },
-    "support_strong": {
-      "n": 1631,
-      "mean_net_pct": -0.422,
-      "win_pct": 45.1
-    },
-    "break_intact": {
-      "n": 4812,
-      "mean_net_pct": -0.39,
-      "win_pct": 46.5
-    },
-    "approach_lifting_off": {
-      "n": 5999,
-      "mean_net_pct": -0.521,
-      "win_pct": 42.4
-    },
-    "band_low": {
-      "n": 2097,
-      "mean_net_pct": -0.32,
-      "win_pct": 43.6
+    "band_high": {
+      "n": 1088,
+      "mean_net_pct": -0.622,
+      "win_pct": 41.0
     },
     "support_weak": {
-      "n": 6276,
-      "mean_net_pct": -0.392,
-      "win_pct": 45.0
+      "n": 6262,
+      "mean_net_pct": -0.405,
+      "win_pct": 44.8
     },
     "break_broken": {
-      "n": 1523,
-      "mean_net_pct": -0.549,
-      "win_pct": 40.4
+      "n": 1707,
+      "mean_net_pct": -0.581,
+      "win_pct": 41.7
     },
-    "band_high": {
-      "n": 1355,
-      "mean_net_pct": -0.222,
-      "win_pct": 47.1
+    "approach_lifting_off": {
+      "n": 5663,
+      "mean_net_pct": -0.525,
+      "win_pct": 43.0
     },
-    "break_testing": {
-      "n": 1572,
-      "mean_net_pct": -0.278,
-      "win_pct": 45.0
+    "band_low": {
+      "n": 2698,
+      "mean_net_pct": -0.405,
+      "win_pct": 42.9
     },
-    "approach_flat_at": {
-      "n": 897,
-      "mean_net_pct": -0.303,
+    "break_intact": {
+      "n": 3965,
+      "mean_net_pct": -0.36,
+      "win_pct": 46.8
+    },
+    "band_mid": {
+      "n": 2743,
+      "mean_net_pct": -0.157,
       "win_pct": 50.6
     },
+    "break_testing": {
+      "n": 2159,
+      "mean_net_pct": -0.303,
+      "win_pct": 44.4
+    },
+    "approach_flat_at": {
+      "n": 1245,
+      "mean_net_pct": -0.376,
+      "win_pct": 43.1
+    },
+    "support_strong": {
+      "n": 1569,
+      "mean_net_pct": -0.34,
+      "win_pct": 45.7
+    },
     "approach_falling_into": {
-      "n": 1205,
-      "mean_net_pct": 0.211,
-      "win_pct": 53.9
+      "n": 1101,
+      "mean_net_pct": 0.346,
+      "win_pct": 57.0
     },
     "break_none": {
-      "n": 194,
-      "mean_net_pct": 0.048,
-      "win_pct": 44.8
+      "n": 178,
+      "mean_net_pct": 0.061,
+      "win_pct": 43.8
     }
   },
   "findings": [
+    {
+      "severity": "CRITICAL",
+      "code": "GOAL_MISS",
+      "title": "1 open positions crossed their target with no exit and no trail armed",
+      "detail": "The tape shows price at or above the target while the position is still open and carries no high-water mark. Either the exit path did not run or the trail failed to arm.",
+      "evidence": [
+        {
+          "sleeve": "crypto:U",
+          "sym": "INJ-USD",
+          "peak_pct": 5.51,
+          "target_pct": 5.0,
+          "now_pct": 5.51
+        }
+      ],
+      "action": "Trace the exit path for these symbols; a crossed target must either sell or arm a trail."
+    },
     {
       "severity": "HIGH",
       "code": "FEED_COMB",
@@ -79,7 +96,7 @@
       "evidence": [
         {
           "sym": "MOG-USD",
-          "v_round_trips": 20,
+          "v_round_trips": 19,
           "prints": 351
         },
         {
@@ -185,27 +202,9 @@
     },
     {
       "severity": "HIGH",
-      "code": "SILENT_SLEEVE",
-      "title": "9 sleeve-books took no trades AND refused nothing",
-      "detail": "A sleeve that is merely picky leaves refusals behind. Zero trades with zero refusals means it never saw a candidate \u2014 the disconnection pattern that hid L/N/O/Q/R/S/T for three releases.",
-      "evidence": [
-        "crypto:Y",
-        "energy:Y",
-        "metal:Q",
-        "metal:V",
-        "metal:Y",
-        "stock:Q",
-        "stock:V",
-        "stock:Y",
-        "stock:Z"
-      ],
-      "action": "Check what feeds this sleeve's candidate pool; a thesis sleeve should scan its own universe, not inherit the mean-reversion dip funnel."
-    },
-    {
-      "severity": "HIGH",
       "code": "WINNER_TO_LOSER",
-      "title": "48 positions were up more than 2% and still closed negative",
-      "detail": "Median give-back across 1766 closed trades is 1.29% of peak. A winner becoming a loser is not a market condition; it is a missing rail.",
+      "title": "49 positions were up more than 2% and still closed negative",
+      "detail": "Median give-back across 1771 closed trades is 1.28% of peak. A winner becoming a loser is not a market condition; it is a missing rail.",
       "evidence": [
         {
           "sleeve": "crypto:A",
@@ -257,6 +256,13 @@
           "closed_pct": -0.69
         },
         {
+          "sleeve": "crypto:E",
+          "sym": "FIL-USD",
+          "why": "BREAKEVEN_LOCK",
+          "peak_pct": 2.07,
+          "closed_pct": -0.55
+        },
+        {
           "sleeve": "crypto:F",
           "sym": "LTC-USD",
           "why": "BREAKEVEN_LOCK",
@@ -283,13 +289,6 @@
           "why": "BREAKEVEN_LOCK",
           "peak_pct": 3.74,
           "closed_pct": -5.26
-        },
-        {
-          "sleeve": "crypto:I",
-          "sym": "STRK-USD",
-          "why": "BREAKEVEN_LOCK",
-          "peak_pct": 2.07,
-          "closed_pct": -0.0
         }
       ],
       "action": "Check the give-back governor is armed (giveback_arm_pct) and that its exits model a resting order rather than the next glance."
@@ -297,30 +296,24 @@
     {
       "severity": "MEDIUM",
       "code": "HEADLINE_SIGN_FLIP",
-      "title": "4 sleeves show a headline with the opposite sign to realized P&L",
+      "title": "3 sleeves show a headline with the opposite sign to realized P&L",
       "detail": "The headline is equity-based and includes unrealized marks. Law 1 says realized fee-paid P&L is the only score. Quoting the headline is how 'M FLOOR ARTIST is green in all four books' was said about a sleeve that was net negative.",
       "evidence": [
         {
           "sleeve": "stock:B",
-          "headline_pct": -0.682,
+          "headline_pct": -0.643,
           "realized_pct": 1.908,
           "closed": 14
         },
         {
           "sleeve": "metal:I",
-          "headline_pct": -0.33,
-          "realized_pct": 0.739,
+          "headline_pct": -0.371,
+          "realized_pct": 0.708,
           "closed": 55
         },
         {
-          "sleeve": "metal:B",
-          "headline_pct": -0.362,
-          "realized_pct": 0.087,
-          "closed": 36
-        },
-        {
           "sleeve": "energy:H",
-          "headline_pct": -0.144,
+          "headline_pct": -0.374,
           "realized_pct": 0.16,
           "closed": 54
         }
@@ -330,10 +323,10 @@
     {
       "severity": "MEDIUM",
       "code": "STRUCTURE_PATTERN",
-      "title": "graded 8101 closed trades against the structure at their symbol; 1 readable separations",
+      "title": "graded 8009 closed trades against the structure at their symbol; 1 readable separations",
       "detail": "This is the steering signal: which chart states preceded winners and which preceded losers. It is a CURRENT-structure approximation, not an entry-time reconstruction, so treat it as a direction to investigate rather than proof.",
       "evidence": [
-        "entries at approach_falling_into averaged +0.21% vs -0.52% at approach_lifting_off (n=1205/5999)"
+        "entries at approach_falling_into averaged +0.35% vs -0.53% at approach_lifting_off (n=1101/5663)"
       ],
       "action": "Consider tightening the sleeves toward the better bucket, with a knob and an A/B."
     }
