@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-09-18T03:31:52.933418+00:00",
+  "generated_at": "2026-09-18T03:56:25.742467+00:00",
   "what": "a skeptic that reads the RECORD rather than the laws. selftest asks 'is each law still enforced?'; the inspector asks 'does this look like a working system?' \u2014 on real data, every cycle.",
   "closed_trades_examined": 9280,
-  "symbols_with_structure": 381,
+  "symbols_with_structure": 379,
   "counts": {
     "CRITICAL": 1,
     "HIGH": 4,
@@ -16,59 +16,59 @@
       "win_pct": 40.7
     },
     "break_intact": {
-      "n": 6134,
+      "n": 5825,
       "mean_net_pct": -0.554,
-      "win_pct": 42.3
+      "win_pct": 41.8
     },
     "approach_lifting_off": {
-      "n": 6586,
-      "mean_net_pct": -0.49,
-      "win_pct": 43.7
-    },
-    "band_mid": {
-      "n": 1527,
-      "mean_net_pct": -0.465,
-      "win_pct": 45.9
-    },
-    "support_weak": {
-      "n": 7412,
-      "mean_net_pct": -0.387,
-      "win_pct": 45.8
-    },
-    "break_broken": {
-      "n": 716,
-      "mean_net_pct": -0.583,
-      "win_pct": 44.0
-    },
-    "band_high": {
-      "n": 756,
-      "mean_net_pct": -0.476,
-      "win_pct": 43.8
-    },
-    "approach_flat_at": {
-      "n": 1811,
-      "mean_net_pct": -0.317,
-      "win_pct": 47.8
+      "n": 6618,
+      "mean_net_pct": -0.553,
+      "win_pct": 42.5
     },
     "band_low": {
-      "n": 1973,
-      "mean_net_pct": -0.005,
-      "win_pct": 52.4
+      "n": 1865,
+      "mean_net_pct": 0.12,
+      "win_pct": 53.6
+    },
+    "support_weak": {
+      "n": 7341,
+      "mean_net_pct": -0.378,
+      "win_pct": 45.7
+    },
+    "break_broken": {
+      "n": 1014,
+      "mean_net_pct": -0.429,
+      "win_pct": 46.6
+    },
+    "band_high": {
+      "n": 1096,
+      "mean_net_pct": -0.408,
+      "win_pct": 45.5
     },
     "break_testing": {
-      "n": 1884,
-      "mean_net_pct": 0.056,
-      "win_pct": 54.2
+      "n": 1824,
+      "mean_net_pct": 0.029,
+      "win_pct": 54.1
     },
     "approach_falling_into": {
-      "n": 362,
-      "mean_net_pct": 0.396,
-      "win_pct": 54.7
+      "n": 1016,
+      "mean_net_pct": 0.284,
+      "win_pct": 59.1
+    },
+    "approach_flat_at": {
+      "n": 1047,
+      "mean_net_pct": -0.234,
+      "win_pct": 46.8
+    },
+    "band_mid": {
+      "n": 1262,
+      "mean_net_pct": -0.61,
+      "win_pct": 43.8
     },
     "break_none": {
-      "n": 25,
-      "mean_net_pct": 1.926,
-      "win_pct": 36.0
+      "n": 18,
+      "mean_net_pct": -0.223,
+      "win_pct": 44.4
     }
   },
   "findings": [
@@ -88,9 +88,9 @@
         {
           "sleeve": "crypto:U",
           "sym": "REZ-USD",
-          "peak_pct": 8.69,
+          "peak_pct": 10.19,
           "target_pct": 5.0,
-          "now_pct": 8.69
+          "now_pct": 10.19
         }
       ],
       "action": "Trace the exit path for these symbols; a crossed target must either sell or arm a trail."
@@ -210,12 +210,18 @@
     {
       "severity": "HIGH",
       "code": "SILENT_SLEEVE",
-      "title": "4 sleeve-books took no trades AND refused nothing",
+      "title": "10 sleeve-books took no trades AND refused nothing",
       "detail": "A sleeve that is merely picky leaves refusals behind. Zero trades with zero refusals means it never saw a candidate \u2014 the disconnection pattern that hid L/N/O/Q/R/S/T for three releases.",
       "evidence": [
+        "metal:L",
+        "metal:N",
+        "metal:O",
         "metal:P",
         "metal:Q",
+        "metal:V",
+        "stock:L",
         "stock:Q",
+        "stock:V",
         "stock:Z"
       ],
       "action": "Check what feeds this sleeve's candidate pool; a thesis sleeve should scan its own universe, not inherit the mean-reversion dip funnel."
@@ -316,9 +322,15 @@
     {
       "severity": "MEDIUM",
       "code": "HEADLINE_SIGN_FLIP",
-      "title": "2 sleeves show a headline with the opposite sign to realized P&L",
+      "title": "3 sleeves show a headline with the opposite sign to realized P&L",
       "detail": "The headline is equity-based and includes unrealized marks. Law 1 says realized fee-paid P&L is the only score. Quoting the headline is how 'M FLOOR ARTIST is green in all four books' was said about a sleeve that was net negative.",
       "evidence": [
+        {
+          "sleeve": "crypto:Z",
+          "headline_pct": 0.278,
+          "realized_pct": -0.321,
+          "closed": 104
+        },
         {
           "sleeve": "stock:C",
           "headline_pct": -0.542,
@@ -337,10 +349,11 @@
     {
       "severity": "MEDIUM",
       "code": "STRUCTURE_PATTERN",
-      "title": "graded 8759 closed trades against the structure at their symbol; 1 readable separations",
+      "title": "graded 8681 closed trades against the structure at their symbol; 2 readable separations",
       "detail": "This is the steering signal: which chart states preceded winners and which preceded losers. It is a CURRENT-structure approximation, not an entry-time reconstruction, so treat it as a direction to investigate rather than proof.",
       "evidence": [
-        "entries at approach_falling_into averaged +0.40% vs -0.49% at approach_lifting_off (n=362/6586)"
+        "entries at band_low averaged +0.12% vs -0.41% at band_high (n=1865/1096)",
+        "entries at approach_falling_into averaged +0.28% vs -0.55% at approach_lifting_off (n=1016/6618)"
       ],
       "action": "Consider tightening the sleeves toward the better bucket, with a knob and an A/B."
     }
