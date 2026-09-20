@@ -1,21 +1,22 @@
 {
-  "generated_at": "2026-09-20T20:51:57.753488+00:00",
+  "generated_at": "2026-09-20T20:38:49.630423+00:00",
   "marks_health": {
     "marked": 209,
     "entry_warm": 209,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 1.1,
+    "newest_sample_age_min": 1.2,
     "state": "OK",
-    "oscillating": 8,
+    "oscillating": 9,
     "oscillating_syms": [
-      "AVNT-USD",
       "BTTC-USD",
+      "CAKE-USD",
+      "IOTA-USD",
       "REEF-USD",
       "RENDER-USD",
       "RVN-USD",
       "SKL-USD",
-      "UNI-USD",
-      "XDC-USD"
+      "TFUEL-USD",
+      "UNI-USD"
     ]
   },
   "equity_market": {
@@ -54,7 +55,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-09-20T20:51:54.203159+00:00",
+    "generated_at": "2026-09-20T20:38:45.686273+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -62,14 +63,14 @@
     "excluded_count": 3,
     "excluded": [
       {
+        "sym": "MOG-USD",
+        "snapbacks": 2,
+        "max_move_pct": 10.0
+      },
+      {
         "sym": "ANT-USD",
         "snapbacks": 2,
         "max_move_pct": 8.5
-      },
-      {
-        "sym": "ZIL-USD",
-        "snapbacks": 1,
-        "max_move_pct": 6.7
       },
       {
         "sym": "JAM-USD",
@@ -94,7 +95,7 @@
       "seen": 187,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 179,
+      "entry_warm": 178,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {
@@ -106,15 +107,21 @@
     },
     "decision_trace_live": [
       {
-        "sym": "ENA-USD",
-        "dip_pct": -1.49,
-        "conviction": 0.4095,
+        "sym": "SEI-USD",
+        "dip_pct": -2.14,
+        "conviction": 0.1784,
+        "fate": "candidate"
+      },
+      {
+        "sym": "MANTA-USD",
+        "dip_pct": -1.64,
+        "conviction": 0.1364,
         "fate": "candidate"
       },
       {
         "sym": "INJ-USD",
-        "dip_pct": -1.32,
-        "conviction": 0.2977,
+        "dip_pct": -1.55,
+        "conviction": 0.3788,
         "fate": "candidate"
       }
     ],
@@ -697,7 +704,7 @@
         "champion_changed": false
       }
     ],
-    "tradeable_universe": 71,
+    "tradeable_universe": 78,
     "universe_seen": 187
   },
   "stock": {
@@ -730,16 +737,30 @@
       "seen": 187,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 179,
-      "candidates_after_gates": 0,
+      "entry_warm": 178,
+      "candidates_after_gates": 2,
       "bought": 0,
       "rejections": {
-        "SIZER RED: entries halted": 1
+        "SIZER RED: entries halted": 1,
+        "UNTRADEABLE:evidence": 2
       },
       "armed": true,
       "arming_why": "armed"
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "SEI-USD",
+        "dip_pct": -2.14,
+        "conviction": 0.1784,
+        "fate": "candidate"
+      },
+      {
+        "sym": "MANTA-USD",
+        "dip_pct": -1.64,
+        "conviction": 0.1364,
+        "fate": "candidate"
+      }
+    ],
     "equity": 8257.71,
     "cash": 8257.71,
     "realized_pnl": -655.43,
@@ -1330,7 +1351,7 @@
         "pred": null
       }
     ],
-    "tradeable_universe": 71,
+    "tradeable_universe": 78,
     "universe_seen": 187,
     "display_name": "GEKKO"
   },
@@ -1401,18 +1422,18 @@
   "combined_equity": 38783.18,
   "combined_realized_pnl": -320.42,
   "backtest_3day_crypto": {
-    "universe_total": 1085,
-    "tradeable": 79,
-    "ghosts_excluded": 1006,
-    "trades": 418,
-    "win_rate_pct": 66.5,
-    "mean_net_pct": -0.552,
+    "universe_total": 1084,
+    "tradeable": 81,
+    "ghosts_excluded": 1003,
+    "trades": 433,
+    "win_rate_pct": 66.7,
+    "mean_net_pct": -0.471,
     "exits": {
-      "TAKE": 287,
-      "STOP": 131,
+      "TAKE": 298,
+      "STOP": 135,
       "TIMEOUT": 0
     },
-    "equity_after": 7918.3
+    "equity_after": 8130.13
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
