@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-09-21T01:10:27.422179+00:00",
+  "generated_at": "2026-09-21T01:33:11.264872+00:00",
   "marks_health": {
     "marked": 209,
     "entry_warm": 209,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 1.1,
+    "newest_sample_age_min": 0.5,
     "state": "OK",
-    "oscillating": 18,
+    "oscillating": 15,
     "oscillating_syms": [
       "1000MOG-USD",
       "ARB-USD",
-      "CAKE-USD",
+      "CELR-USD",
       "ENS-USD",
       "FARTCOIN-USD",
-      "GRT-USD",
       "IOTA-USD",
       "LPT-USD",
       "RARE-USD",
-      "RENDER-USD",
       "RVN-USD",
-      "S-USD"
+      "S-USD",
+      "SPX-USD",
+      "USELESS-USD"
     ]
   },
   "equity_market": {
@@ -27,7 +27,7 @@
     "why": "weekend"
   },
   "regimes": {
-    "crypto": "SIDEWAYS",
+    "crypto": "UPTREND",
     "stock": "SIDEWAYS",
     "metal": "SIDEWAYS",
     "energy": "SIDEWAYS"
@@ -58,7 +58,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-09-21T01:10:23.840119+00:00",
+    "generated_at": "2026-09-21T01:33:08.310367+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -98,20 +98,52 @@
       "seen": 187,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 169,
-      "candidates_after_gates": 1,
+      "entry_warm": 172,
+      "candidates_after_gates": 6,
       "bought": 0,
       "rejections": {
-        "SIZER RED: entries halted": 1
+        "position cap 0/4 for crypto": 1,
+        "SIZER RED: entries halted": 1,
+        "UNTRADEABLE:evidence": 2
       },
       "armed": true,
       "arming_why": "armed \u2014 promoted sleeve U (PATIENCE FLOOR) has real closed trades"
     },
     "decision_trace_live": [
       {
+        "sym": "JTO-USD",
+        "dip_pct": -1.36,
+        "conviction": 0.4467,
+        "fate": "candidate"
+      },
+      {
+        "sym": "HBAR-USD",
+        "dip_pct": -1.57,
+        "conviction": 0.2977,
+        "fate": "candidate"
+      },
+      {
+        "sym": "CRV-USD",
+        "dip_pct": -0.95,
+        "conviction": 0.0789,
+        "fate": "candidate"
+      },
+      {
+        "sym": "DASH-USD",
+        "dip_pct": -1.18,
+        "conviction": 0.3207,
+        "fate": "candidate"
+      },
+      {
         "sym": "INJ-USD",
         "dip_pct": -1.04,
         "conviction": 0.3012,
+        "fate": "candidate"
+      },
+      {
+        "sym": "PUMP-USD",
+        "dip_pct": -1.06,
+        "conviction": 0.0887,
         "fate": "candidate"
       }
     ],
@@ -727,16 +759,24 @@
       "seen": 187,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 169,
-      "candidates_after_gates": 0,
+      "entry_warm": 172,
+      "candidates_after_gates": 1,
       "bought": 0,
       "rejections": {
-        "SIZER RED: entries halted": 1
+        "SIZER RED: entries halted": 1,
+        "UNTRADEABLE:evidence": 1
       },
       "armed": true,
       "arming_why": "armed"
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "HBAR-USD",
+        "dip_pct": -1.57,
+        "conviction": 0.2977,
+        "fate": "candidate"
+      }
+    ],
     "equity": 8257.71,
     "cash": 8257.71,
     "realized_pnl": -655.43,
@@ -1345,7 +1385,7 @@
       }
     },
     "decision_trace_live": [],
-    "equity": 9933.96,
+    "equity": 9935.55,
     "realized_pnl": 202.09823404944893,
     "cash": 9002.64,
     "reserve_usd": 202.1,
@@ -1355,7 +1395,7 @@
         "sym": "XAU",
         "qty": 0.2113,
         "entry": 4719.92194,
-        "mark": 4407.399902,
+        "mark": 4414.899902,
         "mark_stale_since": null,
         "mark_is_carried": false,
         "t": "2026-08-24T16:31:47.544999+00:00",
@@ -1395,21 +1435,21 @@
     "universe": 0,
     "universe_seen": 0
   },
-  "combined_equity": 38779.48,
+  "combined_equity": 38781.07,
   "combined_realized_pnl": -320.42,
   "backtest_3day_crypto": {
     "universe_total": 1085,
     "tradeable": 79,
     "ghosts_excluded": 1006,
-    "trades": 439,
-    "win_rate_pct": 67.9,
-    "mean_net_pct": -0.466,
+    "trades": 442,
+    "win_rate_pct": 68.1,
+    "mean_net_pct": -0.45,
     "exits": {
-      "TAKE": 307,
+      "TAKE": 310,
       "STOP": 132,
       "TIMEOUT": 0
     },
-    "equity_after": 8127.47
+    "equity_after": 8174.51
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
