@@ -1,75 +1,74 @@
 {
-  "generated_at": "2026-09-22T20:09:35.772653+00:00",
+  "generated_at": "2026-09-22T20:34:20.282397+00:00",
   "what": "a skeptic that reads the RECORD rather than the laws. selftest asks 'is each law still enforced?'; the inspector asks 'does this look like a working system?' \u2014 on real data, every cycle.",
   "closed_trades_examined": 10241,
   "symbols_with_structure": 393,
   "counts": {
     "CRITICAL": 1,
-    "HIGH": 3,
-    "MEDIUM": 1,
-    "INFO": 1
+    "HIGH": 4,
+    "MEDIUM": 2
   },
-  "verdict": "ATTENTION \u2014 4 critical/high finding(s)",
+  "verdict": "ATTENTION \u2014 5 critical/high finding(s)",
   "structure_pattern": {
-    "band_mid": {
-      "n": 1966,
-      "mean_net_pct": -0.6,
-      "win_pct": 44.2
+    "band_high": {
+      "n": 2748,
+      "mean_net_pct": -0.439,
+      "win_pct": 41.0
     },
     "support_weak": {
-      "n": 7414,
-      "mean_net_pct": -0.401,
-      "win_pct": 45.4
+      "n": 7322,
+      "mean_net_pct": -0.395,
+      "win_pct": 45.6
     },
     "break_intact": {
-      "n": 6109,
-      "mean_net_pct": -0.398,
-      "win_pct": 44.7
-    },
-    "approach_lifting_off": {
-      "n": 3834,
-      "mean_net_pct": -0.476,
-      "win_pct": 45.2
-    },
-    "band_low": {
-      "n": 1773,
-      "mean_net_pct": -0.103,
-      "win_pct": 52.1
-    },
-    "break_testing": {
-      "n": 3112,
-      "mean_net_pct": -0.24,
-      "win_pct": 49.5
-    },
-    "approach_falling_into": {
-      "n": 3062,
-      "mean_net_pct": -0.225,
-      "win_pct": 47.0
-    },
-    "band_high": {
-      "n": 3113,
-      "mean_net_pct": -0.269,
-      "win_pct": 44.3
+      "n": 6274,
+      "mean_net_pct": -0.376,
+      "win_pct": 45.1
     },
     "approach_flat_at": {
-      "n": 2759,
-      "mean_net_pct": -0.283,
+      "n": 3345,
+      "mean_net_pct": -0.422,
+      "win_pct": 45.7
+    },
+    "band_mid": {
+      "n": 2208,
+      "mean_net_pct": -0.349,
       "win_pct": 47.6
     },
+    "break_testing": {
+      "n": 2751,
+      "mean_net_pct": -0.2,
+      "win_pct": 49.9
+    },
+    "band_low": {
+      "n": 2122,
+      "mean_net_pct": -0.209,
+      "win_pct": 50.4
+    },
+    "approach_falling_into": {
+      "n": 2541,
+      "mean_net_pct": -0.116,
+      "win_pct": 48.5
+    },
     "support_strong": {
-      "n": 2018,
-      "mean_net_pct": -0.161,
-      "win_pct": 49.3
+      "n": 2108,
+      "mean_net_pct": -0.192,
+      "win_pct": 48.6
+    },
+    "approach_lifting_off": {
+      "n": 3769,
+      "mean_net_pct": -0.421,
+      "win_pct": 45.8
     },
     "break_broken": {
-      "n": 211,
-      "mean_net_pct": -0.553,
-      "win_pct": 43.6
+      "n": 405,
+      "mean_net_pct": -0.953,
+      "win_pct": 38.5
     },
     "break_none": {
-      "n": 223,
-      "mean_net_pct": 0.014,
-      "win_pct": 55.2
+      "n": 225,
+      "mean_net_pct": 0.019,
+      "win_pct": 55.6
     }
   },
   "findings": [
@@ -84,21 +83,21 @@
           "sym": "ENA-USD",
           "peak_pct": 6.36,
           "target_pct": 5.0,
-          "now_pct": -3.07
+          "now_pct": -2.91
         },
         {
           "sleeve": "crypto:U",
           "sym": "PENGU-USD",
-          "peak_pct": 18.31,
+          "peak_pct": 18.8,
           "target_pct": 5.0,
-          "now_pct": 18.31
+          "now_pct": 18.8
         },
         {
           "sleeve": "energy:U",
           "sym": "NATGAS",
-          "peak_pct": 5.41,
+          "peak_pct": 5.81,
           "target_pct": 5.0,
-          "now_pct": 5.41
+          "now_pct": 5.81
         }
       ],
       "action": "Trace the exit path for these symbols; a crossed target must either sell or arm a trail."
@@ -117,7 +116,7 @@
         {
           "sym": "MOG-USD",
           "v_round_trips": 13,
-          "prints": 338
+          "prints": 337
         }
       ],
       "action": "Check canon_keys rejections (FROZEN/DEAD/OUT_OF_HOURS) for these symbols."
@@ -214,6 +213,18 @@
         }
       ],
       "action": "Model these as RESTING orders: fill where price crossed the level, taking the worse of level and observed print."
+    },
+    {
+      "severity": "HIGH",
+      "code": "SILENT_SLEEVE",
+      "title": "3 sleeve-books took no trades AND refused nothing",
+      "detail": "A sleeve that is merely picky leaves refusals behind. Zero trades with zero refusals means it never saw a candidate \u2014 the disconnection pattern that hid L/N/O/Q/R/S/T for three releases.",
+      "evidence": [
+        "metal:N",
+        "metal:P",
+        "stock:Z"
+      ],
+      "action": "Check what feeds this sleeve's candidate pool; a thesis sleeve should scan its own universe, not inherit the mean-reversion dip funnel."
     },
     {
       "severity": "HIGH",
@@ -316,7 +327,7 @@
       "evidence": [
         {
           "sleeve": "stock:B",
-          "headline_pct": -2.066,
+          "headline_pct": -1.94,
           "realized_pct": 0.539,
           "closed": 16
         },
@@ -328,13 +339,13 @@
         },
         {
           "sleeve": "metal:J",
-          "headline_pct": 0.827,
+          "headline_pct": 0.719,
           "realized_pct": -1.168,
           "closed": 47
         },
         {
           "sleeve": "energy:K",
-          "headline_pct": 1.937,
+          "headline_pct": 2.136,
           "realized_pct": -0.689,
           "closed": 11
         }
@@ -342,75 +353,14 @@
       "action": "Judge sleeves on realized_pct. Treat the headline as mark-to-market only."
     },
     {
-      "severity": "INFO",
+      "severity": "MEDIUM",
       "code": "STRUCTURE_PATTERN",
-      "title": "graded 9655 closed trades against the structure at their symbol; no separation yet",
+      "title": "graded 9655 closed trades against the structure at their symbol; 1 readable separations",
       "detail": "This is the steering signal: which chart states preceded winners and which preceded losers. It is a CURRENT-structure approximation, not an entry-time reconstruction, so treat it as a direction to investigate rather than proof.",
       "evidence": [
-        {
-          "band_mid": {
-            "n": 1966,
-            "mean_net_pct": -0.6,
-            "win_pct": 44.2
-          },
-          "support_weak": {
-            "n": 7414,
-            "mean_net_pct": -0.401,
-            "win_pct": 45.4
-          },
-          "break_intact": {
-            "n": 6109,
-            "mean_net_pct": -0.398,
-            "win_pct": 44.7
-          },
-          "approach_lifting_off": {
-            "n": 3834,
-            "mean_net_pct": -0.476,
-            "win_pct": 45.2
-          },
-          "band_low": {
-            "n": 1773,
-            "mean_net_pct": -0.103,
-            "win_pct": 52.1
-          },
-          "break_testing": {
-            "n": 3112,
-            "mean_net_pct": -0.24,
-            "win_pct": 49.5
-          },
-          "approach_falling_into": {
-            "n": 3062,
-            "mean_net_pct": -0.225,
-            "win_pct": 47.0
-          },
-          "band_high": {
-            "n": 3113,
-            "mean_net_pct": -0.269,
-            "win_pct": 44.3
-          },
-          "approach_flat_at": {
-            "n": 2759,
-            "mean_net_pct": -0.283,
-            "win_pct": 47.6
-          },
-          "support_strong": {
-            "n": 2018,
-            "mean_net_pct": -0.161,
-            "win_pct": 49.3
-          },
-          "break_broken": {
-            "n": 211,
-            "mean_net_pct": -0.553,
-            "win_pct": 43.6
-          },
-          "break_none": {
-            "n": 223,
-            "mean_net_pct": 0.014,
-            "win_pct": 55.2
-          }
-        }
+        "entries at break_intact averaged -0.38% vs -0.95% at break_broken (n=6274/405)"
       ],
-      "action": "Keep collecting; no bucket separates yet."
+      "action": "Consider tightening the sleeves toward the better bucket, with a knob and an A/B."
     }
   ],
   "honesty": "this auditor changes no behaviour and takes no trade. Its structure patterns use CURRENT structure, not the structure at entry time, so they point at questions rather than answering them."
