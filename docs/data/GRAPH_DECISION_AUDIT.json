@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-22T00:52:19.453476+00:00",
+  "generated_at": "2026-09-22T00:40:06.814195+00:00",
   "what": "does reading the graph before entry actually separate winners from losers? Each closed trade's graph state is reconstructed from the tape AS OF ITS ENTRY (nothing after the entry is visible to the reconstruction, so no hindsight can leak in), then outcomes are graded inside each bucket.",
   "coupling_status": {
     "graph_brain_store": "CHART_INTEL.json",
@@ -16,157 +16,159 @@
       "ceiling_overhead"
     ]
   },
-  "trades_seen": 14049,
-  "trades_graded": 1686,
-  "trades_unreadable": 12363,
+  "trades_seen": 14060,
+  "trades_graded": 1708,
+  "trades_unreadable": 12352,
   "min_n_for_verdict": 25,
   "features": {
     "peak_trajectory": {
       "buckets": {
         "FALLING": {
-          "n": 390,
-          "wins": 144,
-          "win_pct": 36.9,
-          "mean_net_pct": -0.704
+          "n": 380,
+          "wins": 149,
+          "win_pct": 39.2,
+          "mean_net_pct": -0.655
         },
         "RISING": {
-          "n": 1073,
-          "wins": 609,
-          "win_pct": 56.8,
-          "mean_net_pct": -0.017
+          "n": 1121,
+          "wins": 651,
+          "win_pct": 58.1,
+          "mean_net_pct": 0.203
         },
         "FLAT": {
-          "n": 178,
-          "wins": 88,
-          "win_pct": 49.4,
-          "mean_net_pct": -0.277
+          "n": 165,
+          "wins": 86,
+          "win_pct": 52.1,
+          "mean_net_pct": -0.409
         }
       },
-      "n": 1641,
+      "n": 1666,
       "verdict": "NEUTRAL",
-      "why": "no meaningful separation between buckets (spread 0.687% over n=1641) \u2014 on this evidence the feature does not yet distinguish good entries",
+      "why": "no meaningful separation between buckets (spread 0.858% over n=1666) \u2014 on this evidence the feature does not yet distinguish good entries",
       "read_by_selection": false
     },
     "trend": {
       "buckets": {
         "SIDEWAYS": {
-          "n": 461,
-          "wins": 203,
-          "win_pct": 44.0,
-          "mean_net_pct": -0.324
+          "n": 470,
+          "wins": 216,
+          "win_pct": 46.0,
+          "mean_net_pct": -0.029
         },
         "DOWN": {
-          "n": 358,
-          "wins": 178,
-          "win_pct": 49.7,
+          "n": 357,
+          "wins": 176,
+          "win_pct": 49.3,
           "mean_net_pct": -0.491
         },
         "UP": {
-          "n": 867,
-          "wins": 486,
-          "win_pct": 56.1,
-          "mean_net_pct": -0.009
+          "n": 881,
+          "wins": 516,
+          "win_pct": 58.6,
+          "mean_net_pct": 0.117
         }
       },
-      "n": 1686,
+      "n": 1708,
       "verdict": "NEUTRAL",
-      "why": "no meaningful separation between buckets (spread 0.482% over n=1686) \u2014 on this evidence the feature does not yet distinguish good entries",
+      "why": "no meaningful separation between buckets (spread 0.608% over n=1708) \u2014 on this evidence the feature does not yet distinguish good entries",
       "read_by_selection": true
     },
     "cadence_phase": {
       "buckets": {
         "PEAK_DUE": {
-          "n": 560,
-          "wins": 255,
-          "win_pct": 45.5,
-          "mean_net_pct": -0.512
+          "n": 578,
+          "wins": 278,
+          "win_pct": 48.1,
+          "mean_net_pct": -0.363
         },
         "MID_CYCLE": {
-          "n": 815,
-          "wins": 468,
-          "win_pct": 57.4,
-          "mean_net_pct": 0.144
+          "n": 838,
+          "wins": 488,
+          "win_pct": 58.2,
+          "mean_net_pct": 0.061
         },
         "JUST_PEAKED": {
-          "n": 179,
-          "wins": 95,
-          "win_pct": 53.1,
-          "mean_net_pct": -0.378
+          "n": 163,
+          "wins": 96,
+          "win_pct": 58.9,
+          "mean_net_pct": 1.078
         }
       },
-      "n": 1554,
-      "verdict": "NEUTRAL",
-      "why": "no meaningful separation between buckets (spread 0.656% over n=1554) \u2014 on this evidence the feature does not yet distinguish good entries",
+      "n": 1579,
+      "verdict": "PREDICTIVE",
+      "why": "entries taken at JUST_PEAKED averaged +1.078% vs -0.363% at PEAK_DUE (spread 1.441% over n=1579) \u2014 reading this before entry would have separated winners from losers",
       "read_by_selection": false
     },
     "range_position": {
       "buckets": {
         "MID_THIRD": {
-          "n": 368,
-          "wins": 181,
-          "win_pct": 49.2,
-          "mean_net_pct": -0.223
+          "n": 358,
+          "wins": 180,
+          "win_pct": 50.3,
+          "mean_net_pct": -0.207
         },
         "LOW_THIRD": {
-          "n": 525,
-          "wins": 225,
-          "win_pct": 42.9,
-          "mean_net_pct": -0.293
+          "n": 516,
+          "wins": 221,
+          "win_pct": 42.8,
+          "mean_net_pct": -0.272
         },
         "HIGH_THIRD": {
-          "n": 793,
-          "wins": 461,
-          "win_pct": 58.1,
-          "mean_net_pct": -0.122
+          "n": 834,
+          "wins": 507,
+          "win_pct": 60.8,
+          "mean_net_pct": 0.154
         }
       },
-      "n": 1686,
+      "n": 1708,
       "verdict": "NEUTRAL",
-      "why": "no meaningful separation between buckets (spread 0.171% over n=1686) \u2014 on this evidence the feature does not yet distinguish good entries",
+      "why": "no meaningful separation between buckets (spread 0.426% over n=1708) \u2014 on this evidence the feature does not yet distinguish good entries",
       "read_by_selection": false
     },
     "floor_support": {
       "buckets": {
         "AWAY_FROM_FLOOR": {
           "n": 1118,
-          "wins": 628,
-          "win_pct": 56.2,
-          "mean_net_pct": -0.091
+          "wins": 647,
+          "win_pct": 57.9,
+          "mean_net_pct": 0.042
         },
         "ON_TESTED_FLOOR": {
-          "n": 426,
-          "wins": 177,
-          "win_pct": 41.5,
-          "mean_net_pct": -0.37
+          "n": 422,
+          "wins": 184,
+          "win_pct": 43.6,
+          "mean_net_pct": -0.236
         }
       },
-      "n": 1544,
+      "n": 1540,
       "verdict": "NEUTRAL",
-      "why": "no meaningful separation between buckets (spread 0.279% over n=1544) \u2014 on this evidence the feature does not yet distinguish good entries",
+      "why": "no meaningful separation between buckets (spread 0.278% over n=1540) \u2014 on this evidence the feature does not yet distinguish good entries",
       "read_by_selection": false
     },
     "ceiling_overhead": {
       "buckets": {
         "CLEAR_OVERHEAD": {
-          "n": 815,
-          "wins": 359,
-          "win_pct": 44.0,
-          "mean_net_pct": -0.416
+          "n": 805,
+          "wins": 379,
+          "win_pct": 47.1,
+          "mean_net_pct": -0.121
         },
         "UNDER_TESTED_CEILING": {
-          "n": 750,
-          "wins": 459,
-          "win_pct": 61.2,
-          "mean_net_pct": 0.11
+          "n": 782,
+          "wins": 481,
+          "win_pct": 61.5,
+          "mean_net_pct": 0.113
         }
       },
-      "n": 1565,
+      "n": 1587,
       "verdict": "NEUTRAL",
-      "why": "no meaningful separation between buckets (spread 0.526% over n=1565) \u2014 on this evidence the feature does not yet distinguish good entries",
+      "why": "no meaningful separation between buckets (spread 0.234% over n=1587) \u2014 on this evidence the feature does not yet distinguish good entries",
       "read_by_selection": false
     }
   },
-  "promotion_candidates": [],
-  "next_step": "no feature has earned PREDICTIVE yet on this sample. Wiring the graph into selection now would be faith, not evidence \u2014 the honest move is to keep collecting closed trades and re-read this panel as n grows.",
+  "promotion_candidates": [
+    "cadence_phase"
+  ],
+  "next_step": "EVIDENCE FOUND: cadence_phase now separate winners from losers and are still not consulted at entry. These are the features to gate on next \u2014 with a knob, a kill switch, and an A/B, never silently.",
   "honesty": "this audit grades entries the system already took; it cannot say what would have happened on entries it never took. It answers 'did reading the graph help?', not 'is the graph complete?'"
 }
