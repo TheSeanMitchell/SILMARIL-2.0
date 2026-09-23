@@ -1,14 +1,13 @@
 {
-  "generated_at": "2026-09-23T14:47:12.443753+00:00",
+  "generated_at": "2026-09-23T14:33:54.625612+00:00",
   "marks_health": {
-    "marked": 213,
+    "marked": 214,
     "entry_warm": 213,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 1.2,
+    "newest_sample_age_min": 0.5,
     "state": "OK",
-    "oscillating": 28,
+    "oscillating": 34,
     "oscillating_syms": [
-      "A-USD",
       "AIXBT-USD",
       "API3-USD",
       "ASTER-USD",
@@ -19,7 +18,8 @@
       "COTI-USD",
       "G-USD",
       "GRT-USD",
-      "IOTA-USD"
+      "IOTA-USD",
+      "KAITO-USD"
     ]
   },
   "equity_market": {
@@ -30,7 +30,7 @@
     "crypto": "DOWNTREND",
     "stock": "SIDEWAYS",
     "metal": "DOWNTREND",
-    "energy": "UPTREND"
+    "energy": "SIDEWAYS"
   },
   "start_cash_each": 10000.0,
   "champion_strategy": "MR_d4_t5_s12",
@@ -58,7 +58,7 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-09-23T14:47:06.754309+00:00",
+    "generated_at": "2026-09-23T14:33:49.155101+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
@@ -67,7 +67,7 @@
     "excluded": [
       {
         "sym": "MOG-USD",
-        "snapbacks": 3,
+        "snapbacks": 4,
         "max_move_pct": 8.3
       },
       {
@@ -100,67 +100,68 @@
   },
   "crypto": {
     "funnel": {
-      "seen": 191,
+      "seen": 192,
       "marks_carried": 0,
       "marks_carried_syms": [],
       "entry_warm": 163,
-      "candidates_after_gates": 0,
+      "candidates_after_gates": 21,
       "bought": 0,
       "rejections": {
         "regime DOWNTREND + gate=hard \u2192 10 blocked": 1,
+        "position cap 0/4 for crypto": 1,
         "SIZER RED: entries halted": 1,
-        "arming gate": 1
+        "falling knife": 4
       },
-      "armed": false,
-      "arming_why": "OBSERVE \u2014 pyramid law: the crypto workshop must promote a sleeve on real closed trades before this book may open. Best sleeve so far: \u2014 \u00b7 0/3 closes since wipe \u00b7 status NO_POSITIVE_SLEEVE. The book still scans, marks and manages exits; the sleeves are earning its license right now."
+      "armed": true,
+      "arming_why": "armed \u2014 promoted sleeve U (PATIENCE FLOOR) has real closed trades"
     },
     "decision_trace_live": [
       {
+        "sym": "BCH-USD",
+        "dip_pct": -6.68,
+        "conviction": 0.8,
+        "fate": "candidate"
+      },
+      {
         "sym": "DASH-USD",
-        "dip_pct": -5.47,
-        "conviction": 0.6228,
+        "dip_pct": -5.66,
+        "conviction": 0.7844,
         "fate": "candidate"
       },
       {
-        "sym": "INJ-USD",
-        "dip_pct": -2.66,
-        "conviction": 0.5791,
-        "fate": "candidate"
-      },
-      {
-        "sym": "BONK-USD",
-        "dip_pct": -6.05,
-        "conviction": 0.5833,
-        "fate": "candidate"
-      },
-      {
-        "sym": "ZEC-USD",
-        "dip_pct": -2.64,
-        "conviction": 0.5768,
-        "fate": "candidate"
-      },
-      {
-        "sym": "ICP-USD",
-        "dip_pct": -4.25,
-        "conviction": 0.4378,
-        "fate": "candidate"
-      },
-      {
-        "sym": "SNX-USD",
-        "dip_pct": -2.19,
-        "conviction": 0.3821,
+        "sym": "NEAR-USD",
+        "dip_pct": -6.94,
+        "conviction": 0.7,
         "fate": "candidate"
       },
       {
         "sym": "OP-USD",
-        "dip_pct": -2.82,
-        "conviction": 0.3848,
+        "dip_pct": -2.17,
+        "conviction": 0.4931,
         "fate": "candidate"
       },
       {
-        "sym": "BCH-USD",
-        "dip_pct": -4.02,
-        "conviction": 0.335,
+        "sym": "ZEC-USD",
+        "dip_pct": -4.34,
+        "conviction": 0.4617,
+        "fate": "candidate"
+      },
+      {
+        "sym": "SNX-USD",
+        "dip_pct": -2.77,
+        "conviction": 0.3978,
+        "fate": "candidate"
+      },
+      {
+        "sym": "BAT-USD",
+        "dip_pct": -4.35,
+        "conviction": 0.3629,
+        "fate": "candidate"
+      },
+      {
+        "sym": "FLOW-USD",
+        "dip_pct": -2.59,
+        "conviction": 0.3407,
         "fate": "candidate"
       }
     ],
@@ -743,35 +744,29 @@
         "champion_changed": false
       }
     ],
-    "tradeable_universe": 80,
-    "universe_seen": 191
+    "tradeable_universe": 79,
+    "universe_seen": 192
   },
   "stock": {
     "funnel": {
       "seen": 14,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 14,
-      "candidates_after_gates": 2,
+      "entry_warm": 8,
+      "candidates_after_gates": 1,
       "bought": 0,
       "rejections": {
         "SIZER RED: entries halted": 1,
-        "UNTRADEABLE:evidence": 2
+        "UNTRADEABLE:evidence": 1
       },
       "armed": true,
-      "arming_why": "armed \u2014 promoted sleeve D (SNIPER) has real closed trades"
+      "arming_why": "armed \u2014 promoted sleeve E (ADAPTIVE STRIKER) has real closed trades"
     },
     "decision_trace_live": [
       {
-        "sym": "XLY",
-        "dip_pct": -1.49,
-        "conviction": 0.1243,
-        "fate": "candidate"
-      },
-      {
-        "sym": "XLK",
-        "dip_pct": -0.92,
-        "conviction": 0.0764,
+        "sym": "XLB",
+        "dip_pct": -0.41,
+        "conviction": 0.0338,
         "fate": "candidate"
       }
     ],
@@ -1399,20 +1394,20 @@
         "fit_target_pct": 3.11
       }
     ],
-    "tradeable_universe": 14,
+    "tradeable_universe": 11,
     "universe_seen": 14
   },
   "aggressive": {
     "funnel": {
-      "seen": 191,
+      "seen": 192,
       "marks_carried": 0,
       "marks_carried_syms": [],
       "entry_warm": 163,
-      "candidates_after_gates": 9,
+      "candidates_after_gates": 13,
       "bought": 0,
       "rejections": {
         "SIZER RED: entries halted": 1,
-        "falling knife": 8,
+        "falling knife": 9,
         "UNTRADEABLE:evidence": 1
       },
       "armed": true,
@@ -1420,51 +1415,51 @@
     },
     "decision_trace_live": [
       {
-        "sym": "WLD-USD",
-        "dip_pct": -5.92,
-        "conviction": 0.7159,
-        "fate": "candidate"
-      },
-      {
-        "sym": "SHIB-USD",
-        "dip_pct": -6.52,
-        "conviction": 0.6667,
+        "sym": "BCH-USD",
+        "dip_pct": -6.68,
+        "conviction": 0.8,
         "fate": "candidate"
       },
       {
         "sym": "DASH-USD",
-        "dip_pct": -5.47,
-        "conviction": 0.6228,
+        "dip_pct": -5.66,
+        "conviction": 0.7844,
         "fate": "candidate"
       },
       {
-        "sym": "BONK-USD",
-        "dip_pct": -6.05,
-        "conviction": 0.5833,
+        "sym": "NEAR-USD",
+        "dip_pct": -6.94,
+        "conviction": 0.7,
+        "fate": "candidate"
+      },
+      {
+        "sym": "VET-USD",
+        "dip_pct": -5.75,
+        "conviction": 0.6932,
+        "fate": "candidate"
+      },
+      {
+        "sym": "WLD-USD",
+        "dip_pct": -6.02,
+        "conviction": 0.6667,
+        "fate": "candidate"
+      },
+      {
+        "sym": "HBAR-USD",
+        "dip_pct": -3.49,
+        "conviction": 0.6036,
         "fate": "candidate"
       },
       {
         "sym": "INJ-USD",
-        "dip_pct": -2.66,
-        "conviction": 0.5791,
+        "dip_pct": -4.47,
+        "conviction": 0.5725,
         "fate": "candidate"
       },
       {
-        "sym": "ZEC-USD",
-        "dip_pct": -2.64,
-        "conviction": 0.5768,
-        "fate": "candidate"
-      },
-      {
-        "sym": "AAVE-USD",
-        "dip_pct": -4.78,
-        "conviction": 0.5651,
-        "fate": "candidate"
-      },
-      {
-        "sym": "FIL-USD",
-        "dip_pct": -4.76,
-        "conviction": 0.5633,
+        "sym": "ATOM-USD",
+        "dip_pct": -5.15,
+        "conviction": 0.554,
         "fate": "candidate"
       }
     ],
@@ -2058,8 +2053,8 @@
         "pred": null
       }
     ],
-    "tradeable_universe": 80,
-    "universe_seen": 191,
+    "tradeable_universe": 79,
+    "universe_seen": 192,
     "display_name": "GEKKO"
   },
   "metal": {
@@ -2077,18 +2072,18 @@
       "arming_why": "armed \u2014 promoted sleeve A (FOREVER RIDE) has real closed trades"
     },
     "decision_trace_live": [],
-    "equity": 9916.82,
+    "equity": 9915.11,
     "cash": 9002.64,
     "realized_pnl": 202.1,
     "reserve_usd": 202.1,
-    "return_pct": -0.83,
+    "return_pct": -0.85,
     "open_positions": 1,
     "positions": [
       {
         "sym": "XAU",
         "qty": 0.2113,
         "entry": 4719.92194,
-        "mark": 4326.299805,
+        "mark": 4318.200195,
         "mark_stale_since": null,
         "mark_is_carried": false,
         "t": "2026-08-24T16:31:47.544999+00:00",
@@ -2099,7 +2094,7 @@
         "style": "range-play",
         "entry_regime": "SIDEWAYS",
         "exp_net_usd": 12.6,
-        "upl_pct": -8.34
+        "upl_pct": -8.51
       }
     ],
     "recent_trades": [
@@ -2769,8 +2764,8 @@
     "decision_trace_live": [
       {
         "sym": "NATGAS",
-        "dip_pct": -2.11,
-        "conviction": 0.176,
+        "dip_pct": -2.63,
+        "conviction": 0.2192,
         "fate": "candidate"
       }
     ],
@@ -3438,21 +3433,21 @@
     "tradeable_universe": 3,
     "universe_seen": 3
   },
-  "combined_equity": 38762.34,
+  "combined_equity": 38760.63,
   "combined_realized_pnl": -320.42,
   "backtest_3day_crypto": {
     "universe_total": 1085,
-    "tradeable": 84,
-    "ghosts_excluded": 1001,
-    "trades": 461,
-    "win_rate_pct": 80.3,
-    "mean_net_pct": 0.281,
+    "tradeable": 82,
+    "ghosts_excluded": 1003,
+    "trades": 463,
+    "win_rate_pct": 79.9,
+    "mean_net_pct": 0.289,
     "exits": {
       "TAKE": 379,
-      "STOP": 82,
+      "STOP": 84,
       "TIMEOUT": 0
     },
-    "equity_after": 11355.26
+    "equity_after": 11406.25
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
