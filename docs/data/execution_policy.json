@@ -1,6 +1,6 @@
 {
   "version": "4.0",
-  "generated_at": "2026-09-27T07:51:42.797404+00:00",
+  "generated_at": "2026-09-27T07:42:00.467668+00:00",
   "market_mode": "ATTACK",
   "winner_engine": "default",
   "winner_action": "NORMAL",
@@ -67,10 +67,11 @@
     }
   },
   "urgency_priority_order": [
+    "PYTH-USD",
     "AAVE-USD",
     "FLOW-USD",
-    "SPY",
-    "ETHFI-USD"
+    "XTZ-USD",
+    "SPY"
   ],
   "urgency_by_ticker": {
     "FLOW-USD": {
@@ -90,6 +91,42 @@
       "decay_factor": 1.0,
       "empirical_lift": 1.0,
       "rationale": "acceleration 0.81; intraday thrust 1.00; 5 sources"
+    },
+    "PYTH-USD": {
+      "ticker": "PYTH-USD",
+      "score": 0.7,
+      "urgent": true,
+      "threshold": 0.65,
+      "components": {
+        "momentum_acceleration": 1.0,
+        "breakout_velocity": 1.0,
+        "fresh_catalyst": 0.0,
+        "fresh_catalyst_raw": 0.0,
+        "intraday_thrust": 1.0,
+        "source_credibility": 1.0,
+        "narrative_persistence": 0.0
+      },
+      "decay_factor": 1.0,
+      "empirical_lift": 1.0,
+      "rationale": "breakout 1.00; acceleration 1.00; intraday thrust 1.00; 5 sources"
+    },
+    "XTZ-USD": {
+      "ticker": "XTZ-USD",
+      "score": 0.315,
+      "urgent": false,
+      "threshold": 0.65,
+      "components": {
+        "momentum_acceleration": 0.8835,
+        "breakout_velocity": 0.0,
+        "fresh_catalyst": 0.0,
+        "fresh_catalyst_raw": 0.0,
+        "intraday_thrust": 0.0,
+        "source_credibility": 1.0,
+        "narrative_persistence": 0.0
+      },
+      "decay_factor": 1.0,
+      "empirical_lift": 1.0,
+      "rationale": "acceleration 0.88; 5 sources"
     },
     "SPY": {
       "ticker": "SPY",
@@ -111,12 +148,12 @@
     },
     "AAVE-USD": {
       "ticker": "AAVE-USD",
-      "score": 0.4952,
+      "score": 0.4788,
       "urgent": false,
       "threshold": 0.65,
       "components": {
         "momentum_acceleration": 1.0,
-        "breakout_velocity": 0.1807,
+        "breakout_velocity": 0.1152,
         "fresh_catalyst": 0.0,
         "fresh_catalyst_raw": 0.0,
         "intraday_thrust": 1.0,
@@ -126,120 +163,102 @@
       "decay_factor": 1.0,
       "empirical_lift": 1.0,
       "rationale": "acceleration 1.00; intraday thrust 1.00; 5 sources"
-    },
-    "ETHFI-USD": {
-      "ticker": "ETHFI-USD",
-      "score": 0.15,
-      "urgent": false,
-      "threshold": 0.65,
-      "components": {
-        "momentum_acceleration": 0.0,
-        "breakout_velocity": 0.0,
-        "fresh_catalyst": 0.0,
-        "fresh_catalyst_raw": 0.0,
-        "intraday_thrust": 1.0,
-        "source_credibility": 1.0,
-        "narrative_persistence": 0.0
-      },
-      "decay_factor": 1.0,
-      "empirical_lift": 1.0,
-      "rationale": "intraday thrust 1.00; 5 sources"
     }
   },
   "narrative": {
-    "dominant": "oil_rally",
-    "regime_shift": "ROTATION",
-    "confidence": 0.4138
+    "dominant": "fed_dovish",
+    "regime_shift": "RISK_ON",
+    "confidence": 0.5282
   },
   "sector_rotation": {
-    "rationale": "Token (strengthening) vs Utilities (weakening)",
+    "rationale": "Token (strengthening) vs Discretionary (weakening)",
     "top_pairs": [
       {
-        "from": "Utilities",
+        "from": "Discretionary",
         "to": "Token",
-        "strength": 0.7377,
-        "rationale": "Utilities -0.39 \u2192 Token +0.35"
+        "strength": 0.7,
+        "rationale": "Discretionary -0.35 \u2192 Token +0.35"
       },
       {
-        "from": "Utilities",
+        "from": "Discretionary",
         "to": "Semiconductors",
-        "strength": 0.7377,
-        "rationale": "Utilities -0.39 \u2192 Semiconductors +0.35"
+        "strength": 0.7,
+        "rationale": "Discretionary -0.35 \u2192 Semiconductors +0.35"
       },
       {
-        "from": "Utilities",
+        "from": "Discretionary",
         "to": "Crypto",
-        "strength": 0.7377,
-        "rationale": "Utilities -0.39 \u2192 Crypto +0.35"
+        "strength": 0.7,
+        "rationale": "Discretionary -0.35 \u2192 Crypto +0.35"
       },
       {
-        "from": "Communication",
+        "from": "Staples",
         "to": "Token",
         "strength": 0.7,
-        "rationale": "Communication -0.35 \u2192 Token +0.35"
+        "rationale": "Staples -0.35 \u2192 Token +0.35"
       },
       {
-        "from": "Communication",
+        "from": "Staples",
         "to": "Semiconductors",
         "strength": 0.7,
-        "rationale": "Communication -0.35 \u2192 Semiconductors +0.35"
+        "rationale": "Staples -0.35 \u2192 Semiconductors +0.35"
       }
     ],
     "sector_lift": {
-      "Consumer Discretionary": 1.0633,
       "Health Care": 1.0446,
-      "Communications": 0.9663,
-      "Communication": 0.9125,
-      "Software": 0.9272,
-      "FX": 0.9189,
-      "Utilities": 0.9031,
-      "Technology": 1.0068,
-      "Industrials": 0.917,
-      "Communication Services": 1.0451,
-      "Crypto": 1.105,
-      "Credit": 0.9125,
-      "Energy": 0.9783,
-      "Staples": 0.9125,
-      "Index": 0.9391,
-      "Healthcare": 0.9427,
-      "Financials": 0.917,
-      "Semiconductors": 1.105,
-      "Innovation": 1.0269,
+      "Consumer Discretionary": 1.0514,
+      "Industrials": 0.9181,
       "Discretionary": 0.9125,
+      "Commodities": 0.9219,
+      "Healthcare": 0.9438,
+      "Communication Services": 1.0332,
+      "Crypto": 1.105,
+      "Staples": 0.9125,
+      "Semiconductors": 1.105,
+      "Consumer Staples": 1.0059,
       "Materials": 0.9125,
-      "Consumer Staples": 0.9951,
+      "Financials": 0.917,
+      "Credit": 0.9125,
       "Token": 1.105,
+      "Software": 0.9282,
+      "Technology": 1.0427,
+      "Energy": 0.9474,
+      "Index": 0.9402,
       "Real Estate": 0.9603,
-      "Commodities": 0.9208,
-      "Rates": 0.9125
+      "FX": 0.92,
+      "Utilities": 0.9129,
+      "Rates": 0.9125,
+      "Communication": 0.9125,
+      "Communications": 0.9674,
+      "Innovation": 1.0281
     },
     "sector_tag": {
-      "Consumer Discretionary": "neutral",
       "Health Care": "neutral",
-      "Communications": "neutral",
-      "Communication": "weakening",
-      "Software": "weakening",
-      "FX": "weakening",
-      "Utilities": "weakening",
-      "Technology": "neutral",
+      "Consumer Discretionary": "neutral",
       "Industrials": "weakening",
+      "Discretionary": "weakening",
+      "Commodities": "weakening",
+      "Healthcare": "neutral",
       "Communication Services": "neutral",
       "Crypto": "strengthening",
-      "Credit": "weakening",
-      "Energy": "neutral",
       "Staples": "weakening",
-      "Index": "neutral",
-      "Healthcare": "neutral",
-      "Financials": "weakening",
       "Semiconductors": "strengthening",
-      "Innovation": "neutral",
-      "Discretionary": "weakening",
-      "Materials": "weakening",
       "Consumer Staples": "neutral",
+      "Materials": "weakening",
+      "Financials": "weakening",
+      "Credit": "weakening",
       "Token": "strengthening",
+      "Software": "weakening",
+      "Technology": "neutral",
+      "Energy": "neutral",
+      "Index": "neutral",
       "Real Estate": "neutral",
-      "Commodities": "weakening",
-      "Rates": "weakening"
+      "FX": "weakening",
+      "Utilities": "weakening",
+      "Rates": "weakening",
+      "Communication": "weakening",
+      "Communications": "neutral",
+      "Innovation": "neutral"
     }
   },
   "deployment_floor": {},
@@ -258,7 +277,7 @@
   },
   "setup_classifications": {
     "per_ticker": {
-      "FLOW-USD": {
+      "HST": {
         "archetype": "GENERIC",
         "setup_lift": 1.0
       },
@@ -266,7 +285,27 @@
         "archetype": "GENERIC",
         "setup_lift": 1.0
       },
+      "INJ-USD": {
+        "archetype": "GENERIC",
+        "setup_lift": 1.0
+      },
+      "JNJ": {
+        "archetype": "GENERIC",
+        "setup_lift": 1.0
+      },
+      "SOXX": {
+        "archetype": "GENERIC",
+        "setup_lift": 1.0
+      },
+      "LINK-USD": {
+        "archetype": "GENERIC",
+        "setup_lift": 1.0
+      },
       "AAVE-USD": {
+        "archetype": "GENERIC",
+        "setup_lift": 1.0
+      },
+      "XTZ-USD": {
         "archetype": "GENERIC",
         "setup_lift": 1.0
       }
