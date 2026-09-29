@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-09-29T03:59:42.464239+00:00",
+  "generated_at": "2026-09-29T04:28:23.364229+00:00",
   "marks_health": {
-    "marked": 208,
-    "entry_warm": 208,
+    "marked": 207,
+    "entry_warm": 207,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 1.2,
+    "newest_sample_age_min": 0.6,
     "state": "OK",
-    "oscillating": 26,
+    "oscillating": 21,
     "oscillating_syms": [
-      "0G-USD",
       "ARB-USD",
       "ASTER-USD",
       "BTTC-USD",
-      "CAKE-USD",
-      "CELR-USD",
       "COTI-USD",
       "DGB-USD",
       "ENS-USD",
       "FLUX-USD",
-      "IOST-USD",
-      "IOTA-USD"
+      "IOTA-USD",
+      "JUP-USD",
+      "NOBODY-USD",
+      "ONE-USD",
+      "PEPE-USD"
     ]
   },
   "equity_market": {
@@ -27,7 +27,7 @@
     "why": "regular session"
   },
   "regimes": {
-    "crypto": "SIDEWAYS",
+    "crypto": "DOWNTREND",
     "stock": "SIDEWAYS",
     "metal": "SIDEWAYS",
     "energy": "SIDEWAYS"
@@ -58,12 +58,12 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-09-29T03:59:36.178484+00:00",
+    "generated_at": "2026-09-29T04:28:18.414071+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
     "window": 60,
-    "excluded_count": 6,
+    "excluded_count": 7,
     "excluded": [
       {
         "sym": "OM-USD",
@@ -91,6 +91,11 @@
         "max_move_pct": 8.7
       },
       {
+        "sym": "NOBODY-USD",
+        "snapbacks": 1,
+        "max_move_pct": 185.7
+      },
+      {
         "sym": "JAM-USD",
         "snapbacks": 1,
         "max_move_pct": 14.8
@@ -110,13 +115,14 @@
   },
   "crypto": {
     "funnel": {
-      "seen": 186,
+      "seen": 185,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 160,
+      "entry_warm": 164,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {
+        "regime DOWNTREND + gate=hard \u2192 0 blocked": 1,
         "SIZER RED: entries halted": 1,
         "arming gate": 1
       },
@@ -126,14 +132,8 @@
     "decision_trace_live": [
       {
         "sym": "LINK-USD",
-        "dip_pct": -0.75,
-        "conviction": 0.2627,
-        "fate": "candidate"
-      },
-      {
-        "sym": "MKR-USD",
-        "dip_pct": -1.03,
-        "conviction": 0.0859,
+        "dip_pct": -2.12,
+        "conviction": 0.3765,
         "fate": "candidate"
       }
     ],
@@ -716,8 +716,8 @@
         "champion_changed": false
       }
     ],
-    "tradeable_universe": 75,
-    "universe_seen": 186
+    "tradeable_universe": 77,
+    "universe_seen": 185
   },
   "stock": {
     "funnel": {
@@ -1363,10 +1363,10 @@
   },
   "aggressive": {
     "funnel": {
-      "seen": 186,
+      "seen": 185,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 160,
+      "entry_warm": 164,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {
@@ -1966,8 +1966,8 @@
         "pred": null
       }
     ],
-    "tradeable_universe": 75,
-    "universe_seen": 186,
+    "tradeable_universe": 77,
+    "universe_seen": 185,
     "display_name": "GEKKO"
   },
   "metal": {
@@ -3331,17 +3331,17 @@
   "combined_realized_pnl": -442.07,
   "backtest_3day_crypto": {
     "universe_total": 1085,
-    "tradeable": 80,
-    "ghosts_excluded": 1005,
-    "trades": 587,
-    "win_rate_pct": 67.6,
-    "mean_net_pct": -0.646,
+    "tradeable": 81,
+    "ghosts_excluded": 1004,
+    "trades": 598,
+    "win_rate_pct": 67.7,
+    "mean_net_pct": -0.627,
     "exits": {
-      "TAKE": 406,
-      "STOP": 181,
+      "TAKE": 414,
+      "STOP": 184,
       "TIMEOUT": 0
     },
-    "equity_after": 6814.84
+    "equity_after": 6843.93
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
