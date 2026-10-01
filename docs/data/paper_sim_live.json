@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-10-01T04:28:49.645573+00:00",
+  "generated_at": "2026-10-01T04:17:16.712062+00:00",
   "marks_health": {
     "marked": 206,
     "entry_warm": 206,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.5,
+    "newest_sample_age_min": 1.2,
     "state": "OK",
     "oscillating": 19,
     "oscillating_syms": [
       "APT-USD",
+      "BTRST-USD",
       "DGB-USD",
       "G-USD",
       "GRT-USD",
       "IOST-USD",
       "IOTA-USD",
-      "IOTX-USD",
-      "NMR-USD",
       "NPC-USD",
       "ONE-USD",
       "ONT-USD",
-      "PEPE-USD"
+      "PEPE-USD",
+      "POPCAT-USD"
     ]
   },
   "equity_market": {
@@ -58,13 +58,18 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-10-01T04:28:44.663533+00:00",
+    "generated_at": "2026-10-01T04:17:10.589832+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
     "window": 60,
     "excluded_count": 5,
     "excluded": [
+      {
+        "sym": "MOG-USD",
+        "snapbacks": 2,
+        "max_move_pct": 9.1
+      },
       {
         "sym": "ANT-USD",
         "snapbacks": 2,
@@ -74,11 +79,6 @@
         "sym": "OM-USD",
         "snapbacks": 1,
         "max_move_pct": 83.8
-      },
-      {
-        "sym": "MOG-USD",
-        "snapbacks": 1,
-        "max_move_pct": 9.1
       },
       {
         "sym": "ZRX-USD",
@@ -697,7 +697,7 @@
         "champion_changed": false
       }
     ],
-    "tradeable_universe": 76,
+    "tradeable_universe": 79,
     "universe_seen": 184
   },
   "stock": {
@@ -1947,7 +1947,7 @@
         "pred": null
       }
     ],
-    "tradeable_universe": 76,
+    "tradeable_universe": 79,
     "universe_seen": 184,
     "display_name": "GEKKO"
   },
@@ -2635,15 +2635,23 @@
       "marks_carried": 0,
       "marks_carried_syms": [],
       "entry_warm": 3,
-      "candidates_after_gates": 0,
+      "candidates_after_gates": 1,
       "bought": 0,
       "rejections": {
-        "SIZER RED: entries halted": 1
+        "SIZER RED: entries halted": 1,
+        "UNTRADEABLE:evidence": 1
       },
       "armed": true,
       "arming_why": "armed \u2014 promoted sleeve B (CAP ONLY) has real closed trades"
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "NATGAS",
+        "dip_pct": -0.4,
+        "conviction": 0.0334,
+        "fate": "candidate"
+      }
+    ],
     "equity": 10000.0,
     "cash": 10000.0,
     "realized_pnl": 205.23,
@@ -3312,17 +3320,17 @@
   "combined_realized_pnl": -441.01,
   "backtest_3day_crypto": {
     "universe_total": 1085,
-    "tradeable": 80,
-    "ghosts_excluded": 1005,
-    "trades": 622,
-    "win_rate_pct": 70.3,
-    "mean_net_pct": -0.313,
+    "tradeable": 82,
+    "ghosts_excluded": 1003,
+    "trades": 630,
+    "win_rate_pct": 69.5,
+    "mean_net_pct": -0.302,
     "exits": {
-      "TAKE": 446,
-      "STOP": 176,
+      "TAKE": 447,
+      "STOP": 183,
       "TIMEOUT": 0
     },
-    "equity_after": 8196.06
+    "equity_after": 8229.29
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
