@@ -1,18 +1,17 @@
 {
-  "generated_at": "2026-10-02T22:33:22.712863+00:00",
+  "generated_at": "2026-10-02T22:22:27.308254+00:00",
   "marks_health": {
     "marked": 203,
-    "entry_warm": 202,
+    "entry_warm": 203,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 0.8,
+    "newest_sample_age_min": 1.2,
     "state": "OK",
-    "oscillating": 7,
+    "oscillating": 6,
     "oscillating_syms": [
       "ALICE-USD",
-      "LOFI-USD",
-      "RENDER-USD",
       "TFUEL-USD",
       "TON-USD",
+      "TROLL-USD",
       "USDUC-USD",
       "XEC-USD"
     ]
@@ -53,17 +52,22 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-10-02T22:33:18.271229+00:00",
+    "generated_at": "2026-10-02T22:22:21.708599+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
     "window": 60,
-    "excluded_count": 5,
+    "excluded_count": 6,
     "excluded": [
       {
         "sym": "ANT-USD",
         "snapbacks": 2,
         "max_move_pct": 8.5
+      },
+      {
+        "sym": "ENJ-USD",
+        "snapbacks": 1,
+        "max_move_pct": 21.0
       },
       {
         "sym": "OM-USD",
@@ -103,11 +107,11 @@
       "seen": 181,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 173,
+      "entry_warm": 175,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {
-        "regime DOWNTREND + gate=hard \u2192 0 blocked": 1,
+        "regime DOWNTREND + gate=hard \u2192 2 blocked": 1,
         "SIZER RED: entries halted": 1,
         "arming gate": 1
       },
@@ -117,8 +121,8 @@
     "decision_trace_live": [
       {
         "sym": "MKR-USD",
-        "dip_pct": -1.79,
-        "conviction": 0.1491,
+        "dip_pct": -1.36,
+        "conviction": 0.1134,
         "fate": "candidate"
       }
     ],
@@ -701,7 +705,7 @@
         "champion_changed": false
       }
     ],
-    "tradeable_universe": 72,
+    "tradeable_universe": 75,
     "universe_seen": 181
   },
   "stock": {
@@ -1351,16 +1355,24 @@
       "seen": 181,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 173,
-      "candidates_after_gates": 0,
+      "entry_warm": 175,
+      "candidates_after_gates": 1,
       "bought": 0,
       "rejections": {
-        "SIZER RED: entries halted": 1
+        "SIZER RED: entries halted": 1,
+        "trajectory": 1
       },
       "armed": true,
       "arming_why": "armed"
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "QNT-USD",
+        "dip_pct": -3.2,
+        "conviction": 0.5038,
+        "fate": "candidate"
+      }
+    ],
     "equity": 8257.71,
     "cash": 8257.71,
     "realized_pnl": -655.43,
@@ -1951,7 +1963,7 @@
         "pred": null
       }
     ],
-    "tradeable_universe": 72,
+    "tradeable_universe": 75,
     "universe_seen": 181,
     "display_name": "GEKKO"
   },
@@ -3316,17 +3328,17 @@
   "combined_realized_pnl": -441.01,
   "backtest_3day_crypto": {
     "universe_total": 1086,
-    "tradeable": 75,
-    "ghosts_excluded": 1011,
-    "trades": 532,
-    "win_rate_pct": 68.2,
-    "mean_net_pct": -0.347,
+    "tradeable": 78,
+    "ghosts_excluded": 1008,
+    "trades": 542,
+    "win_rate_pct": 67.5,
+    "mean_net_pct": -0.398,
     "exits": {
-      "TAKE": 372,
-      "STOP": 160,
+      "TAKE": 375,
+      "STOP": 167,
       "TIMEOUT": 0
     },
-    "equity_after": 8280.85
+    "equity_after": 8025.24
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
