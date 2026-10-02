@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-10-02T20:53:38.261889+00:00",
+  "generated_at": "2026-10-02T20:41:25.190792+00:00",
   "marks_health": {
-    "marked": 719,
-    "entry_warm": 716,
+    "marked": 720,
+    "entry_warm": 720,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 1.0,
+    "newest_sample_age_min": 1.2,
     "state": "OK",
-    "oscillating": 19,
+    "oscillating": 20,
     "oscillating_syms": [
       "0G-USD",
       "A-USD",
@@ -15,11 +15,11 @@
       "BTTC-USD",
       "CAKE-USD",
       "DIA-USD",
+      "EIGEN-USD",
+      "ENJ-USD",
+      "IOTA-USD",
       "IOTX-USD",
-      "MAGIC-USD",
-      "NMR-USD",
-      "ORCA-USD",
-      "POL-USD"
+      "MAGIC-USD"
     ]
   },
   "equity_market": {
@@ -58,17 +58,22 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-10-02T20:53:32.817696+00:00",
+    "generated_at": "2026-10-02T20:41:19.274002+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
     "window": 60,
-    "excluded_count": 6,
+    "excluded_count": 7,
     "excluded": [
       {
         "sym": "ANT-USD",
         "snapbacks": 2,
         "max_move_pct": 8.5
+      },
+      {
+        "sym": "ENJ-USD",
+        "snapbacks": 1,
+        "max_move_pct": 21.0
       },
       {
         "sym": "OM-USD",
@@ -110,20 +115,28 @@
   },
   "crypto": {
     "funnel": {
-      "seen": 180,
+      "seen": 181,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 158,
+      "entry_warm": 161,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {
         "regime DOWNTREND + gate=hard \u2192 10 blocked": 1,
-        "SIZER RED: entries halted": 1
+        "SIZER RED: entries halted": 1,
+        "arming gate": 1
       },
       "armed": false,
       "arming_why": "OBSERVE \u2014 pyramid law: the crypto workshop must promote a sleeve on real closed trades before this book may open. Best sleeve so far: \u2014 \u00b7 0/3 closes since wipe \u00b7 status NO_POSITIVE_SLEEVE. The book still scans, marks and manages exits; the sleeves are earning its license right now."
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "BAT-USD",
+        "dip_pct": -1.42,
+        "conviction": 0.1182,
+        "fate": "candidate"
+      }
+    ],
     "equity": 9227.7,
     "cash": 9227.7,
     "realized_pnl": -407.45,
@@ -703,8 +716,8 @@
         "champion_changed": false
       }
     ],
-    "tradeable_universe": 72,
-    "universe_seen": 180
+    "tradeable_universe": 75,
+    "universe_seen": 181
   },
   "stock": {
     "funnel": {
@@ -1350,24 +1363,44 @@
   },
   "aggressive": {
     "funnel": {
-      "seen": 180,
+      "seen": 181,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 158,
-      "candidates_after_gates": 1,
+      "entry_warm": 161,
+      "candidates_after_gates": 4,
       "bought": 0,
       "rejections": {
         "SIZER RED: entries halted": 1,
-        "falling knife": 1
+        "falling knife": 2,
+        "UNTRADEABLE:evidence": 1,
+        "trajectory": 1
       },
       "armed": true,
       "arming_why": "armed"
     },
     "decision_trace_live": [
       {
-        "sym": "WIF-USD",
-        "dip_pct": -4.73,
-        "conviction": 0.5366,
+        "sym": "STRK-USD",
+        "dip_pct": -5.65,
+        "conviction": 0.7626,
+        "fate": "candidate"
+      },
+      {
+        "sym": "DYDX-USD",
+        "dip_pct": -3.5,
+        "conviction": 0.6252,
+        "fate": "candidate"
+      },
+      {
+        "sym": "QNT-USD",
+        "dip_pct": -3.98,
+        "conviction": 0.595,
+        "fate": "candidate"
+      },
+      {
+        "sym": "KSM-USD",
+        "dip_pct": -4.01,
+        "conviction": 0.5012,
         "fate": "candidate"
       }
     ],
@@ -1961,8 +1994,8 @@
         "pred": null
       }
     ],
-    "tradeable_universe": 72,
-    "universe_seen": 180,
+    "tradeable_universe": 75,
+    "universe_seen": 181,
     "display_name": "GEKKO"
   },
   "metal": {
@@ -3326,17 +3359,17 @@
   "combined_realized_pnl": -441.01,
   "backtest_3day_crypto": {
     "universe_total": 1086,
-    "tradeable": 76,
-    "ghosts_excluded": 1010,
-    "trades": 526,
-    "win_rate_pct": 67.7,
-    "mean_net_pct": -0.393,
+    "tradeable": 78,
+    "ghosts_excluded": 1008,
+    "trades": 544,
+    "win_rate_pct": 67.8,
+    "mean_net_pct": -0.388,
     "exits": {
-      "TAKE": 365,
-      "STOP": 161,
+      "TAKE": 378,
+      "STOP": 166,
       "TIMEOUT": 0
     },
-    "equity_after": 8100.17
+    "equity_after": 8064.9
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
