@@ -1,6 +1,6 @@
 {
   "version": "alpha21-attribution-1.0",
-  "generated_at": "2026-10-05T23:55:10.022029+00:00",
+  "generated_at": "2026-10-05T23:41:36.251773+00:00",
   "answers": {
     "q1_agents_that_create_profit": [
       "SYNTH",
@@ -15,16 +15,14 @@
       "WEAVER"
     ],
     "q2_agents_that_destroy_profit": [
-      "ZENITH",
-      "KESTREL",
       "SPECK",
       "BARON",
       "FABLEBOY_5"
     ],
     "q3_opportunities_missed": 30,
     "q4_why_missed_by_failure_type": {
-      "DISCOVERY_FAILURE": 29,
-      "RANKING_FAILURE": 1
+      "DISCOVERY_FAILURE": 28,
+      "RANKING_FAILURE": 2
     },
     "q5_profit_leak_after_discovery": {
       "held_edge_capture_pct": 0.0,
@@ -119,8 +117,8 @@
     },
     {
       "agent": "JADE",
-      "grade": "A",
-      "verdict": "REAL EDGE",
+      "grade": "B",
+      "verdict": "EDGE (SOFT)",
       "mean_return_pct": 0.2327,
       "win_rate": 0.592,
       "samples": 49,
@@ -146,8 +144,8 @@
     },
     {
       "agent": "ZENITH",
-      "grade": "F",
-      "verdict": "NEGATIVE EDGE",
+      "grade": "C",
+      "verdict": "NO EDGE",
       "mean_return_pct": 0.2052,
       "win_rate": 0.54,
       "samples": 426,
@@ -164,8 +162,8 @@
     },
     {
       "agent": "KESTREL",
-      "grade": "F",
-      "verdict": "NEGATIVE EDGE",
+      "grade": "C",
+      "verdict": "NO EDGE",
       "mean_return_pct": 0.1583,
       "win_rate": 0.609,
       "samples": 46,
@@ -182,8 +180,8 @@
     },
     {
       "agent": "WEAVER",
-      "grade": "C",
-      "verdict": "NO EDGE",
+      "grade": "B",
+      "verdict": "EDGE (SOFT)",
       "mean_return_pct": 0.0767,
       "win_rate": 0.62,
       "samples": 71,
@@ -227,8 +225,8 @@
     },
     {
       "agent": "SPECK",
-      "grade": "F",
-      "verdict": "NEGATIVE EDGE",
+      "grade": "I",
+      "verdict": "INSUFFICIENT",
       "mean_return_pct": -0.1978,
       "win_rate": 0.242,
       "samples": 33,
@@ -254,8 +252,8 @@
     },
     {
       "agent": "FABLEBOY_5",
-      "grade": "C",
-      "verdict": "NO EDGE",
+      "grade": "I",
+      "verdict": "INSUFFICIENT",
       "mean_return_pct": -0.8635,
       "win_rate": 0.471,
       "samples": 153,
@@ -265,42 +263,48 @@
   "missed_examples_by_failure": {
     "DISCOVERY_FAILURE": [
       "APT-USD",
-      "TON-USD",
       "RAVE-USD",
       "MOODENG-USD",
       "RHEA-USD",
-      "VVV-USD"
+      "VVV-USD",
+      "TROLL-USD"
     ],
     "RANKING_FAILURE": [
-      "ARB-USD"
+      "ARB-USD",
+      "TON-USD"
     ]
   },
   "learning_loop": {
-    "status": "EFFECTIVE: Grade-A agents carry more weight than Grade-F",
+    "status": "UNVERIFIED: not enough graded agents have a recorded weight yet",
     "recommended_agent_weights": {
       "SYNTH": {
         "grade": "A",
         "current_weight": 1.346,
         "recommended_weight": 1.3
       },
-      "JADE": {
-        "grade": "A",
-        "current_weight": 1.087,
-        "recommended_weight": 1.3
-      },
-      "FABLEBOY_5": {
-        "grade": "C",
-        "current_weight": 0.934,
-        "recommended_weight": 1.0
-      },
       "WEAVER": {
-        "grade": "C",
+        "grade": "B",
         "current_weight": 1.195,
+        "recommended_weight": 1.1
+      },
+      "JADE": {
+        "grade": "B",
+        "current_weight": 1.087,
+        "recommended_weight": 1.1
+      },
+      "ZENITH": {
+        "grade": "C",
+        "current_weight": 1.0,
         "recommended_weight": 1.0
       },
       "STEADFAST": {
         "grade": "C",
         "current_weight": 1.104,
+        "recommended_weight": 1.0
+      },
+      "KESTREL": {
+        "grade": "C",
+        "current_weight": 0.949,
         "recommended_weight": 1.0
       },
       "THUNDERHEAD": {
@@ -312,21 +316,6 @@
         "grade": "C",
         "current_weight": 1.0,
         "recommended_weight": 1.0
-      },
-      "KESTREL": {
-        "grade": "F",
-        "current_weight": 0.949,
-        "recommended_weight": 0.55
-      },
-      "SPECK": {
-        "grade": "F",
-        "current_weight": 1.0,
-        "recommended_weight": 0.55
-      },
-      "ZENITH": {
-        "grade": "F",
-        "current_weight": 1.0,
-        "recommended_weight": 0.55
       }
     },
     "note": "Grade-derived weights are the ADJUST arm. Wire these into cli.py's weight_lookup to close Measure->Learn->Adjust."
