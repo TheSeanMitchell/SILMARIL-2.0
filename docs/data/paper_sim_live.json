@@ -1,15 +1,14 @@
 {
-  "generated_at": "2026-10-06T23:20:01.530986+00:00",
+  "generated_at": "2026-10-06T23:06:51.506641+00:00",
   "marks_health": {
     "marked": 203,
     "entry_warm": 203,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 1.1,
+    "newest_sample_age_min": 1.0,
     "state": "OK",
-    "oscillating": 22,
+    "oscillating": 20,
     "oscillating_syms": [
       "ALICE-USD",
-      "ARB-USD",
       "ASTER-USD",
       "BERT-USD",
       "DGB-USD",
@@ -19,7 +18,8 @@
       "LPT-USD",
       "MAGIC-USD",
       "NEIRO-USD",
-      "ONE-USD"
+      "ONE-USD",
+      "RENDER-USD"
     ]
   },
   "equity_market": {
@@ -58,17 +58,22 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-10-06T23:19:56.462451+00:00",
+    "generated_at": "2026-10-06T23:06:45.995839+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
     "window": 60,
-    "excluded_count": 4,
+    "excluded_count": 5,
     "excluded": [
       {
         "sym": "ANT-USD",
         "snapbacks": 2,
         "max_move_pct": 8.5
+      },
+      {
+        "sym": "OM-USD",
+        "snapbacks": 1,
+        "max_move_pct": 65.5
       },
       {
         "sym": "MOG-USD",
@@ -103,7 +108,7 @@
       "seen": 181,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 159,
+      "entry_warm": 161,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {
@@ -115,21 +120,33 @@
     },
     "decision_trace_live": [
       {
-        "sym": "INJ-USD",
-        "dip_pct": -1.0,
-        "conviction": 0.0836,
+        "sym": "NEAR-USD",
+        "dip_pct": -1.67,
+        "conviction": 0.3058,
+        "fate": "candidate"
+      },
+      {
+        "sym": "FLOKI-USD",
+        "dip_pct": -0.87,
+        "conviction": 0.0721,
         "fate": "candidate"
       },
       {
         "sym": "BCH-USD",
-        "dip_pct": -0.96,
-        "conviction": 0.08,
+        "dip_pct": -1.11,
+        "conviction": 0.0923,
         "fate": "candidate"
       },
       {
-        "sym": "RUNE-USD",
-        "dip_pct": -1.01,
-        "conviction": 0.0842,
+        "sym": "CRV-USD",
+        "dip_pct": -1.18,
+        "conviction": 0.0982,
+        "fate": "candidate"
+      },
+      {
+        "sym": "DASH-USD",
+        "dip_pct": -1.02,
+        "conviction": 0.0847,
         "fate": "candidate"
       }
     ],
@@ -1362,16 +1379,24 @@
       "seen": 181,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 159,
-      "candidates_after_gates": 0,
+      "entry_warm": 161,
+      "candidates_after_gates": 1,
       "bought": 0,
       "rejections": {
-        "SIZER RED: entries halted": 1
+        "SIZER RED: entries halted": 1,
+        "UNTRADEABLE:evidence": 1
       },
       "armed": true,
       "arming_why": "armed"
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "NEAR-USD",
+        "dip_pct": -1.67,
+        "conviction": 0.3058,
+        "fate": "candidate"
+      }
+    ],
     "equity": 8257.71,
     "cash": 8257.71,
     "realized_pnl": -655.43,
@@ -3329,15 +3354,15 @@
     "universe_total": 1086,
     "tradeable": 81,
     "ghosts_excluded": 1005,
-    "trades": 485,
-    "win_rate_pct": 77.7,
-    "mean_net_pct": 0.397,
+    "trades": 479,
+    "win_rate_pct": 78.3,
+    "mean_net_pct": 0.445,
     "exits": {
-      "TAKE": 386,
-      "STOP": 99,
+      "TAKE": 384,
+      "STOP": 95,
       "TIMEOUT": 0
     },
-    "equity_after": 12092.08
+    "equity_after": 12343.49
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
