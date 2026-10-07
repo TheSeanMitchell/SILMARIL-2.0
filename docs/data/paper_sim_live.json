@@ -1,22 +1,22 @@
 {
-  "generated_at": "2026-10-07T11:41:17.282633+00:00",
+  "generated_at": "2026-10-07T11:28:02.695947+00:00",
   "marks_health": {
-    "marked": 205,
-    "entry_warm": 204,
+    "marked": 203,
+    "entry_warm": 202,
     "warm_rule": ">=8 pts & >=1.5h span (last 6h) \u2014 knob: PARAM_CATALOG.warmup",
-    "newest_sample_age_min": 1.2,
+    "newest_sample_age_min": 0.9,
     "state": "OK",
-    "oscillating": 18,
+    "oscillating": 17,
     "oscillating_syms": [
       "1000MOG-USD",
       "ARB-USD",
-      "DIA-USD",
       "EIGEN-USD",
       "FLUX-USD",
       "FORT-USD",
       "GIGA-USD",
-      "ILV-USD",
       "IOTA-USD",
+      "JUP-USD",
+      "LPT-USD",
       "METIS-USD",
       "S-USD",
       "SPX-USD"
@@ -58,18 +58,13 @@
   },
   "exit_policy": "target (win) or heatshield floor only \u2014 timeouts removed",
   "feed_integrity": {
-    "generated_at": "2026-10-07T11:41:11.210644+00:00",
+    "generated_at": "2026-10-07T11:27:57.003346+00:00",
     "spike_pct": 6.0,
     "snapback_ret": 0.5,
     "min_snapbacks": 1,
     "window": 60,
     "excluded_count": 5,
     "excluded": [
-      {
-        "sym": "MOG-USD",
-        "snapbacks": 2,
-        "max_move_pct": 8.3
-      },
       {
         "sym": "ANT-USD",
         "snapbacks": 2,
@@ -78,7 +73,12 @@
       {
         "sym": "OM-USD",
         "snapbacks": 1,
-        "max_move_pct": 50.7
+        "max_move_pct": 65.5
+      },
+      {
+        "sym": "MOG-USD",
+        "snapbacks": 1,
+        "max_move_pct": 8.3
       },
       {
         "sym": "ZRX-USD",
@@ -105,10 +105,10 @@
   },
   "crypto": {
     "funnel": {
-      "seen": 183,
+      "seen": 181,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 164,
+      "entry_warm": 163,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {
@@ -698,8 +698,8 @@
         "champion_changed": false
       }
     ],
-    "tradeable_universe": 78,
-    "universe_seen": 183
+    "tradeable_universe": 77,
+    "universe_seen": 181
   },
   "stock": {
     "funnel": {
@@ -1345,10 +1345,10 @@
   },
   "aggressive": {
     "funnel": {
-      "seen": 183,
+      "seen": 181,
       "marks_carried": 0,
       "marks_carried_syms": [],
-      "entry_warm": 164,
+      "entry_warm": 163,
       "candidates_after_gates": 0,
       "bought": 0,
       "rejections": {
@@ -1948,8 +1948,8 @@
         "pred": null
       }
     ],
-    "tradeable_universe": 78,
-    "universe_seen": 183,
+    "tradeable_universe": 77,
+    "universe_seen": 181,
     "display_name": "GEKKO"
   },
   "metal": {
@@ -1958,15 +1958,23 @@
       "marks_carried": 0,
       "marks_carried_syms": [],
       "entry_warm": 5,
-      "candidates_after_gates": 0,
+      "candidates_after_gates": 1,
       "bought": 0,
       "rejections": {
-        "SIZER RED: entries halted": 1
+        "SIZER RED: entries halted": 1,
+        "UNTRADEABLE:evidence": 1
       },
       "armed": true,
       "arming_why": "armed \u2014 promoted sleeve A (FOREVER RIDE) has real closed trades"
     },
-    "decision_trace_live": [],
+    "decision_trace_live": [
+      {
+        "sym": "XPT",
+        "dip_pct": -0.43,
+        "conviction": 0.0359,
+        "fate": "candidate"
+      }
+    ],
     "equity": 9879.41,
     "cash": 9879.41,
     "realized_pnl": 81.51,
@@ -3313,17 +3321,17 @@
   "combined_realized_pnl": -441.01,
   "backtest_3day_crypto": {
     "universe_total": 1086,
-    "tradeable": 81,
-    "ghosts_excluded": 1005,
-    "trades": 467,
-    "win_rate_pct": 68.7,
-    "mean_net_pct": -0.317,
+    "tradeable": 80,
+    "ghosts_excluded": 1006,
+    "trades": 452,
+    "win_rate_pct": 69.2,
+    "mean_net_pct": -0.316,
     "exits": {
-      "TAKE": 330,
-      "STOP": 137,
+      "TAKE": 322,
+      "STOP": 130,
       "TIMEOUT": 0
     },
-    "equity_after": 8595.08
+    "equity_after": 8640.56
   },
   "note": "Internal paper sim, 4 independent books (crypto/stock/metal/energy), one canonical key per asset (7.1 one-key law). Ghosts excluded; per-class fee floors. A book may OPEN only when its own workshop has PROMOTED a sleeve on real closed trades since the wipe (arming gate) \u2014 until then it scans, marks, and manages exits only."
 }
