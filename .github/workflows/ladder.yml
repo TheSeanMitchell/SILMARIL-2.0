@@ -1,0 +1,66 @@
+name: SILMARIL 9 - The Ladder (daily)
+
+# One lane, once a day, after the US close and after crypto's UTC day has closed.
+# The whole ladder is rebuilt from prices on every run, so a missed or failed day loses
+# nothing: the next run reproduces the past exactly and adds the new close.
+#
+# Lessons from 7.x built in:
+#   * a failed push FAILS the run (the old lane swallowed about 3,400 rejected pushes in silence)
+#   * no file this lane writes may grow past 25 MB (GitHub rejects anything over 100 MB)
+#   * nothing can lock the system out for good; a stale feed pauses and resumes by itself
+
+on:
+  schedule:
+    - cron: "17 2 * * *"     # 02:17 UTC daily
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ladder
+  cancel-in-progress: false
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install --quiet yfinance requests
+
+      - name: The laws (offline tests) — nothing runs if one fails
+        run: python scripts/test_ladder.py
+
+      - name: Daily cycle
+        run: python -m ladder.cli run
+
+      - name: Size guard — never commit a file GitHub would refuse
+        run: |
+          big="$(find docs/data -maxdepth 1 -name 'ladder_*' -size +25M) $(find docs -maxdepth 1 -name 'index.html' -size +25M)"
+          big="$(echo $big)"
+          if [ -n "$big" ]; then echo "::error::oversized files: $big"; exit 1; fi
+
+      - name: Commit and push (fails loudly if the push never lands)
+        run: |
+          git config user.name "silmaril-ladder"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/index.html docs/data/ladder_prices.json docs/data/ladder_results.json \
+                  docs/data/ladder_record.json docs/data/ladder_ledger.jsonl
+          if git diff --staged --quiet; then echo "nothing new to save"; exit 0; fi
+          git commit -m "ladder: daily $(date -u +%Y-%m-%d)"
+          for i in 1 2 3 4 5; do
+            if git push; then echo "saved"; exit 0; fi
+            git pull --rebase origin main || git rebase --abort || true
+            sleep $((i * 5))
+          done
+          echo "::error::push failed 5 times — today's results were NOT saved"
+          exit 1
