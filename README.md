@@ -1,3 +1,8 @@
+> **LEGACY ARCHIVE (8 Nov 2026).** SILMARIL continues as **SILMARIL 4.0** in
+> [TheSeanMitchell/SILMARIL-4.0](https://github.com/TheSeanMitchell/SILMARIL-4.0), site
+> <https://theseanmitchell.github.io/SILMARIL-4.0/>. Nothing in this repository runs any more;
+> it is kept as the full record of versions 1.0 to 3.0 (the 7.x engine and Steward 8.0).
+
 # SILMARIL 7.0 — THE ACTIVATION
 ### A deterministic, self-interrogating trading research platform · GitHub Actions engine · GitHub Pages cockpit
 
