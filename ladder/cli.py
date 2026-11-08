@@ -60,6 +60,13 @@ def verify() -> bool:
             if p.name.startswith("ladder_"):
                 print("VERIFY FAIL: %s is %.1f MB (limit %d MB)" % (p, p.stat().st_size / 1e6, MAX_FILE_MB))
                 ok = False
+    hreg = ROOT / "REGISTRATION_HEADLINES.md"
+    if hreg.exists():
+        from .headlines import rules_hash
+        if ("headline-rules-hash: %s" % rules_hash()) not in hreg.read_text(encoding="utf-8"):
+            print("VERIFY FAIL: ladder/headlines.py rules hash %s is not the one in "
+                  "REGISTRATION_HEADLINES.md" % rules_hash())
+            ok = False
     if ok:
         print("verify OK — registration %s" % h)
     return ok
@@ -103,6 +110,13 @@ def cmd_run(offline: bool = False) -> int:
     res["data"] = dict(meta, newest_close=tape.dates[-1], stale_days=stale,
                        stale=stale > REGISTERED["stale_data_days"])
     res["record"] = _record_and_check(res)
+    # the headline test is watch-only; nothing it does or fails at can touch the trading run
+    try:
+        from . import headlines as HL
+        res["headlines"] = HL.run(DATA, tape, REGISTERED["categories"], REGISTERED["cash_symbol"],
+                                  fetch_news=not offline)
+    except Exception as e:                      # noqa: BLE001
+        res["headlines"] = {"error": "%s: %s" % (type(e).__name__, str(e)[:200])}
     res["generated_at"] = _now()
     _write(DATA / RESULTS, res)
     with open(DATA / LEDGER, "a", encoding="utf-8") as f:

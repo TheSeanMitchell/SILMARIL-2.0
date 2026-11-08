@@ -304,6 +304,75 @@ def build(res: Dict, docs: Path) -> Path:
         tt.append("</table></div>")
         H.append("".join(tt))
 
+    # ── the headline test (watch-only) ──────────────────────────────────────────
+    hl = res.get("headlines")
+    if hl:
+        H.append("<h2>Headline test — watch-only</h2>")
+        if hl.get("error"):
+            H.append('<div class="banner warn">The headline reader failed this run (%s). Trading was '
+                     'not affected; the test resumes on the next run.</div>' % esc(hl["error"]))
+        else:
+            v = hl["verdicts"]
+            d, w = v["direction"], v["warning"]
+            H.append('<p class="dim">Every day it reads the headlines for each category. Once a week it '
+                     'calls UP, DOWN or nothing from their tone, and five closes later it checks whether '
+                     'the call was right. It never trades. Rules frozen 8 Nov 2026 (fingerprint '
+                     '<span class="num">%s</span>); %d %s of headlines recorded since %s.</p>' % (
+                         esc(hl["rules_hash"]), hl.get("days_recorded", 0),
+                         "day" if hl.get("days_recorded", 0) == 1 else "days", esc(hl.get("first_day") or "—")))
+            if hl.get("rules_changed"):
+                H.append('<div class="banner bad">The headline rules changed after recording began: %s</div>'
+                         % esc(json.dumps(hl["rules_changed"])))
+
+            def pill(s):
+                c = {"PASSED": "ok", "KILLED": "bad"}.get(s, "warn")
+                return '<span class="banner %s" style="padding:2px 8px;margin:0;font-size:12px">%s</span>' % (c, esc(s))
+
+            H.append('<div class="grid">')
+            H.append('<div class="card"><h3>Direction: does tone call next week?</h3><p>%s</p>'
+                     '<div class="kv"><span>graded calls</span><b>%d of %d needed</b></div>'
+                     '<div class="kv"><span>right</span><b>%s</b></div>'
+                     '<div class="kv"><span>z versus a coin flip (pass 2.5)</span><b>%s</b></div>'
+                     '<div class="kv"><span>average result per call</span><b>%s</b></div></div>' % (
+                         pill(d["status"]), d["calls"], d["need"],
+                         "—" if d["hit_rate_pct"] is None else "%s%% (%d)" % (d["hit_rate_pct"], d["hits"]),
+                         "—" if d["z"] is None else d["z"],
+                         "—" if d["avg_signed_pct"] is None else pct(d["avg_signed_pct"])))
+            H.append('<div class="card"><h3>Warning: do headline surges come before big moves?</h3><p>%s</p>'
+                     '<div class="kv"><span>graded surges</span><b>%d of %d needed</b></div>'
+                     '<div class="kv"><span>next-week move vs normal (pass 1.5×)</span><b>%s</b></div>'
+                     '<div class="kv"><span>t (pass 2.5)</span><b>%s</b></div></div>' % (
+                         pill(w["status"]), w["surges"], w["need"],
+                         "—" if w["avg_move_ratio"] is None else "%.2f×" % w["avg_move_ratio"],
+                         "—" if w["t"] is None else w["t"]))
+            H.append("</div>")
+            rows = []
+            for c in CATS:
+                lw = (hl.get("latest_week") or {}).get(c)
+                rec = (hl.get("recent") or {}).get(c) or {}
+                heads = "<br>".join("%s %s" % ("▲" if x["score"] > 0 else "▼", esc(x["title"]))
+                                    for x in (rec.get("headlines") or [])[:3]) or '<span class="dim">none scored yet</span>'
+                if lw and not lw.get("days_covered"):
+                    wk = '<span class="dim">recording; the first call comes after a full week of headlines</span>'
+                elif lw:
+                    wk = "%s · tone %s · %s · %d headlines, %d days%s" % (
+                        esc(lw["week"]), pct(100 * lw["tone"]), esc(lw["call"] or "no call"), lw["n"],
+                        lw["days_covered"], " · SURGE" if lw.get("surge") else "")
+                else:
+                    wk = '<span class="dim">first weekly call after a week of headlines</span>'
+                rows.append('<tr><td>%s</td><td class="wrap">%s</td><td class="wrap">%s</td></tr>' % (
+                    LABEL[c], wk, heads))
+            H.append('<div class="tw" style="margin-top:12px"><table><tr><th>category</th><th>latest weekly call</th>'
+                     '<th>latest scored headlines</th></tr>%s</table></div>' % "".join(rows))
+            g = hl.get("graded_calls") or []
+            if g:
+                H.append('<div class="tw" style="margin-top:12px"><table><tr><th>week</th><th>category</th>'
+                         '<th>call</th><th>from</th><th>to</th><th>result vs T-bills</th><th></th></tr>%s</table></div>' % "".join(
+                             '<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td class="%s">%s</td><td>%s</td></tr>' % (
+                                 esc(x["week"]), LABEL[x["cat"]], esc(x["call"]), esc(x["base_date"]), esc(x["end_date"]),
+                                 cls(x["signed_pct"]), pct(x["signed_pct"]), "right" if x["hit"] else "wrong")
+                             for x in reversed(g)))
+
     # ── recent decisions ────────────────────────────────────────────────────────
     H.append("<h2>Recent decisions, in the rules' own words</h2>")
     dec = [("Master", e) for e in m.get("recent_events", [])[-6:]]

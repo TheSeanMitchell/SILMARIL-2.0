@@ -1,5 +1,23 @@
 # SILMARIL 9 — THE LADDER — install (about 15 minutes, drag and drop)
 
+## UPDATE 1 (8 Nov 2026, evening) — the headline test, watch-only
+
+Already installed SILMARIL 9? Upload only these six files, replacing what is there:
+
+| from this package | into the repo |
+|---|---|
+| `ladder/headlines.py` (new), `ladder/cli.py`, `ladder/report.py` | `ladder/` |
+| `scripts/test_ladder.py` | `scripts/` |
+| `REGISTRATION_HEADLINES.md` (new) | repo root |
+| `.github/workflows/ladder.yml` | `.github/workflows/` |
+
+**Do not upload anything from `docs/`** — the repo's copies are newer (the nightly run
+writes them). Then Actions → SILMARIL 9 - The Ladder (daily) → Run workflow. The page gains
+a "Headline test — watch-only" section. It never trades; its first weekly call comes after
+a full week of headlines. The trading fingerprint stays `d6ebfac647c082b8`.
+
+---
+
 Nothing in here deletes anything. The old engine, Steward and every data file stay in the
 repo as the archive.
 

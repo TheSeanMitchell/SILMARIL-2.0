@@ -169,6 +169,56 @@ def main():
               and abs(rec["days"][d0]["MASTER"] - res_a["forward_values"][d0]["MASTER"]) < 1e-9,
               "%s %s" % (r1, r2))
 
+    # 12-16 the headline test (watch-only)
+    from datetime import datetime, timezone
+    from ladder import headlines as HL
+    hreg = (ROOT / "REGISTRATION_HEADLINES.md").read_text(encoding="utf-8")
+    check("12 headline rules hash matches REGISTRATION_HEADLINES.md",
+          ("headline-rules-hash: %s" % HL.rules_hash()) in hreg, "code hashes to %s" % HL.rules_hash())
+    src = (ROOT / "ladder" / "headlines.py").read_text(encoding="utf-8")
+    check("13 the headline test imports nothing that trades",
+          not any(("import %s" % m) in src or ("from .%s" % m) in src or ("from . import %s" % m) in src
+                  for m in ("portfolio", "rules", "engine", "config")))
+    cases = [("Oil prices extend gains on escalating Middle East hostilities", "energy", 1),
+             ("Ceasefire announced as talks progress", "energy", -1),
+             ("Stocks tumble as tech selloff deepens", "stock", -1),
+             ("Gold holds steady ahead of Fed decision", "metal", 0),
+             ("Bitcoin surges to record but fears linger", "crypto", 0)]
+    bad_scores = [(t, c, e, HL.score_title(t, c)) for t, c, e in cases if HL.score_title(t, c) != e]
+    check("14 headline scoring follows the registered word lists", not bad_scores, str(bad_scores))
+    mon = datetime(2026, 11, 16, 2, 17, tzinfo=timezone.utc)
+    late = datetime(2026, 11, 16, 22, 0, tzinfo=timezone.utc)
+    dts = ["2026-11-13", "2026-11-16", "2026-11-17"]
+    check("15 no lookahead: graded from the first close after the read",
+          HL.first_close_after_read(dts, mon) == 1 and HL.first_close_after_read(dts, late) == 2)
+    with tempfile.TemporaryDirectory() as td:
+        before = json.dumps(EN.build(tape), sort_keys=True, default=str)
+        # a week of loud bullish crypto headlines, then the Monday call, then grading
+        from datetime import timedelta
+        mon2 = datetime.fromisoformat(tape.dates[-12] + "T02:17:00+00:00")
+        while mon2.weekday() != 0:
+            mon2 -= timedelta(days=1)
+        st = HL.load(Path(td))
+        for k in range(7, 0, -1):
+            day = mon2 - timedelta(days=k)
+            HL.record_day(st, day, {"crypto": ["Bitcoin surges %d" % k, "Ether rallies %d" % k,
+                                               "Crypto gains %d" % k, "Bitcoin steady %d" % k],
+                                    "stock": None, "metal": [], "energy": []})
+        HL.make_weekly_calls(st, mon2, CF.REGISTERED["categories"])
+        HL.grade(st, tape.dates, tape.px, "BIL")
+        wk = [w for w in st["weeks"] if w["cat"] == "crypto"][0]
+        b = HL.first_close_after_read(tape.dates, mon2)
+        a1, a2 = CF.REGISTERED["categories"]["crypto"]
+        want = 100 * (0.5 * (tape.px[a1][b + 5] / tape.px[a1][b] - 1) + 0.5 * (tape.px[a2][b + 5] / tape.px[a2][b] - 1)
+                      - (tape.px["BIL"][b + 5] / tape.px["BIL"][b] - 1))
+        check("16 weekly call and grade match a hand calculation",
+              wk["call"] == "UP" and wk["n"] == 28 and wk["graded"] and abs(wk["signed_pct"] - round(want, 3)) < 1e-6
+              and [w for w in st["weeks"] if w["cat"] == "stock"][0]["call"] is None,
+              json.dumps(wk))
+        HL.save(Path(td), st)
+        after = json.dumps(EN.build(tape), sort_keys=True, default=str)
+        check("17 trading results are identical with the headline test running", before == after)
+
     print()
     if FAILS:
         print("%d FAILED: %s" % (len(FAILS), ", ".join(FAILS)))
